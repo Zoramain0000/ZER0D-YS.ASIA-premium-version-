@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Metal OSINT Wikipedia Tool</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron&display=swap');
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Orbitron', sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+    #sidebar {
+      width: 180px;
+background: rgba(0, 0, 0, 0.5);
+      border-right: 2px solid red;
+      display: flex;
+      flex-direction: column;
+      padding: 20px 10px;
+      gap: 15px;
+      transition: width 0.3s ease, padding 0.3s ease;
+      overflow: hidden;
+    }
+    #sidebar.hidden {
+      width: 0;
+      padding: 20px 0;
+    }
+    #sidebar a {
+      color: red;
+      text-decoration: none;
+background: rgba(0, 0, 0, 0.5);
+      padding: 10px 12px;
+      border: 1px solid red;
+      border-radius: 5px;
+      text-align: center;
+      font-weight: bold;
+      transition: background 0.3s, color 0.3s;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    #sidebar a:hover {
+background: rgba(0, 0, 0, 0.5);
+      color: red;
+      box-shadow: 0 0 10px red;
+    }
+    #mainContainer {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+      transition: margin-left 0.3s ease;
+    }
+    #mainContainer.fullWidth {
+      margin-left: 0;
+    }
+    header {
+      padding: 20px;
+background: rgba(0, 0, 0, 0.5);
+      text-align: center;
+      border-bottom: 2px solid red;
+      flex-shrink: 0;
+      position: relative;
+    }
+    header h1 {
+      color: red;
+      margin: 0;
+    }
+    #sidebarToggle {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      background: red;
+      border: none;
+      color: #000;
+      font-weight: bold;
+      font-size: 20px;
+      padding: 5px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      z-index: 1000;
+      transition: background 0.3s;
+    }
+    #sidebarToggle:hover {
+background: rgba(0, 0, 0, 0.5);
+    }
+    #tabs {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+background: rgba(0, 0, 0, 0.5);
+      padding: 10px;
+      flex-shrink: 0;
+    }
+    .tab {
+      color: red;
+      background: #333;
+      border: 1px solid red;
+      margin: 5px;
+      padding: 8px 16px;
+      cursor: pointer;
+      transition: 0.3s;
+      border-radius: 4px;
+      user-select: none;
+    }
+    .tab.active {
+background: rgba(0, 0, 0, 0.5);
+      color: red;
+    }
+    #searchBar {
+      text-align: center;
+      margin: 20px;
+    }
+    #searchInput {
+      padding: 10px;
+      width: 80%;
+      max-width: 600px;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
+background: rgba(0, 0, 0, 0.5);
+      color: red;
+      box-shadow: 0 0 10px red;
+    }
+    #results {
+      padding: 20px;
+      max-width: 800px;
+      margin: auto;
+      overflow-y: auto;
+      flex-grow: 1;
+    }
+    .result {
+background: rgba(0, 0, 0, 0.5);
+      padding: 15px;
+      border-left: 5px solid red;
+      margin-bottom: 15px;
+      border-radius: 6px;
+      cursor: pointer;
+      box-shadow: 0 0 5px red;
+    }
+    .result:hover {
+background: rgba(0, 0, 0, 0.5);
+    }
+    .result h3 {
+      margin: 0;
+      color: red;
+    }
+    .result p {
+      margin-top: 5px;
+      color: red;
+    }
+    footer {
+      text-align: center;
+      padding: 10px;
+      font-size: 12px;
+background: rgba(0, 0, 0, 0.5);
+      color: red;
+      border-top: 2px solid red;
+      flex-shrink: 0;
+    }
+    #articleModal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+background: rgba(0, 0, 0, 0.5);
+      color: red;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      z-index: 9999;
+    }
+    #articleContent {
+background: rgba(0, 0, 0, 0.5);
+      padding: 20px;
+      max-width: 700px;
+      max-height: 80vh;
+      overflow-y: auto;
+      border-radius: 8px;
+      box-shadow: 0 0 20px red;
+    }
+    #closeModal {
+      position: absolute;
+      top: 15px;
+      right: 20px;
+      font-size: 30px;
+      color: red;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div id="sidebar">
+    <!-- Sidebar Links (shortened for space) -->
+    <a href="osint/app.html"> Phone Tracker </a>
+    <a href="osint/github.html">GitHub OSINT</a>
+    <a href="osint/Lgtr.html">Post Inspector</a>
+    <a href="osint/Instagram.html">Instagram OSINT</a>
+    <a href="osint/oyt.html">Thumbnail</a>
+    <a href="osint/Profinder.html">GitHub Track</a>
+    <a href="osint/reddit.html">Reddit OSINT</a>
+    <a href="osint/youtube.html">YouTube OSINT </a>
+    <a href="osintdashboard.html">OSINT Tools</a>
+    <a href="https://freepeoplesearchtool.com" target="_blank">People Finder</a>
+    <a href="https://stalkface.com/en/">StalkFace</a>
+  </div>
+
+  <div id="mainContainer">
+    <header>
+      <button id="sidebarToggle">&#9776;</button>
+      <h1>Metal OSINT Wikipedia Tool</h1>
+    </header>
+
+    <div id="tabs">
+      <div class="tab active" data-query="cybercrime">Cybercrime</div>
+      <div class="tab" data-query="osint">OSINT</div>
+      <div class="tab" data-query="security">Security</div>
+      <div class="tab" data-query="history">History</div>
+      <div class="tab" data-query="tools">Tools</div>
+      <div class="tab" data-query="dark web">Dark Web</div>
+    </div>
+
+    <div id="searchBar">
+      <input type="text" id="searchInput" placeholder="Search Wikipedia topics..." />
+    </div>
+
+    <main id="results"></main>
+    <footer>&copy; 2025 Metal OSINT Tool — Powered by Wikipedia.org</footer>
+  </div>
+
+  <div id="articleModal">
+    <div id="closeModal">&times;</div>
+    <div id="articleContent">Loading...</div>
+  </div>
+
+  <script>
+    const resultsContainer = document.getElementById('results');
+    const searchInput = document.getElementById('searchInput');
+    const tabs = document.querySelectorAll('.tab');
+    const modal = document.getElementById('articleModal');
+    const modalContent = document.getElementById('articleContent');
+    const closeModal = document.getElementById('closeModal');
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const sidebar = document.getElementById('sidebar');
+
+    let query = 'cybercrime';
+    let offset = 0;
+    let isLoading = false;
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        query = tab.getAttribute('data-query');
+        offset = 0;
+        setActiveTab(tab);
+        fetchResults(false);
+      });
+    });
+
+    function setActiveTab(selectedTab) {
+      tabs.forEach(tab => tab.classList.remove('active'));
+      selectedTab.classList.add('active');
+    }
+
+    searchInput.addEventListener('input', () => {
+      query = searchInput.value.trim();
+      offset = 0;
+      fetchResults(false);
+    });
+
+    window.addEventListener('scroll', () => {
+      if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 100) {
+        fetchResults(true);
+      }
+    });
+
+    async function fetchResults(append) {
+      if (!query || isLoading) return;
+      isLoading = true;
+
+      const api = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&sroffset=${offset}&srlimit=10&format=json&origin=*`;
+      const res = await fetch(api);
+      const data = await res.json();
+      const searchResults = data.query.search;
+
+      if (!append) resultsContainer.innerHTML = '';
+      if (searchResults.length > 0) {
+        searchResults.forEach(item => {
+          const div = document.createElement('div');
+          div.className = 'result';
+          div.innerHTML = `<h3>${item.title}</h3><p>${item.snippet}...</p>`;
+          div.addEventListener('click', () => loadArticle(item.title));
+          resultsContainer.appendChild(div);
+        });
+        offset += 10;
+      } else if (!append) {
+        resultsContainer.innerHTML = '<p>No results found.</p>';
+      }
+      isLoading = false;
+    }
+
+    async function loadArticle(title) {
+      const url = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      modalContent.innerHTML = `<h2>${data.title}</h2><p>${data.extract}</p>`;
+      modal.style.display = 'flex';
+    }
+
+    closeModal.addEventListener('click', () => {
+      modal.style.display = 'none';
+    });
+
+    sidebarToggle.addEventListener('click', () => {
+      sidebar.classList.toggle('hidden');
+    });
+
+    // Initial fetch
+    fetchResults(false);
+  </script>
+</body>
+</html>

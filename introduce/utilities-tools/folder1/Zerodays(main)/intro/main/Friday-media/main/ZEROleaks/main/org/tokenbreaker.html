@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>JWT Token Breaker & Verifier</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0f172a;
+      color: #f8fafc;
+      margin: 0;
+      padding: 30px;
+    }
+    .container {
+      max-width: 900px;
+      margin: auto;
+      background: #1e293b;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 20px #00000050;
+    }
+    h2 {
+      color: #38bdf8;
+      text-align: center;
+    }
+    textarea, input {
+      width: 100%;
+      padding: 10px;
+      font-size: 15px;
+      margin-bottom: 10px;
+      border-radius: 6px;
+      background: #0f172a;
+      color: #fff;
+      border: 1px solid #334155;
+    }
+    pre {
+      white-space: pre-wrap;
+      background: #0f172a;
+      border-left: 4px solid #38bdf8;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 5px;
+      color: #f1f5f9;
+    }
+    .danger { color: #f87171; font-weight: bold; }
+    .success { color: #4ade80; font-weight: bold; }
+    .button {
+      background: #22d3ee;
+      border: none;
+      color: #0f172a;
+      padding: 10px;
+      width: 100%;
+      font-size: 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    .button:hover { background: #0ea5e9; }
+    .section-title {
+      margin-top: 15px;
+      font-weight: bold;
+      color: #a5f3fc;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>🔓 JWT Token Breaker / Verifier / Generator</h2>
+
+    <textarea id="jwtInput" placeholder="Paste JWT token here..." oninput="decodeJWT()"></textarea>
+    <input type="text" id="secretInput" placeholder="Optional Secret for Verification" oninput="decodeJWT()" />
+
+    <div id="output" style="display:none;">
+      <p class="section-title">🔑 Header:</p>
+      <pre id="headerOutput"></pre>
+
+      <p class="section-title">📦 Payload:</p>
+      <pre id="payloadOutput"></pre>
+
+      <p class="section-title">🖊️ Signature:</p>
+      <pre id="signatureOutput"></pre>
+
+      <div id="warning" class="danger"></div>
+      <div id="verifyStatus" class=""></div>
+    </div>
+
+    <button class="button" onclick="copyDecoded()">📋 Copy Decoded</button>
+
+    <hr style="margin: 30px 0; border-color: #334155;">
+
+    <p class="section-title">🎯 Generate JWT Token</p>
+    <input id="genPayload" placeholder='Payload JSON (e.g. {"user":"admin"})' />
+    <input id="genSecret" placeholder="Secret" />
+    <button class="button" onclick="generateJWT()">🚀 Generate Token</button>
+    <pre id="genResult"></pre>
+  </div>
+
+  <script>
+    function base64UrlEncode(data) {
+      return btoa(data).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    }
+
+    function base64UrlDecode(input) {
+      input = input.replace(/-/g, '+').replace(/_/g, '/');
+      const pad = input.length % 4;
+      if (pad) input += '='.repeat(4 - pad);
+      try {
+        return decodeURIComponent(escape(atob(input)));
+      } catch {
+        return "Invalid Base64URL data";
+      }
+    }
+
+    async function decodeJWT() {
+      const jwt = document.getElementById("jwtInput").value.trim();
+      const secret = document.getElementById("secretInput").value.trim();
+      const output = document.getElementById("output");
+      const warning = document.getElementById("warning");
+      const verifyStatus = document.getElementById("verifyStatus");
+
+      warning.textContent = "";
+      verifyStatus.textContent = "";
+      verifyStatus.className = "";
+
+      if (!jwt || jwt.split(".").length !== 3) {
+        output.style.display = "none";
+        return;
+      }
+
+      const [headerB64, payloadB64, signature] = jwt.split(".");
+      const header = base64UrlDecode(headerB64);
+      const payload = base64UrlDecode(payloadB64);
+
+      try {
+        const parsedHeader = JSON.parse(header);
+        const parsedPayload = JSON.parse(payload);
+
+        document.getElementById("headerOutput").textContent = JSON.stringify(parsedHeader, null, 2);
+        document.getElementById("payloadOutput").textContent = JSON.stringify(parsedPayload, null, 2);
+        document.getElementById("signatureOutput").textContent = signature || "(none)";
+        output.style.display = "block";
+
+        if (parsedHeader.alg === "none") {
+          warning.textContent = "⚠️ Insecure algorithm: 'none'";
+        }
+
+        // Expiration check
+        if (parsedPayload.exp) {
+          const now = Math.floor(Date.now() / 1000);
+          if (parsedPayload.exp < now) {
+            warning.textContent += "\n⛔ Token is expired.";
+          }
+        }
+
+        // Signature verification
+        if (secret && parsedHeader.alg === "HS256") {
+          const data = `${headerB64}.${payloadB64}`;
+          const encoder = new TextEncoder();
+          const key = await crypto.subtle.importKey(
+            "raw", encoder.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
+          );
+          const signatureBuffer = await crypto.subtle.sign("HMAC", key, encoder.encode(data));
+          const sigB64 = btoa(String.fromCharCode(...new Uint8Array(signatureBuffer)))
+            .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+          if (sigB64 === signature) {
+            verifyStatus.textContent = "✅ Signature Verified (HS256)";
+            verifyStatus.className = "success";
+          } else {
+            verifyStatus.textContent = "❌ Signature Invalid";
+            verifyStatus.className = "danger";
+          }
+        }
+      } catch {
+        document.getElementById("headerOutput").textContent = "Invalid JSON in header.";
+        document.getElementById("payloadOutput").textContent = "Invalid JSON in payload.";
+        document.getElementById("signatureOutput").textContent = signature || "(none)";
+        output.style.display = "block";
+      }
+    }
+
+    function copyDecoded() {
+      const header = document.getElementById("headerOutput").textContent;
+      const payload = document.getElementById("payloadOutput").textContent;
+      const signature = document.getElementById("signatureOutput").textContent;
+      const combined = `Header:\n${header}\n\nPayload:\n${payload}\n\nSignature:\n${signature}`;
+      navigator.clipboard.writeText(combined).then(() => alert("Decoded JWT copied!"));
+    }
+
+    async function generateJWT() {
+      const payloadInput = document.getElementById("genPayload").value.trim();
+      const secret = document.getElementById("genSecret").value.trim();
+      const output = document.getElementById("genResult");
+
+      try {
+        const payloadObj = JSON.parse(payloadInput);
+        const header = { alg: "HS256", typ: "JWT" };
+        const headerB64 = base64UrlEncode(JSON.stringify(header));
+        const payloadB64 = base64UrlEncode(JSON.stringify(payloadObj));
+        const data = `${headerB64}.${payloadB64}`;
+
+        const encoder = new TextEncoder();
+        const key = await crypto.subtle.importKey(
+          "raw", encoder.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
+        );
+        const signatureBuffer = await crypto.subtle.sign("HMAC", key, encoder.encode(data));
+        const signature = btoa(String.fromCharCode(...new Uint8Array(signatureBuffer)))
+          .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+        output.textContent = `${data}.${signature}`;
+      } catch (e) {
+        output.textContent = "❌ Error: Invalid payload JSON.";
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TrackSocial - Username Tracker</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: auto;
+background: rgba(0, 0, 0, 0.5);
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    }
+
+    h1 {
+      text-align: center;
+      color: red;
+    }
+
+    input[type="text"] {
+      width: calc(100% - 20px);
+      padding: 12px;
+      margin-top: 20px;
+      border: 1px solid red;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+
+    button {
+      margin-top: 15px;
+      padding: 10px 20px;
+      font-size: 16px;
+      background: red;
+      color: green;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    button:hover {
+background: rgba(0, 0, 0, 0.5);
+    }
+
+    .results {
+      margin-top: 30px;
+    }
+
+    .result-item {
+background: rgba(0, 0, 0, 0.5);
+      border-left: 6px solid red;
+      padding: 12px;
+      margin-bottom: 10px;
+      border-radius: 8px;
+    }
+
+    .status-found {
+      border-left-color:blue ;
+    }
+
+    .status-not-found {
+      border-left-color: red;
+    }
+
+    .status-error {
+      border-left-color: yellow;
+    }
+
+    .export-btn {
+      float: right;
+      margin-top: 10px;
+background: rgba(0, 0, 0, 0.5);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔍 TrackSocial - Username Tracker</h1>
+    <input type="text" id="username" placeholder="Enter username (e.g. johndoe)" />
+    <button onclick="trackUsername()">Search</button>
+    <button class="export-btn" onclick="exportJSON()">Export JSON</button>
+
+    <div class="results" id="results"></div>
+  </div>
+
+  <script>
+    const platforms = [
+      { name: "Facebook", url: "https://www.facebook.com/" },
+      { name: "Twitter", url: "https://www.twitter.com/" },
+      { name: "Instagram", url: "https://www.instagram.com/" },
+      { name: "LinkedIn", url: "https://www.linkedin.com/in/" },
+      { name: "GitHub", url: "https://www.github.com/" },
+      { name: "Pinterest", url: "https://www.pinterest.com/" },
+      { name: "Tumblr", url: "https://www.tumblr.com/" },
+      { name: "YouTube", url: "https://www.youtube.com/@" },
+      { name: "SoundCloud", url: "https://soundcloud.com/" },
+      { name: "Snapchat", url: "https://www.snapchat.com/add/" },
+      { name: "TikTok", url: "https://www.tiktok.com/@" },
+      { name: "Behance", url: "https://www.behance.net/" },
+      { name: "Medium", url: "https://www.medium.com/@" },
+      { name: "Quora", url: "https://www.quora.com/profile/" },
+      { name: "Flickr", url: "https://www.flickr.com/people/" },
+      { name: "Periscope", url: "https://www.periscope.tv/" },
+      { name: "Twitch", url: "https://www.twitch.tv/" },
+      { name: "Dribbble", url: "https://www.dribbble.com/" },
+      { name: "StumbleUpon", url: "https://www.stumbleupon.com/stumbler/" },
+      { name: "Ello", url: "https://www.ello.co/" },
+      { name: "Product Hunt", url: "https://www.producthunt.com/@" },
+      { name: "Telegram", url: "https://www.telegram.me/" },
+      { name: "We Heart It", url: "https://www.weheartit.com/" }
+    ];
+
+    let foundResults = [];
+
+    function trackUsername() {
+      const username = document.getElementById("username").value.trim();
+      const resultsContainer = document.getElementById("results");
+      resultsContainer.innerHTML = "";
+      foundResults = [];
+
+      if (!username) {
+        alert("Please enter a username.");
+        return;
+      }
+
+      platforms.forEach(platform => {
+        const profileUrl = platform.url + username;
+
+        fetch(profileUrl, { method: 'HEAD', mode: 'no-cors' })
+          .then(() => {
+            addResult(platform.name, profileUrl, "Found", "status-found");
+          })
+          .catch(() => {
+            checkWithFetch(profileUrl, platform.name);
+          });
+      });
+    }
+
+    function checkWithFetch(url, name) {
+      fetch(url)
+        .then(response => {
+          if (response.status === 200) {
+            addResult(name, url, "Found", "status-found");
+          } else if (response.status === 404) {
+            addResult(name, url, "Not Found", "status-not-found");
+          } else {
+            addResult(name, url, "Unknown/Error", "status-error");
+          }
+        })
+        .catch(() => {
+          addResult(name, url, "Error", "status-error");
+        });
+    }
+
+    function addResult(name, url, status, statusClass) {
+      const resultsContainer = document.getElementById("results");
+      const div = document.createElement("div");
+      div.className = `result-item ${statusClass}`;
+      div.innerHTML = `<strong>${name}:</strong> <a href="${url}" target="_blank">${url}</a><br>Status: ${status}`;
+      resultsContainer.appendChild(div);
+      foundResults.push({ platform: name, url: url, status: status });
+    }
+
+    function exportJSON() {
+      const json = JSON.stringify(foundResults, null, 2);
+      const blob = new Blob([json], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "social_profiles.json";
+      a.click();
+    }
+  </script>
+</body>
+</html>

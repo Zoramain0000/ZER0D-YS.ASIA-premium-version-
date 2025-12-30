@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Advanced IPv6 Tracker</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: #ff0000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px;
+    }
+    h1 {
+      color: #ff0000;
+      margin-bottom: 20px;
+    }
+    input[type="text"] {
+      width: 100%;
+      max-width: 600px;
+      padding: 12px 18px;
+      font-size: 16px;
+      border: none;
+      border-radius: 6px;
+      background: #22222202;
+      color: #ff0000;
+      margin-bottom: 12px;
+    }
+    button {
+      padding: 10px 18px;
+      font-size: 16px;
+      border: none;
+      border-radius: 6px;
+      background: #ff0000;
+      color: #0cff5d;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background: #00000044;
+    }
+    .output {
+      width: 100%;
+      max-width: 700px;
+      margin-top: 30px;
+      background: #1e1e1e49;
+      border-radius: 8px;
+      padding: 20px;
+      font-family: monospace;
+      font-size: 14px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    #map {
+      width: 100%;
+      max-width: 700px;
+      height: 400px;
+      margin-top: 20px;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .error {
+      color: #ff0000;
+    }
+    @media (max-width: 600px) {
+      input[type="text"], .output {
+        font-size: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Advanced IPv6 Tracker</h1>
+  <input type="text" id="ipv6Input" placeholder="Enter IPv6 address (e.g., 2001:4860:4860::8888)" />
+  <button onclick="trackIPv6()">Track IPv6</button>
+
+  <div class="output" id="outputArea">Results will appear here...</div>
+  <div id="map"></div>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    let map;
+    let marker;
+
+    function isValidIPv6(ip) {
+      const ipv6Regex = /^(([0-9a-fA-F]{1,4}):){7}([0-9a-fA-F]{1,4})$|^(([0-9a-fA-F]{1,4}):){1,7}:$|^(([0-9a-fA-F]{1,4}):){1,6}:([0-9a-fA-F]{1,4})$|^(([0-9a-fA-F]{1,4}):){1,5}(:[0-9a-fA-F]{1,4}){1,2}$|^(([0-9a-fA-F]{1,4}):){1,4}(:[0-9a-fA-F]{1,4}){1,3}$|^(([0-9a-fA-F]{1,4}):){1,3}(:[0-9a-fA-F]{1,4}){1,4}$|^(([0-9a-fA-F]{1,4}):){1,2}(:[0-9a-fA-F]{1,4}){1,5}$|^([0-9a-fA-F]{1,4}):((:[0-9a-fA-F]{1,4}){1,6})$|^:((:[0-9a-fA-F]{1,4}){1,7}|:)$|^fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}$|::(ffff(:0{1,4}){0,1}:){0,1}(([0-9]{1,3}\.){3}[0-9]{1,3})$|^([0-9a-fA-F]{1,4}:){1,4}:(([0-9]{1,3}\.){3}[0-9]{1,3})$/;
+      return ipv6Regex.test(ip);
+    }
+
+    function classifyIPv6(ip) {
+      if (ip === "::1") return "Loopback address (::1)";
+      if (ip === "::") return "Unspecified address (::)";
+      if (ip.startsWith("fe80")) return "Link-local address (fe80::/10)";
+      if (ip.startsWith("ff")) return "Multicast address (ff00::/8)";
+      if (/^200[0-9a-fA-F]|^2[1-9][0-9a-fA-F]/.test(ip)) return "Global unicast address (2000::/3)";
+      return "Special/Unknown type";
+    }
+
+    async function fetchGeoInfo(ip) {
+      try {
+        const res = await fetch(`https://ipapi.co/${ip}/json/`);
+        const data = await res.json();
+        if (data.error || !data.latitude || !data.longitude) {
+          return { error: true, message: "No geolocation data found." };
+        }
+        return {
+          country: data.country_name,
+          city: data.city,
+          region: data.region,
+          org: data.org,
+          asn: data.asn,
+          lat: data.latitude,
+          lon: data.longitude,
+        };
+      } catch {
+        return { error: true, message: "Error fetching geolocation data." };
+      }
+    }
+
+    async function trackIPv6() {
+      const ip = document.getElementById("ipv6Input").value.trim();
+      const output = document.getElementById("outputArea");
+      output.innerText = "Processing...";
+      
+      if (!isValidIPv6(ip)) {
+        output.innerHTML = `<span class="error">Invalid IPv6 address format.</span>`;
+        return;
+      }
+
+      const type = classifyIPv6(ip);
+      const geo = await fetchGeoInfo(ip);
+
+      if (geo.error) {
+        output.innerHTML = `<span class="error">${geo.message}</span>`;
+        return;
+      }
+
+      output.innerText = `
+IPv6 Address: ${ip}
+Type: ${type}
+------------------------
+Geolocation Info:
+Country: ${geo.country}
+City: ${geo.city}
+Region: ${geo.region}
+Org: ${geo.org}
+ASN: ${geo.asn}
+Latitude: ${geo.lat}
+Longitude: ${geo.lon}
+      `.trim();
+
+      // Show location on map
+      if (!map) {
+        map = L.map('map').setView([geo.lat, geo.lon], 10);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+      } else {
+        map.setView([geo.lat, geo.lon], 10);
+        if (marker) map.removeLayer(marker);
+      }
+
+      marker = L.marker([geo.lat, geo.lon]).addTo(map).bindPopup(`<b>${ip}</b><br>${geo.city}, ${geo.country}`).openPopup();
+    }
+  </script>
+</body>
+</html>

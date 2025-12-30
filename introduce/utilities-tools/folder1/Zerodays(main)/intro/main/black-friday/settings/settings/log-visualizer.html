@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>📊 Device Inspector</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Courier New', monospace;
+      background: #111 url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s') ;
+      color: red;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    header, footer {
+      background: rgba(0, 0, 0, 0.5);
+      padding: 15px;
+      text-align: center;
+      color: red;
+      font-weight: bold;
+      border-bottom: 1px solid red;
+    }
+    footer {
+      border-top: 1px solid red;
+    }
+    main {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      background: rgba(0,0,0,0.5);
+    }
+    h2 {
+      color: red;
+      margin-bottom: 10px;
+    }
+    .info-box {
+      border: 1px solid red;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      background: rgba(0,0,0,0.5);
+    }
+    .info-label {
+      color: #0fc;
+    }
+    canvas {
+      display: block;
+background: rgba(0,0,0,0.5);
+      border: 2px solid red;
+      margin-top: 20px;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body>
+  <header>📊 Advanced Device Inspector</header>
+  <main>
+    <h2>🧠 System & Hardware Info</h2>
+    <div class="info-box"><span class="info-label">Device Type:</span> <span id="deviceType"></span></div>
+    <div class="info-box"><span class="info-label">User Agent:</span> <span id="ua"></span></div>
+    <div class="info-box"><span class="info-label">Platform:</span> <span id="platform"></span></div>
+    <div class="info-box"><span class="info-label">Language:</span> <span id="lang"></span></div>
+    <div class="info-box"><span class="info-label">Screen Size:</span> <span id="screen"></span></div>
+    <div class="info-box"><span class="info-label">Window Size:</span> <span id="window"></span></div>
+    <div class="info-box"><span class="info-label">Pixel Ratio:</span> <span id="dpr"></span></div>
+    <div class="info-box"><span class="info-label">CPU Threads:</span> <span id="cpu"></span></div>
+    <div class="info-box"><span class="info-label">Memory (RAM):</span> <span id="mem"></span></div>
+    <div class="info-box"><span class="info-label">Timezone:</span> <span id="tz"></span></div>
+    <div class="info-box"><span class="info-label">Battery:</span> <span id="battery"></span></div>
+
+    <h2>🎮 FPS Test</h2>
+    <div class="info-box"><span class="info-label">Live FPS:</span> <span id="fps">0</span> FPS</div>
+    <canvas id="fpsCanvas" width="300" height="150"></canvas>
+  </main>
+  <footer>© 2025 ZeroDayAI | No backend required</footer>
+
+  <script>
+    // Basic device info
+    document.getElementById('ua').textContent = navigator.userAgent;
+    document.getElementById('platform').textContent = navigator.platform || 'N/A';
+    document.getElementById('lang').textContent = navigator.language;
+    document.getElementById('screen').textContent = `${screen.width} x ${screen.height}`;
+    document.getElementById('window').textContent = `${window.innerWidth} x ${window.innerHeight}`;
+    document.getElementById('dpr').textContent = window.devicePixelRatio;
+    document.getElementById('cpu').textContent = navigator.hardwareConcurrency || 'N/A';
+    document.getElementById('mem').textContent = navigator.deviceMemory ? navigator.deviceMemory + ' GB' : 'N/A';
+    document.getElementById('tz').textContent = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Unknown';
+
+    // Device type detection
+    const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+    document.getElementById('deviceType').textContent = isMobile ? "📱 Mobile / Tablet" : "🖥️ Desktop / Laptop";
+
+    // Battery info
+    if ('getBattery' in navigator) {
+      navigator.getBattery().then(bat => {
+        const percent = Math.round(bat.level * 100);
+        const charging = bat.charging ? '⚡ Charging' : '🔋 Not Charging';
+        document.getElementById('battery').textContent = `${percent}% - ${charging}`;
+      });
+    } else {
+      document.getElementById('battery').textContent = "Not supported.";
+    }
+
+    // FPS test logic
+    const fpsText = document.getElementById("fps");
+    const canvas = document.getElementById("fpsCanvas");
+    const ctx = canvas.getContext("2d");
+    let lastTime = performance.now(), frameCount = 0, fps = 0;
+
+    function drawFPSGraph() {
+      ctx.fillStyle = "#000";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "red";
+      ctx.font = "16px Courier New";
+      ctx.fillText(`FPS: ${fps}`, 10, 25);
+      ctx.fillRect(10, 130 - fps, 10, fps); // visual bar
+    }
+
+    function updateFPS() {
+      const now = performance.now();
+      frameCount++;
+      if (now - lastTime >= 1000) {
+        fps = frameCount;
+        fpsText.textContent = fps;
+        frameCount = 0;
+        lastTime = now;
+        drawFPSGraph();
+      }
+      requestAnimationFrame(updateFPS);
+    }
+    updateFPS();
+  </script>
+</body>
+</html>

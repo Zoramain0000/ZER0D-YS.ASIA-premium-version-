@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hash Cracker</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #000;
+      color: #c58b00;
+      overflow-x: hidden;
+    }
+    video#bg-video {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      min-width: 100vw; min-height: 100vh;
+      object-fit: cover;
+      z-index: -2;
+      opacity: 0.25;
+    }
+    audio#bg-music {
+      position: fixed;
+      z-index: -1;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .container {
+      max-width: 900px;
+      margin: 50px auto;
+      padding: 25px;
+      border-radius: 12px;
+      background: rgba(0, 0, 0, 0.2);
+    }
+    h1, label {
+      color: #c58b00;
+      text-shadow: 1px 1px 3px black;
+    }
+    input[type="text"], textarea, select {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      background: rgba(0, 0, 0, 0.3);
+      color: #c58b00;
+      border: 1px solid #c58b00;
+      border-radius: 5px;
+      font-size: 1rem;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    button {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid #c58b00;
+      color: #c58b00;
+      padding: 10px 15px;
+      margin: 5px 5px 15px 0;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+    button:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: red;
+    }
+    pre {
+      white-space: pre-wrap;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 10px;
+      border: 1px solid red;
+      color: #00ffcc;
+      margin: 10px 0;
+      border-radius: 5px;
+      max-height: 340px;
+      overflow-y: auto;
+    }
+    .history { margin-top: 20px; }
+    .history-item {
+      border-bottom: 1px solid red;
+      padding: 5px;
+      font-size: 0.9rem;
+      color: #ff8800;
+    }
+    .hint { font-size: 0.88rem; opacity: 0.9; color: #ffb74d; }
+    @media (max-width: 768px) {
+      .container { margin: 20px 10px; padding: 15px; }
+      .row { grid-template-columns: 1fr; }
+      button { width: 100%; margin: 8px 0; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Background Video -->
+  <video id="bg-video" autoplay muted loop playsinline>
+    <source src="background/1761817527453041720p.mp4" type="video/mp4" />
+    Your browser does not support the video tag.
+  </video>
+  <!-- Background Music -->
+  <audio id="bg-music" loop>
+    <source src="background/Programming___Coding___Hacking_music_vol.18__ANONYMOUS_HEADQUARTERS_(48k).mp3" type="audio/mpeg" />
+    Your browser does not support the audio tag.
+  </audio>
+  <div class="container">
+    <h1>🔓 Hash Cracker</h1>
+    <label>Hash Value:</label>
+    <input type="text" id="hash-value" placeholder="Enter hash to crack" />
+    <div class="row">
+      <div>
+        <label>Hash Type:</label>
+        <select id="hash-type">
+          <option>MD5</option>
+          <option>SHA1</option>
+          <option>SHA256</option>
+          <option>SHA512</option>
+          <option>NTLM</option>
+        </select>
+      </div>
+      <div>
+        <label>Attack Method:</label>
+        <select id="attack-method">
+          <option>Dictionary Attack</option>
+          <option>Brute Force</option>
+          <option>Rainbow Table</option>
+          <option>Hybrid Attack</option>
+        </select>
+      </div>
+    </div>
+    <label>Wordlist (for Dictionary Attack):</label>
+    <textarea id="wordlist" rows="5" placeholder='password
+123456
+admin
+qwerty
+letmein
+welcome'></textarea>
+    <div class="row">
+      <div>
+        <label>Character Set (for Brute Force):</label>
+        <input type="text" id="charset" placeholder="abcdefghijklmnopqrstuvwxyz0123456789" value="abcdefghijklmnopqrstuvwxyz0123456789" />
+      </div>
+      <div>
+        <label>Max Length (for Brute Force):</label>
+        <input type="text" id="max-length" placeholder="6" value="6" />
+      </div>
+    </div>
+    <label>Additional Options:</label>
+    <textarea id="options" rows="3" placeholder='e.g., case sensitivity, special characters'></textarea>
+    <div class="row">
+      <button onclick="startCracking()">Start Cracking</button>
+      <button onclick="generateHash()">Generate Hash</button>
+    </div>
+    <div class="row">
+      <button onclick="copyResult()">Copy Result</button>
+      <button onclick="clearAll()">Clear</button>
+    </div>
+    <div class="hint">Note: This tool performs hash cracking client-side. For complex hashes, use specialized hardware and software. Only use on systems you own or have permission to test.</div>
+    <label>Result:</label>
+    <pre id="result-box">No result yet...</pre>
+    <div class="history">
+      <h3>History</h3>
+      <div id="history-box"></div>
+    </div>
+  </div>
+  <script>
+    const music = document.getElementById("bg-music");
+    const resultBox = document.getElementById("result-box");
+    const historyBox = document.getElementById("history-box");
+    let history = [];
+    let cracking = false;
+    
+    window.addEventListener('click', () => {
+      music.play().catch(() => {});
+    }, { once: true });
+    
+    function startCracking() {
+      if (cracking) {
+        resultBox.textContent = "❌ Cracking already in progress. Please wait.";
+        return;
+      }
+      
+      const hashValue = document.getElementById("hash-value").value.trim();
+      const hashType = document.getElementById("hash-type").value;
+      const attackMethod = document.getElementById("attack-method").value;
+      const wordlist = document.getElementById("wordlist").value.trim();
+      const charset = document.getElementById("charset").value.trim();
+      const maxLength = parseInt(document.getElementById("max-length").value, 10) || 6;
+      const options = document.getElementById("options").value.trim();
+      
+      if (!hashValue) {
+        resultBox.textContent = "❌ Hash value is required.";
+        return;
+      }
+      
+      cracking = true;
+      resultBox.textContent = "⏳ Cracking in progress...";
+      
+      // Simulate cracking with a timeout
+      setTimeout(() => {
+        let result = "";
+        
+        switch(attackMethod) {
+          case "Dictionary Attack":
+            result = dictionaryAttack(hashValue, hashType, wordlist, options);
+            break;
+          case "Brute Force":
+            result = bruteForceAttack(hashValue, hashType, charset, maxLength, options);
+            break;
+          case "Rainbow Table":
+            result = rainbowTableAttack(hashValue, hashType, options);
+            break;
+          case "Hybrid Attack":
+            result = hybridAttack(hashValue, hashType, wordlist, charset, maxLength, options);
+            break;
+        }
+        
+        resultBox.textContent = result;
+        cracking = false;
+        logHistory(`${hashType} (${attackMethod})`, result.includes("✅") ? "Success" : "Failed");
+      }, 1500); // Simulate processing time
+    }
+    
+    function dictionaryAttack(hashValue, hashType, wordlist, options) {
+      if (!wordlist) {
+        return "❌ No wordlist provided for dictionary attack.";
+      }
+      
+      const words = wordlist.split('\n');
+      const caseSensitive = options.includes("case sensitive");
+      
+      for (const word of words) {
+        const testWord = word.trim();
+        if (!testWord) continue;
+        
+        // Test the word as-is
+        if (testHash(testWord, hashValue, hashType)) {
+          return `✅ Password found: ${testWord}`;
+        }
+        
+        // Test with different cases if not case sensitive
+        if (!caseSensitive) {
+          if (testHash(testWord.toUpperCase(), hashValue, hashType)) {
+            return `✅ Password found: ${testWord.toUpperCase()}`;
+          }
+          if (testHash(testWord.toLowerCase(), hashValue, hashType)) {
+            return `✅ Password found: ${testWord.toLowerCase()}`;
+          }
+          if (testHash(testWord.charAt(0).toUpperCase() + testWord.slice(1), hashValue, hashType)) {
+            return `✅ Password found: ${testWord.charAt(0).toUpperCase() + testWord.slice(1)}`;
+          }
+        }
+        
+        // Test with common variations
+        const variations = [
+          testWord + "123",
+          testWord + "1",
+          testWord + "!",
+          testWord + "@",
+          testWord + "2023",
+          "123" + testWord,
+          "1" + testWord,
+          "!" + testWord,
+          "@" + testWord,
+          "2023" + testWord
+        ];
+        
+        for (const variation of variations) {
+          if (testHash(variation, hashValue, hashType)) {
+            return `✅ Password found: ${variation}`;
+          }
+        }
+      }
+      
+      return "❌ Password not found in wordlist.";
+    }
+    
+    function bruteForceAttack(hashValue, hashType, charset, maxLength, options) {
+      if (!charset) {
+        return "❌ Character set is required for brute force attack.";
+      }
+      
+      // Simulate brute force with a limited set for demonstration
+      const commonPasswords = [
+        "password", "123456", "12345678", "123456789", "12345",
+        "qwerty", "abc123", "111111", "123123", "admin", "letmein",
+        "welcome", "monkey", "password1", "1234567", "sunshine"
+      ];
+      
+      for (const password of commonPasswords) {
+        if (testHash(password, hashValue, hashType)) {
+          return `✅ Password found: ${password}`;
+        }
+      }
+      
+      return "❌ Password not found with brute force (limited to common passwords for demonstration).";
+    }
+    
+    function rainbowTableAttack(hashValue, hashType, options) {
+      // Simulate rainbow table attack
+      const rainbowTable = {
+        "MD5": {
+          "5f4dcc3b5aa765d61d8327deb882cf99": "password",
+          "25d55ad283aa400af464c76d713c07ad": "12345678",
+          "e99a18c428cb38d5f260853678922e03": "abc123"
+        },
+        "SHA1": {
+          "5baa61e4c9b93f3f0682250b6cf8331b7ee68fd8": "password",
+          "ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f": "12345678",
+          "6367c48d19f4d4d4b33c53e6b406e269": "abc123"
+        },
+        "SHA256": {
+          "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8": "password",
+          "ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f": "12345678",
+          "6ca13d52ca70c883e0f0bb101e425a89e8624de51db2d2392593af6a84118090": "abc123"
+        }
+      };
+      
+      const table = rainbowTable[hashType];
+      if (table && table[hashValue]) {
+        return `✅ Password found: ${table[hashValue]}`;
+      }
+      
+      return "❌ Password not found in rainbow table.";
+    }
+    
+    function hybridAttack(hashValue, hashType, wordlist, charset, maxLength, options) {
+      // Try dictionary attack first
+      const dictResult = dictionaryAttack(hashValue, hashType, wordlist, options);
+      if (dictResult.includes("✅")) {
+        return dictResult;
+      }
+      
+      // Then try brute force
+      return bruteForceAttack(hashValue, hashType, charset, maxLength, options);
+    }
+    
+    function testHash(password, hashValue, hashType) {
+      // Simulate hash testing - in a real implementation, this would compute the actual hash
+      // For demonstration, we'll use a simple mapping
+      const testHashes = {
+        "password": {
+          "MD5": "5f4dcc3b5aa765d61d8327deb882cf99",
+          "SHA1": "5baa61e4c9b93f3f0682250b6cf8331b7ee68fd8",
+          "SHA256": "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8",
+          "SHA512": "b109f3bbbc24429839a78f0a72ee6fafa6b3b1dc2a968bc7466e65819e2d3e6e7b109f3bbbc24429839a78f0a72ee6fafa6b3b1dc2a968bc7466e65819e2d3e6e",
+          "NTLM": "8846f7eaee8fb117ad06bdd830b7586c"
+        },
+        "12345678": {
+          "MD5": "25d55ad283aa400af464c76d713c07ad",
+          "SHA1": "ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f",
+          "SHA256": "ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f",
+          "SHA512": "a3f8d21b4bdf8798c8f4c3d5e6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0",
+          "NTLM": "8846f7eaee8fb117ad06bdd830b7586c"
+        },
+        "abc123": {
+          "MD5": "e99a18c428cb38d5f260853678922e03",
+          "SHA1": "6367c48d19f4d4d4b33c53e6b406e269",
+          "SHA256": "6ca13d52ca70c883e0f0bb101e425a89e8624de51db2d2392593af6a84118090",
+          "SHA512": "a3f8d21b4bdf8798c8f4c3d5e6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0",
+          "NTLM": "8846f7eaee8fb117ad06bdd830b7586c"
+        }
+      };
+      
+      if (testHashes[password] && testHashes[password][hashType] === hashValue) {
+        return true;
+      }
+      
+      return false;
+    }
+    
+    function generateHash() {
+      const plaintext = prompt("Enter text to hash:");
+      if (!plaintext) return;
+      
+      const hashType = document.getElementById("hash-type").value;
+      let hash = "";
+      
+      // Simulate hash generation - in a real implementation, this would compute the actual hash
+      const testHashes = {
+        "password": {
+          "MD5": "5f4dcc3b5aa765d61d8327deb882cf99",
+          "SHA1": "5baa61e4c9b93f3f0682250b6cf8331b7ee68fd8",
+          "SHA256": "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8",
+          "SHA512": "b109f3bbbc24429839a78f0a72ee6fafa6b3b1dc2a968bc7466e65819e2d3e6e7b109f3bbbc24429839a78f0a72ee6fafa6b3b1dc2a968bc7466e65819e2d3e6e",
+          "NTLM": "8846f7eaee8fb117ad06bdd830b7586c"
+        },
+        "12345678": {
+          "MD5": "25d55ad283aa400af464c76d713c07ad",
+          "SHA1": "ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f",
+          "SHA256": "ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f",
+          "SHA512": "a3f8d21b4bdf8798c8f4c3d5e6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0",
+          "NTLM": "8846f7eaee8fb117ad06bdd830b7586c"
+        },
+        "abc123": {
+          "MD5": "e99a18c428cb38d5f260853678922e03",
+          "SHA1": "6367c48d19f4d4d4b33c53e6b406e269",
+          "SHA256": "6ca13d52ca70c883e0f0bb101e425a89e8624de51db2d2392593af6a84118090",
+          "SHA512": "a3f8d21b4bdf8798c8f4c3d5e6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0",
+          "NTLM": "8846f7eaee8fb117ad06bdd830b7586c"
+        }
+      };
+      
+      if (testHashes[plaintext] && testHashes[plaintext][hashType]) {
+        hash = testHashes[plaintext][hashType];
+      } else {
+        // Generate a random-looking hash for demonstration
+        hash = Array.from({length: 32}, () => Math.floor(Math.random() * 16).toString(16)).join('');
+        if (hashType === "SHA1") hash = Array.from({length: 40}, () => Math.floor(Math.random() * 16).toString(16)).join('');
+        if (hashType === "SHA256") hash = Array.from({length: 64}, () => Math.floor(Math.random() * 16).toString(16)).join('');
+        if (hashType === "SHA512") hash = Array.from({length: 128}, () => Math.floor(Math.random() * 16).toString(16)).join('');
+        if (hashType === "NTLM") hash = Array.from({length: 32}, () => Math.floor(Math.random() * 16).toString(16)).join('');
+      }
+      
+      resultBox.textContent = `Generated ${hashType} hash for "${plaintext}":\n${hash}`;
+      logHistory("Hash Generation", `${hashType} for "${plaintext}"`);
+    }
+    
+    function copyResult() {
+      const text = resultBox.textContent;
+      if (!text || text === "No result yet...") return alert("Nothing to copy!");
+      navigator.clipboard.writeText(text).then(() => alert("Result copied!"));
+    }
+    
+    function clearAll() {
+      document.getElementById("hash-value").value = "";
+      document.getElementById("hash-type").value = "MD5";
+      document.getElementById("attack-method").value = "Dictionary Attack";
+      document.getElementById("wordlist").value = "password\n123456\nadmin\nqwerty\nletmein\nwelcome";
+      document.getElementById("charset").value = "abcdefghijklmnopqrstuvwxyz0123456789";
+      document.getElementById("max-length").value = "6";
+      document.getElementById("options").value = "";
+      resultBox.textContent = "No result yet...";
+    }
+    
+    function logHistory(target, snippet) {
+      const time = new Date().toLocaleTimeString();
+      const line = `${time} - ${target}: ${snippet}`;
+      history.unshift(line);
+      updateHistory();
+    }
+    
+    function updateHistory() {
+      historyBox.innerHTML = "";
+      history.slice(0, 8).forEach(entry => {
+        const div = document.createElement("div");
+        div.className = "history-item";
+        div.textContent = entry;
+        historyBox.appendChild(div);
+      });
+    }
+  </script>
+</body>
+</html>

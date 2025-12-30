@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>🛰️ Advanced Route Tracker with Export & Live Tracking</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+    }
+    header {
+background: rgba(0, 0, 0, 0.5)
+      padding: 15px;
+      text-align: center;
+      font-size: 22px;
+      font-weight: bold;
+    }
+    #controls {
+      padding: 15px;
+background: rgba(0, 0, 0, 0.5)
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    label {
+      font-weight: bold;
+    }
+    input, select, button, textarea {
+      padding: 8px;
+      border-radius: 6px;
+      border: none;
+      font-size: 15px;
+    }
+    button {
+      background-color: red;
+      color: green;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:hover {
+background: rgba(0, 0, 0, 0.5)
+    }
+    #map {
+      width: 100%;
+      height: 60vh;
+    }
+    #output {
+      padding: 15px;
+background: rgba(0, 0, 0, 0.5)
+    }
+    .highlight {
+      color: red;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+<header>🛰️ Route Tracker — Export, Waypoints, Live GPS</header>
+
+<div id="controls">
+  <label>Start Location:</label>
+  <input id="start" placeholder="e.g. Berlin" />
+
+  <label>Waypoints (optional, one per line):</label>
+  <textarea id="waypoints" rows="3" placeholder="e.g. Leipzig&#10;Nuremberg"></textarea>
+
+  <label>Destination:</label>
+  <input id="end" placeholder="e.g. Munich" />
+
+  <label>Speed (km/h):</label>
+  <select id="speedSelect">
+    <option value="5">Walking (5 km/h)</option>
+    <option value="15">Cycling (15 km/h)</option>
+    <option value="60">Driving (60 km/h)</option>
+    <option value="100">Highway (100 km/h)</option>
+  </select>
+
+  <button onclick="getRoute()">Calculate Route</button>
+  <button onclick="exportGPX()">Export GPX</button>
+  <button onclick="exportKML()">Export KML</button>
+  <button onclick="startLiveTracking()">Start Live Tracking</button>
+</div>
+
+<div id="map"></div>
+
+<div id="output">
+  <p><strong>Status:</strong> <span class="highlight">Waiting for input...</span></p>
+</div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+  const apiKey = '5b3ce3597851110001cf62480b3cfbd5730140e486c780a3fbe741e8'; // 🔑 Add your key here
+  let map = L.map('map').setView([51.1657, 10.4515], 6);
+  let routeLayer, markerLayer;
+  let routeCoords = [];
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
+
+  async function getCoordinates(place) {
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(place)}`);
+    const data = await res.json();
+    if (!data.length) throw new Error("Not found: " + place);
+    return [parseFloat(data[0].lon), parseFloat(data[0].lat)];
+  }
+
+  async function getRoute() {
+    const start = document.getElementById("start").value.trim();
+    const end = document.getElementById("end").value.trim();
+    const waypointsRaw = document.getElementById("waypoints").value.trim().split("\n").filter(w => w.trim());
+    const speed = parseFloat(document.getElementById("speedSelect").value);
+
+    if (!start || !end) return alert("Start and destination required.");
+
+    try {
+      const coords = [await getCoordinates(start)];
+      for (const wp of waypointsRaw) coords.push(await getCoordinates(wp));
+      coords.push(await getCoordinates(end));
+
+      const routeRes = await fetch("https://api.openrouteservice.org/v2/directions/driving-car/geojson", {
+        method: "POST",
+        headers: {
+          "Authorization": apiKey,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ coordinates: coords })
+      });
+
+      const geojson = await routeRes.json();
+      routeCoords = geojson.features[0].geometry.coordinates;
+
+      if (routeLayer) map.removeLayer(routeLayer);
+      routeLayer = L.geoJSON(geojson).addTo(map);
+      map.fitBounds(routeLayer.getBounds());
+
+      const dist = geojson.features[0].properties.summary.distance / 1000;
+      const hours = dist / speed;
+      const days = hours / 24;
+
+      document.getElementById("output").innerHTML = `
+        <p><strong>Route:</strong> ${start} → ${end}</p>
+        <p>Distance: <span class="highlight">${dist.toFixed(2)} km</span></p>
+        <p>ETA: <span class="highlight">${hours.toFixed(2)} hours</span> (~<span class="highlight">${days.toFixed(2)} days</span> at ${speed} km/h)</p>
+      `;
+    } catch (e) {
+      console.error(e);
+      alert("Failed to fetch route: " + e.message);
+    }
+  }
+
+  function exportGPX() {
+    if (!routeCoords.length) return alert("No route to export.");
+    const gpx = `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="OSM Route Tracker">
+<trk><name>Route</name><trkseg>
+${routeCoords.map(([lon, lat]) => `<trkpt lat="${lat}" lon="${lon}"></trkpt>`).join("\n")}
+</trkseg></trk>
+</gpx>`;
+    downloadFile("route.gpx", gpx);
+  }
+
+  function exportKML() {
+    if (!routeCoords.length) return alert("No route to export.");
+    const kml = `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2"><Document><Placemark>
+<name>Route</name><LineString><coordinates>
+${routeCoords.map(([lon, lat]) => `${lon},${lat},0`).join("\n")}
+</coordinates></LineString></Placemark></Document></kml>`;
+    downloadFile("route.kml", kml);
+  }
+
+  function downloadFile(filename, content) {
+    const blob = new Blob([content], {type: 'text/xml'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function startLiveTracking() {
+    if (!navigator.geolocation) return alert("Geolocation not supported.");
+    if (markerLayer) map.removeLayer(markerLayer);
+
+    markerLayer = L.marker([0, 0], { icon: L.icon({
+      iconUrl: 'https://cdn-icons-png.flaticon.com/512/684/684908.png',
+      iconSize: [25, 25]
+    }) }).addTo(map);
+
+    navigator.geolocation.watchPosition(
+      pos => {
+        const { latitude, longitude } = pos.coords;
+        markerLayer.setLatLng([latitude, longitude]);
+        map.setView([latitude, longitude], 14);
+      },
+      err => alert("GPS error: " + err.message),
+      { enableHighAccuracy: true }
+    );
+  }
+</script>
+
+</body>
+</html>

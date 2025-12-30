@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>🎂 Advanced Age Calculator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .container {
+background: rgba(0,0,0,0.5);
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+      max-width: 500px;
+      width: 100%;
+    }
+    h1 {
+      text-align: center;
+      color: red;
+      margin-bottom: 20px;
+    }
+    input[type="date"], select {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid red;
+      font-size: 1rem;
+      margin-bottom: 10px;
+background: rgba(0,0,0,0.5);
+color: red;
+    }
+    button {
+      margin-top: 10px;
+      width: 100%;
+      padding: 12px;
+      font-size: 1rem;
+      background: red;
+      color: green;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:hover {
+background: rgba(0,0,0,0.5);
+    }
+    .result {
+      margin-top: 20px;
+background: rgba(0,0,0,0.5);
+      padding: 15px;
+      border-radius: 10px;
+      font-size: 1rem;
+      line-height: 1.5;
+    }
+    .actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .actions button {
+      flex: 1;
+      padding: 10px;
+      font-size: 0.9rem;
+    }
+    .footer {
+      text-align: center;
+      font-size: 0.85rem;
+      margin-top: 20px;
+      color: red;
+    }
+    div {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎂 Advanced Age Calculator</h1>
+    <input type="date" id="birthdate" />
+    <select id="language">
+      <option value="en">🌐 English</option>
+      <option value="es">🇪🇸 Español</option>
+      <option value="fr">🇫🇷 Français</option>
+    </select>
+    <button onclick="calculateAge()">Calculate Age</button>
+
+    <div class="result" id="result"></div>
+    <div class="actions">
+      <button onclick="exportTxt()">📄 TXT</button>
+      <button onclick="exportPDF()">🧾 PDF</button>
+      <button onclick="exportJSON()">📦 JSON</button>
+    </div>
+    <div class="footer">🌙 Moon Cycles & Planetary Age – Offline Ready</div>
+  </div>
+
+  <script>
+    const messages = {
+      en: {
+        yourAge: "Your Age",
+        totalLived: "Total Time Lived",
+        nextBirthday: "Next Birthday In",
+        zodiac: "Zodiac Sign",
+        planetAge: "Age on Other Planets",
+        lunarAge: "Lunar Age (moon cycles)"
+      },
+      es: {
+        yourAge: "Tu Edad",
+        totalLived: "Tiempo Total Vivido",
+        nextBirthday: "Próximo Cumpleaños En",
+        zodiac: "Signo del Zodiaco",
+        planetAge: "Edad en Otros Planetas",
+        lunarAge: "Edad Lunar (ciclos)"
+      },
+      fr: {
+        yourAge: "Votre Âge",
+        totalLived: "Temps Total Vécu",
+        nextBirthday: "Prochain Anniversaire Dans",
+        zodiac: "Signe du Zodiaque",
+        planetAge: "Âge sur d'autres planètes",
+        lunarAge: "Âge Lunaire (cycles)"
+      }
+    };
+
+    function calculateAge() {
+      const birthInput = document.getElementById('birthdate').value;
+      const lang = document.getElementById('language').value;
+      const msg = messages[lang];
+      const resultBox = document.getElementById('result');
+
+      if (!birthInput) {
+        resultBox.innerHTML = "Please select your date of birth.";
+        return;
+      }
+
+      const birthDate = new Date(birthInput);
+      const now = new Date();
+
+      if (birthDate > now) {
+        resultBox.innerHTML = "Birthdate is in the future!";
+        return;
+      }
+
+      let years = now.getFullYear() - birthDate.getFullYear();
+      let months = now.getMonth() - birthDate.getMonth();
+      let days = now.getDate() - birthDate.getDate();
+
+      if (days < 0) {
+        months--;
+        days += new Date(now.getFullYear(), now.getMonth(), 0).getDate();
+      }
+
+      if (months < 0) {
+        years--;
+        months += 12;
+      }
+
+      const diffTime = now - birthDate;
+      const totalDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      const totalWeeks = Math.floor(totalDays / 7);
+      const totalMonths = years * 12 + months;
+      const lunarCycles = Math.floor(totalDays / 29.53);
+
+      const nextBirthday = new Date(now.getFullYear(), birthDate.getMonth(), birthDate.getDate());
+      if (nextBirthday < now) nextBirthday.setFullYear(now.getFullYear() + 1);
+      const daysUntilBday = Math.floor((nextBirthday - now) / (1000 * 60 * 60 * 24));
+
+      const zodiac = getZodiac(birthDate.getMonth() + 1, birthDate.getDate());
+      const planetAges = getPlanetAges(totalDays);
+      const planetList = planetAges.map(p => `${p.name}: ${p.age.toFixed(2)} y`).join('<br>');
+
+      const resultHTML = `
+        <strong>${msg.yourAge}:</strong><br>
+        ${years} year(s), ${months} month(s), ${days} day(s)<br><br>
+        <strong>${msg.totalLived}:</strong><br>
+        ${totalDays} days<br>
+        ${totalWeeks} weeks<br>
+        ${totalMonths} months<br>
+        ${msg.lunarAge}: ${lunarCycles} 🌕<br><br>
+        <strong>${msg.nextBirthday}:</strong><br>
+        ${daysUntilBday} day(s)<br><br>
+        <strong>${msg.zodiac}:</strong><br>
+        ${zodiac}<br><br>
+        <strong>${msg.planetAge}:</strong><br>
+        ${planetList}
+      `;
+      resultBox.innerHTML = resultHTML;
+      localStorage.setItem("ageResult", resultHTML);
+    }
+
+    function getZodiac(month, day) {
+      const zodiacs = [
+        { sign: "Capricorn", lastDay: 19 }, { sign: "Aquarius", lastDay: 18 },
+        { sign: "Pisces", lastDay: 20 }, { sign: "Aries", lastDay: 19 },
+        { sign: "Taurus", lastDay: 20 }, { sign: "Gemini", lastDay: 20 },
+        { sign: "Cancer", lastDay: 22 }, { sign: "Leo", lastDay: 22 },
+        { sign: "Virgo", lastDay: 22 }, { sign: "Libra", lastDay: 22 },
+        { sign: "Scorpio", lastDay: 21 }, { sign: "Sagittarius", lastDay: 21 },
+        { sign: "Capricorn", lastDay: 31 }
+      ];
+      return (day <= zodiacs[month - 1].lastDay)
+        ? zodiacs[month - 1].sign
+        : zodiacs[month].sign;
+    }
+
+    function getPlanetAges(days) {
+      const earthYears = days / 365.25;
+      const orbits = {
+        Mercury: 0.2408467,
+        Venus: 0.61519726,
+        Earth: 1,
+        Mars: 1.8808158,
+        Jupiter: 11.862615,
+        Saturn: 29.447498,
+        Uranus: 84.016846,
+        Neptune: 164.79132
+      };
+      return Object.entries(orbits).map(([name, orbit]) => ({
+        name,
+        age: earthYears / orbit
+      }));
+    }
+
+    function exportTxt() {
+      const data = document.getElementById("result").innerText;
+      const blob = new Blob([data], { type: "text/plain" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "age-info.txt";
+      a.click();
+    }
+
+    function exportPDF() {
+      const data = document.getElementById("result").innerText;
+      const blob = new Blob([data], { type: "application/pdf" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "age-info.pdf";
+      a.click();
+    }
+
+    function exportJSON() {
+      const content = document.getElementById("result").innerText;
+      const json = { ageInfo: content };
+      const blob = new Blob([JSON.stringify(json, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "age-info.json";
+      a.click();
+    }
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js');
+    }
+  </script>
+</body>
+</html>

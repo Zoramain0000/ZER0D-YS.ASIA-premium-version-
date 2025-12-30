@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>ZeroDay Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      font-family: 'Courier New', monospace;
+      background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: #00ffcc;
+      overflow: hidden;
+    }
+
+    h2 {
+      color: red;
+    }
+
+    #sidebar {
+      width: 250px;
+      background: rgba(0, 0, 0, 0.5);
+      border-right: 2px solid red;
+      display: flex;
+      flex-direction: column;
+      transition: width 0.3s ease;
+    }
+
+    #sidebar.collapsed {
+      width: 60px;
+    }
+
+    #sidebar h2 {
+      text-align: center;
+      font-size: 1.2em;
+      margin: 10px 0;
+    }
+
+    #sidebar .menu-item {
+      padding: 12px 20px;
+      cursor: pointer;
+      border-bottom: 1px solid #111;
+      color: red;
+      transition: background 0.2s;
+      white-space: nowrap;
+      text-decoration: none;
+    }
+
+    #sidebar .menu-item:hover {
+      background: rgba(0, 0, 0, 0.5);
+    }
+
+    #toggle-btn {
+      background-color: red;
+      color: #000;
+      border: none;
+      padding: 10px;
+      cursor: pointer;
+      font-weight: bold;
+      width: 100%;
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+      background: rgba(0, 0, 0, 0.5);
+    }
+
+    header {
+      color: red;
+      text-align: center;
+      font-size: 1.5em;
+      border-bottom: 2px solid red;
+      margin-bottom: 20px;
+    }
+
+    #content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px;
+      background: rgba(0, 0, 0, 0.5);
+    }
+
+    footer {
+      background: rgba(0, 0, 0, 0.5);
+      color: red;
+      font-size: 0.8em;
+      text-align: center;
+      padding: 8px;
+      border-top: 1px solid;
+    }
+
+    .warning {
+      color: yellow;
+      font-weight: bold;
+    }
+
+    .security-option {
+      margin: 10px 0;
+    }
+
+    .security-input {
+      padding: 10px;
+      margin-bottom: 10px;
+      border: 1px solid red;
+      border-radius: 5px;
+      color: green;
+      background: #000;
+    }
+
+    .security-button {
+      padding: 10px;
+      background-color: red;
+      color: #000;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .security-button:hover {
+      background: rgba(0, 0, 0, 0.5);
+    }
+
+    #login-area {
+      display: none;
+      flex-direction: column;
+      padding: 20px;
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid red;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div id="sidebar">
+    <button id="toggle-btn">☰</button>
+    <a class="menu-item" href="#" onclick="showDashboard()">Dashboard</a>
+    <a class="menu-item" href="#" onclick="startNewSession()">Default mode</a>
+    <a class="menu-item" href="#" onclick="showSettings()">Settings</a>
+    <a class="menu-item" href="#" onclick="showSecurity()">Security</a>
+    <a class="menu-item" href="#" onclick="showDeviceHistory()">Device History</a>
+    <a class="menu-item" href="#" onclick="showGuidelines()">Guidelines</a>
+  </div>
+
+  <main>
+    <header>ZeroDayBox.ai v10</header>
+    <div id="content">
+      <h2>Welcome to the ZeroDay Dashboard!</h2>
+      <p>Please select an option from the sidebar.</p>
+    </div>
+    <footer>
+      For educational and ethical use only. &copy; 2025 ZeroDayAI
+    </footer>
+  </main>
+
+  <script>
+    const content = document.getElementById("content");
+    const sidebar = document.getElementById("sidebar");
+    const toggleBtn = document.getElementById("toggle-btn");
+
+    let isAuthenticated = false;
+    let username = localStorage.getItem('username') || "admin";
+    let password = localStorage.getItem('password') || "1234";
+    let twoFactorEnabled = false;
+    let securityLogs = [];
+    let publicIP = "";
+
+    async function fetchPublicIP() {
+      try {
+        const response = await fetch('https://api.ipify.org?format=json');
+        const data = await response.json();
+        publicIP = data.ip;
+      } catch (error) {
+        console.error("Error fetching IP:", error);
+      }
+    }
+
+    function authenticate(user, pass) {
+      return user === username && pass === password;
+    }
+
+    function showDashboard() {
+      if (!isAuthenticated) {
+        promptLogin();
+        return;
+      }
+      content.innerHTML =`
+      <h2>Dashboard</h2><p>This is your dashboard overview.</p>
+      <p>this is a project test for cybersecurity</p>
+      <p>build by zora the hacker</p>
+`
+      ;
+    }
+
+    function startNewSession() {
+      if (!isAuthenticated) {
+        promptLogin();
+        return;
+      }
+      content.innerHTML =`<h2>New Session</h2><p>Start a new session here.</p>
+                         
+      `;
+    }
+
+    function showSettings() {
+      if (!isAuthenticated) {
+        promptLogin();
+        return;
+      }
+      content.innerHTML = `
+        <h2>Settings</h2>
+        <button class="security-button" onclick="logOut()">Log Out</button>
+        <p>Your experience will be saved automatically.</p>
+      `;
+    }
+
+    function showSecurity() {
+      if (!isAuthenticated) {
+        promptLogin();
+        return;
+      }
+      content.innerHTML = `
+        <h2>Security</h2>
+        <div class="security-option">
+          <h3>Change Password</h3>
+          <input type="password" class="security-input" placeholder="New Password" id="new-password" />
+          <input type="text" class="security-input" placeholder="New Username" id="new-username" />
+          <button class="security-button" onclick="changePassword()">Change Password</button>
+        </div>
+        <div class="security-option">
+          <h3>Enable Two-Factor Authentication</h3>
+          <button class="security-button" onclick="enableTwoFactor()">Enable 2FA</button>
+        </div>
+        <div class="security-option">
+          <h3>View Security Logs</h3>
+          <div id="security-logs" style="margin-top: 10px;"></div>
+        </div>
+      `;
+      displaySecurityLogs();
+    }
+
+    function changePassword() {
+      const newPassword = document.getElementById("new-password").value;
+      const newUsername = document.getElementById("new-username").value;
+      if (newPassword) {
+        password = newPassword;
+        if (newUsername) {
+          username = newUsername;
+        }
+        localStorage.setItem('username', username);
+        localStorage.setItem('password', password);
+        alert("Credentials changed successfully!");
+        document.getElementById("new-password").value = ""; // Clear input
+        document.getElementById("new-username").value = ""; // Clear input
+      } else {
+        alert("Please enter a new password.");
+      }
+    }
+
+    function enableTwoFactor() {
+      twoFactorEnabled = true;
+      alert("Two-Factor Authentication has been enabled!");
+    }
+
+    function promptLogin() {
+      if (isAuthenticated) return; // Prevent double login prompt
+      const user = prompt("Enter username:");
+      const pass = prompt("Enter password:");
+      if (authenticate(user, pass)) {
+        isAuthenticated = true;
+        logSecurityEvent(`Login attempt from ${user} with IP: ${publicIP}`);
+        showDashboard();
+      } else {
+        alert("username:admin & password:1234");
+      }
+    }
+
+    function logOut() {
+      alert("You have been logged out. Your experience has been saved.");
+      isAuthenticated = false;
+      content.innerHTML =`
+      <h2>Welcome to the ZeroDay Dashboard!</h2><p>Please select an option from the sidebar.</p> 
+      <h1>username:<p> admin </p></h1>
+      <h1>password:<p> 1234</p></h1>
+`
+      ;
+    }
+
+    function logSecurityEvent(event) {
+      securityLogs.push(event);
+      displaySecurityLogs();
+    }
+
+    function displaySecurityLogs() {
+      const logsContainer = document.getElementById("security-logs");
+      if (securityLogs.length > 0) {
+        logsContainer.innerHTML = "<h4>Security Logs:</h4><ul>" + securityLogs.map(log => `<li>${log}</li>`).join('') + "</ul>";
+      } else {
+        logsContainer.innerHTML = "<h4>No security logs available.</h4>";
+      }
+    }
+
+    function showDeviceHistory() {
+      if (!isAuthenticated) {
+        promptLogin();
+        return;
+      }
+      content.innerHTML = `<h2>Device History</h2><p>Current IP: ${publicIP}</p>`;
+    }
+
+    function showGuidelines() {
+      content.innerHTML = `
+        <h2>Guidelines</h2>
+        <p><strong>ZeroDaybox.ai v10</strong> is a powerful and advanced AI chat platform, similar to ChatGPT but with unique features tailored for various applications. This version includes a suite of tools designed for both ethical hacking and cybersecurity education, providing users with the resources to explore the world of hacking responsibly.</p>
+        <p>As the creator of ZeroDaybox.ai v10, I am Zora, a hacker dedicated to promoting ethical practices in technology. Our tools can be utilized for both constructive and destructive purposes, but I encourage you to focus on learning and ethical applications.</p>
+        <p>With ZeroDaybox.ai v10, you can remotely access devices using our advanced tools, enabling you to understand security vulnerabilities and improve your skills. Remember, knowledge is power, and it should be used wisely.</p>
+        <p>I hope you use this platform for educational purposes and to enhance your understanding of cybersecurity. Happy hacking!</p>
+        <p class="warning">Warning: Do not share your login information with others.</p>
+      `;
+    }
+
+    toggleBtn.onclick = () => {
+      sidebar.classList.toggle("collapsed");
+    };
+
+    window.onload = async () => {
+      await fetchPublicIP();
+      promptLogin();
+    };
+  </script>
+</body>
+</html>

@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Advanced Audio Editor</title>
+<style>
+  body {
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+    color: red;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0; padding: 0;
+    display: flex; flex-direction: column; align-items: center;
+    min-height: 100vh;
+  }
+  header {
+background: rgba(0, 0, 0, 0.5);
+    width: 100%;
+    padding: 1rem;
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: bold;
+    user-select: none;
+  }
+  #uploader {
+    margin: 1rem;
+    padding: 1rem;
+    border: 2px dashed red;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 600px;
+    text-align: center;
+    cursor: pointer;
+    color: red;
+  }
+  #uploader:hover {
+    border-color: red;
+    color: red;
+  }
+  #fileInput {
+    display: none;
+  }
+  #waveform {
+    width: 90%;
+    max-width: 600px;
+    height: 120px;
+    background: #222;
+    border-radius: 8px;
+    margin: 1rem 0;
+  }
+  .time-controls {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+  }
+  .time-controls label {
+    display: flex;
+    flex-direction: column;
+    font-size: 0.9rem;
+    color: red;
+  }
+  .time-controls input {
+background: rgba(0, 0, 0, 0.5);
+    border: 1px solid red;
+    border-radius: 6px;
+    color: red;
+    padding: 0.3rem 0.5rem;
+    width: 120px;
+    font-size: 1rem;
+    margin-top: 0.2rem;
+  }
+  .buttons-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+  button {
+    background: red;
+    border: none;
+    border-radius: 6px;
+    color: green;
+    padding: 0.6rem 1rem;
+    font-size: 1rem;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.3s ease;
+  }
+  button:hover {
+background: rgba(0, 0, 0, 0.5);
+  }
+  button:disabled {
+background: rgba(0, 0, 0, 0.5);
+    cursor: not-allowed;
+  }
+  #audioPlayer {
+    width: 90%;
+    max-width: 600px;
+    margin-bottom: 1rem;
+    outline: none;
+  }
+  .toggle-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+  .toggle-row label {
+    font-size: 0.9rem;
+    color: red;
+    user-select: none;
+  }
+  .toggle-row input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+  }
+  #titleInput, #useAsSelect {
+    width: 90%;
+    max-width: 600px;
+    margin-bottom: 1rem;
+    padding: 0.5rem;
+    font-size: 1rem;
+    border-radius: 6px;
+    border: 1px solid red;
+background: rgba(0, 0, 0, 0.5);
+    color: green;
+  }
+  #useAsSelect {
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+<header>Advanced Audio Editor</header>
+
+<div id="uploader" tabindex="0" aria-label="Upload audio file or drag and drop">
+  Click or Drag & Drop Audio File Here
+  <input type="file" id="fileInput" accept="audio/*" />
+</div>
+
+<canvas id="waveform"></canvas>
+
+<div class="time-controls">
+  <label>
+    Start Duration
+    <input type="text" id="startDuration" value="00:00:00.000" aria-label="Start duration" />
+  </label>
+  <label>
+    Current Position
+    <input type="text" id="currentPosition" value="00:00:00.000" readonly aria-label="Current playback position" />
+  </label>
+  <label>
+    End Duration
+    <input type="text" id="endDuration" value="00:00:00.000" aria-label="End duration" />
+  </label>
+</div>
+
+<div class="buttons-row" role="group" aria-label="Playback controls">
+  <button id="rewindBtn" title="Rewind 1 second">⏪</button>
+  <button id="playPauseBtn" title="Play/Pause">▶️</button>
+  <button id="forwardBtn" title="Forward 1 second">⏩</button>
+</div>
+
+<div class="buttons-row" role="group" aria-label="Edit options">
+  <button id="trimBtn" title="Trim audio">Trim</button>
+  <button id="deleteBtn" title="Delete segment">Delete</button>
+  <button id="silenceBtn" title="Silence segment">Silence</button>
+  <button id="loopBtn" title="Toggle loop playback">Loop</button>
+  <button id="volumeBtn" title="Adjust volume">Volume</button>
+  <button id="fadeBtn" title="Fade in/out">Fade</button>
+  <button id="speedBtn" title="Change speed">Speed</button>
+  <button id="reverseBtn" title="Reverse segment">Reverse</button>
+</div>
+
+<div class="toggle-row">
+  <input type="checkbox" id="preciseEditToggle" />
+  <label for="preciseEditToggle">Precise editing with re-encoding (may take more time)</label>
+</div>
+
+<input type="text" id="titleInput" placeholder="Title" aria-label="Audio title" />
+<select id="useAsSelect" aria-label="Use as">
+  <option value="music">Music</option>
+  <option value="podcast">Podcast</option>
+  <option value="audiobook">Audiobook</option>
+  <option value="other">Other</option>
+</select>
+
+<audio id="audioPlayer" controls></audio>
+
+<script>
+(() => {
+  const uploader = document.getElementById('uploader');
+  const fileInput = document.getElementById('fileInput');
+  const waveform = document.getElementById('waveform');
+  const ctx = waveform.getContext('2d');
+  const startDurationInput = document.getElementById('startDuration');
+  const endDurationInput = document.getElementById('endDuration');
+  const currentPositionInput = document.getElementById('currentPosition');
+  const playPauseBtn = document.getElementById('playPauseBtn');
+  const rewindBtn = document.getElementById('rewindBtn');
+  const forwardBtn = document.getElementById('forwardBtn');
+  const trimBtn = document.getElementById('trimBtn');
+  const deleteBtn = document.getElementById('deleteBtn');
+  const silenceBtn = document.getElementById('silenceBtn');
+  const loopBtn = document.getElementById('loopBtn');
+  const volumeBtn = document.getElementById('volumeBtn');
+  const fadeBtn = document.getElementById('fadeBtn');
+  const speedBtn = document.getElementById('speedBtn');
+  const reverseBtn = document.getElementById('reverseBtn');
+  const preciseEditToggle = document.getElementById('preciseEditToggle');
+  const audioPlayer = document.getElementById('audioPlayer');
+  const titleInput = document.getElementById('titleInput');
+  const useAsSelect = document.getElementById('useAsSelect');
+
+  let audioContext = null;
+  let audioBuffer = null;
+  let workingBuffer = null;
+  let sourceNode = null;
+  let isPlaying = false;
+  let loopEnabled = false;
+  let animationFrameId = null;
+
+  // Utility: format seconds to HH:MM:SS.mmm
+  function formatTime(seconds) {
+    if (isNaN(seconds) || seconds < 0) return "00:00:00.000";
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = Math.floor(seconds % 60);
+    const ms = Math.floor((seconds - Math.floor(seconds)) * 1000);
+    return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}.${ms.toString().padStart(3,'0')}`;
+  }
+
+  // Utility: parse HH:MM:SS.mmm to seconds
+  function parseTime(str) {
+    const parts = str.split(':');
+    if(parts.length !== 3) return 0;
+    const h = parseInt(parts[0]) || 0;
+    const m = parseInt(parts[1]) || 0;
+    const sParts = parts[2].split('.');
+    const s = parseInt(sParts[0]) || 0;
+    const ms = parseInt(sParts[1]) || 0;
+    return h*3600 + m*60 + s + ms/1000;
+  }
+
+  // Draw waveform from audioBuffer
+  function drawWaveform(buffer) {
+    const width = waveform.width;
+    const height = waveform.height;
+    ctx.clearRect(0, 0, width, height);
+    if (!buffer) return;
+
+    const data = buffer.getChannelData(0);
+    const step = Math.ceil(data.length / width);
+    const amp = height / 2;
+
+    ctx.fillStyle = '#0e76a8';
+    ctx.beginPath();
+    for(let i=0; i < width; i++) {
+      let min = 1.0;
+      let max = -1.0;
+      for(let j=0; j < step; j++) {
+        const datum = data[(i*step)+j];
+        if(datum < min) min = datum;
+        if(datum > max) max = datum;
+      }
+      ctx.fillRect(i, (1 + min) * amp, 1, Math.max(1, (max - min) * amp));
+    }
+    ctx.closePath();
+  }
+
+  // Load audio file into buffer
+  async function loadAudioFile(file) {
+    if (!audioContext) audioContext = new AudioContext();
+    const arrayBuffer = await file.arrayBuffer();
+    audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+    workingBuffer = audioBuffer;
+    drawWaveform(workingBuffer);
+    audioPlayer.src = URL.createObjectURL(file);
+    audioPlayer.load();
+    startDurationInput.value = "00:00:00.000";
+    endDurationInput.value = formatTime(workingBuffer.duration);
+    currentPositionInput.value = "00:00:00.000";
+    titleInput.value = file.name;
+  }
+
+  // Play audio from startDuration to endDuration
+  function playAudio() {
+    if (!audioContext) audioContext = new AudioContext();
+    if (isPlaying) {
+      stopAudio();
+      return;
+    }
+    const start = parseTime(startDurationInput.value);
+    const end = parseTime(endDurationInput.value);
+    if (start >= end || end > workingBuffer.duration) return;
+
+    sourceNode = audioContext.createBufferSource();
+    sourceNode.buffer = workingBuffer;
+
+    // Apply speed if set
+    sourceNode.playbackRate.value = speedBtn.dataset.speed ? parseFloat(speedBtn.dataset.speed) : 1;
+
+    // Connect to destination
+    sourceNode.connect(audioContext.destination);
+
+    sourceNode.loop = loopEnabled;
+    if(loopEnabled) {
+      sourceNode.loopStart = start;
+      sourceNode.loopEnd = end;
+    }
+
+    sourceNode.start(0, start, end - start);
+    isPlaying = true;
+    playPauseBtn.textContent = "⏸️";
+
+    // Update current position display
+    let startTime = audioContext.currentTime;
+    function updatePosition() {
+      if (!isPlaying) return;
+      let elapsed = (audioContext.currentTime - startTime) * sourceNode.playbackRate.value;
+      let pos = start + elapsed;
+      if (pos > end) {
+        if (loopEnabled) pos = start + (pos - end);
+        else {
+          stopAudio();
+          return;
+        }
+      }
+      currentPositionInput.value = formatTime(pos);
+      animationFrameId = requestAnimationFrame(updatePosition);
+    }
+    updatePosition();
+
+    sourceNode.onended = () => {
+      if (!loopEnabled) stopAudio();
+    };
+  }
+
+  function stopAudio() {
+    if (sourceNode) {
+      sourceNode.stop();
+      sourceNode.disconnect();
+      sourceNode = null;
+    }
+    isPlaying = false;
+    playPauseBtn.textContent = "▶️";
+    cancelAnimationFrame(animationFrameId);
+  }
+
+  // Trim audio buffer between start and end
+  function trimAudio() {
+    const start = parseTime(startDurationInput.value);
+    const end = parseTime(endDurationInput.value);
+    if (start >= end || end > workingBuffer.duration) return alert("Invalid trim range");
+
+    const sampleRate = workingBuffer.sampleRate;
+    const channels = workingBuffer.numberOfChannels;
+    const frameCount = Math.floor((end - start) * sampleRate);
+    const newBuffer = audioContext.createBuffer(channels, frameCount, sampleRate);
+
+    for(let ch=0; ch < channels; ch++) {
+      const oldData = workingBuffer.getChannelData(ch);
+      const newData = newBuffer.getChannelData(ch);
+      for(let i=0; i < frameCount; i++) {
+        newData[i] = oldData[i + Math.floor(start * sampleRate)];
+      }
+    }
+    workingBuffer = newBuffer;
+    drawWaveform(workingBuffer);
+    updateAudioPlayerBuffer();
+  }
+
+  // Delete segment between start and end (remove that part)
+  function deleteSegment() {
+    const start = parseTime(startDurationInput.value);
+    const end = parseTime(endDurationInput.value);
+    if (start >= end || end > workingBuffer.duration) return alert("Invalid delete range");
+
+    const sampleRate = workingBuffer.sampleRate;
+    const channels = workingBuffer.numberOfChannels;
+    const totalFrames = workingBuffer.length;
+    const startFrame = Math.floor(start * sampleRate);
+    const endFrame = Math.floor(end * sampleRate);
+    const newFrameCount = totalFrames - (endFrame - startFrame);
+
+    const newBuffer = audioContext.createBuffer(channels, newFrameCount, sampleRate);
+
+    for(let ch=0; ch < channels; ch++) {
+      const oldData = workingBuffer.getChannelData(ch);
+      const newData = newBuffer.getChannelData(ch);
+      // Copy before start
+      for(let i=0; i < startFrame; i++) {
+        newData[i] = oldData[i];
+      }
+      // Copy after end
+      for(let i=endFrame; i < totalFrames; i++) {
+        newData[i - (endFrame - startFrame)] = oldData[i];
+      }
+    }
+    workingBuffer = newBuffer;
+    drawWaveform(workingBuffer);
+    updateAudioPlayerBuffer();
+  }
+
+  // Silence segment between start and end
+  function silenceSegment() {
+    const start = parseTime(startDurationInput.value);
+    const end = parseTime(endDurationInput.value);
+    if (start >= end || end > workingBuffer.duration) return alert("Invalid silence range");
+
+    const sampleRate = workingBuffer.sampleRate;
+    const channels = workingBuffer.numberOfChannels;
+    const startFrame = Math.floor(start * sampleRate);
+    const endFrame = Math.floor(end * sampleRate);
+
+    for(let ch=0; ch < channels; ch++) {
+      const data = workingBuffer.getChannelData(ch);
+      for(let i=startFrame; i < endFrame; i++) {
+        data[i] = 0;
+      }
+    }
+    drawWaveform(workingBuffer);
+    updateAudioPlayerBuffer();
+  }
+
+  // Loop toggle
+  function toggleLoop() {
+    loopEnabled = !loopEnabled;
+    loopBtn.style.backgroundColor = loopEnabled ? '#095a82' : '#0e76a8';
+  }
+
+  // Volume adjustment (simple gain)
+  function adjustVolume() {
+    let vol = prompt("Enter volume multiplier (0.0 to 2.0):", "1.0");
+    if (vol === null) return;
+    vol = parseFloat(vol);
+    if (isNaN(vol) || vol < 0 || vol > 2) return alert("Invalid volume value");
+
+    const channels = workingBuffer.numberOfChannels;
+    for(let ch=0; ch < channels; ch++) {
+      const data = workingBuffer.getChannelData(ch);
+      for(let i=0; i < data.length; i++) {
+        data[i] = Math.min(1, Math.max(-1, data[i] * vol));
+      }
+    }
+    drawWaveform(workingBuffer);
+    updateAudioPlayerBuffer();
+  }
+
+  // Fade in/out
+  function fadeInOut() {
+    let fadeInDuration = prompt("Fade in duration in seconds:", "2");
+    if (fadeInDuration === null) return;
+    fadeInDuration = parseFloat(fadeInDuration);
+    if (isNaN(fadeInDuration) || fadeInDuration < 0) return alert("Invalid fade in duration");
+
+    let fadeOutDuration = prompt("Fade out duration in seconds:", "2");
+    if (fadeOutDuration === null) return;
+    fadeOutDuration = parseFloat(fadeOutDuration);
+    if (isNaN(fadeOutDuration) || fadeOutDuration < 0) return alert("Invalid fade out duration");
+
+    const sampleRate = workingBuffer.sampleRate;
+    const channels = workingBuffer.numberOfChannels;
+    const totalFrames = workingBuffer.length;
+
+    const fadeInFrames = Math.floor(fadeInDuration * sampleRate);
+    const fadeOutFrames = Math.floor(fadeOutDuration * sampleRate);
+
+    for(let ch=0; ch < channels; ch++) {
+      const data = workingBuffer.getChannelData(ch);
+      // Fade in
+      for(let i=0; i < fadeInFrames && i < totalFrames; i++) {
+        data[i] *= i / fadeInFrames;
+      }
+      // Fade out
+      for(let i=0; i < fadeOutFrames && i < totalFrames; i++) {
+        data[totalFrames - 1 - i] *= i / fadeOutFrames;
+      }
+    }
+    drawWaveform(workingBuffer);
+    updateAudioPlayerBuffer();
+  }
+
+  // Change playback speed
+  function changeSpeed() {
+    let speed = prompt("Enter playback speed (0.5 to 3.0):", speedBtn.dataset.speed || "1");
+    if (speed === null) return;
+    speed = parseFloat(speed);
+    if (isNaN(speed) || speed < 0.5 || speed > 3) return alert("Invalid speed value");
+    speedBtn.dataset.speed = speed;
+    alert(`Playback speed set to ${speed}x`);
+  }
+
+  // Reverse segment between start and end
+  function reverseSegment() {
+    const start = parseTime(startDurationInput.value);
+    const end = parseTime(endDurationInput.value);
+    if (start >= end || end > workingBuffer.duration) return alert("Invalid reverse range");
+
+    const sampleRate = workingBuffer.sampleRate;
+    const channels = workingBuffer.numberOfChannels;
+    const startFrame = Math.floor(start * sampleRate);
+    const endFrame = Math.floor(end * sampleRate);
+
+    for(let ch=0; ch < channels; ch++) {
+      const data = workingBuffer.getChannelData(ch);
+      let left = startFrame;
+      let right = endFrame - 1;
+      while(left < right) {
+        const temp = data[left];
+        data[left] = data[right];
+        data[right] = temp;
+        left++;
+        right--;
+      }
+    }
+    drawWaveform(workingBuffer);
+    updateAudioPlayerBuffer();
+  }
+
+  // Update audio player source from workingBuffer
+  function updateAudioPlayerBuffer() {
+    if (!audioContext) return;
+    // Create WAV blob from workingBuffer
+    const wavBlob = bufferToWavBlob(workingBuffer);
+    const url = URL.createObjectURL(wavBlob);
+    audioPlayer.src = url;
+    audioPlayer.load();
+    endDurationInput.value = formatTime(workingBuffer.duration);
+    currentPositionInput.value = "00:00:00.000";
+  }
+
+  // Convert AudioBuffer to WAV Blob (16-bit PCM)
+  function bufferToWavBlob(buffer) {
+    const numChannels = buffer.numberOfChannels;
+    const sampleRate = buffer.sampleRate;
+    const format = 1; // PCM
+    const bitDepth = 16;
+
+    const samples = buffer.length;
+    const blockAlign = numChannels * bitDepth / 8;
+    const byteRate = sampleRate * blockAlign;
+    const dataSize = samples * blockAlign;
+    const bufferLength = 44 + dataSize;
+    const arrayBuffer = new ArrayBuffer(bufferLength);
+    const view = new DataView(arrayBuffer);
+
+    function writeString(view, offset, string) {
+      for(let i=0; i < string.length; i++) {
+        view.setUint8(offset + i, string.charCodeAt(i));
+      }
+    }
+
+    // RIFF chunk descriptor
+    writeString(view, 0, 'RIFF');
+    view.setUint32(4, 36 + dataSize, true);
+    writeString(view, 8, 'WAVE');
+
+    // fmt sub-chunk
+    writeString(view, 12, 'fmt ');
+    view.setUint32(16, 16, true); // Subchunk1Size
+    view.setUint16(20, format, true); // AudioFormat
+    view.setUint16(22, numChannels, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, byteRate, true);
+    view.setUint16(32, blockAlign, true);
+    view.setUint16(34, bitDepth, true);
+
+    // data sub-chunk
+    writeString(view, 36, 'data');
+    view.setUint32(40, dataSize, true);
+
+    // Write PCM samples
+    let offset = 44;
+    for(let i=0; i < samples; i++) {
+      for(let ch=0; ch < numChannels; ch++) {
+        let sample = buffer.getChannelData(ch)[i];
+        // Clamp and convert to 16-bit PCM
+        sample = Math.max(-1, Math.min(1, sample));
+        sample = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+        view.setInt16(offset, sample, true);
+        offset += 2;
+      }
+    }
+
+    return new Blob([arrayBuffer], {type: 'audio/wav'});
+  }
+
+  // Event listeners
+  uploader.addEventListener('click', () => fileInput.click());
+  uploader.addEventListener('keydown', e => {
+    if(e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      fileInput.click();
+    }
+  });
+  uploader.addEventListener('dragover', e => {
+    e.preventDefault();
+    uploader.style.borderColor = '#0e76a8';
+    uploader.style.color = '#0e76a8';
+  });
+  uploader.addEventListener('dragleave', e => {
+    e.preventDefault();
+    uploader.style.borderColor = '#444';
+    uploader.style.color = '#888';
+  });
+  uploader.addEventListener('drop', e => {
+    e.preventDefault();
+    uploader.style.borderColor = '#444';
+    uploader.style.color = '#888';
+    if(e.dataTransfer.files.length > 0) {
+      loadAudioFile(e.dataTransfer.files[0]);
+    }
+  });
+
+  fileInput.addEventListener('change', e => {
+    if(e.target.files.length > 0) {
+      loadAudioFile(e.target.files[0]);
+    }
+  });
+
+  playPauseBtn.addEventListener('click', () => {
+    if (!workingBuffer) return alert("Load an audio file first");
+    if (isPlaying) stopAudio();
+    else playAudio();
+  });
+
+  rewindBtn.addEventListener('click', () => {
+    let pos = parseTime(currentPositionInput.value);
+    pos = Math.max(0, pos - 1);
+    currentPositionInput.value = formatTime(pos);
+    audioPlayer.currentTime = pos;
+  });
+
+  forwardBtn.addEventListener('click', () => {
+    if (!workingBuffer) return;
+    let pos = parseTime(currentPositionInput.value);
+    pos = Math.min(workingBuffer.duration, pos + 1);
+    currentPositionInput.value = formatTime(pos);
+    audioPlayer.currentTime = pos;
+  });
+
+  trimBtn.addEventListener('click', () => {
+    if (!workingBuffer) return alert("Load an audio file first");
+    trimAudio();
+  });
+
+  deleteBtn.addEventListener('click', () => {
+    if (!workingBuffer) return alert("Load an audio file first");
+    deleteSegment();
+  });
+
+  silenceBtn.addEventListener('click', () => {
+    if (!workingBuffer) return alert("Load an audio file first");
+    silenceSegment();
+  });
+
+  loopBtn.addEventListener('click', () => {
+    toggleLoop();
+  });
+
+  volumeBtn.addEventListener('click', () => {
+    if (!workingBuffer) return alert("Load an audio file first");
+    adjustVolume();
+  });
+
+  fadeBtn.addEventListener('click', () => {
+    if (!workingBuffer) return alert("Load an audio file first");
+    fadeInOut();
+  });
+
+  speedBtn.addEventListener('click', () => {
+    changeSpeed();
+  });
+
+  reverseBtn.addEventListener('click', () => {
+    if (!workingBuffer) return alert("Load an audio file first");
+    reverseSegment();
+  });
+
+  // Update current position input as audio plays
+  audioPlayer.addEventListener('timeupdate', () => {
+    currentPositionInput.value = formatTime(audioPlayer.currentTime);
+  });
+
+  // Resize canvas to fit container width
+  function resizeCanvas() {
+    waveform.width = waveform.clientWidth * window.devicePixelRatio;
+    waveform.height = waveform.clientHeight * window.devicePixelRatio;
+    ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    if (workingBuffer) drawWaveform(workingBuffer);
+  }
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas();
+
+})();
+</script>
+</body>
+</html>

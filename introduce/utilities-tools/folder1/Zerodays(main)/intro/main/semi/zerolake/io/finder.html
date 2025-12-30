@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Infosec Changer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+      font-family: 'Segoe UI', sans-serif;
+      padding: 1rem;
+    }
+
+    h1 {
+      text-align: center;
+      color: red;
+    }
+
+    .controls {
+      text-align: center;
+      margin: 1rem auto;
+    }
+
+    select, input, button {
+      padding: 10px;
+      margin: 0.3rem;
+      font-size: 14px;
+      border-radius: 5px;
+      border: none;
+background: rgba(0, 0, 0, 0.5);
+color: red;
+    }
+
+    button {
+      background: red;
+      color: green;
+      cursor: pointer;
+    }
+
+    button:hover {
+background: rgba(0, 0, 0, 0.5);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .card {
+background: rgba(0, 0, 0, 0.5);
+      padding: 1rem;
+      border-radius: 10px;
+      position: relative;
+    }
+
+    .card img {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid red;
+      float: right;
+    }
+
+    .field {
+      margin: 0.3rem 0;
+      text-align: left;
+    }
+
+    .label {
+      font-weight: bold;
+      color: red;
+    }
+
+    .value {
+      display: inline-block;
+      margin-left: 0.5rem;
+    }
+
+    .copy {
+      font-size: 12px;
+      color: green;
+      background: red;
+      cursor: pointer;
+    }
+
+    .copy:hover {
+background: rgba(0, 0, 0, 0.5);
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 2rem;
+      color: red;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+
+<h1></h1>🪪Infosec Changer</h1>
+
+<div class="controls">
+  <select id="countrySelect">
+    <option value="random">🌍 Random Country</option>
+  </select>
+  <input type="number" id="amountInput" placeholder="Amount (e.g. 10)" min="1" />
+  <button onclick="generate()">Generate</button>
+  <button onclick="generate(100)">Generate 100</button>
+  <button onclick="clearAll()">🧹 Clear</button>
+  <button onclick="exportCSV()">📄 Export CSV</button>
+  <button onclick="exportPDF()">🖨️ Export PDF</button>
+</div>
+
+<div id="output" class="grid"></div>
+
+<div class="footer">
+  💡 Fully offline. Infosec identity generator with export, 195 countries, PDF/CSV support.
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
+const countries = [
+  { name: "Afghanistan", code: "+93", flag: "🇦🇫" },
+  { name: "Albania", code: "+355", flag: "🇦🇱" },
+  { name: "Algeria", code: "+213", flag: "🇩🇿" },
+  { name: "Andorra", code: "+376", flag: "🇦🇩" },
+  { name: "Angola", code: "+244", flag: "🇦🇴" },
+  { name: "Antigua and Barbuda", code: "+1-268", flag: "🇦🇬" },
+  { name: "Argentina", code: "+54", flag: "🇦🇷" },
+  { name: "Armenia", code: "+374", flag: "🇦🇲" },
+  { name: "Australia", code: "+61", flag: "🇦🇺" },
+  { name: "Austria", code: "+43", flag: "🇦🇹" },
+  { name: "Azerbaijan", code: "+994", flag: "🇦🇿" },
+  { name: "Bahamas", code: "+1-242", flag: "🇧🇸" },
+  { name: "Bahrain", code: "+973", flag: "🇧🇭" },
+  { name: "Bangladesh", code: "+880", flag: "🇧🇩" },
+  { name: "Barbados", code: "+1-246", flag: "🇧🇧" },
+  { name: "Belarus", code: "+375", flag: "🇧🇾" },
+  { name: "Belgium", code: "+32", flag: "🇧🇪" },
+  { name: "Belize", code: "+501", flag: "🇧🇿" },
+  { name: "Benin", code: "+229", flag: "🇧🇯" },
+  { name: "Bhutan", code: "+975", flag: "🇧🇹" },
+  { name: "Bolivia", code: "+591", flag: "🇧🇴" },
+  { name: "Bosnia and Herzegovina", code: "+387", flag: "🇧🇦" },
+  { name: "Botswana", code: "+267", flag: "🇧🇼" },
+  { name: "Brazil", code: "+55", flag: "🇧🇷" },
+  { name: "Brunei", code: "+673", flag: "🇧🇳" },
+  { name: "Bulgaria", code: "+359", flag: "🇧🇬" },
+  { name: "Burkina Faso", code: "+226", flag: "🇧🇫" },
+  { name: "Burundi", code: "+257", flag: "🇧🇮" },
+  { name: "Cabo Verde", code: "+238", flag: "🇨🇻" },
+  { name: "Cambodia", code: "+855", flag: "🇰🇭" },
+  { name: "Cameroon", code: "+237", flag: "🇨🇲" },
+  { name: "Canada", code: "+1", flag: "🇨🇦" },
+  { name: "Central African Republic", code: "+236", flag: "🇨🇫" },
+  { name: "Chad", code: "+235", flag: "🇹🇩" },
+  { name: "Chile", code: "+56", flag: "🇨🇱" },
+  { name: "China", code: "+86", flag: "🇨🇳" },
+  { name: "Colombia", code: "+57", flag: "🇨🇴" },
+  { name: "Comoros", code: "+269", flag: "🇰🇲" },
+  { name: "Congo (Congo-Brazzaville)", code: "+242", flag: "🇨🇬" },
+  { name: "Costa Rica", code: "+506", flag: "🇨🇷" },
+  { name: "Croatia", code: "+385", flag: "🇭🇷" },
+  { name: "Cuba", code: "+53", flag: "🇨🇺" },
+  { name: "Cyprus", code: "+357", flag: "🇨🇾" },
+  { name: "Czech Republic", code: "+420", flag: "🇨🇿" },
+  { name: "Denmark", code: "+45", flag: "🇩🇰" },
+  { name: "Djibouti", code: "+253", flag: "🇩🇯" },
+  { name: "Dominica", code: "+1-767", flag: "🇩🇲" },
+  { name: "Dominican Republic", code: "+1-809", flag: "🇩🇴" },
+  { name: "Ecuador", code: "+593", flag: "🇪🇨" },
+  { name: "Egypt", code: "+20", flag: "🇪🇬" },
+  { name: "El Salvador", code: "+503", flag: "🇸🇻" },
+  { name: "Equatorial Guinea", code: "+240", flag: "🇬🇶" },
+  { name: "Eritrea", code: "+291", flag: "🇪🇷" },
+  { name: "Estonia", code: "+372", flag: "🇪🇪" },
+  { name: "Eswatini", code: "+268", flag: "🇸🇿" },
+  { name: "Ethiopia", code: "+251", flag: "🇪🇹" },
+  { name: "Fiji", code: "+679", flag: "🇫🇯" },
+  { name: "Finland", code: "+358", flag: "🇫🇮" },
+  { name: "France", code: "+33", flag: "🇫🇷" },
+  { name: "Gabon", code: "+241", flag: "🇬🇦" },
+  { name: "Gambia", code: "+220", flag: "🇬🇲" },
+  { name: "Georgia", code: "+995", flag: "🇬🇪" },
+  { name: "Germany", code: "+49", flag: "🇩🇪" },
+  { name: "Ghana", code: "+233", flag: "🇬🇭" },
+  { name: "Greece", code: "+30", flag: "🇬🇷" },
+  { name: "Grenada", code: "+1-473", flag: "🇬🇩" },
+  { name: "Guatemala", code: "+502", flag: "🇬🇹" },
+  { name: "Guinea", code: "+224", flag: "🇬🇳" },
+  { name: "Guinea-Bissau", code: "+245", flag: "🇬🇼" },
+  { name: "Guyana", code: "+592", flag: "🇬🇾" },
+  { name: "Haiti", code: "+509", flag: "🇭🇹" },
+  { name: "Honduras", code: "+504", flag: "🇭🇳" },
+  { name: "Hungary", code: "+36", flag: "🇭🇺" },
+  { name: "Iceland", code: "+354", flag: "🇮🇸" },
+  { name: "India", code: "+91", flag: "🇮🇳" },
+  { name: "Indonesia", code: "+62", flag: "🇮🇩" },
+  { name: "Iran", code: "+98", flag: "🇮🇷" },
+  { name: "Iraq", code: "+964", flag: "🇮🇶" },
+  { name: "Ireland", code: "+353", flag: "🇮🇪" },
+  { name: "Israel", code: "+972", flag: "🇮🇱" },
+  { name: "Italy", code: "+39", flag: "🇮🇹" },
+  { name: "Jamaica", code: "+1-876", flag: "🇯🇲" },
+  { name: "Japan", code: "+81", flag: "🇯🇵" },
+  { name: "Jordan", code: "+962", flag: "🇯🇴" },
+  { name: "Kazakhstan", code: "+7", flag: "🇰🇿" },
+  { name: "Kenya", code: "+254", flag: "🇰🇪" },
+  { name: "Kiribati", code: "+686", flag: "🇰🇮" },
+  { name: "Kuwait", code: "+965", flag: "🇰🇼" },
+  { name: "Kyrgyzstan", code: "+996", flag: "🇰🇬" },
+  { name: "Laos", code: "+856", flag: "🇱🇦" },
+  { name: "Latvia", code: "+371", flag: "🇱🇻" },
+  { name: "Lebanon", code: "+961", flag: "🇱🇧" },
+  { name: "Lesotho", code: "+266", flag: "🇱🇸" },
+  { name: "Liberia", code: "+231", flag: "🇱🇷" },
+  { name: "Libya", code: "+218", flag: "🇱🇾" },
+  { name: "Liechtenstein", code: "+423", flag: "🇱🇮" },
+  { name: "Lithuania", code: "+370", flag: "🇱🇹" },
+  { name: "Luxembourg", code: "+352", flag: "🇱🇺" },
+  { name: "Madagascar", code: "+261", flag: "🇲🇬" },
+  { name: "Malawi", code: "+265", flag: "🇲🇼" },
+  { name: "Malaysia", code: "+60", flag: "🇲🇾" },
+  { name: "Maldives", code: "+960", flag: "🇲🇻" },
+  { name: "Mali", code: "+223", flag: "🇲🇱" },
+  { name: "Malta", code: "+356", flag: "🇲🇹" },
+  { name: "Marshall Islands", code: "+692", flag: "🇲🇭" },
+  { name: "Mauritania", code: "+222", flag: "🇲🇷" },
+  { name: "Mauritius", code: "+230", flag: "🇲🇺" },
+  { name: "Mexico", code: "+52", flag: "🇲🇽" },
+  { name: "Micronesia", code: "+691", flag: "🇫🇲" },
+  { name: "Moldova", code: "+373", flag: "🇲🇩" },
+  { name: "Monaco", code: "+377", flag: "🇲🇨" },
+  { name: "Mongolia", code: "+976", flag: "🇲🇳" },
+  { name: "Montenegro", code: "+382", flag: "🇲🇪" },
+  { name: "Morocco", code: "+212", flag: "🇲🇦" },
+  { name: "Mozambique", code: "+258", flag: "🇲🇿" },
+  { name: "Myanmar (Burma)", code: "+95", flag: "🇲🇲" },
+  { name: "Namibia", code: "+264", flag: "🇳🇦" },
+  { name: "Nauru", code: "+674", flag: "🇳🇷" },
+  { name: "Nepal", code: "+977", flag: "🇳🇵" },
+  { name: "Netherlands", code: "+31", flag: "🇳🇱" },
+  { name: "New Zealand", code: "+64", flag: "🇳🇿" },
+  { name: "Nicaragua", code: "+505", flag: "🇳🇮" },
+  { name: "Niger", code: "+227", flag: "🇳🇪" },
+  { name: "Nigeria", code: "+234", flag: "🇳🇬" },
+  { name: "North Korea", code: "+850", flag: "🇰🇵" },
+  { name: "North Macedonia", code: "+389", flag: "🇲🇰" },
+  { name: "Norway", code: "+47", flag: "🇳🇴" },
+  { name: "Oman", code: "+968", flag: "🇴🇲" },
+  { name: "Pakistan", code: "+92", flag: "🇵🇰" },
+  { name: "Palau", code: "+680", flag: "🇵🇼" },
+  { name: "Palestine", code: "+970", flag: "🇵🇸" },
+  { name: "Panama", code: "+507", flag: "🇵🇦" },
+  { name: "Papua New Guinea", code: "+675", flag: "🇵🇬" },
+  { name: "Paraguay", code: "+595", flag: "🇵🇾" },
+  { name: "Peru", code: "+51", flag: "🇵🇪" },
+  { name: "Philippines", code: "+63", flag: "🇵🇭" },
+  { name: "Poland", code: "+48", flag: "🇵🇱" },
+  { name: "Portugal", code: "+351", flag: "🇵🇹" },
+  { name: "Qatar", code: "+974", flag: "🇶🇦" },
+  { name: "Romania", code: "+40", flag: "🇷🇴" },
+  { name: "Russia", code: "+7", flag: "🇷🇺" },
+  { name: "Rwanda", code: "+250", flag: "🇷🇼" },
+  { name: "Saint Kitts and Nevis", code: "+1-869", flag: "🇰🇳" },
+  { name: "Saint Lucia", code: "+1-758", flag: "🇱🇨" },
+  { name: "Saint Vincent and the Grenadines", code: "+1-784", flag: "🇻🇨" },
+  { name: "Samoa", code: "+685", flag: "🇼🇸" },
+  { name: "San Marino", code: "+378", flag: "🇸🇲" },
+  { name: "Sao Tome and Principe", code: "+239", flag: "🇸🇹" },
+  { name: "Saudi Arabia", code: "+966", flag: "🇸🇦" },
+  { name: "Senegal", code: "+221", flag: "🇸🇳" },
+  { name: "Serbia", code: "+381", flag: "🇷🇸" },
+  { name: "Seychelles", code: "+248", flag: "🇸🇨" },
+  { name: "Sierra Leone", code: "+232", flag: "🇸🇱" },
+  { name: "Singapore", code: "+65", flag: "🇸🇬" },
+  { name: "Slovakia", code: "+421", flag: "🇸🇰" },
+  { name: "Slovenia", code: "+386", flag: "🇸🇮" },
+  { name: "Solomon Islands", code: "+677", flag: "🇸🇧" },
+  { name: "Somalia", code: "+252", flag: "🇸🇴" },
+  { name: "South Africa", code: "+27", flag: "🇿🇦" },
+  { name: "South Korea", code: "+82", flag: "🇰🇷" },
+  { name: "South Sudan", code: "+211", flag: "🇸🇸" },
+  { name: "Spain", code: "+34", flag: "🇪🇸" },
+  { name: "Sri Lanka", code: "+94", flag: "🇱🇰" },
+  { name: "Sudan", code: "+249", flag: "🇸🇩" },
+  { name: "Suriname", code: "+597", flag: "🇸🇷" },
+  { name: "Sweden", code: "+46", flag: "🇸🇪" },
+  { name: "Switzerland", code: "+41", flag: "🇨🇭" },
+  { name: "Syria", code: "+963", flag: "🇸🇾" },
+  { name: "Taiwan", code: "+886", flag: "🇹🇼" },
+  { name: "Tajikistan", code: "+992", flag: "🇹🇯" },
+  { name: "Tanzania", code: "+255", flag: "🇹🇿" },
+  { name: "Thailand", code: "+66", flag: "🇹🇭" },
+  { name: "Timor-Leste", code: "+670", flag: "🇹🇱" },
+  { name: "Togo", code: "+228", flag: "🇹🇬" },
+  { name: "Tonga", code: "+676", flag: "🇹🇴" },
+  { name: "Trinidad and Tobago", code: "+1-868", flag: "🇹🇹" },
+  { name: "Tunisia", code: "+216", flag: "🇹🇳" },
+  { name: "Turkey", code: "+90", flag: "🇹🇷" },
+  { name: "Turkmenistan", code: "+993", flag: "🇹🇲" },
+  { name: "Tuvalu", code: "+688", flag: "🇹🇻" },
+  { name: "Uganda", code: "+256", flag: "🇺🇬" },
+  { name: "Ukraine", code: "+380", flag: "🇺🇦" },
+  { name: "United Arab Emirates", code: "+971", flag: "🇦🇪" },
+  { name: "United Kingdom", code: "+44", flag: "🇬🇧" },
+  { name: "United States", code: "+1", flag: "🇺🇸" },
+  { name: "Uruguay", code: "+598", flag: "🇺🇾" },
+  { name: "Uzbekistan", code: "+998", flag: "🇺🇿" },
+  { name: "Vanuatu", code: "+678", flag: "🇻🇺" },
+  { name: "Vatican City", code: "+379", flag: "🇻🇦" },
+  { name: "Venezuela", code: "+58", flag: "🇻🇪" },
+  { name: "Vietnam", code: "+84", flag: "🇻🇳" },
+  { name: "Yemen", code: "+967", flag: "🇾🇪" },
+  { name: "Zambia", code: "+260", flag: "🇿🇲" },
+  { name: "Zimbabwe", code: "+263", flag: "🇿🇼" }
+];
+
+
+const firstNames = [
+    "Alex", "Jordan", "Taylor", "Morgan", "Casey", "Jamie", "Blake", "Skyler", "Riley", "Dakota", 
+    "Abby", "Abigail", "Ada", "Addie", "Addison", "Adelaide", "Adele", "Adora", "Adriana", "Ælfgifu", 
+    "Æthelburh", "Agnes", "Aileen", "Alaina", "Alanna", "Alberta", "Albina", "Aleana", "Alexa", 
+    "Alexandra", "Alexandria", "Alexis", "Alice", "Alicia", "Alisha", "Alison", "Allyson", "Alma", 
+    "Althea", "Alvina", "Alyson", "Amanda", "Amber", "Amberley", "Amelia", "Amy", "Ana", "Andrea", 
+    "Andrée", "Andy", "Angel", "Angela", "Angelica", "Angelina", "Angella", "Angie", "Anna", 
+    "Annabelle", "Annabeth", "Anne", "Annette", "Annie", "Antonia", "April", "Arabella", "Arda", 
+    "Ariana", "Ariel", "Arya", "Ash", "Ashley", "Astrid", "Aubrey", "Audra", "Audrey", "Aurora", 
+    "Autumn", "Averil", "Avis", "Azalea", "Babette", "Barb", "Barbara", "Beatrice", "Beatrix", 
+    "Beau", "Becca", "Becki", "Becky", "Belinda", "Bella", "Berenice", "Bertha", "Betsy", 
+    "Bettina", "Betty", "Beverly", "Bianca", "Blair", "Blake", "Blanche", "Blossom", "Bobbi", 
+    "Bobby", "Bonnie", "Braden", "Brandy", "Brenda", "Brianna", "Bridget", "Brielle", "Brilliana", 
+    "Brooklyn", "Brynlee", "Bryony", "Caden", "Calla", "Candy", "Cara", "Cari", "Carina", 
+    "Carissa", "Carlena", "Carlene", "Carlie", "Carly", "Carmelita", "Carol", "Carol Ann", 
+    "Carol Anne", "Carole", "Carolina", "Caroline", "Carolyn", "Carrie Ann", "Carrie Anne", 
+    "Carroll", "Carry", "Carson", "Cary", "Casey", "Cassandra", "Cassidy", "Cathleen", "Cathy", 
+    "Cecilia", "Cecily", "Celestia", "Celia", "Celinda", "Chara", "Charis", "Charisse", 
+    "Charity", "Charla", "Charle", "Charlee", "Charlene", "Charley", "Charli", "Charlie", 
+    "Charlotte", "Charly", "Charlyne", "Charmaine", "Chas", "Chelsea", "Cherry", "Cheryl", 
+    "Chloe", "Chris", "Christabel", "Christi", "Christina", "Christine", "Christy", "Cindy", 
+    "Claire", "Clara", "Clare", "Claribel", "Clarice", "Clarissa", "Claudia", "Clementine", 
+    "Clover", "Cody", "Colette", "Colleen", "Constance", "Cora", "Coral", "Coraline", 
+    "Cordelia", "Courtney", "Crystal", "Cynthia",
+    "Daenerys", "Daisy", "Dana", "Dani", "Danielle", "Danna", "Daphne", "Darla", "Darlene", 
+    "Davina", "Dawn", "Deanna", "D", "Deanne", "Deb", "Debbie", "Deborah", "Dede", "Deja", 
+    "Delaney", "Delia", "Demetria", "Demi", "Denise", "Destiny", "Devon", "Diamond", "Diana", 
+    "Diane", "Dimity", "Donna", "Dora", "Doreen", "Doris", "Dorothy", "Dottie", "Drew", 
+    "Dulcie", "E", "Eadgifu", "Ealdgyth", "Ebony", "Edburga", "Eden", "Edith", "Edna", 
+    "Edris", "Edwina", "Effie", "Eileen", "Elaine", "Eleanor", "Elektra", "Elisha", "Eliza", 
+    "Elizabeth", "Ella", "Elle", "Ellen", "Ellie", "Ellis", "Elora", "Ember", "Emerald", 
+    "Emily", "Emma", "Enid", "Erika", "Erin", "Estelle", "Esther", "Esty", "Ethel", 
+    "Etheldreda", "Etty", "Eudora", "Eva", "Evan", "Evangelina", "Eve", "Evelyn", "F", 
+    "Fabienne", "Faith", "Fancy", "Faye", "Felicity", "Fern", "Finn", "Fiona", "Fleur", 
+    "Florence", "Frances", "Francie", "Francine", "Frankie", "Frederica", "Frida", "G", 
+    "Gage", "Gail", "Gale", "Gemma", "Gene", "Genevieve", "Georgene", "Georgette", "Georgia", 
+    "Georgiana", "Georgina", "Gertie", "Gertrude", "Gia", "Gina", "Ginny", "Giselle", 
+    "Gladys", "Glenda", "Glenna", "Gloria", "Glynis", "Goldie", "Grace", "Gussie", "Gwen", 
+    "Gwenda", "Gwendolen", "Gwendoline", "Gwendolyn", "Gwyneth",
+    "Haisley", "Haley", "Hannah", "Harmony", "Harriet", "Hayden", "Hayley", "Hazel", 
+    "Heather", "Heidi", "Helen", "Helena", "Helene", "Henrietta", "Hero", "Hester", 
+    "Hilary", "Hilda", "Hodierna", "Holly", "Honor", "Hope", "Hunter", 
+    "Ida", "Ila", "Imelda", "Imogen", "Ingrid", "Iona", "Irene", "Iris", 
+    "Irma", "Isa", "Isabel", "Isabella", "Isla", "Ivy", 
+    "Jacinta", "Jack", "Jackie", "Jacqueline", "Jacqui", "Jade", "Jaime", "Jamie", 
+    "Jan", "Jana", "Jane", "Janee", "Janelle", "Janet", "Janey", "Janie", 
+    "January", "Jasmine", "Jay", "Jayda", "Jayden", "Jayne", "Jaynie", 
+    "Jean", "Jeanie", "Jeannie", "Jemima", "Jemma", "Jenna", "Jennifer", "Jenny", 
+    "Jensen", "Jerri", "Jerry", "Jess", "Jessica", "Jessie", "Jill", 
+    "Joan", "Joanna", "Joanne", "Jodi", "Jodie", "Jody", "Joelle", 
+    "Joey", "Johnny", "Jolie", "Jordan", 
+    "Josephine", "Josie", "Joy", "Joyce", "Judith", "Julia", "Julianne", 
+    "Julie", "Juliet", "June", "Juniper", "Juno", "Justine", 
+    "Kailey", "Kalla", "Kara", "Karen", "Karin", "Karlee", "Karlene", 
+    "Karli", "Karlie", "Karly", "Karolyn", "Karrie", "Karyn", "Karyne", 
+    "Kasey", "Kate", "Katey", "Kathleen", "Kathryn", "Kathy", "Katie", 
+    "Katina", "Katrina", "Katy", "Kay", "Kayla", "Kaylee", "Kelly", 
+    "Kelsey", "Kierra", "Kim", "Kimberly", "Kira", "Kirsteen", 
+    "Kirstin", "Kitty", "Krista", "Kristen", "Kristi", "Kristin", 
+    "Kristy", "Kylie", "Kyra",
+    "Lacey", "Lana", "Lanna", "Lara", "Larissa", "Laura", "Laurel", "Lauren", 
+    "Laurence", "Lauretta", "Laurie", "Lauryn", "Lavender", "Leah", "Leanne", 
+    "Lee", "Leila", "Leisha", "Lena", "Lenna", "Leona", "Leonora", "Leslie", 
+    "Lettice", "Lexi", "Lila", "Liliana", "Lilibet", "Lilibeth", "Lilla", 
+    "Lillian", "Lillie", "Lilly", "Lily", "Lina", "Linda", "Lindsay", 
+    "Lindy", "Lisa", "Liza", "Lizzie", "Lois", "Loraine", "Lorelei", 
+    "Lorena", "Loretta", "Lori", "Lorinda", "Lorna", "Lorraine", "Lottie", 
+    "Lotty", "Louella", "Louisa", "Louise", "Lucia", "Lucinda", "Lucy", 
+    "Lydia", "Lyndsay", "Lynnette", "Lysette", "Mabel", "Mable", "Macy", 
+    "Madelaine", "Madeleine", "Madelyn", "Madge", "Madison", "Madonna", 
+    "Mae", "Maggie", "Magnolia", "Mallory", "Mandy", "Mara", "Marcia", 
+    "Marcie", "Margaret", "Margie", "Margo", "Maria", "Mariah", "Marian", 
+    "Marianne", "Marie", "Marigold", "Marilyn", "Marina", "Marissa", 
+    "Marjorie", "Marlene", "Marsha", "Marta", "Martha", "Martina", 
+    "Mary", "Mary Belle", "Maryanne", "Mason", "Matilda", "Maud", 
+    "Maude", "Maura", "Maureen", "Mavis", "Maxine", "May", "Maya", 
+    "Mayola", "McKenna", "Meara", "Medea", "Megan", "Mehitable", 
+    "Mel", "Melanie", "Melina", "Melinda", "Melissa", "Melody", 
+    "Mercedes", "Meredith", "Merilyn", "Merle", "Merrilyn", "Mia", 
+    "Micah", "Michele", "Michelle", "Mila", "Mildred", "Miley", 
+    "Millicent", "Millie", "Mina", "Mindi", "Mindy", "Minerva", 
+    "Minnie", "Miranda", "Miriam", "Misty", "Moira", "Molly", 
+    "Morgan", "Muriel", "Myra", "Myrna", "Myrtle",
+    "Nadia", "Nadine", "Naila", "Nancy", "Naomi", "Narcissa", "Nathalie", 
+    "Nena", "Nettie", "Netty", "Nevaeh", "Nia", "Nicki", "Nicola", 
+    "Nicole", "Nina", "Noel", "Noella", "Noelle",
+    "Napoleon", "Nate", "Nathan", "Nathanael", "Nathaniel", "Ned", "Nehemiah", 
+    "Neil", "Nelson", "Nestor", "Newt", "Newton", "Niall", "Nicholas", 
+    "Nick", "Nicodemus", "Nicolas", "Nigel", "Niles", "Noah", "Noam", 
+    "Norm", "Norman", "Nowell",
+    "Obadiah", "Odin", "Oliver", "Ollie", "Orion", "Orlando", "Orville", 
+    "Osbert", "Osborne", "Oscar", "Osric", "Oswald", "Otis", "Otto", 
+    "Owen", "Ozzie",
+    "Paddy", "Palmer", "Paris", "Patrick", "Patsy", "Patty", "Paul", 
+    "Peleg", "Percival", "Percy", "Perry", "Pete", "Peter", "Philip", 
+    "Phillipps", "Phineas", "Pierse", "Poe", "Porter", "Posy", "Preston",
+    "Quentin", "Quincy", "Quinn",
+    "Race", "Rafe", "Raife", "Raleigh", "Ralph", "Ralphie", "Ramsey", 
+    "Randall", "Randi", "Randolph", "Randy", "Raphael", "Rathbone", 
+    "Ray", "Raymond", "Reese", "Reggie", "Reginald", "Rembrandt", 
+    "Rendell", "Renssalaer", "Reuben", "Rex", "Reynold", "Rhett", 
+    "Rich", "Richard", "Richie", "Rick", "Ricky", "Riley", "Ritchie", 
+    "Rob", "Robbie", "Robert", "Robin", "Roderick", "Rodger", 
+    "Rodney", "Roger", "Rogers", "Roland", "Roman", "Ron", "Ronald", 
+    "Ronnie", "Rory", "Roscoe", "Ross", "Roualeyn", "Rowland", 
+    "Roy", "Rudolph", "Rudy", "Rufus", "Rupert", "Russ", "Russell", 
+    "Ryan", "Ryder",
+    "Sam", "Sammy", "Samson", "Samuel", "Sandy", "Sanford", "Saul", 
+    "Sawyer", "Scott", "Sean", "Sebastian", "Seth", "Seymour", 
+    "Shane", "Shaun", "Shawn", "Shayne", "Sheldon", "Shepherd", 
+    "Sid", "Sidney", "Sigmund", "Simon", "Sky", "Skyler", 
+    "Sloane", "Smith", "Sol", "Solomon", "Spencer", "Stan", 
+    "Stanford", "Stanley", "Stefan", "Stephen", "Stetson", 
+    "Steve", "Stevie", "Stevland", "Stewart", "Storm", "Stuart", 
+    "Swaine", "Syd", "Sydney", "Sylvester",
+    "Tanner", "Taran", "Taylor", "Tazewell", "Ted", "Tedd", "Teddy", 
+    "Terence", "Terry", "Thaddeus", "Theo", "Theodore", "Thomas", 
+    "Thor", "Tim", "Timmy", "Timothy", "Tobias", "Toby", "Tod", 
+    "Todd", "Toddy", "Tom", "Tommie", "Tommy", "Tony", "Tracy", 
+    "Travis", "Tregonwell", "Trent", "Trevor", "Trey", "Tristan", 
+    "Troy", "Truman", "Tucker", "Tyler", "Tyson",
+    "Ultan", "Ulysses", "Uriah",
+    "Val", "Valentine", "Vernon", "Vic", "Vicary", "Victor", "Vince", 
+    "Vincent", "Vinny", "Vivian",
+    "Wade", "Wadsworth", "Walden", "Waldo", "Walker", "Wallace", 
+    "Wally", "Walt", "Walter", "Warren", "Waverly", "Waylon", 
+    "Wayne", "Wells", "Wes", "Wesley", "Whitney", "Wilber", 
+    "Wilbert", "Wilbur", "Wilf", "Wilfred", "Wilfried", "Wilhelm", 
+    "Will", "Willard", "William", "Willis", "Willy", "Wilmon", 
+    "Wilson", "Winnie", "Winston", "Wolfgang", "Woodrow", 
+    "Woodruff", "Woody", "Wyatt", "Wyndham",
+    "Xander", "Xavier",
+    "Yancy",
+    "Zabdiel", "Zach", "Zachary", "Zack", "Zadoc", "Zak", "Zane", 
+    "Zayden", "Zeb", "Zechariah", "Zedekiah", "Zeke", "Zeph", 
+    "Zephaniah", "Zion"
+];
+    
+const lastNames = [
+  "Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis", "Rodriguez", "Martinez",
+  "Hernandez", "Lopez", "Gonzalez", "Wilson", "Anderson", "Thomas", "Taylor", "Moore", "Jackson", "Martin",
+  "Lee", "Perez", "Thompson", "White", "Harris", "Sanchez", "Clark", "Ramirez", "Lewis", "Robinson",
+  "Walker", "Young", "Allen", "King", "Wright", "Scott", "Torres", "Nguyen", "Hill", "Flores",
+  "Green", "Adams", "Nelson", "Baker", "Hall", "Rivera", "Campbell", "Mitchell", "Carter", "Roberts",
+  "Gomez", "Phillips", "Evans", "Turner", "Diaz", "Parker", "Cruz", "Edwards", "Collins", "Reyes",
+  "Stewart", "Morris", "Morales", "Murphy", "Cook", "Rogers", "Gutierrez", "Ortiz", "Morgan", "Cooper",
+  "Peterson", "Bailey", "Reed", "Kelly", "Howard", "Ramos", "Kim", "Cox", "Ward", "Richardson",
+  "Watson", "Brooks", "Chavez", "Wood", "James", "Bennett", "Gray", "Mendoza", "Ruiz", "Hughes",
+  "Price", "Alvarez", "Castillo", "Sanders", "Patel", "Myers", "Long", "Ross", "Foster", "Jimenez",
+  "Powell", "Jenkins", "Perry", "Russell", "Sullivan", "Bell", "Coleman", "Butler", "Henderson", "Barnes",
+  "Gonzales", "Fisher", "Vasquez", "Simmons", "Romero", "Jordan", "Patterson", "Alexander", "Hamilton", "Graham",
+  "Reynolds", "Griffin", "Wallace", "Moreno", "West", "Cole", "Hayes", "Bryant", "Herrera", "Gibson",
+  "Ellis", "Tran", "Medina", "Aguilar", "Stevens", "Murray", "Ford", "Castro", "Marshall", "Owens",
+  "Harrison", "Fernandez", "Mcdonald", "Woods", "Washington", "Kennedy", "Wells", "Vargas", "Henry", "Chen",
+  "Freeman", "Webb", "Tucker", "Guzman", "Burns", "Crawford", "Olson", "Simpson", "Porter", "Hunter",
+  "Gordon", "Mendez", "Silva", "Shaw", "Snyder", "Mason", "Dixon", "Munoz", "Hunt", "Hicks",
+  "Holmes", "Palmer", "Wagner", "Black", "Robertson", "Boyd", "Rose", "Stone", "Salazar", "Fox",
+  "Warren", "Mills", "Meyer", "Rice", "Schmidt", "Garza", "Daniels", "Ferguson", "Nichols", "Stephens",
+  "Soto", "Weaver", "Ryan", "Gardner", "Payne", "Grant", "Dunn", "Kelley", "Spencer", "Hawkins",
+  "Arnold", "Pierce", "Vazquez", "Hansen", "Peters", "Santos", "Hart", "Bradley", "Knight", "Elliott",
+  "Cunningham", "Duncan", "Armstrong", "Hudson", "Carroll", "Lane", "Riley", "Andrews", "Alvarado", "Ray",
+  "Delgado", "Berry", "Perkins", "Hoffman", "Johnston", "Matthews", "Pena", "Richards", "Contreras", "Willis",
+  "Carpenter", "Lawrence", "Sandoval", "Guerrero", "George", "Chapman", "Rios", "Estrada", "Ortega", "Watkins",
+  "Greene", "Nunez", "Wheeler", "Valdez", "Harper", "Burke", "Larson", "Santiago", "Maldonado", "Morrison",
+  "Franklin", "Carlson", "Austin", "Dominguez", "Carr", "Lawson", "Jacobs", "Obrien", "Lynch", "Singh",
+  "Vega", "Bishop", "Montgomery", "Oliver", "Jensen", "Harvey", "Williamson", "Gilbert", "Dean", "Sims",
+  "Espinoza", "Howell", "Li", "Wong", "Reid", "Hanson", "Le", "Mccoy", "Garrett", "Burton",
+  "Fuller", "Wang", "Weber", "Welch", "Rojas", "Lucas", "Marquez", "Fields", "Park", "Yang",
+  "Little", "Banks", "Padilla", "Day", "Walsh", "Bowman", "Schultz", "Luna", "Fowler", "Mejia",
+  "Davidson", "Acosta", "Brewer", "May", "Holland", "Juarez", "Newman", "Pearson", "Curtis", "Cortez",
+  "Douglas", "Schneider", "Joseph", "Barrett", "Navarro", "Figueroa", "Keller", "Avila", "Wade", "Molina",
+  "Stanley", "Hopkins", "Campos", "Barnett", "Bates", "Chambers", "Caldwell", "Beck", "Lambert", "Miranda",
+  "Byrd", "Craig", "Ayala", "Lowe", "Frazier", "Powers", "Neal", "Leonard", "Gregory", "Carrillo",
+  "Sutton", "Fleming", "Rhodes", "Shelton", "Schwartz", "Norris", "Jennings", "Watts", "Duran", "Walters",
+  "Cohen", "Mcdaniel", "Moran", "Parks", "Steele", "Vaughn", "Becker", "Holt", "Deleon", "Barker",
+  "Terry", "Hale", "Leon", "Hail", "Baldwin", "Kirk", "Underwood", "Wilkins", "Gaines", "Madden"
+];
+
+const jobs = [
+  "Software Engineer", "Product Manager", "Graphic Designer", "Security Analyst", "QA Tester", "DevOps Engineer",
+  "Data Scientist", "Machine Learning Engineer", "Cybersecurity Consultant", "UX Designer", "UI Designer", "Frontend Developer",
+  "Backend Developer", "Full Stack Developer", "Mobile App Developer", "Database Administrator", "IT Support Specialist", "Network Engineer",
+  "Cloud Architect", "Systems Analyst", "Web Developer", "AI Researcher", "Penetration Tester", "Digital Forensics Expert",
+  "Blockchain Developer", "Game Developer", "Site Reliability Engineer", "Technical Writer", "Project Manager", "Scrum Master",
+  "Solutions Architect", "Business Analyst", "SEO Specialist", "Marketing Analyst", "Sales Engineer", "Content Strategist",
+  "Copywriter", "Social Media Manager", "E-commerce Manager", "Email Marketing Manager", "Advertising Coordinator", "Brand Manager",
+  "Video Editor", "Animator", "3D Artist", "Photographer", "Audio Engineer", "Voice Actor", "Music Producer", "Illustrator",
+  "Legal Counsel", "Compliance Officer", "Paralegal", "Lawyer", "Contract Manager", "Patent Examiner", "Notary Public",
+  "Civil Engineer", "Mechanical Engineer", "Electrical Engineer", "Chemical Engineer", "Industrial Engineer", "Structural Engineer",
+  "Environmental Engineer", "Biomedical Engineer", "Nuclear Engineer", "Aerospace Engineer", "Robotics Engineer", "Automotive Engineer",
+  "Architect", "Urban Planner", "Interior Designer", "Construction Manager", "Surveyor", "Carpenter", "Electrician", "Plumber",
+  "Welder", "Machinist", "HVAC Technician", "Crane Operator", "Heavy Equipment Operator", "Drone Pilot", "Logistics Coordinator",
+  "Supply Chain Analyst", "Warehouse Manager", "Forklift Operator", "Truck Driver", "Shipping Clerk", "Inventory Specialist",
+  "Retail Manager", "Cashier", "Sales Associate", "Customer Service Representative", "Call Center Agent", "Bank Teller",
+  "Loan Officer", "Financial Analyst", "Investment Banker", "Accountant", "Auditor", "Tax Advisor", "Economist", "Budget Analyst",
+  "Actuary", "Insurance Underwriter", "Claims Adjuster", "Risk Manager", "Treasurer", "Controller", "CFO", "Bookkeeper",
+  "Human Resources Manager", "Recruiter", "Talent Acquisition Specialist", "Training Specialist", "Payroll Clerk", "Benefits Coordinator",
+  "Health & Safety Officer", "Nurse", "Doctor", "Surgeon", "Dentist", "Pharmacist", "Radiologist", "Psychologist", "Psychiatrist",
+  "Social Worker", "Therapist", "Physical Therapist", "Occupational Therapist", "Speech Pathologist", "Nutritionist", "Dietitian",
+  "Personal Trainer", "Fitness Coach", "Yoga Instructor", "Chiropractor", "Veterinarian", "Vet Technician", "Zoologist",
+  "Marine Biologist", "Biochemist", "Chemist", "Physicist", "Mathematician", "Statistician", "Astronomer", "Meteorologist",
+  "Geologist", "Hydrologist", "Ecologist", "Microbiologist", "Lab Technician", "Field Technician", "Research Assistant",
+  "Research Scientist", "Academician", "Professor", "Lecturer", "Teacher", "Substitute Teacher", "Tutor", "Librarian",
+  "School Principal", "Superintendent", "Education Consultant", "Curriculum Developer", "Instructional Designer", "Training Manager",
+  "Police Officer", "Detective", "Crime Scene Investigator", "FBI Agent", "Border Patrol Agent", "Firefighter", "Paramedic",
+  "Security Guard", "Corrections Officer", "Private Investigator", "Military Officer", "Pilot", "Flight Attendant", "Air Traffic Controller",
+  "Aviation Mechanic", "Airport Manager", "Customs Officer", "Immigration Officer", "Travel Agent", "Tour Guide", "Hotel Manager",
+  "Front Desk Clerk", "Concierge", "Chef", "Sous Chef", "Pastry Chef", "Bartender", "Waiter", "Barista", "Baker", "Dishwasher",
+  "Janitor", "Housekeeper", "Landscaper", "Gardener", "Pest Control Technician", "Sanitation Worker", "Recycling Technician",
+  "Maintenance Worker", "Auto Mechanic", "Tow Truck Driver", "Detailer", "Painter", "Glass Installer", "Upholsterer",
+  "Real Estate Agent", "Property Manager", "Home Inspector", "Mortgage Broker", "Leasing Consultant", "Landlord",
+  "Entrepreneur", "Startup Founder", "Freelancer", "Gig Worker", "Remote Worker", "Consultant", "Coach", "Motivational Speaker",
+  "Influencer", "YouTuber", "Podcaster", "Streamer", "TikTok Creator", "Affiliate Marketer", "Dropshipper", "Online Instructor",
+  "Translator", "Interpreter", "Linguist", "Sign Language Interpreter", "Voiceover Artist", "Editor", "Proofreader",
+  "Journalist", "News Anchor", "Reporter", "Photojournalist", "Public Relations Officer", "Spokesperson", "Crisis Manager",
+  "Event Planner", "Wedding Planner", "Caterer", "Florist", "DJ", "Lighting Technician", "Stagehand", "Set Designer",
+  "Costume Designer", "Makeup Artist", "Hair Stylist", "Model", "Actor", "Film Director", "Producer", "Screenwriter",
+  "Stunt Performer", "Talent Agent", "Casting Director", "Game Designer", "Level Designer", "Character Artist",
+  "QA Analyst (Games)", "Esports Player", "Esports Coach", "Game Streamer", "Community Manager", "Narrative Designer",
+  "Voice Director", "Tech Evangelist", "UX Researcher", "Growth Hacker", "Innovation Strategist", "Product Owner",
+  "Customer Success Manager", "Client Support Engineer", "Solutions Engineer", "Presales Engineer", "Pen Test Engineer",
+  "SCADA Analyst", "Threat Hunter", "Red Teamer", "Blue Teamer", "Malware Analyst", "Reverse Engineer", "Bug Bounty Hunter",
+  "Forensics Investigator", "Cryptographer", "Key Management Specialist", "IAM Specialist", "SOC Analyst", "SIEM Engineer",
+  "PKI Administrator", "Incident Responder", "BISO", "CISO", "Security Program Manager", "InfoSec Trainer",
+  "OSINT Analyst", "CTI Analyst", "Fraud Investigator", "Digital Risk Analyst", "Cloud Security Architect",
+  "Zero Trust Engineer", "Privacy Officer", "GDPR Consultant", "Compliance Auditor", "Ethical Hacker",
+  "Threat Intelligence Lead", "ICS Security Engineer", "Firmware Analyst", "IoT Security Researcher"
+];
+
+const companies = [
+  "Globex Inc", "Initech", "Umbrella Corp", "Wayne Enterprises", "Acme Corp", "Stark Industries", "Cyberdyne Systems", "Oscorp", "LexCorp", "Tyrell Corporation",
+  "Aperture Science", "Weyland-Yutani", "Massive Dynamic", "Hooli", "Pied Piper", "Vought International", "Black Mesa", "Zorin Industries", "Wonka Industries", "Gringotts Bank",
+  "Nakatomi Trading", "Virtucon", "Octan Corporation", "Soylent Corp", "Blue Sun Corporation", "Omni Consumer Products", "MomCorp", "Planet Express", "Genco Olive Oil", "Yoyodyne Systems",
+  "Rich Industries", "CyberCore Systems", "Quantum Solutions", "NovaTech Dynamics", "Vertex Labs", "Ionix Systems", "Hyperion Digital", "Neon Pixel Studios", "Cryptonova Inc", "AstraCore",
+  "BitBridge Technologies", "Tesseract AI", "FutureNet Systems", "Vortex Innovations", "Ardent Codeworks", "Zenith Software", "FusionWorks", "Nexa Systems", "Skycloud Technologies", "EchoByte Solutions",
+  "LunarTech", "Voltus Group", "RazorEdge", "NimbusWare", "DeltaQuantum", "OmniSphere Tech", "Netfinity", "Axon Global", "HiveMind Technologies", "NeuroSync Corp",
+  "Omnia Dynamics", "SkyForge", "HexaGrid", "Oblivion Labs", "SpectraSoft", "TerraTech", "Aegis Systems", "BlueNova", "NextPhase Systems", "Interloop",
+  "Phantom Tech", "BioWave", "MatrixWorks", "Cortexia", "Cygnus Core", "NovaCore", "VoidLabs", "IntraLink", "CipherCode", "NeonCloud",
+  "ZeroGravity", "MetaCortex", "Ignite AI", "Carbon Minds", "QuantumFuel", "InnoSoft", "Zentech", "Redshift Dynamics", "PsyTech", "Zenbyte",
+  "Omnivault", "NeuraLink", "Edenware", "NovaForge", "ScytheTech", "RogueAI Labs", "NextGen Dynamics", "NetSpark", "Reactor Core", "Gridstream",
+  "PulseFusion", "AxialSoft", "OptiCore", "Ultranet Systems", "Altura Systems", "BrightEdge Solutions", "CoreShift", "SmartMatrix", "AIForge", "DigiCore",
+  "StratusCorp", "LuminarTech", "Magnetar Solutions", "Titanium Networks", "Turbosoft", "Silicon Pulse", "InfinityStack", "DeepGrid", "Skybound Systems", "VantaCore",
+  "Astrobyte", "ExoCode", "Hyperion Pulse", "InfiniTech", "Quantum Core", "Codedrive", "BlueBolt", "CodeRift", "Fireline Tech", "Soluna Technologies",
+  "NetRanger", "PowerEdge", "NeonEdge", "Skycraft", "PixelForge", "RainTech", "Nucleus Systems", "Icarus Innovations", "CodeHalo", "Zync Systems",
+  "AetherWorks", "CyberNova", "Percepta", "PulseStack", "AlphaMatrix", "Nexora", "Flowgrid", "Mindscale", "BlackOrbit", "IntelliSystems",
+  "CoreX", "HeliosWare", "Nexilium", "Parallax Tech", "Synaptic Tech", "Overwatch Systems", "Cloudflux", "Revolv AI", "Velocity Systems", "Stratagenics",
+  "BinaryFrost", "Graviton Labs", "Radial Dynamics", "Optinetics", "TechSpire", "Genyx Systems", "XenoSoft", "Equinox Tech", "NetTraq", "Orbital Dynamics",
+  "FlareNet", "Digital Drift", "LogiCore", "DataForge", "Streamline Systems", "PrismTech", "Quantix Inc", "Skyflow", "Nimbus AI", "NeutronIQ",
+  "Catalyst Systems", "DeepSpace Analytics", "CyberSpring", "Ignitia", "CodeForge", "ByteWorks", "PixelNova", "Silicon Nexus", "EchoStream", "Radient AI",
+  "Infinity Drive", "CyberCrate", "CerebroTech", "Glitchwave", "DynaCore", "CloudBridge", "VoltStack", "DataArgo", "Bitfield Systems", "Skystack",
+  "Zenfinity", "TidalFlow", "CircuitIQ", "BrainCloud", "QuantumX", "AIwave", "BinaryBridge", "OptiMind", "Darkstar Networks", "StormByte",
+  "Nexial AI", "EchoCode", "Bytevault", "VisionForge", "BitBloom", "RedNova Systems", "CryoTech", "Simulink Dynamics", "Overmind AI", "ChronoByte",
+  "DataCell", "Arcadia Labs", "Evercore", "Digital Frontiers", "XenoWorks", "DarkMatter Dynamics", "Kryptic Systems", "CyberOrbit", "MegaSoft", "NeoVerse",
+  "VoltEdge", "UltraNova", "Moonshot Systems", "SkyHawk Dynamics", "MetaLogic", "Virtual Circuit", "AstroForge", "MatrixNode", "QuantumFrame", "TraceRoute Labs",
+  "ZeroPoint Logic", "IonForge", "StackScape", "ByteRaider", "Infinity Protocols", "SolarNode", "LogicVortex", "CypherBridge", "NebulaEdge", "OrionWare",
+  "InfraShift", "AI Horizon", "XenoScape", "Hexabyte", "Nextronix", "SkyNetix", "EchoGate", "CodeWhirl", "XLab", "CyberSpire",
+  "CoreForge", "MetaSynth", "SkyNova", "SystemGenesis", "Orbitron", "IonZone", "NexMind", "Infosec Nexus", "BinaryEdge", "QuantumBox",
+  "DataNova", "SignalForge", "CodePilot", "EchoNetwork", "ZeroTrace", "SkyMesh", "Cortex Innovations", "CyberVerse", "StackEdge", "MetaSystems",
+  "OrbitOps", "Tracebyte", "LogicFoundry", "ProtoNet", "DigitalNexus", "TerraCode", "Crimson Logic", "Informatix", "NanoByte Tech", "ByteCraft",
+  "Parallel Systems", "Technovia", "InfoZen", "MetaCypher", "NodeCore", "Skyway Technologies", "Corelytics", "ZenithStack", "NeuronSoft", "CryptoHub",
+  "Omega AI", "Bitfield Analytics", "Orbita AI", "QuasarSoft", "Synthex", "Neurolens", "DeltaVerse", "Omicron Inc", "Thriveware", "DreamNova",
+  "LogicNest", "CloudNest", "LightPath", "NeoCore", "CoreAI", "Brainflux", "IntelliGrid", "ZetaSystems", "Infoforge", "MindFusion",
+  "Pathbreaker AI", "TriLogic", "Gridify", "VaultCore", "OctalWorks", "NeoBit Systems", "OpenNova", "FutureStack", "DataMind AI", "SecureFrame",
+  "Cryptix", "CyberHive", "ArgoNet", "HyperCloud", "Omega Systems", "VoidPulse", "Neurobit", "Spherion", "TerraFlux", "DigiNova",
+  "VoltaNet", "ViraMind", "CyanLabs", "NovaBridge", "XenCore", "Obsidian Systems", "Orbit Intelligence", "GloboTech", "CrystalAI", "FlowNet",
+  "QuantumTron", "EchoSynth", "FlyCore", "SecureNova", "DataMatrix", "NextAI", "LambdaSys", "AItronix", "CyberNest", "OrbisAI",
+  "VisionNest", "SkyAI", "BioCortex", "SecureWare", "DataVelocity", "AstroAI", "NovaFusion", "SecureIntellect", "CloudArmor", "LogicAxis",
+  "CodeFlex", "ShadowCore", "BrightMind", "TrinitySoft", "MetaSecurity", "BlueFire Systems", "CipherLabs", "MindGrid", "TrueBit", "AIChain",
+  "CortexVault", "SecureNetics", "QuantumGuard", "NeuralSpire", "Infinitrix", "DeepFrost", "CryoNix", "ByteRise", "CyberLogic", "EchoTrust",
+  "MindMatter", "LunarEdge", "ZyberCore", "CloudCortex", "DarkCloud AI", "CrystalBit", "NeuronChain", "DataRoam", "NetSecure", "BitArmor",
+  "CoreSector", "Infobolt", "CyberTree", "SparkGuard", "StormMind", "CloudStrike", "LogicOcean", "MindScope", "RedLogic", "CloudMind",
+  "SkyFactor", "Trustwave", "NightCore", "Darkwave", "ByteForce", "CodeEcho", "NovaLock", "AIHarbor", "QuantumLink", "VoltLogic",
+  "TruePulse", "BitGuardian", "KeyVault AI", "IronSafe", "CyberSpring Labs", "HyperNix", "MindNet", "NeuralVault", "DigiTrace", "ZeroAI"
+];
+
+  const genders = ["Male", "Female", "Non-binary"];
+  let generatedData = [];
+
+  countries.forEach(c => {
+    const opt = document.createElement("option");
+    opt.value = c.name;
+    opt.textContent = `${c.flag} ${c.name}`;
+    document.getElementById("countrySelect").appendChild(opt);
+  });
+
+  function getRandom(arr) {
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
+
+  function randomPhone(code) {
+    return `${code} ${Math.floor(100 + Math.random() * 900)}-${Math.floor(1000000 + Math.random() * 8999999)}`;
+  }
+
+  function randomDate(startYear = 1970, endYear = 2005) {
+    const date = new Date(startYear + Math.random() * (endYear - startYear), Math.random() * 12, Math.random() * 28);
+    return date.toISOString().split('T')[0];
+  }
+
+  function generateID() {
+    return Math.random().toString().slice(2, 11) + Math.floor(Math.random() * 9);
+  }
+
+  function generateIdentity(countryOverride) {
+    const first = getRandom(firstNames);
+    const last = getRandom(lastNames);
+    const username = `${first.toLowerCase()}_${last.toLowerCase()}${Math.floor(Math.random() * 1000)}`;
+    const email = `${username}@example.com`;
+    const ip = `${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`;
+    const country = countryOverride || getRandom(countries);
+    const phone = randomPhone(country.code);
+    const avatar = `https://api.dicebear.com/7.x/thumbs/svg?seed=${username}`;
+    const job = getRandom(jobs);
+    const company = getRandom(companies);
+    const gender = getRandom(genders);
+    const birthdate = randomDate();
+    const nationalId = generateID();
+
+    return {
+      fullName: `${first} ${last}`,
+      username,
+      email,
+      ip,
+      phone,
+      country: `${country.flag} ${country.name}`,
+      avatar,
+      job,
+      company,
+      gender,
+      birthdate,
+      nationalId
+    };
+  }
+
+  function createCard(identity, index) {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <img src="${identity.avatar}" alt="avatar">
+      <div class="field"><span class="label">#${index + 1}</span></div>
+      <div class="field"><span class="label">Name:</span><span class="value">${identity.fullName}</span> <span class="copy" onclick="copyToClipboard('${identity.fullName}', this)">[copy]</span></div>
+      <div class="field"><span class="label">Username:</span><span class="value">${identity.username}</span></div>
+      <div class="field"><span class="label">Email:</span><span class="value">${identity.email}</span></div>
+      <div class="field"><span class="label">Phone:</span><span class="value">${identity.phone}</span></div>
+      <div class="field"><span class="label">IP:</span><span class="value">${identity.ip}</span></div>
+      <div class="field"><span class="label">Country:</span><span class="value">${identity.country}</span></div>
+      <div class="field"><span class="label">Gender:</span><span class="value">${identity.gender}</span></div>
+      <div class="field"><span class="label">Job Title:</span><span class="value">${identity.job}</span></div>
+      <div class="field"><span class="label">Company:</span><span class="value">${identity.company}</span></div>
+      <div class="field"><span class="label">Birthdate:</span><span class="value">${identity.birthdate}</span></div>
+      <div class="field"><span class="label">National ID:</span><span class="value">${identity.nationalId}</span></div>
+    `;
+    return card;
+  }
+
+  function generate(amountOverride) {
+    const output = document.getElementById("output");
+    const amount = amountOverride || parseInt(document.getElementById("amountInput").value) || 5;
+    const selectedCountryName = document.getElementById("countrySelect").value;
+    const selectedCountry = selectedCountryName === "random" ? null : countries.find(c => c.name === selectedCountryName);
+
+    for (let i = 0; i < amount; i++) {
+      const identity = generateIdentity(selectedCountry);
+      generatedData.push(identity);
+      output.appendChild(createCard(identity, output.children.length));
+    }
+  }
+
+  function clearAll() {
+    document.getElementById("output").innerHTML = "";
+    generatedData = [];
+  }
+
+  function copyToClipboard(text, el) {
+    navigator.clipboard.writeText(text);
+    el.innerText = "✅ Copied!";
+    setTimeout(() => el.innerText = "[copy]", 1000);
+  }
+
+  function exportCSV() {
+    const rows = [["Full Name", "Username", "Email", "Phone", "IP", "Country", "Gender", "Job", "Company", "Birthdate", "National ID"]];
+    generatedData.forEach(id => {
+      rows.push([id.fullName, id.username, id.email, id.phone, id.ip, id.country, id.gender, id.job, id.company, id.birthdate, id.nationalId]);
+    });
+    const csv = rows.map(r => r.map(f => `"${f}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "infosec_identities.csv";
+    link.click();
+  }
+
+  function exportPDF() {
+    const element = document.getElementById("output");
+    html2pdf().from(element).save("infosec_identities.pdf");
+  }
+</script>
+
+</body>
+</html>

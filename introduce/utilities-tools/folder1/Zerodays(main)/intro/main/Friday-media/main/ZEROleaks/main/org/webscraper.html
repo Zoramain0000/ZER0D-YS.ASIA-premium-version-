@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>🕸️ Web Scraper with AllOrigins API</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      background: #0f172a;
+      color: #f1f5f9;
+      font-family: 'Segoe UI', sans-serif;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      color: #38bdf8;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: auto;
+      background: #1e293b;
+      padding: 20px;
+      border-radius: 12px;
+    }
+
+    input, button, textarea {
+      width: 100%;
+      margin-bottom: 10px;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      font-size: 1rem;
+    }
+
+    input {
+      background: #334155;
+      color: #f1f5f9;
+    }
+
+    button {
+      background: #38bdf8;
+      color: black;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    button:hover {
+      background: #0ea5e9;
+    }
+
+    textarea {
+      background: #0f172a;
+      color: #f8fafc;
+      resize: vertical;
+      height: 220px;
+      font-family: monospace;
+    }
+
+    .btn-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .status {
+      text-align: center;
+      margin-bottom: 10px;
+      color: #facc15;
+    }
+
+    @media (max-width: 600px) {
+      .btn-group {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>🕷️ Advanced Web Scraper (via AllOrigins API)</h1>
+  <div class="container">
+    <div class="status" id="statusMsg">Enter a URL and optional selector.</div>
+
+    <input type="text" id="urlInput" placeholder="Target URL (e.g. https://example.com)" />
+    <input type="text" id="selectorInput" placeholder="CSS Selector (e.g. h1, .title, #main)" />
+
+    <div class="btn-group">
+      <button onclick="scrapeSite()">🔍 Scrape</button>
+      <button onclick="copyText()">📋 Copy</button>
+      <button onclick="exportText()">📁 Export .txt</button>
+    </div>
+
+    <textarea id="resultArea" placeholder="Scraped content will appear here..."></textarea>
+  </div>
+
+  <script>
+    async function scrapeSite() {
+      const url = document.getElementById("urlInput").value.trim();
+      const selector = document.getElementById("selectorInput").value.trim();
+      const status = document.getElementById("statusMsg");
+      const output = document.getElementById("resultArea");
+
+      if (!url.startsWith("http")) {
+        status.textContent = "⚠️ Please enter a valid URL (http/https).";
+        return;
+      }
+
+      output.value = "";
+      status.textContent = "⏳ Fetching via AllOrigins API...";
+
+      try {
+        const apiURL = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+        const res = await fetch(apiURL);
+
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+
+        const html = await res.text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, "text/html");
+
+        let result = "";
+        if (selector) {
+          const elements = doc.querySelectorAll(selector);
+          if (elements.length === 0) {
+            status.textContent = "⚠️ No elements matched your selector.";
+            return;
+          }
+          elements.forEach(el => {
+            result += el.outerHTML + "\n\n";
+          });
+          status.textContent = `✅ Found ${elements.length} matching element(s).`;
+        } else {
+          result = html;
+          status.textContent = "✅ Full HTML loaded (no selector used).";
+        }
+
+        output.value = result.trim();
+      } catch (err) {
+        status.textContent = `❌ Error: ${err.message}`;
+        output.value = `Fetch failed. Possible CORS or API error.\n\n${err}`;
+      }
+    }
+
+    function copyText() {
+      const text = document.getElementById("resultArea").value;
+      if (!text) return alert("Nothing to copy.");
+      navigator.clipboard.writeText(text).then(() => {
+        alert("Copied to clipboard!");
+      });
+    }
+
+    function exportText() {
+      const text = document.getElementById("resultArea").value;
+      if (!text) return alert("Nothing to export.");
+      const blob = new Blob([text], { type: "text/plain" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "scraped_output.txt";
+      link.click();
+    }
+  </script>
+</body>
+</html>

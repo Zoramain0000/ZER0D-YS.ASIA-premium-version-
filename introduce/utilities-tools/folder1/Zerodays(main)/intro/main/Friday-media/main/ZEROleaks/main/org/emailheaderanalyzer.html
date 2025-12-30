@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Email Header Analyzer</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f8f9fa;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background-color: #343a40;
+      color: white;
+      padding: 1rem;
+      text-align: center;
+    }
+    main {
+      max-width: 1000px;
+      margin: 20px auto;
+      padding: 20px;
+      background: white;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      border-radius: 8px;
+    }
+    textarea {
+      width: 100%;
+      height: 200px;
+      font-family: monospace;
+      padding: 10px;
+      margin-bottom: 15px;
+    }
+    button {
+      background-color: #007bff;
+      border: none;
+      color: white;
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    pre {
+      background: #f1f1f1;
+      padding: 10px;
+      border-radius: 5px;
+      overflow-x: auto;
+    }
+    h2 {
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 5px;
+    }
+    .result-section {
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Email Header Analyzer</h1>
+  </header>
+  <main>
+    <label for="headerInput"><strong>Paste Raw Email Header:</strong></label>
+    <textarea id="headerInput" placeholder="Paste full email header here..."></textarea>
+    <button onclick="analyzeHeader()">Analyze</button>
+    <div id="results"></div>
+  </main>
+
+  <script>
+    function extractReceivedHeaders(raw) {
+      return raw.match(/^Received: (.+)$/gm) || [];
+    }
+
+    function extractIPAddresses(headers) {
+      const ipRegex = /\[?(\d{1,3}(?:\.\d{1,3}){3})\]?/g;
+      const ips = new Set();
+      headers.forEach(header => {
+        let match;
+        while ((match = ipRegex.exec(header)) !== null) {
+          ips.add(match[1]);
+        }
+      });
+      return [...ips];
+    }
+
+    function detectMailService(from) {
+      if (!from) return "Unknown";
+      const lower = from.toLowerCase();
+      if (lower.includes("gmail.com")) return "Gmail";
+      if (["outlook.com", "hotmail.com", "live.com"].some(s => lower.includes(s))) return "Outlook / Microsoft";
+      if (lower.includes("yahoo.com")) return "Yahoo";
+      if (lower.includes("icloud.com") || lower.includes("me.com")) return "Apple Mail / iCloud";
+      if (lower.includes("zoho.com")) return "Zoho Mail";
+      if (lower.includes("protonmail.com")) return "ProtonMail";
+      if (lower.includes("yandex.com")) return "Yandex";
+      return "Private / Corporate Mail Server";
+    }
+
+    function parseHeader(raw) {
+      const lines = raw.split(/\r?\n/);
+      const headers = {};
+      let lastKey = "";
+      lines.forEach(line => {
+        if (/^\s/.test(line) && lastKey) {
+          headers[lastKey] += " " + line.trim();
+        } else {
+          const [key, ...rest] = line.split(":");
+          if (key && rest.length > 0) {
+            lastKey = key.trim();
+            headers[lastKey] = rest.join(":").trim();
+          }
+        }
+      });
+      return headers;
+    }
+
+    function analyzeHeader() {
+      const raw = document.getElementById("headerInput").value.trim();
+      if (!raw) return alert("Please paste an email header to analyze.");
+
+      const parsed = parseHeader(raw);
+      const receivedHeaders = extractReceivedHeaders(raw);
+      const ipAddresses = extractIPAddresses(receivedHeaders);
+      const service = detectMailService(parsed["From"]);
+
+      const resultHTML = `
+        <div class="result-section">
+          <h2>General Information</h2>
+          <pre>
+Subject       : ${parsed["Subject"] || "N/A"}
+From          : ${parsed["From"] || "N/A"}
+To            : ${parsed["To"] || "N/A"}
+Message-ID    : ${parsed["Message-ID"] || "N/A"}
+Date          : ${parsed["Date"] || "N/A"}
+MIME Type     : ${parsed["Content-Type"] || "N/A"}
+MIME Version  : ${parsed["MIME-Version"] || "N/A"}
+User-Agent    : ${parsed["User-Agent"] || parsed["X-Mailer"] || "N/A"}
+Content Encoding: ${parsed["Content-Transfer-Encoding"] || "N/A"}
+Mail Service  : ${service}
+          </pre>
+        </div>
+
+        ${receivedHeaders.length > 0 ? `
+        <div class="result-section">
+          <h2>Received Headers</h2>
+          <pre>${receivedHeaders.map((h, i) => `${i + 1}. ${h}`).join("\n\n")}</pre>
+        </div>` : ""}
+
+        ${ipAddresses.length > 0 ? `
+        <div class="result-section">
+          <h2>Extracted IP Addresses</h2>
+          <pre>${ipAddresses.map(ip => `- ${ip}`).join("\n")}</pre>
+        </div>` : ""}
+      `;
+
+      document.getElementById("results").innerHTML = resultHTML;
+    }
+  </script>
+</body>
+</html>

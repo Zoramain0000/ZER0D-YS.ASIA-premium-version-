@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Domain Analyzer Tool</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      margin: 0;
+      font-family: "Segoe UI", sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+    }
+
+    header {
+background: rgba(0,0,0,0.5);
+      color: red;
+      padding: 1rem;
+      font-size: 1.5em;
+      text-align: center;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: auto;
+      padding: 1rem;
+    }
+
+    input, button {
+      padding: 10px;
+      font-size: 1rem;
+      margin: 5px 0;
+background: rgba(0,0,0,0.5);
+color: red;
+
+    }
+    div{
+      color: red;
+    }
+
+    .btn {
+      background: red;
+      color: green;
+      border: none;
+      cursor: pointer;
+      margin-left: 10px;
+      border-radius: 5px;
+    }
+
+    .btn:hover {
+background: rgba(0,0,0,0.5);
+    }
+
+    .result {
+background: rgba(0,0,0,0.5);
+      border-radius: 8px;
+      padding: 1rem;
+      margin-top: 1rem;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    pre {
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      font-size: 0.95rem;
+background: rgba(0,0,0,0.5);
+      padding: 10px;
+      border-radius: 5px;
+      border: 1px solid red;
+    }
+  </style>
+</head>
+<body>
+  <header>🌐 Domain Analyzer Tool</header>
+  <div class="container">
+    <label for="domain">Enter Domain:</label><br>
+    <input type="text" id="domain" placeholder="example.com" />
+    <button class="btn" onclick="analyzeDomain()">Analyze</button>
+    <button class="btn" onclick="exportResults()">Export JSON</button>
+
+    <div id="results" class="result"></div>
+  </div>
+
+  <script>
+    const resultsDiv = document.getElementById('results');
+    let currentData = {};
+
+    async function analyzeDomain() {
+      const domain = document.getElementById('domain').value.trim();
+      if (!domain) return alert('Please enter a domain.');
+
+      resultsDiv.innerHTML = "<p><strong>Analyzing...</strong></p>";
+      currentData = { domain };
+
+      try {
+        // 1. DNS Records
+        const dnsRes = await fetch(`https://dns.google/resolve?name=${domain}&type=A`);
+        const dnsData = await dnsRes.json();
+        currentData.dns = dnsData.Answer || [];
+
+        // 2. RDAP WHOIS
+        const rdapRes = await fetch(`https://rdap.org/domain/${domain}`);
+        const rdapData = await rdapRes.json();
+        currentData.rdap = rdapData;
+
+        // 3. Reverse IP Lookup
+        const reverseIpRes = await fetch(`https://api.hackertarget.com/reverseiplookup/?q=${domain}`);
+        const reverseIpData = await reverseIpRes.text();
+        currentData.reverseIP = reverseIpData;
+
+        // 4. MX Records (email validation)
+        const mxRes = await fetch(`https://dns.google/resolve?name=${domain}&type=MX`);
+        const mxData = await mxRes.json();
+        currentData.mx = mxData.Answer || [];
+
+        displayResults();
+      } catch (err) {
+        resultsDiv.innerHTML = `<p style="color:red;">Error fetching data: ${err.message}</p>`;
+      }
+    }
+
+    function displayResults() {
+      let html = '';
+
+      html += `<h3>Domain: ${currentData.domain}</h3>`;
+
+      html += `<h4>DNS A Records:</h4><pre>${JSON.stringify(currentData.dns, null, 2)}</pre>`;
+
+      html += `<h4>MX Records:</h4><pre>${JSON.stringify(currentData.mx, null, 2)}</pre>`;
+
+      html += `<h4>WHOIS RDAP Info:</h4><pre>${JSON.stringify(currentData.rdap, null, 2)}</pre>`;
+
+      html += `<h4>Reverse IP Lookup:</h4><pre>${currentData.reverseIP}</pre>`;
+
+      resultsDiv.innerHTML = html;
+    }
+
+    function exportResults() {
+      if (!currentData || !currentData.domain) {
+        alert('No data to export yet.');
+        return;
+      }
+
+      const blob = new Blob([JSON.stringify(currentData, null, 2)], {
+        type: 'application/json'
+      });
+
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `${currentData.domain}-analysis.json`;
+      link.click();
+    }
+  </script>
+</body>
+</html>

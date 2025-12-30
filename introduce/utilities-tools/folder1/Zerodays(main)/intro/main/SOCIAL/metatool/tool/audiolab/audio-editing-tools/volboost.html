@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Advanced Volume Booster Audio Tool</title>
+<style>
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+    color: red;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    align-items: center;
+    justify-content: flex-start;
+  }
+  header {
+    padding: 20px;
+    font-size: 1.5rem;
+    font-weight: bold;
+    letter-spacing: 1.2px;
+  }
+  main {
+    max-width: 700px;
+    width: 100%;
+background: rgba(0, 0, 0, 0.5);
+    border-radius: 10px;
+    padding: 20px;
+    box-sizing: border-box;
+    box-shadow: 0 0 20px red;
+  }
+  input[type="file"] {
+    color: red;
+  }
+  label {
+    display: block;
+    margin: 20px 0 5px;
+  }
+  input[type="range"] {
+    width: 100%;
+  }
+  .controls {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin: 20px 0;
+  }
+  button {
+    background: red;
+    border: none;
+    padding: 10px 20px;
+    color: green;
+    font-weight: bold;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+  }
+  button:hover:not(:disabled) {
+background: rgba(0, 0, 0, 0.5);
+  }
+  button:disabled {
+background: rgba(0, 0, 0, 0.5);
+    cursor: not-allowed;
+  }
+  #volumeValue {
+    font-weight: bold;
+    text-align: center;
+  }
+  canvas {
+    margin-top: 20px;
+    width: 100%;
+    height: 100px;
+    border-radius: 8px;
+background: rgba(0, 0, 0, 0.5);
+    display: block;
+  }
+  footer {
+    margin: 30px 0;
+    font-size: 0.9rem;
+    color: red;
+  }
+</style>
+</head>
+<body>
+
+<header>🎛️ Advanced Volume Booster Audio Tool</header>
+
+<main>
+  <input type="file" id="fileInput" accept="audio/*" />
+  
+  <label for="volumeRange">Volume Boost: <span id="volumeValue">100%</span></label>
+  <input type="range" id="volumeRange" min="0" max="300" value="100" step="1" />
+  
+  <div class="controls">
+    <button id="btnPlay" disabled>▶️ Play</button>
+    <button id="btnPause" disabled>⏸ Pause</button>
+    <button id="btnStop" disabled>⏹ Stop</button>
+    <button id="btnDownload" disabled>⬇️ Download Boosted WAV</button>
+  </div>
+  
+  <canvas id="waveform"></canvas>
+</main>
+
+<footer>
+  Developed by ChatGPT &nbsp;|&nbsp; No backend required &nbsp;|&nbsp; Works offline in browser
+</footer>
+
+<script>
+  // Elements
+  const fileInput = document.getElementById('fileInput');
+  const volumeRange = document.getElementById('volumeRange');
+  const volumeValue = document.getElementById('volumeValue');
+  const btnPlay = document.getElementById('btnPlay');
+  const btnPause = document.getElementById('btnPause');
+  const btnStop = document.getElementById('btnStop');
+  const btnDownload = document.getElementById('btnDownload');
+  const canvas = document.getElementById('waveform');
+  const ctx = canvas.getContext('2d');
+
+  // Audio context and nodes
+  let audioCtx = null;
+  let sourceNode = null;
+  let gainNode = null;
+  let audioBuffer = null;
+  let isPlaying = false;
+  let startTime = 0;
+  let pausedAt = 0;
+  let animationId = null;
+
+  // Resize canvas for HiDPI displays
+  function resizeCanvas() {
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = canvas.clientWidth * dpr;
+    canvas.height = canvas.clientHeight * dpr;
+    ctx.scale(dpr, dpr);
+  }
+  resizeCanvas();
+  window.addEventListener('resize', () => {
+    cancelAnimationFrame(animationId);
+    resizeCanvas();
+    if (audioBuffer) drawWaveform();
+  });
+
+  // Draw waveform on canvas
+  function drawWaveform() {
+    const width = canvas.clientWidth;
+    const height = canvas.clientHeight;
+    ctx.clearRect(0, 0, width, height);
+
+    if (!audioBuffer) return;
+
+    const rawData = audioBuffer.getChannelData(0); // Use first channel
+    const step = Math.ceil(rawData.length / width);
+    const amp = height / 2;
+
+    ctx.fillStyle = '#00ccff';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+
+    for (let i = 0; i < width; i++) {
+      let min = 1.0;
+      let max = -1.0;
+      for (let j = 0; j < step; j++) {
+        const datum = rawData[i * step + j];
+        if (datum < min) min = datum;
+        if (datum > max) max = datum;
+      }
+      ctx.moveTo(i, (1 + min) * amp);
+      ctx.lineTo(i, (1 + max) * amp);
+    }
+    ctx.strokeStyle = '#00ccff';
+    ctx.stroke();
+  }
+
+  // Load audio file and decode
+  async function loadAudio(file) {
+    if (audioCtx) {
+      audioCtx.close();
+      audioCtx = null;
+    }
+    audioCtx = new AudioContext();
+
+    const arrayBuffer = await file.arrayBuffer();
+    audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+
+    drawWaveform();
+    setupAudioNodes();
+
+    btnPlay.disabled = false;
+    btnDownload.disabled = false;
+    btnPause.disabled = true;
+    btnStop.disabled = true;
+  }
+
+  // Setup Audio Nodes with gain for volume boosting
+  function setupAudioNodes() {
+    if (!audioCtx || !audioBuffer) return;
+
+    if (sourceNode) {
+      sourceNode.disconnect();
+      sourceNode = null;
+    }
+    if (gainNode) {
+      gainNode.disconnect();
+      gainNode = null;
+    }
+
+    sourceNode = audioCtx.createBufferSource();
+    gainNode = audioCtx.createGain();
+
+    sourceNode.buffer = audioBuffer;
+    gainNode.gain.value = volumeRange.value / 100;
+
+    sourceNode.connect(gainNode).connect(audioCtx.destination);
+
+    // When playback ends
+    sourceNode.onended = () => {
+      isPlaying = false;
+      btnPlay.disabled = false;
+      btnPause.disabled = true;
+      btnStop.disabled = true;
+      pausedAt = 0;
+      cancelAnimationFrame(animationId);
+      drawWaveform();
+    };
+  }
+
+  // Play audio respecting paused position and volume
+  function playAudio() {
+    if (!audioCtx || !audioBuffer) return;
+
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+
+    setupAudioNodes();
+
+    sourceNode.start(0, pausedAt);
+    startTime = audioCtx.currentTime - pausedAt;
+    isPlaying = true;
+
+    btnPlay.disabled = true;
+    btnPause.disabled = false;
+    btnStop.disabled = false;
+
+    visualizeProgress();
+  }
+
+  // Pause audio
+  function pauseAudio() {
+    if (!audioCtx || !sourceNode || !isPlaying) return;
+    sourceNode.stop();
+    pausedAt = audioCtx.currentTime - startTime;
+    isPlaying = false;
+
+    btnPlay.disabled = false;
+    btnPause.disabled = true;
+    btnStop.disabled = false;
+
+    cancelAnimationFrame(animationId);
+    drawWaveform();
+  }
+
+  // Stop audio playback and reset
+  function stopAudio() {
+    if (!audioCtx || !sourceNode) return;
+    sourceNode.stop();
+    pausedAt = 0;
+    isPlaying = false;
+
+    btnPlay.disabled = false;
+    btnPause.disabled = true;
+    btnStop.disabled = true;
+
+    cancelAnimationFrame(animationId);
+    drawWaveform();
+  }
+
+  // Update gain value based on volume slider
+  function updateVolume() {
+    const val = volumeRange.value;
+    volumeValue.textContent = val + '%';
+    if (gainNode) gainNode.gain.setValueAtTime(val / 100, audioCtx.currentTime);
+  }
+
+  // Visualize playback progress on waveform by overlaying a vertical line
+  function visualizeProgress() {
+    if (!audioBuffer) return;
+    const width = canvas.clientWidth;
+    const height = canvas.clientHeight;
+    const duration = audioBuffer.duration;
+
+    function draw() {
+      drawWaveform();
+
+      if (!isPlaying) return;
+
+      const elapsed = audioCtx.currentTime - startTime;
+      const progressX = Math.min((elapsed / duration) * width, width);
+
+      ctx.strokeStyle = '#ff4444';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(progressX, 0);
+      ctx.lineTo(progressX, height);
+      ctx.stroke();
+
+      if (elapsed >= duration) {
+        // End playback
+        isPlaying = false;
+        btnPlay.disabled = false;
+        btnPause.disabled = true;
+        btnStop.disabled = true;
+        pausedAt = 0;
+        return;
+      }
+
+      animationId = requestAnimationFrame(draw);
+    }
+    animationId = requestAnimationFrame(draw);
+  }
+
+  // Convert AudioBuffer to WAV Blob
+  function audioBufferToWav(buffer) {
+    const numOfChan = buffer.numberOfChannels,
+          length = buffer.length * numOfChan * 2 + 44,
+          bufferArray = new ArrayBuffer(length),
+          view = new DataView(bufferArray),
+          channels = [],
+          sampleRate = buffer.sampleRate;
+    let offset = 0;
+
+    // Write WAV container header
+    function writeString(str) {
+      for (let i = 0; i < str.length; i++) {
+        view.setUint8(offset + i, str.charCodeAt(i));
+      }
+      offset += str.length;
+    }
+
+    function write16(value) {
+      view.setUint16(offset, value, true);
+      offset += 2;
+    }
+
+    function write32(value) {
+      view.setUint32(offset, value, true);
+      offset += 4;
+    }
+
+    writeString('RIFF');                      // ChunkID
+    write32(length - 8);                      // ChunkSize
+    writeString('WAVE');                      // Format
+    writeString('fmt ');                      // Subchunk1ID
+    write32(16);                             // Subchunk1Size
+    write16(1);                              // AudioFormat (PCM)
+    write16(numOfChan);                      // NumChannels
+    write32(sampleRate);                     // SampleRate
+    write32(sampleRate * numOfChan * 2);    // ByteRate
+    write16(numOfChan * 2);                  // BlockAlign
+    write16(16);                            // BitsPerSample
+    writeString('data');                      // Subchunk2ID
+    write32(length - offset - 4);           // Subchunk2Size
+
+    // Write interleaved PCM samples
+    for (let i = 0; i < numOfChan; i++) {
+      channels.push(buffer.getChannelData(i));
+    }
+    const interleaved = new Float32Array(buffer.length * numOfChan);
+    for (let i = 0; i < buffer.length; i++) {
+      for (let ch = 0; ch < numOfChan; ch++) {
+        interleaved[i * numOfChan + ch] = channels[ch][i];
+      }
+    }
+
+    // Convert float samples to 16-bit PCM
+    for (let i = 0; i < interleaved.length; i++, offset += 2) {
+      let s = Math.max(-1, Math.min(1, interleaved[i]));
+      s = s < 0 ? s * 0x8000 : s * 0x7FFF;
+      view.setInt16(offset, s, true);
+    }
+
+    return new Blob([bufferArray], { type: 'audio/wav' });
+  }
+
+  // Render boosted audio offline and generate WAV Blob
+  async function renderBoostedAudio(buffer, volumeMultiplier) {
+    const offlineCtx = new OfflineAudioContext(
+      buffer.numberOfChannels,
+      buffer.length,
+      buffer.sampleRate
+    );
+
+    const source = offlineCtx.createBufferSource();
+    source.buffer = buffer;
+
+    const gainNodeOffline = offlineCtx.createGain();
+    gainNodeOffline.gain.value = volumeMultiplier;
+
+    source.connect(gainNodeOffline).connect(offlineCtx.destination);
+    source.start();
+
+    const renderedBuffer = await offlineCtx.startRendering();
+    return renderedBuffer;
+  }
+
+  // Download boosted WAV
+  btnDownload.addEventListener('click', async () => {
+    if (!audioBuffer) return;
+    btnDownload.disabled = true;
+    btnDownload.textContent = "🔄 Rendering...";
+
+    try {
+      const volumeMultiplier = volumeRange.value / 100;
+      const rendered = await renderBoostedAudio(audioBuffer, volumeMultiplier);
+      const wavBlob = audioBufferToWav(rendered);
+
+      const url = URL.createObjectURL(wavBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `boosted_audio_${Date.now()}.wav`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      alert('Error rendering audio: ' + err.message);
+    } finally {
+      btnDownload.textContent = "⬇️ Download Boosted WAV";
+      btnDownload.disabled = false;
+    }
+  });
+
+  // Event listeners
+  fileInput.addEventListener('change', async e => {
+    if (e.target.files.length === 0) return;
+    stopAudio();
+    await loadAudio(e.target.files[0]);
+  });
+
+  volumeRange.addEventListener('input', updateVolume);
+
+  btnPlay.addEventListener('click', () => {
+    playAudio();
+  });
+
+  btnPause.addEventListener('click', () => {
+    pauseAudio();
+  });
+
+  btnStop.addEventListener('click', () => {
+    stopAudio();
+  });
+</script>
+
+</body>
+</html>

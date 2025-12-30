@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>🌐 Mastered super Tracker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: 'Segoe UI', sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+    }
+    #app {
+      display: flex;
+      height: 100vh;
+    }
+    #sidebar {
+      width: 400px;
+background: rgba(0, 0, 0, 0.5);
+      color: red;
+      overflow-y: auto;
+      padding: 15px;
+    }
+    h2 {
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+    .ip-entry {
+      margin-bottom: 15px;
+      border-bottom: 1px solid #444;
+      padding-bottom: 10px;
+      cursor: pointer;
+    }
+    .ip-entry:hover {
+      background-color: #222;
+    }
+    #map {
+      flex: 1;
+    }
+    .btn {
+      background: red;
+      color: green;
+      padding: 8px 14px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 5px 5px 0 0;
+    }
+    .input-group {
+      margin-bottom: 10px;
+    }
+    input[type="text"], select {
+      width: 100%;
+      padding: 6px;
+      border: none;
+      border-radius: 4px;
+      margin-bottom: 8px;
+    }
+    canvas {
+      margin-top: 20px;
+      width: 100%;
+      max-height: 200px;
+    }
+    @media print {
+      #map, input, .btn, #chart {
+        display: none;
+      }
+      body, html, #sidebar {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div id="sidebar">
+    <h2>🔍Mastered super Tracker</h2>
+    <div class="input-group">
+      <input type="text" id="ipInput" placeholder="Enter IP address..." />
+      <select id="groupBy">
+        <option value="none">📌 Group By: None</option>
+        <option value="continent">🌍 Continent</option>
+        <option value="asn">📡 ASN</option>
+      </select>
+    </div>
+    <button class="btn" onclick="trackIP()">➕ Track IP</button>
+    <button class="btn" onclick="exportCSV()">💾 Export CSV</button>
+    <button class="btn" onclick="window.print()">🖨️ Print</button>
+    <canvas id="chart"></canvas>
+    <div id="ipList">No IPs tracked yet.</div>
+  </div>
+  <div id="map"></div>
+</div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const map = L.map('map').setView([20, 0], 2);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors'
+  }).addTo(map);
+
+  const ipListEl = document.getElementById("ipList");
+  const ipInput = document.getElementById("ipInput");
+  const groupBySelect = document.getElementById("groupBy");
+  const chartCanvas = document.getElementById("chart");
+
+  let trackedIPs = JSON.parse(localStorage.getItem("trackedIPs") || "[]");
+  const markers = {};
+  let chart;
+
+  function updateLocalStorage() {
+    localStorage.setItem("trackedIPs", JSON.stringify(trackedIPs));
+  }
+
+  function timeSince(timestamp) {
+    const seconds = Math.floor((Date.now() - timestamp) / 1000);
+    if (seconds < 60) return `${seconds}s ago`;
+    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+    return `${Math.floor(seconds / 86400)}d ago`;
+  }
+
+  function updateChart(groupField = "country") {
+    const groupCounts = {};
+    trackedIPs.forEach(ip => {
+      const key = groupField === "asn"
+        ? ip.connection?.asn || "Unknown ASN"
+        : groupField === "continent"
+        ? ip.continent || "Unknown"
+        : ip.country || "Unknown";
+      groupCounts[key] = (groupCounts[key] || 0) + 1;
+    });
+
+    const labels = Object.keys(groupCounts);
+    const values = Object.values(groupCounts);
+
+    if (chart) chart.destroy();
+    chart = new Chart(chartCanvas, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          label: `IPs grouped by ${groupField}`,
+          data: values,
+          backgroundColor: 'rgba(76, 175, 80, 0.7)'
+        }]
+      },
+      options: {
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true } }
+      }
+    });
+  }
+
+  function exportCSV() {
+    if (trackedIPs.length === 0) return alert("No data to export.");
+    const rows = [["IP", "Reverse DNS", "City", "Region", "Country", "Continent", "Timezone", "ISP", "Org", "ASN", "Lat", "Lon", "Timestamp"]];
+    trackedIPs.forEach(d => {
+      rows.push([
+        d.ip, d.reverse || "", d.city, d.region, d.country, d.continent || "",
+        d.timezone?.id || "", d.connection?.isp || "", d.connection?.org || "",
+        d.connection?.asn || "", d.latitude, d.longitude, new Date(d.timestamp).toISOString()
+      ]);
+    });
+    const csv = rows.map(r => r.join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "tracked_ips.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function reverseDNS(ip) {
+    try {
+      const res = await fetch(`https://dns.google/resolve?name=${ip}&type=PTR`);
+      const data = await res.json();
+      return data.Answer?.[0]?.data?.replace(/\.$/, "") || "N/A";
+    } catch {
+      return "N/A";
+    }
+  }
+
+  function addIPToList(data) {
+    if (markers[data.ip]) return;
+
+    const iconHtml = `<span style="font-size:18px">${data.flag?.emoji || "🏳️"}</span>`;
+    const icon = L.divIcon({ html: iconHtml, className: '', iconSize: [30, 30] });
+    const marker = L.marker([data.latitude, data.longitude], { icon }).addTo(map)
+      .bindPopup(`<b>${data.ip}</b><br>${data.city}, ${data.country}`);
+    markers[data.ip] = marker;
+
+    const div = document.createElement("div");
+    div.className = "ip-entry";
+    div.innerHTML = `
+      <strong>${data.flag?.emoji || "🏳️"} ${data.ip}</strong><br/>
+      ⏱ Tracked: ${timeSince(data.timestamp)}<br/>
+      🔁 Reverse DNS: ${data.reverse}<br/>
+      📍 ${data.city}, ${data.region}, ${data.country} (${data.continent || "?"})<br/>
+      🕓 Timezone: ${data.timezone?.id || "-"}<br/>
+      🌐 ISP: ${data.connection?.isp || "N/A"}<br/>
+      🏢 Org: ${data.connection?.org || "N/A"}<br/>
+      📡 ASN: ${data.connection?.asn || "N/A"}
+    `;
+    div.onclick = () => {
+      map.setView([data.latitude, data.longitude], 8);
+      marker.openPopup();
+    };
+    ipListEl.appendChild(div);
+  }
+
+  async function fetchAndTrack(ip) {
+    const res = await fetch(`https://ipwho.is/${ip}`);
+    const data = await res.json();
+    if (!data.success) return;
+    data.reverse = await reverseDNS(ip);
+    data.timestamp = Date.now();
+    trackedIPs = trackedIPs.filter(d => d.ip !== ip); // Replace if already tracked
+    trackedIPs.push(data);
+    trackedIPs.sort((a, b) => b.timestamp - a.timestamp); // sort newest first
+    updateLocalStorage();
+    refreshUI();
+  }
+
+  async function trackIP() {
+    const ip = ipInput.value.trim();
+    if (!ip) return alert("Please enter an IP address.");
+    await fetchAndTrack(ip);
+    ipInput.value = "";
+  }
+
+  function refreshUI() {
+    ipListEl.innerHTML = "";
+    trackedIPs.forEach(addIPToList);
+    updateChart(groupBySelect.value);
+  }
+
+  // Auto-refresh every 5 mins
+  setInterval(() => {
+    trackedIPs.forEach(ip => fetchAndTrack(ip.ip));
+  }, 5 * 60 * 1000);
+
+  groupBySelect.addEventListener("change", () => updateChart(groupBySelect.value));
+  refreshUI();
+</script>
+</body>
+</html>

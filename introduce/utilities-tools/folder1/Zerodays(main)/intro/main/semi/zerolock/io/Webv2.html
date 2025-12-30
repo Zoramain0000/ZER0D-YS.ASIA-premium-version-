@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>📚 Random Book Site Finder</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      font-family: 'Courier New', monospace;
+      color: red;
+      margin: 0;
+      padding: 40px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    h1 {
+      color: red;
+      margin-bottom: 20px;
+    }
+
+    .box {
+background: rgba(0,0,0,0.5);
+      padding: 20px;
+      border-radius: 10px;
+      max-width: 700px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 0 10px red;
+    }
+
+    button {
+      padding: 10px 20px;
+      background: red;
+      color: green;
+      border: none;
+      border-radius: 8px;
+      margin: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+background: rgba(0,0,0,0.5);
+    }
+
+    .result {
+      margin-top: 20px;
+background: rgba(0,0,0,0.5);
+      padding: 15px;
+      border-radius: 8px;
+      color: red;
+    }
+
+    a {
+      color: red;
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    img.preview, img.qr {
+      margin-top: 15px;
+      border-radius: 8px;
+      max-width: 100%;
+      box-shadow: 0 0 10px red;
+    }
+
+    footer {
+      color: red;
+      margin-top: 40px;
+      font-size: 0.85em;
+    }
+  </style>
+</head>
+<body>
+  <h1>📚 Legit Book Website Finder</h1>
+  <div class="box">
+    <button onclick="findBook()">📘 Discover Book Site</button>
+    <button onclick="copyLink()">📋 Copy Link</button>
+    <button onclick="exportJSON()">🧾 Export JSON</button>
+    <div class="result" id="resultBox">Click to discover a real book-related website.</div>
+    <img id="preview" class="preview" style="display:none;" />
+    <img id="qr" class="qr" style="display:none;" />
+  </div>
+
+  <footer>
+    🔐 All API data is public and educational. No backend used.<br>
+    &copy; 2025 ZeroDayAI
+  </footer>
+
+  <script>
+    let lastURL = '';
+    let history = [];
+
+    async function findBook() {
+      const box = document.getElementById('resultBox');
+      const preview = document.getElementById('preview');
+      const qr = document.getElementById('qr');
+
+      preview.style.display = 'none';
+      qr.style.display = 'none';
+      box.textContent = "⏳ Fetching book data...";
+
+      try {
+        const subjects = ['fiction', 'history', 'science', 'technology', 'art', 'philosophy'];
+        const randomSubject = subjects[Math.floor(Math.random() * subjects.length)];
+        const res = await fetch(`https://openlibrary.org/subjects/${randomSubject}.json?limit=50`);
+        const data = await res.json();
+
+        if (!data.works || !data.works.length) {
+          box.textContent = "❌ No book found.";
+          return;
+        }
+
+        const book = data.works[Math.floor(Math.random() * data.works.length)];
+        const title = book.title;
+        const author = (book.authors && book.authors[0]?.name) || "Unknown Author";
+        const url = `https://openlibrary.org${book.key}`;
+
+        lastURL = url;
+        history.push({ title, author, url });
+
+        box.innerHTML = `
+📖 <strong>${title}</strong><br>
+✍️ Author: ${author}<br>
+🔗 <a href="${url}" target="_blank">${url}</a>
+        `;
+
+        preview.src = `https://image.thum.io/get/width/800/crop/700/noanimate/${url}`;
+        preview.style.display = "block";
+
+        qr.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}`;
+        qr.style.display = "block";
+
+      } catch (e) {
+        box.textContent = "❌ Error loading book data.";
+        console.error(e);
+      }
+    }
+
+    function copyLink() {
+      if (!lastURL) return alert("No link yet.");
+      navigator.clipboard.writeText(lastURL)
+        .then(() => alert("✅ Copied to clipboard"))
+        .catch(() => alert("❌ Copy failed"));
+    }
+
+    function exportJSON() {
+      if (!history.length) return alert("No history yet.");
+      const blob = new Blob([JSON.stringify(history, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "book_sites_history.json";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+  </script>
+</body>
+</html>

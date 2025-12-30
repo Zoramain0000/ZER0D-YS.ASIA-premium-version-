@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title> Prototype Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #101015;
+      color: #fff;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .sidebar {
+      width: 260px;
+      background-color: #1c1c2e;
+      display: flex;
+      flex-direction: column;
+      padding: 20px 0;
+      border-right: 2px solid #2b2b3f;
+      transition: transform 0.3s ease;
+    }
+
+    .sidebar h1 {
+      text-align: center;
+      font-size: 22px;
+      color: #ff3366;
+      margin-bottom: 30px;
+    }
+
+    .sidebar a {
+      padding: 14px 30px;
+      color: #ccc;
+      text-decoration: none;
+      display: block;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    .sidebar a:hover,
+    .sidebar a.active {
+      background-color: #ff3366;
+      color: #fff;
+    }
+
+    .main {
+      flex-grow: 1;
+      background-color: #15151f;
+      padding: 40px;
+      overflow-y: auto;
+    }
+
+    .main h2 {
+      font-size: 26px;
+      color: #ff3366;
+      margin-bottom: 20px;
+    }
+
+    .main .card {
+      background-color: #202030;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      border: 1px solid #2c2c3c;
+      color: #bbb;
+    }
+
+    .toggle-btn {
+      display: none;
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background: #ff3366;
+      color: white;
+      border: none;
+      padding: 10px 14px;
+      font-size: 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      z-index: 100;
+    }
+
+    .toggle-btn:hover {
+      background: #cc2b55;
+    }
+
+    @media (max-width: 768px) {
+      .sidebar {
+        position: absolute;
+        height: 100%;
+        z-index: 99;
+        transform: translateX(-100%);
+      }
+
+      .sidebar.show {
+        transform: translateX(0);
+      }
+
+      .toggle-btn {
+        display: block;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <button class="toggle-btn" onclick="toggleSidebar()">☰</button>
+
+<div class="sidebar" id="sidebar">
+  <h1>🧪 Prototype</h1>
+  <a href="wall.html">🖼️ Watermark Remover</a>
+  <a href="Pro.html">💡 AI Question – (Gemini Only)</a>
+  <a href="phone.html">📞 Phone Number Locator & Tracker (manual)</a>
+  <a href="penultimate.html">🌐 Smart Live Tracker</a>
+  <a href="mac.html">🔌 MAC Finder</a>
+  <a href="Lte.html">📺 YouTube Channel Info Locator (simple)</a>
+  <a href="imei.html">📱 IMEI Finder</a>
+  <a href="For.html">🗺️ IP Power Map Locator (limited edition)</a>
+  <a href="email.html">📧 Global Email Finder</a>
+  <a href="destiny.html">🧭 Real-Time Location Direction Tool</a>
+  <a href="Apple.html">🍏 Apple ID Finder</a>
+</div>
+
+  <div class="main" id="mainContent">
+    <h2>📊 Dashboard</h2>
+    <div class="card">Welcome to the  prototype dashboard. Select any tools from the sidebar to preview a feature section.</div>
+  </div>
+
+  <script>
+    const sidebar = document.getElementById("sidebar");
+    const content = document.getElementById("mainContent");
+    const links = document.querySelectorAll(".sidebar a");
+
+    
+
+    links.forEach(link => {
+      link.addEventListener("click", function (e) {
+        e.preventDefault();
+        links.forEach(l => l.classList.remove("active"));
+        this.classList.add("active");
+
+        const key = this.getAttribute("href").substring(1);
+        const page = pages[key];
+        if (page) {
+          content.innerHTML = `<h2>${page.title}</h2><div class="card">${page.content}</div>`;
+        }
+
+        if (window.innerWidth <= 768) {
+          sidebar.classList.remove("show");
+        }
+      });
+    });
+
+    function toggleSidebar() {
+      sidebar.classList.toggle("show");
+    }
+  </script>
+
+</body>
+</html>

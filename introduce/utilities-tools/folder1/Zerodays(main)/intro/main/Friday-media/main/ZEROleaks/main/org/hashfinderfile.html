@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>🔐 Hash Finder Tool</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0f172a;
+      color: #f8fafc;
+      padding: 2rem;
+      margin: 0;
+    }
+    h1 {
+      color: #38bdf8;
+    }
+    textarea, input[type="text"] {
+      width: 100%;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      font-size: 1rem;
+      border: none;
+      border-radius: 6px;
+      background: #1e293b;
+      color: #f8fafc;
+    }
+    button {
+      background: #38bdf8;
+      color: #0f172a;
+      padding: 0.8rem 1.2rem;
+      font-size: 1rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-bottom: 1rem;
+    }
+    pre {
+      background: #1e293b;
+      padding: 1rem;
+      border-radius: 6px;
+      color: #38fdd8;
+      overflow-x: auto;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🔐 Hash Finder Tool</h1>
+
+  <label for="text">Enter Text or Paste Content:</label>
+  <textarea id="text" rows="5" placeholder="Enter any text here..."></textarea>
+
+  <button onclick="generateHashes()">Generate Hashes</button>
+
+  <pre id="output">Awaiting input...</pre>
+
+  <script>
+    async function generateHashes() {
+      const input = document.getElementById('text').value;
+      if (!input.trim()) {
+        document.getElementById('output').textContent = "⚠️ Please enter text.";
+        return;
+      }
+
+      const encoder = new TextEncoder();
+      const data = encoder.encode(input);
+
+      const digest = async (alg) => {
+        const hashBuffer = await crypto.subtle.digest(alg, data);
+        return [...new Uint8Array(hashBuffer)]
+          .map(x => x.toString(16).padStart(2, '0'))
+          .join('');
+      };
+
+      const results = {
+        "MD5": await digest("MD5").catch(() => "❌ MD5 not supported in this browser."),
+        "SHA-1": await digest("SHA-1"),
+        "SHA-256": await digest("SHA-256"),
+        "SHA-384": await digest("SHA-384"),
+        "SHA-512": await digest("SHA-512")
+      };
+
+      let output = `🔍 Hash Results:\n`;
+      for (const [key, value] of Object.entries(results)) {
+        output += `🧩 ${key}: ${value}\n`;
+      }
+
+      document.getElementById('output').textContent = output;
+    }
+  </script>
+
+</body>
+</html>

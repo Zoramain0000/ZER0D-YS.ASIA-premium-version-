@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Google Wallpaper Finder</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+    }
+
+    header {
+      text-align: center;
+      padding: 20px;
+background: rgba(0, 0, 0, 0.5);
+    }
+
+    input, button {
+      padding: 10px;
+      margin: 5px;
+      border-radius: 6px;
+      border: none;
+      font-size: 16px;
+    }
+
+    input {
+      width: 60%;
+      max-width: 400px;
+    }
+
+    button {
+      background-color: red;
+      color: green;
+      cursor: pointer;
+    }
+
+    button:hover {
+background: rgba(0, 0, 0, 0.5);
+    }
+
+    #gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 16px;
+      padding: 20px;
+    }
+
+    .image-card {
+background: rgba(0, 0, 0, 0.5);
+      border-radius: 8px;
+      overflow: hidden;
+      transition: transform 0.3s;
+    }
+
+    .image-card img {
+      width: 100%;
+      display: block;
+      transition: transform 0.3s;
+      cursor: pointer;
+    }
+
+    .image-card:hover img {
+      transform: scale(1.05);
+    }
+
+    @media (max-width: 600px) {
+      input {
+        width: 90%;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>🔍 Google Wallpaper Finder</h1>
+    <input type="text" id="query" placeholder="Search wallpapers (e.g. mountain, anime, tech)" />
+    <button onclick="searchWallpapers()">Search</button>
+  </header>
+
+  <div id="gallery"></div>
+
+  <script>
+    const API_KEY = "AIzaSyBe-8Q0XABwBrOtF3md2fG_-tJakXLIxVw"; // 🔐 Replace with your real API key
+    const CX = "12a2009d579104063";    // 🔍 Replace with your CSE ID
+    let page = 1;
+    let currentQuery = "";
+    let isLoading = false;
+
+    async function fetchImages(query, startIndex = 1) {
+      const url = `https://www.googleapis.com/customsearch/v1?q=${encodeURIComponent(query)}&searchType=image&imgSize=large&start=${startIndex}&cx=${CX}&key=${API_KEY}&num=10`;
+      isLoading = true;
+      const res = await fetch(url);
+      const data = await res.json();
+
+      if (data.items) {
+        data.items.forEach(item => {
+          const card = document.createElement("div");
+          card.className = "image-card";
+          card.innerHTML = `
+            <a href="${item.link}" target="_blank" download>
+              <img src="${item.link}" alt="${item.title}" />
+            </a>
+          `;
+          document.getElementById("gallery").appendChild(card);
+        });
+      } else {
+        console.log("No images found or error:", data);
+      }
+
+      isLoading = false;
+    }
+
+    function searchWallpapers() {
+      currentQuery = document.getElementById("query").value.trim();
+      if (!currentQuery) return;
+      page = 1;
+      document.getElementById("gallery").innerHTML = "";
+      fetchImages(currentQuery, 1);
+    }
+
+    window.addEventListener("scroll", () => {
+      if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 200 && !isLoading && currentQuery) {
+        page++;
+        const nextStart = (page - 1) * 10 + 1;
+        fetchImages(currentQuery, nextStart);
+      }
+    });
+  </script>
+
+</body>
+</html>

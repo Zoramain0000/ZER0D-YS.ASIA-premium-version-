@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WhatWeb Pro+ - Website Technology Scanner</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #0f172a;
+      color: #f1f5f9;
+      padding: 2rem;
+    }
+    h1 {
+      color: #38bdf8;
+    }
+    input[type="text"] {
+      width: 80%;
+      padding: 10px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 5px;
+      margin-right: 10px;
+    }
+    button {
+      padding: 10px 20px;
+      background-color: #22d3ee;
+      border: none;
+      color: #000;
+      font-weight: bold;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+    #results {
+      margin-top: 2rem;
+      background: #1e293b;
+      padding: 1rem;
+      border-radius: 10px;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <h1>WhatWeb Pro+ <small style="font-size:16px; color:#94a3b8">(Live Website Tech Scanner(for weak and unsecure website))</small></h1>
+  <input type="text" id="urlInput" placeholder="Enter website URL (e.g., https://example.com)" />
+  <button onclick="scanWebsite()">Scan</button>
+
+  <div id="results"></div>
+
+  <script>
+    const techSignatures = [
+      { name: "WordPress", match: /<meta name=["']generator["'] content=["']WordPress/i },
+      { name: "Joomla", match: /<meta name=["']generator["'] content=["']Joomla/i },
+      { name: "Drupal", match: /<meta name=["']generator["'] content=["']Drupal/i },
+      { name: "React", match: /<div id=\"root\">|__REACT_DEVTOOLS_GLOBAL_HOOK__/i },
+      { name: "Vue.js", match: /<div id=\"app\">|__VUE_DEVTOOLS_GLOBAL_HOOK__/i },
+      { name: "Bootstrap", match: /bootstrap.*\.css|bootstrap.*\.js/i },
+      { name: "jQuery", match: /jquery.*\.js/i },
+      { name: "Cloudflare", match: /server: cloudflare/i },
+    ];
+
+    async function scanWebsite() {
+      const url = document.getElementById('urlInput').value;
+      const resultsDiv = document.getElementById('results');
+      resultsDiv.innerText = 'Scanning...';
+
+      try {
+        const response = await fetch(url, { method: 'GET' });
+        const text = await response.text();
+        const headers = [...response.headers.entries()].map(([k,v]) => `${k}: ${v}`).join("\n");
+
+        let detected = [];
+        for (const tech of techSignatures) {
+          if (tech.match.test(text) || tech.match.test(headers)) {
+            detected.push(tech.name);
+          }
+        }
+
+        resultsDiv.innerText = `✔️ Scan Complete\n\n🔍 Detected Technologies:\n${
+          detected.length ? detected.join("\n") : "None Found"
+        }\n\n📥 Response Headers:\n${headers}`;
+      } catch (e) {
+        resultsDiv.innerText = `❌ Error: ${e.message}\n\n⚠️ Note: Some websites block cross-origin (CORS) requests.`;
+      }
+    }
+  </script>
+</body>
+</html>

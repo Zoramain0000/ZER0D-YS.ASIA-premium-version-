@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Zerolock OSINT Search Engine</title>
+  <style>
+    body {
+     background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: #ff0000;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem;
+      min-height: 100vh;
+    }
+    h1 {
+      color: #ff0000;
+      margin-bottom: 1rem;
+    }
+    input[type="text"] {
+      width: 100%;
+      max-width: 500px;
+      padding: 0.8rem 1rem;
+      font-size: 1rem;
+      border-radius: 10px;
+      border: 1px solid #ff0000;
+      background-color: #00000088;
+      color: #fff;
+      margin-bottom: 1.5rem;
+    }
+    .engines {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+    button {
+      background-color: #ff0000;
+      border: none;
+      padding: 0.7rem 1.2rem;
+      color: #00ff0d;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    button:hover {
+      background-color: #00000070;
+    }
+    footer {
+      margin-top: 2rem;
+      font-size: 0.8rem;
+      color: #ff0000;
+    }
+  </style>
+</head>
+<body>
+  <h1>Zerolock OSINT Search</h1>
+  <input type="text" id="searchInput" placeholder="Enter a name, domain, email, IP, or keyword..." />
+  
+  <div class="engines">
+    <button onclick="search('google')">Google</button>
+    <button onclick="search('duckduckgo')">DuckDuckGo</button>
+    <button onclick="search('bing')">Bing</button>
+    <button onclick="search('yandex')">Yandex</button>
+    <button onclick="search('intelligencex')">IntelligenceX</button>
+    <button onclick="search('ahmia')">Ahmia</button>
+    <button onclick="search('shodan')">Shodan</button>
+    <button onclick="search('censys')">Censys</button>
+    <button onclick="search('publicwww')">PublicWWW</button>
+  </div>
+
+  <footer>
+    Zerolock OSINT Tool – No data is stored. All searches happen client-side.
+  </footer>
+
+  <script>
+    function search(engine) {
+      const query = encodeURIComponent(document.getElementById('searchInput').value.trim());
+      if (!query) return alert('Please enter a search query.');
+
+      let url = '';
+      switch (engine) {
+        case 'google':
+          url = `https://www.google.com/search?q=${query}`;
+          break;
+        case 'duckduckgo':
+          url = `https://duckduckgo.com/?q=${query}`;
+          break;
+        case 'bing':
+          url = `https://www.bing.com/search?q=${query}`;
+          break;
+        case 'yandex':
+          url = `https://yandex.com/search/?text=${query}`;
+          break;
+        case 'intelligencex':
+          url = `https://intelx.io/?s=${query}`;
+          break;
+        case 'ahmia':
+          url = `https://ahmia.fi/search/?q=${query}`;
+          break;
+        case 'shodan':
+          url = `https://www.shodan.io/search?query=${query}`;
+          break;
+        case 'censys':
+          url = `https://search.censys.io/search?resource=hosts&q=${query}`;
+          break;
+        case 'publicwww':
+          url = `https://publicwww.com/websites/${query}/`;
+          break;
+        default:
+          return alert('Unknown engine.');
+      }
+
+      window.open(url, '_blank');
+    }
+  </script>
+</body>
+</html>

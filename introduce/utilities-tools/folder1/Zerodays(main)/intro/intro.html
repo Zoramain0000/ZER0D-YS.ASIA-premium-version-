@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ZeroDays Intro</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: 'Courier New', Courier, monospace;
+      color: red;
+      overflow: hidden;
+    }
+
+    /* Background video style */
+    #bgVideo {
+      position: fixed;
+      right: 0;
+      bottom: 0;
+      min-width: 100%;
+      min-height: 100%;
+      z-index: -1;
+      object-fit: cover;
+      filter: brightness(0.4) contrast(1.2);
+    }
+
+    /* Overlay container */
+    #introContainer {
+      background: rgba(0, 0, 0, 0.2);
+      padding: 40px 30px;
+      border: 2px solid red;
+      border-radius: 10px;
+      max-width: 90%;
+      box-shadow: 0 0 20px red;
+      position: relative;
+      z-index: 2;
+      text-align: center;
+      margin: auto;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    #typing {
+      font-size: 1.5em;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      text-shadow: 0 0 5px red, 0 0 10px red;
+      min-height: 3em;
+      animation: pulse 1.5s infinite alternate;
+    }
+
+    .blink {
+      display: inline-block;
+      width: 10px;
+      height: 1.2em;
+      background: rgba(255, 0, 0, 0.8);
+      animation: blink 0.7s steps(1) infinite;
+      vertical-align: bottom;
+      margin-left: 5px;
+    }
+
+    @keyframes blink {
+      50% { opacity: 0; }
+    }
+
+    @keyframes pulse {
+      0% { text-shadow: 0 0 5px red, 0 0 10px red; }
+      100% { text-shadow: 0 0 10px red, 0 0 20px red; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Background Video -->
+  <video autoplay muted loop id="bgVideo">
+    <source src="main/personal-zone/mainsource/opensource/ai/image/1761817527453041720p.mp4" type="video/mp4">
+    Your browser does not support the video tag.
+  </video>
+
+  <!-- Typing Text Box -->
+  <div id="introContainer">
+    <div id="typing"></div><span class="blink"></span>
+  </div>
+
+  <script>
+    const text = `Zorathehacker: The more figures you find, the deeper the breach...
+welcome to hacking world full of random tools.`;
+    const typingEl = document.getElementById("typing");
+    let i = 0;
+
+    function type() {
+      if (i < text.length) {
+        typingEl.innerHTML += text.charAt(i);
+        i++;
+        setTimeout(type, 65);
+      } else {
+        setTimeout(() => window.location.href = 'main/chatx.html', 2000);
+      }
+    }
+
+    window.onload = type;
+  </script>
+</body>
+</html>

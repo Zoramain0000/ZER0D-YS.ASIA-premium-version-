@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>RSA Key Generator | Cyber Tools Toolkit</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: black;
+      color: #c58b00;
+      overflow-x: hidden;
+    }
+    video.bg-video {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      object-fit: cover;
+      z-index: -2;
+    }
+    nav {
+      width: 100%;
+      background: rgba(0,0,0,0.6);
+      border-bottom: 1px solid #c58b00;
+      padding: 0.8rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: fixed;
+      top: 0;
+      z-index: 10;
+    }
+    nav .brand {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #c58b00;
+    }
+    nav .nav-links {
+      display: flex;
+      gap: 1.5rem;
+    }
+    .main {
+      padding: 120px 20px 50px;
+      max-width: 900px;
+      margin: auto;
+    }
+    .section {
+      background: rgba(0,0,0,0.4);
+      border: 1px solid #c58b00;
+      padding: 1.5rem;
+      border-radius: 12px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.5);
+    }
+    h1 {
+      color: #ffc107;
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+    .btn {
+      display: inline-block;
+      background: rgba(0,0,0,0.5);
+      color: #ffc107;
+      border: 1px solid #c58b00;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .btn:hover {
+      background: rgba(255,193,7,0.1);
+    }
+    textarea {
+      width: 100%;
+      height: 180px;
+      background: #111;
+      color: #ffc107;
+      border: 1px solid #c58b00;
+      border-radius: 8px;
+      padding: 10px;
+      margin-top: 1rem;
+      font-family: monospace;
+      resize: vertical;
+    }
+    footer {
+      text-align: center;
+      padding: 2rem;
+      color: #c58b00;
+    }
+  </style>
+</head>
+<body>
+
+  <video class="bg-video" autoplay loop muted playsinline>
+    <source src="background/1761817527453041720p.mp4" type="video/mp4">
+  </video>
+
+  <audio id="bg-music" loop>
+    <source src="background/Programming___Coding___Hacking_music_vol.18__ANONYMOUS_HEADQUARTERS_(48k).mp3" type="audio/mpeg">
+  </audio>
+
+  <nav>
+    <div class="brand">RSA Key Generator</div>
+    <div class="nav-links">
+      
+    </div>
+  </nav>
+
+  <div class="main">
+    <div class="section">
+      <h1>🔑 Generate RSA Key Pair</h1>
+      <p>Click the button below to generate a secure RSA key pair (2048-bit). You can copy and save your keys for encryption, signing, or authentication use.</p>
+      <button class="btn" onclick="generateKeys()">Generate Keys</button>
+
+      <label for="publicKey"><strong>Public Key (PEM):</strong></label>
+      <textarea id="publicKey" readonly placeholder="Public key will appear here..."></textarea>
+
+      <label for="privateKey"><strong>Private Key (PEM):</strong></label>
+      <textarea id="privateKey" readonly placeholder="Private key will appear here..."></textarea>
+    </div>
+  </div>
+
+  <footer>© 2025 Cyber Tools Toolkit — Zorathedevdeveloper00</footer>
+
+  <script>
+    window.addEventListener('click', () => {
+      document.getElementById("bg-music").play().catch(() => {});
+    }, { once: true });
+
+    async function generateKeys() {
+      try {
+        const keyPair = await window.crypto.subtle.generateKey(
+          {
+            name: "RSA-OAEP",
+            modulusLength: 2048,
+            publicExponent: new Uint8Array([1, 0, 1]),
+            hash: "SHA-256",
+          },
+          true,
+          ["encrypt", "decrypt"]
+        );
+
+        const publicKey = await window.crypto.subtle.exportKey("spki", keyPair.publicKey);
+        const privateKey = await window.crypto.subtle.exportKey("pkcs8", keyPair.privateKey);
+
+        const publicPem = pemExport(publicKey, "PUBLIC KEY");
+        const privatePem = pemExport(privateKey, "PRIVATE KEY");
+
+        document.getElementById("publicKey").value = publicPem;
+        document.getElementById("privateKey").value = privatePem;
+      } catch (err) {
+        alert("Error generating keys: " + err.message);
+      }
+    }
+
+    function pemExport(keyBuffer, label) {
+      const base64 = window.btoa(String.fromCharCode(...new Uint8Array(keyBuffer)));
+      const formatted = base64.match(/.{1,64}/g).join("\n");
+      return `-----BEGIN ${label}-----\n${formatted}\n-----END ${label}-----`;
+    }
+  </script>
+</body>
+</html>

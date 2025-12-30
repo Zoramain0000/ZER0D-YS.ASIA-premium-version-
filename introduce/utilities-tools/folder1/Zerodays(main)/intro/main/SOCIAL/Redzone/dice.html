@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Craps Lite Dice Game</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+      text-align: center;
+      padding: 2rem;
+    }
+    h1 {
+      color: red;
+      margin-bottom: 1rem;
+    }
+    .dice-area {
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      margin: 1.5rem 0;
+    }
+    .dice {
+      font-size: 5rem;
+      background: #333;
+      padding: 1rem 2rem;
+      border-radius: 1rem;
+      box-shadow: 0 0 10px red;
+      transition: transform 0.3s ease;
+    }
+    .dice.animate {
+      transform: rotate(360deg);
+    }
+    .bets {
+      margin: 1rem 0;
+    }
+    .bets label {
+      margin-right: 1rem;
+    }
+    .bets input[type="number"] {
+      width: 60px;
+      padding: 0.2rem;
+      background: #222;
+      border: 1px solid red;
+      color: red;
+    }
+    button {
+      background: red;
+      border: none;
+      padding: 0.7rem 1.5rem;
+      border-radius: 0.5rem;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 1rem;
+      color: green;
+    }
+    button:hover {
+background: rgba(0, 0, 0, 0.5);
+    }
+    .status, .balance, .stats {
+      margin-top: 1rem;
+      font-size: 1.1rem;
+    }
+    .balance {
+      color: #90ee90;
+    }
+    .history {
+      margin-top: 2rem;
+      max-height: 200px;
+      overflow-y: auto;
+      background: #222;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      text-align: left;
+    }
+    .history h3 {
+      color: #ccc;
+    }
+    .history p {
+      margin: 0.3rem 0;
+      font-size: 0.9rem;
+    }
+    .auto-rebet {
+      margin-top: 1rem;
+    }
+  </style>
+</head>
+<body>
+
+<h1>🎲 Craps Lite Dice Game</h1>
+<div class="balance">Balance: $<span id="balance">1000</span></div>
+
+<div class="bets">
+  <label>Big Bet: $<input type="number" id="bigBet" min="0" value="0"></label>
+  <label>Small Bet: $<input type="number" id="smallBet" min="0" value="0"></label>
+  <label>Doubles Bet: $<input type="number" id="doublesBet" min="0" value="0"></label>
+</div>
+
+<div class="auto-rebet">
+  <input type="checkbox" id="autoRebet">
+  <label for="autoRebet">Auto Re-Bet</label>
+</div>
+
+<button id="rollBtn">🎲 Roll Dice</button>
+
+<div class="dice-area">
+  <div class="dice" id="dice1">🎲</div>
+  <div class="dice" id="dice2">🎲</div>
+</div>
+
+<div class="status" id="statusMsg">Place your bets and roll!</div>
+<div class="stats" id="stats">Wins: 0 | Losses: 0 | Rounds: 0</div>
+
+<div class="history" id="history">
+  <h3>History</h3>
+</div>
+
+<!-- Sounds -->
+<audio id="soundRoll" src="https://actions.google.com/sounds/v1/cartoon/cartoon_boing.ogg"></audio>
+<audio id="soundWin" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"></audio>
+<audio id="soundLose" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
+
+<script>
+(() => {
+  let balance = 1000;
+  let wins = 0, losses = 0, rounds = 0;
+
+  const dice1El = document.getElementById('dice1');
+  const dice2El = document.getElementById('dice2');
+  const balanceEl = document.getElementById('balance');
+  const statusEl = document.getElementById('statusMsg');
+  const historyEl = document.getElementById('history');
+  const statsEl = document.getElementById('stats');
+  const autoRebetEl = document.getElementById('autoRebet');
+
+  const bigBetEl = document.getElementById('bigBet');
+  const smallBetEl = document.getElementById('smallBet');
+  const doublesBetEl = document.getElementById('doublesBet');
+  const rollBtn = document.getElementById('rollBtn');
+
+  const soundRoll = document.getElementById('soundRoll');
+  const soundWin = document.getElementById('soundWin');
+  const soundLose = document.getElementById('soundLose');
+
+  let lastBets = { big: 0, small: 0, doubles: 0 };
+
+  function getEmoji(num) {
+    const diceFaces = ['⚀','⚁','⚂','⚃','⚄','⚅'];
+    return diceFaces[num - 1];
+  }
+
+  function updateStats() {
+    statsEl.textContent = `Wins: ${wins} | Losses: ${losses} | Rounds: ${rounds}`;
+  }
+
+  function updateBalance() {
+    balanceEl.textContent = balance;
+  }
+
+  function addHistory(text) {
+    const p = document.createElement('p');
+    p.textContent = `[${new Date().toLocaleTimeString()}] ${text}`;
+    historyEl.appendChild(p);
+    historyEl.scrollTop = historyEl.scrollHeight;
+  }
+
+  function animateDice() {
+    dice1El.classList.add("animate");
+    dice2El.classList.add("animate");
+    setTimeout(() => {
+      dice1El.classList.remove("animate");
+      dice2El.classList.remove("animate");
+    }, 300);
+  }
+
+  rollBtn.addEventListener('click', () => {
+    let bigBet = parseInt(bigBetEl.value) || 0;
+    let smallBet = parseInt(smallBetEl.value) || 0;
+    let doublesBet = parseInt(doublesBetEl.value) || 0;
+
+    if (autoRebetEl.checked) {
+      bigBet = lastBets.big;
+      smallBet = lastBets.small;
+      doublesBet = lastBets.doubles;
+    } else {
+      lastBets = { big: bigBet, small: smallBet, doubles: doublesBet };
+    }
+
+    const totalBet = bigBet + smallBet + doublesBet;
+    if (totalBet <= 0) return statusEl.textContent = "Place a bet to roll.";
+    if (totalBet > balance) return statusEl.textContent = "Insufficient balance.";
+
+    balance -= totalBet;
+    updateBalance();
+
+    animateDice();
+    soundRoll.play();
+
+    setTimeout(() => {
+      const d1 = Math.floor(Math.random() * 6) + 1;
+      const d2 = Math.floor(Math.random() * 6) + 1;
+      const total = d1 + d2;
+      const isDouble = d1 === d2;
+
+      dice1El.textContent = getEmoji(d1);
+      dice2El.textContent = getEmoji(d2);
+
+      let winAmount = 0;
+      let message = `Rolled ${d1} + ${d2} = ${total}. `;
+
+      if (total >= 8 && total <= 12 && !isDouble && bigBet > 0) {
+        winAmount += bigBet * 2;
+        message += `Big win +$${bigBet}. `;
+      }
+      if (total >= 2 && total <= 6 && !isDouble && smallBet > 0) {
+        winAmount += smallBet * 2;
+        message += `Small win +$${smallBet}. `;
+      }
+      if (isDouble && doublesBet > 0) {
+        winAmount += doublesBet * 5;
+        message += `Doubles win +$${doublesBet * 4}. `;
+      }
+
+      if (winAmount > 0) {
+        soundWin.play();
+        wins++;
+      } else {
+        soundLose.play();
+        losses++;
+      }
+
+      balance += winAmount;
+      rounds++;
+      updateBalance();
+      updateStats();
+      statusEl.textContent = message;
+      addHistory(message);
+    }, 400);
+  });
+})();
+</script>
+
+</body>
+</html>

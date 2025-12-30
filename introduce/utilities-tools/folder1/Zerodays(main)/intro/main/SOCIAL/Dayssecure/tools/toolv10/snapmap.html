@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Advanced OpenStreetMap Tool</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+    }
+    header {
+background: rgba(0, 0, 0, 0.5);
+      color: red;
+      padding: 1rem;
+      text-align: center;
+    }
+    #controls {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-wrap: wrap;
+      padding: 1rem;
+background: rgba(0, 0, 0, 0.5);
+    }
+    input, button {
+      padding: 0.5rem;
+      font-size: 1rem;
+      margin: 0.5rem;
+    }
+    #map {
+      width: 100%;
+      height: 70vh;
+    }
+    #screenshotResult {
+      display: block;
+      margin: 20px auto;
+      max-width: 90%;
+      border: 1px solid red;
+    }
+    #downloadBtn {
+      display: block;
+      margin: 10px auto;
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+background: rgba(0, 0, 0, 0.5);
+      color: red;
+      border: none;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🌍 Advanced OpenStreetMap Screenshot Tool</h1>
+</header>
+
+<div id="controls">
+  <input type="text" id="locationInput" placeholder="Enter a place (not a school)">
+  <button onclick="searchPlace()">🔍 Search</button>
+  <button onclick="addSimulatedTraffic()">🚦 Simulate Event</button>
+  <button onclick="exportMarkers('csv')">📁 Export CSV</button>
+  <button onclick="exportMarkers('geojson')">🌍 Export GeoJSON</button>
+  <button onclick="takeScreenshot()">📷 Take Screenshot</button>
+</div>
+
+<div id="map"></div>
+<img id="screenshotResult" alt="Captured Screenshot" />
+<button id="downloadBtn" onclick="downloadScreenshot()">💾 Download Screenshot</button>
+
+<!-- Leaflet.js -->
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<!-- HTML2Canvas -->
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+<script>
+  const map = L.map('map').setView([40.7128, -74.0060], 12);
+  let marker;
+  let markers = [];
+
+  // OpenStreetMap base layer
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '© OpenStreetMap'
+  }).addTo(map);
+
+  // Weather overlay (OpenWeatherMap tiles - no key required for clouds layer)
+  const weatherLayer = L.tileLayer('https://tile.openweathermap.org/map/clouds_new/{z}/{x}/{y}.png?appid=b6907d289e10d714a6e88b30761fae22', {
+    attribution: 'Weather © OpenWeatherMap',
+    opacity: 0.5
+  }).addTo(map);
+
+  function searchPlace() {
+    const query = document.getElementById('locationInput').value.trim();
+    if (!query) return alert('Please enter a location.');
+    if (query.toLowerCase().includes('school')) return alert('Searching for schools is not allowed.');
+
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`;
+    
+    fetch(url)
+      .then(res => res.json())
+      .then(data => {
+        if (!data.length) return alert("Place not found.");
+        const { lat, lon, display_name } = data[0];
+        const coords = [parseFloat(lat), parseFloat(lon)];
+        map.setView(coords, 16);
+        if (marker) marker.remove();
+
+        marker = L.marker(coords).addTo(map).bindPopup(display_name).openPopup();
+        markers.push({ name: display_name, lat: coords[0], lon: coords[1] });
+      })
+      .catch(err => alert("Error: " + err));
+  }
+
+  function takeScreenshot() {
+    html2canvas(document.querySelector("#map")).then(canvas => {
+      document.getElementById("screenshotResult").src = canvas.toDataURL();
+      document.getElementById("screenshotResult").style.display = "block";
+    });
+  }
+
+  function downloadScreenshot() {
+    const img = document.getElementById("screenshotResult");
+    if (!img.src) return alert("No screenshot available.");
+    const link = document.createElement("a");
+    link.href = img.src;
+    link.download = "map_screenshot.png";
+    link.click();
+  }
+
+  function exportMarkers(format) {
+    if (!markers.length) return alert("No markers to export.");
+    if (format === 'csv') {
+      let csv = "Name,Latitude,Longitude\n";
+      markers.forEach(m => csv += `"${m.name}",${m.lat},${m.lon}\n`);
+      const blob = new Blob([csv], { type: "text/csv" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "markers.csv";
+      link.click();
+    } else if (format === 'geojson') {
+      const geojson = {
+        type: "FeatureCollection",
+        features: markers.map(m => ({
+          type: "Feature",
+          geometry: { type: "Point", coordinates: [m.lon, m.lat] },
+          properties: { name: m.name }
+        }))
+      };
+      const blob = new Blob([JSON.stringify(geojson, null, 2)], { type: "application/json" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "markers.geojson";
+      link.click();
+    }
+  }
+
+  function addSimulatedTraffic() {
+    const latlng = map.getCenter();
+    const trafficMarker = L.circle(latlng, {
+      color: "red",
+      fillColor: "#f03",
+      fillOpacity: 0.5,
+      radius: 500
+    }).addTo(map).bindPopup("🚧 Simulated Event: Traffic or Incident");
+  }
+</script>
+
+</body>
+</html>

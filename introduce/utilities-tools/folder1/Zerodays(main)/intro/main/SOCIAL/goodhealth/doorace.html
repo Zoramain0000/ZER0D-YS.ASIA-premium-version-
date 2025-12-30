@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>🧭 Advanced Tools Dashboard</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .sidebar {
+      width: 260px;
+background: rgba(0, 0, 0, 0.5);
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      position: fixed;
+      height: 100%;
+      box-shadow: 2px 0 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .sidebar h2 {
+      color: red;
+      margin-bottom: 1rem;
+      text-align: center;
+      font-size: 1.4rem;
+    }
+
+    .sidebar a {
+      color: red;
+      padding: 0.75rem 1rem;
+      text-decoration: none;
+      border-radius: 8px;
+      transition: background 0.3s;
+    }
+
+    .sidebar a:hover {
+background: rgba(0, 0, 0, 0.5);
+      color: red;
+    }
+
+    .main {
+      margin-left: 260px;
+      padding: 2rem;
+      flex: 1;
+      overflow-y: auto;
+      height: 100vh;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      margin-bottom: 1rem;
+      color: red;
+    }
+
+    .card {
+      background: #1e293b;
+      padding: 1.5rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+      margin-bottom: 1.5rem;
+background: rgba(0, 0, 0, 0.5);
+    }
+
+    .card h3 {
+      margin-top: 0;
+      color: red;
+background: rgba(0, 0, 0, 0.5);
+    }
+
+    footer {
+      text-align: center;
+      color: red;
+      font-size: 0.9rem;
+      padding: 2rem;
+background: rgba(0, 0, 0, 0.5);
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="sidebar">
+    <h2>🧰 Tools Panel</h2>
+    <a href="#">Dashboard Overview</a>
+    <a href="https://www.free-tarot-reading.net/free" target="_blank">Tarot v1</a>
+    <a href="https://www.evatarot.net/" target="_blank">Tarot v2</a>
+    <a href="https://www.horoscope.com/us/tarot/index-tarot-reading.aspx" target="_blank">Tarot v3</a>
+    <a href="io/tarot.html">Tarot v4 </a>
+  </nav>
+
+  <div class="main">
+    <h1>Welcome to the Advanced Tools Dashboard</h1>
+    <div class="card">
+      <h3>How to Use</h3>
+      <p>Click any tool on the left to open its full-featured HTML version. Each tool runs independently with its own HTML, CSS, and JavaScript—no backend needed.</p>
+    </div>
+  </div>
+
+</body>
+</html>

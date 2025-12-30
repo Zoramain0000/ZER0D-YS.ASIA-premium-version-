@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Advanced Snake Game</title>
+<style>
+  body {
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color:red;
+    user-select: none;
+  }
+  #game-container {
+background: rgba(0, 0, 0, 0.5);
+    border: 3px solid red;
+    border-radius: 12px;
+    padding: 15px;
+    box-shadow: 0 0 20px red;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  canvas {
+background: rgba(0, 0, 0, 0.5);
+    border-radius: 8px;
+    display: block;
+  }
+  #scoreboard {
+    margin: 10px 0;
+    font-size: 1.4rem;
+    font-weight: 600;
+    color:red;
+  }
+  #difficulty-container {
+    margin-bottom: 12px;
+    display: flex;
+    gap: 10px;
+  }
+  .difficulty-btn {
+    background: red;
+    border: 2px solid red;
+    padding: 6px 12px;
+    border-radius: 8px;
+    color: green;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.3s ease, color 0.3s ease;
+  }
+  .difficulty-btn:hover, .difficulty-btn.active {
+background: rgba(0, 0, 0, 0.5);
+    color: red;
+  }
+  #message {
+    margin-top: 12px;
+    font-size: 1.2rem;
+    color: red;
+  }
+  #restart-btn {
+    margin-top: 10px;
+    background: red;
+    border: none;
+    padding: 8px 16px;
+    font-weight: 700;
+    color: green;
+    border-radius: 8px;
+    cursor: pointer;
+    box-shadow: 0 0 10px red;
+    transition: background 0.3s ease;
+  }
+  #restart-btn:hover {
+background: rgba(0, 0, 0, 0.5);
+  }
+  @media (max-width: 480px) {
+    #game-container {
+      width: 90vw;
+      padding: 10px;
+    }
+    canvas {
+      width: 100%;
+      height: auto;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div id="game-container">
+  <div id="difficulty-container">
+    <button class="difficulty-btn active" data-speed="150">Easy</button>
+    <button class="difficulty-btn" data-speed="100">Medium</button>
+    <button class="difficulty-btn" data-speed="60">Hard</button>
+  </div>
+  <canvas id="game" width="400" height="400"></canvas>
+  <div id="scoreboard">Score: 0</div>
+  <div id="message"></div>
+  <button id="restart-btn" style="display:none;">Restart Game</button>
+</div>
+
+<script>
+(() => {
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  const scoreboard = document.getElementById('scoreboard');
+  const message = document.getElementById('message');
+  const restartBtn = document.getElementById('restart-btn');
+  const difficultyBtns = document.querySelectorAll('.difficulty-btn');
+
+  const gridSize = 20; // Each cell size in pixels
+  const canvasSize = 400;
+  const cellCount = canvasSize / gridSize; // 20 cells per row/column
+
+  let snake = [];
+  let direction = { x: 0, y: 0 };
+  let apple = {};
+  let score = 0;
+  let speed = 150; // milliseconds between moves
+  let gameInterval = null;
+  let gameOver = false;
+
+  // Initialize snake in the middle of the grid
+  function initSnake() {
+    snake = [
+      { x: Math.floor(cellCount / 2), y: Math.floor(cellCount / 2) },
+      { x: Math.floor(cellCount / 2) - 1, y: Math.floor(cellCount / 2) },
+      { x: Math.floor(cellCount / 2) - 2, y: Math.floor(cellCount / 2) }
+    ];
+    direction = { x: 1, y: 0 }; // Moving right initially
+  }
+
+  // Generate apple position that does not collide with snake
+  function placeApple() {
+    do {
+      apple = {
+        x: Math.floor(Math.random() * cellCount),
+        y: Math.floor(Math.random() * cellCount)
+      };
+    } while (snake.some(segment => segment.x === apple.x && segment.y === apple.y));
+  }
+
+  // Draw a cell with rounded corners
+  function drawCell(x, y, color) {
+    const radius = 5;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(x * gridSize + radius, y * gridSize);
+    ctx.lineTo(x * gridSize + gridSize - radius, y * gridSize);
+    ctx.quadraticCurveTo(x * gridSize + gridSize, y * gridSize, x * gridSize + gridSize, y * gridSize + radius);
+    ctx.lineTo(x * gridSize + gridSize, y * gridSize + gridSize - radius);
+    ctx.quadraticCurveTo(x * gridSize + gridSize, y * gridSize + gridSize, x * gridSize + gridSize - radius, y * gridSize + gridSize);
+    ctx.lineTo(x * gridSize + radius, y * gridSize + gridSize);
+    ctx.quadraticCurveTo(x * gridSize, y * gridSize + gridSize, x * gridSize, y * gridSize + gridSize - radius);
+    ctx.lineTo(x * gridSize, y * gridSize + radius);
+    ctx.quadraticCurveTo(x * gridSize, y * gridSize, x * gridSize + radius, y * gridSize);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // Draw the game board: snake and apple
+  function draw() {
+    ctx.clearRect(0, 0, canvasSize, canvasSize);
+
+    // Draw apple
+    drawCell(apple.x, apple.y, '#e91e63');
+
+    // Draw snake with gradient
+    const gradient = ctx.createLinearGradient(0, 0, canvasSize, canvasSize);
+    gradient.addColorStop(0, '#4caf50');
+    gradient.addColorStop(1, '#81c784');
+    ctx.fillStyle = gradient;
+    for (let i = 0; i < snake.length; i++) {
+      drawCell(snake[i].x, snake[i].y, i === 0 ? '#aed581' : '#4caf50');
+    }
+  }
+
+  // Move snake and check for collisions
+  function moveSnake() {
+    const head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
+
+    // Wall collision detection
+    if (head.x < 0 || head.x >= cellCount || head.y < 0 || head.y >= cellCount) {
+      endGame('You hit the wall! Game Over!');
+      return;
+    }
+
+    // Self collision detection
+    if (snake.some(segment => segment.x === head.x && segment.y === head.y)) {
+      endGame('You ran into yourself! Game Over!');
+      return;
+    }
+
+    snake.unshift(head);
+
+    // Check if apple eaten
+    if (head.x === apple.x && head.y === apple.y) {
+      score++;
+      scoreboard.textContent = `Score: ${score}`;
+      placeApple();
+    } else {
+      snake.pop();
+    }
+  }
+
+  // Game loop
+  function gameLoop() {
+    if (!gameOver) {
+      moveSnake();
+      draw();
+    }
+  }
+
+  // Handle keypresses for direction control
+  function keyDownHandler(e) {
+    const key = e.key;
+    switch (key) {
+      case 'ArrowUp':
+      case 'w':
+      case 'W':
+        if (direction.y === 1) break; // no reverse
+        direction = { x: 0, y: -1 };
+        break;
+      case 'ArrowDown':
+      case 's':
+      case 'S':
+        if (direction.y === -1) break;
+        direction = { x: 0, y: 1 };
+        break;
+      case 'ArrowLeft':
+      case 'a':
+      case 'A':
+        if (direction.x === 1) break;
+        direction = { x: -1, y: 0 };
+        break;
+      case 'ArrowRight':
+      case 'd':
+      case 'D':
+        if (direction.x === -1) break;
+        direction = { x: 1, y: 0 };
+        break;
+    }
+  }
+
+  // End game and show message
+  function endGame(msg) {
+    gameOver = true;
+    message.textContent = msg + ` Your final score: ${score}`;
+    restartBtn.style.display = 'inline-block';
+    clearInterval(gameInterval);
+  }
+
+  // Restart game
+  function restartGame() {
+    score = 0;
+    scoreboard.textContent = 'Score: 0';
+    message.textContent = '';
+    restartBtn.style.display = 'none';
+    gameOver = false;
+    initSnake();
+    placeApple();
+    clearInterval(gameInterval);
+    gameInterval = setInterval(gameLoop, speed);
+  }
+
+  // Difficulty selection
+  difficultyBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      difficultyBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      speed = parseInt(btn.getAttribute('data-speed'), 10);
+      if (!gameOver) {
+        clearInterval(gameInterval);
+        gameInterval = setInterval(gameLoop, speed);
+      }
+    });
+  });
+
+  // Initial setup
+  initSnake();
+  placeApple();
+  gameInterval = setInterval(gameLoop, speed);
+
+  // Event listeners
+  window.addEventListener('keydown', keyDownHandler);
+  restartBtn.addEventListener('click', restartGame);
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>🔐 Advanced Encryptor</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+  <style>
+    body {
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+      font-family: 'Segoe UI', sans-serif;
+      padding: 30px;
+      max-width: 900px;
+      margin: auto;
+    }
+    h1 {
+      color: red;
+    }
+    textarea, input[type="password"], select {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      font-size: 16px;
+      border-radius: 6px;
+      border: none;
+background: rgba(0, 0, 0, 0.5);
+      color: red;
+      resize: vertical;
+    }
+    button {
+      padding: 10px 20px;
+      background-color: red;
+      border: none;
+      border-radius: 5px;
+      color: green;
+      margin: 10px 5px 10px 0;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    button:hover {
+background: rgba(0, 0, 0, 0.5);
+    }
+    .section {
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔐 Advanced Secure Text Encryptor</h1>
+
+  <div class="section">
+    <label for="plaintext">🔸 Input Text:</label>
+    <textarea id="plaintext" rows="8" placeholder="Enter text to encrypt or decrypt..."></textarea>
+  </div>
+
+  <div class="section">
+    <label for="password">🔑 Password:</label>
+    <input type="password" id="password" placeholder="Enter a strong password">
+  </div>
+
+  <div class="section">
+    <label for="algorithm">⚙️ Encryption Algorithm:</label>
+    <select id="algorithm">
+      <option value="AES">AES (default)</option>
+      <option value="RSA">RSA</option>
+    </select>
+  </div>
+
+  <div class="section">
+    <button onclick="encryptText()">Encrypt</button>
+    <button onclick="decryptText()">Decrypt</button>
+    <button onclick="clearFields()">Clear</button>
+    <button onclick="downloadEncrypted()">⬇️ Download Encrypted</button>
+    <input type="file" id="fileInput" accept=".txt" onchange="handleFileUpload(event)">
+  </div>
+
+  <div class="section">
+    <label for="output">📦 Output:</label>
+    <textarea id="output" rows="8" readonly placeholder="Encrypted or decrypted result will appear here..."></textarea>
+  </div>
+
+  <script>
+    function encryptText() {
+      const text = document.getElementById('plaintext').value;
+      const password = document.getElementById('password').value;
+      const algo = document.getElementById('algorithm').value;
+
+      if (!text || !password) {
+        alert("Please enter text and a password.");
+        return;
+      }
+
+      let ciphertext;
+      switch (algo) {
+        case 'AES':
+        default:
+          ciphertext = CryptoJS.AES.encrypt(text, password).toString();
+          break;
+        case 'RSA':
+          // RSA encryption logic will go here
+          break;
+      }
+
+      document.getElementById('output').value = ciphertext;
+    }
+
+    function decryptText() {
+      const ciphertext = document.getElementById('plaintext').value;
+      const password = document.getElementById('password').value;
+      const algo = document.getElementById('algorithm').value;
+
+      if (!ciphertext || !password) {
+        alert("Please enter encrypted text and a password.");
+        return;
+      }
+
+      try {
+        let bytes, originalText;
+        switch (algo) {
+          case 'AES':
+          default:
+            bytes = CryptoJS.AES.decrypt(ciphertext, password);
+            originalText = bytes.toString(CryptoJS.enc.Utf8);
+            break;
+          case 'RSA':
+            // RSA decryption logic will go here
+            break;
+        }
+
+        if (!originalText) throw new Error("Invalid decryption.");
+        document.getElementById('output').value = originalText;
+
+      } catch (e) {
+        alert("❌ Decryption failed. Check your password or encrypted input.");
+      }
+    }
+
+    function clearFields() {
+      document.getElementById('plaintext').value = '';
+      document.getElementById('password').value = '';
+      document.getElementById('output').value = '';
+    }
+
+    function downloadEncrypted() {
+      const data = document.getElementById('output').value;
+      if (!data) {
+        alert("Please encrypt something first.");
+        return;
+      }
+
+      const blob = new Blob([data], { type: "text/plain;charset=utf-8" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "encrypted.txt";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function handleFileUpload(event) {
+      const file = event.target.files[0];
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        document.getElementById('plaintext').value = e.target.result;
+      };
+      reader.readAsText(file);
+    }
+  </script>
+</body>
+</html>

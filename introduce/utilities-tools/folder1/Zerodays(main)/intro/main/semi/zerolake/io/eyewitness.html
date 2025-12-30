@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>EyeWitness Visual Viewer</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0f172a;
+      color: #f8fafc;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      background: #1e293b;
+      padding: 1rem;
+      text-align: center;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+    }
+
+    h1 {
+      margin: 0;
+      color: #38bdf8;
+      font-size: 1.8rem;
+    }
+
+    main {
+      padding: 1rem;
+      max-width: 1400px;
+      margin: auto;
+    }
+
+    textarea {
+      width: 100%;
+      height: 150px;
+      background: #1e293b;
+      color: #f1f5f9;
+      border: none;
+      padding: 1rem;
+      font-family: monospace;
+      border-radius: 6px;
+      font-size: 1rem;
+    }
+
+    button {
+      background: #38bdf8;
+      border: none;
+      color: #0f172a;
+      padding: 0.8rem 1.6rem;
+      font-size: 1rem;
+      cursor: pointer;
+      margin-top: 1rem;
+      border-radius: 6px;
+    }
+
+    .results {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+      margin-top: 2rem;
+    }
+
+    .preview {
+      border: 2px solid #334155;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #0f172a;
+    }
+
+    .preview h2 {
+      margin: 0;
+      padding: 0.5rem 1rem;
+      background: #1e293b;
+      color: #f1f5f9;
+      font-size: 1.1rem;
+      border-bottom: 1px solid #334155;
+    }
+
+    iframe {
+      width: 100%;
+      height: 800px;
+      border: none;
+    }
+
+    .error {
+      color: #f87171;
+      padding: 1rem;
+      font-size: 0.95rem;
+      background: #1e293b;
+    }
+
+    @media screen and (max-width: 768px) {
+      iframe {
+        height: 500px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>👁️ EyeWitness Visual Viewer</h1>
+  </header>
+  <main>
+    <label for="urls">Enter website URLs (one per line):</label>
+    <textarea id="urls" placeholder="https://example.com"></textarea>
+    <button onclick="renderSites()">🔍 Preview Sites</button>
+    <div class="results" id="results"></div>
+  </main>
+
+  <script>
+    function renderSites() {
+      const rawUrls = document.getElementById('urls').value.trim().split('\n');
+      const container = document.getElementById('results');
+      container.innerHTML = '';
+
+      for (let line of rawUrls) {
+        const url = sanitizeUrl(line.trim());
+        if (!url) continue;
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'preview';
+
+        const label = document.createElement('h2');
+        label.textContent = url;
+        wrapper.appendChild(label);
+
+        const iframe = document.createElement('iframe');
+        iframe.src = url;
+
+        iframe.onerror = () => {
+          const errorMsg = document.createElement('div');
+          errorMsg.className = 'error';
+          errorMsg.textContent = `⚠️ Cannot preview ${url} (likely due to X-Frame-Options).`;
+          wrapper.appendChild(errorMsg);
+        };
+
+        wrapper.appendChild(iframe);
+        container.appendChild(wrapper);
+      }
+    }
+
+    function sanitizeUrl(url) {
+      if (!url) return null;
+      if (!/^https?:\/\//i.test(url)) {
+        url = 'http://' + url;
+      }
+      try {
+        new URL(url);
+        return url;
+      } catch {
+        return null;
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Reserved IP Tracker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      background-color: #0f172a;
+      color: #f8fafc;
+      font-family: monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem;
+      text-align: center;
+    }
+    h1 {
+      color: #38bdf8;
+      text-shadow: 0 0 5px #38bdf8;
+      margin-bottom: 1rem;
+    }
+    input, button {
+      padding: 10px;
+      font-family: monospace;
+      font-size: 1rem;
+      margin: 10px;
+      border-radius: 6px;
+      border: 1px solid #38bdf8;
+      background: #1e293b;
+      color: #f8fafc;
+    }
+    button {
+      cursor: pointer;
+      background: #0ea5e9;
+      color: #fff;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background: #0284c7;
+    }
+    .result {
+      margin-top: 2rem;
+      background: #1e293b;
+      border: 1px solid #334155;
+      padding: 20px;
+      width: 100%;
+      max-width: 500px;
+      border-radius: 8px;
+      text-align: left;
+    }
+    .reserved {
+      color: #facc15;
+    }
+    .not-reserved {
+      color: #ef4444;
+    }
+  </style>
+</head>
+<body>
+  <h1>🧠 Reserved IP Tracker</h1>
+  <p>Enter an IP address to check if it's a <span class="reserved">reserved</span> address.</p>
+  <input type="text" id="ipInput" placeholder="Enter IP address (e.g., 127.0.0.1)" />
+  <button onclick="checkReserved()">Check IP</button>
+
+  <div class="result" id="resultBox" style="display:none;"></div>
+
+  <script>
+    const reservedRanges = [
+      { range: '0.0.0.0/8', note: 'Current network (only valid as source)' },
+      { range: '10.0.0.0/8', note: 'Private use (not reserved, but excluded)' },
+      { range: '100.64.0.0/10', note: 'Carrier-grade NAT' },
+      { range: '127.0.0.0/8', note: 'Loopback (localhost)' },
+      { range: '169.254.0.0/16', note: 'Link-local (APIPA)' },
+      { range: '172.16.0.0/12', note: 'Private use (excluded)' },
+      { range: '192.0.0.0/24', note: 'IETF Protocol Assignments' },
+      { range: '192.0.2.0/24', note: 'TEST-NET-1 (Documentation)' },
+      { range: '192.88.99.0/24', note: 'Deprecated 6to4 Relay' },
+      { range: '192.168.0.0/16', note: 'Private use (excluded)' },
+      { range: '198.18.0.0/15', note: 'Benchmark testing' },
+      { range: '198.51.100.0/24', note: 'TEST-NET-2 (Documentation)' },
+      { range: '203.0.113.0/24', note: 'TEST-NET-3 (Documentation)' },
+      { range: '224.0.0.0/4', note: 'Multicast' },
+      { range: '240.0.0.0/4', note: 'Reserved for future use' },
+      { range: '255.255.255.255/32', note: 'Broadcast address' }
+    ];
+
+    function ipToInt(ip) {
+      return ip.split('.').reduce((acc, octet) => (acc << 8) + parseInt(octet), 0) >>> 0;
+    }
+
+    function cidrToRange(cidr) {
+      const [base, bits] = cidr.split('/');
+      const baseInt = ipToInt(base);
+      const mask = ~(2 ** (32 - bits) - 1) >>> 0;
+      const start = baseInt & mask;
+      const end = start | ~mask >>> 0;
+      return [start, end];
+    }
+
+    function isReserved(ip) {
+      const ipInt = ipToInt(ip);
+      for (const { range, note } of reservedRanges) {
+        const [start, end] = cidrToRange(range);
+        if (ipInt >= start && ipInt <= end) {
+          return { reserved: true, range, note };
+        }
+      }
+      return { reserved: false };
+    }
+
+    function checkReserved() {
+      const ip = document.getElementById('ipInput').value.trim();
+      const resultBox = document.getElementById('resultBox');
+
+      const ipParts = ip.split('.');
+      if (ipParts.length !== 4 || ipParts.some(o => isNaN(o) || o < 0 || o > 255)) {
+        resultBox.style.display = 'block';
+        resultBox.innerHTML = `<span class="not-reserved">Invalid IP address format.</span>`;
+        return;
+      }
+
+      const res = isReserved(ip);
+      resultBox.style.display = 'block';
+
+      if (res.reserved) {
+        resultBox.innerHTML = `
+          <strong class="reserved">✔ Reserved IP Detected</strong><br><br>
+          IP: <code>${ip}</code><br>
+          Range: <code>${res.range}</code><br>
+          Info: ${res.note}
+        `;
+      } else {
+        resultBox.innerHTML = `<strong class="not-reserved">❌ This is not a reserved IP address.</strong>`;
+      }
+    }
+  </script>
+</body>
+</html>

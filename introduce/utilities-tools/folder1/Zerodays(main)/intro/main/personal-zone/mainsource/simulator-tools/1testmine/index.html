@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GPS Simulator</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+  #controls {
+    padding: 10px;
+    background-color: #f0f0f0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+  }
+  #map {
+    flex: 1;
+  }
+  input[type="number"] {
+    width: 120px;
+    padding: 5px;
+  }
+  button {
+    padding: 6px 12px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<div id="controls">
+  <label>Latitude: 
+    <input type="number" id="latInput" step="0.000001" placeholder="Latitude" />
+  </label>
+  <label>Longitude: 
+    <input type="number" id="lngInput" step="0.000001" placeholder="Longitude" />
+  </label>
+  <button id="setPositionBtn">Set Position</button>
+  <button id="startBtn">Start Movement</button>
+  <button id="stopBtn" disabled>Stop Movement</button>
+  <button id="clearRouteBtn">Clear Route</button>
+</div>
+
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+  // Initialize map
+  const map = L.map('map').setView([0, 0], 2);
+
+  // Add OpenStreetMap tile layer
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
+
+  // Marker for GPS position
+  let gpsMarker = null;
+
+  // Route polyline
+  let routeLine = null;
+  let routeCoordinates = [];
+
+  // Movement variables
+  let movementInterval = null;
+  let currentIndex = 0;
+
+  // Get DOM elements
+  const latInput = document.getElementById('latInput');
+  const lngInput = document.getElementById('lngInput');
+  const setPositionBtn = document.getElementById('setPositionBtn');
+  const startBtn = document.getElementById('startBtn');
+  const stopBtn = document.getElementById('stopBtn');
+  const clearRouteBtn = document.getElementById('clearRouteBtn');
+
+  // Initialize position
+  let currentPosition = { lat: 0, lng: 0 };
+
+  // Function to update marker position
+  function updateMarker(position) {
+    if (!gpsMarker) {
+      gpsMarker = L.marker(position).addTo(map);
+    } else {
+      gpsMarker.setLatLng(position);
+    }
+    map.setView(position, 15);
+  }
+
+  // Function to set position manually
+  setPositionBtn.addEventListener('click', () => {
+    const lat = parseFloat(latInput.value);
+    const lng = parseFloat(lngInput.value);
+    if (isNaN(lat) || isNaN(lng)) {
+      alert('Please enter valid latitude and longitude.');
+      return;
+    }
+    currentPosition = { lat, lng };
+    updateMarker(currentPosition);
+  });
+
+  // Function to start movement along route
+  startBtn.addEventListener('click', () => {
+    if (routeCoordinates.length === 0) {
+      alert('Draw a route on the map first.');
+      return;
+    }
+    if (movementInterval) clearInterval(movementInterval);
+    currentIndex = 0;
+    movementInterval = setInterval(() => {
+      if (currentIndex >= routeCoordinates.length) {
+        clearInterval(movementInterval);
+        startBtn.disabled = false;
+        stopBtn.disabled = true;
+        return;
+      }
+      currentPosition = routeCoordinates[currentIndex];
+      updateMarker(currentPosition);
+      currentIndex++;
+    }, 1000); // Move every second
+    startBtn.disabled = true;
+    stopBtn.disabled = false;
+  });
+
+  // Function to stop movement
+  stopBtn.addEventListener('click', () => {
+    if (movementInterval) {
+      clearInterval(movementInterval);
+    }
+    startBtn.disabled = false;
+    stopBtn.disabled = true;
+  });
+
+  // Function to clear route
+  clearRouteBtn.addEventListener('click', () => {
+    if (routeLine) {
+      map.removeLayer(routeLine);
+      routeLine = null;
+      routeCoordinates = [];
+    }
+  });
+
+  // Map drawing for route
+  let drawing = false;
+  let tempRoute = [];
+
+  map.on('click', (e) => {
+    // Add point to route
+    routeCoordinates.push(e.latlng);
+    tempRoute.push(e.latlng);
+    if (routeLine) {
+      routeLine.setLatLngs(routeCoordinates);
+    } else {
+      routeLine = L.polyline(routeCoordinates, { color: 'blue' }).addTo(map);
+    }
+  });
+
+  // Initialize marker at center
+  updateMarker(currentPosition);
+</script>
+
+</body>
+</html>

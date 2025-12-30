@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Cyber Tools — Advanced Browser Search (METASEARCH)</title>
+<style>
+  /* No :root — explicit colours used */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html,body { height:100%; background: #000; color: #c58b00; font-family: "Segoe UI", system-ui, Arial, sans-serif; -webkit-font-smoothing:antialiased;}
+  .bg-video { position: fixed; inset: 0; width:100%; height:100%; object-fit:cover; z-index:-3; }
+  .overlay { position:fixed; inset:0; background: linear-gradient(180deg, rgba(0,0,0,0.12), rgba(0,0,0,0.75)); z-index:-2; }
+
+  nav { position:fixed; left:0; right:0; top:0; display:flex; justify-content:space-between; align-items:center;
+        padding:12px 18px; background: rgba(0,0,0,0.6); border-bottom:1px solid rgba(255,255,255,0.04); z-index:40; }
+  .brand { display:flex; align-items:center; gap:10px; color: #c58b00; font-weight:700; }
+  .mode-switch { display:flex; gap:8px; }
+  .mode-btn { background: transparent; border:1px solid rgba(255,255,255,0.04); color:#c58b00; padding:8px 10px; border-radius:8px; cursor:pointer; }
+  .mode-btn.active { background: linear-gradient(90deg, #00c896, #00a8cc); color:#021218; border:none; box-shadow:0 6px 24px rgba(0,200,150,0.08); }
+
+  .main { padding-top:100px; max-width:1200px; margin: 0 auto 40px; padding-left:18px; padding-right:18px; }
+  .search-row { display:flex; gap:10px; align-items:center; margin-bottom:12px; }
+  .search-input { flex:1; padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.04); background:#0b0b0c; color:#ffc107; font-family:monospace; }
+  .search-btn { padding:11px 14px; border-radius:10px; border:1px solid rgba(255,255,255,0.04); background:transparent; color:#ffc107; cursor:pointer; }
+  .controls { display:flex; gap:8px; align-items:center; margin-top:8px; flex-wrap:wrap; }
+
+  .filter { padding:8px; border-radius:8px; background:#0a0a0a; border:1px solid rgba(255,255,255,0.03); color:#caa44a; }
+
+  .results { margin-top:16px; transition:all .25s ease; min-height:200px; display:block; }
+  .fade-in { animation:fadeIn .28s ease both; }
+  @keyframes fadeIn { from { opacity:0; transform: translateY(6px); } to { opacity:1; transform: translateY(0); } }
+
+  .minimal-item { padding:12px 14px; border-radius:8px; background: rgba(255,255,255,0.01); margin-bottom:10px; color:#dbefff; }
+  .minimal-title { font-weight:800; color:#00c896; margin-bottom:6px; }
+  .minimal-text { color:#a8c6dd; line-height:1.45; font-family:monospace; font-size:0.98rem; }
+
+  .card-grid { display:grid; grid-template-columns: 1fr; gap:12px; }
+  @media(min-width:900px){ .card-grid { grid-template-columns: 1fr 1fr; } }
+  .card { background: rgba(7,7,8,0.6); border:1px solid rgba(255,255,255,0.03); padding:12px; border-radius:10px; }
+  .card a.title { color:#00a8cc; font-weight:800; text-decoration:none; font-size:1rem; }
+  .card .url { color:#9fbcd8; font-size:0.85rem; margin-top:6px; }
+  .card .snippet { color:#cddff0; margin-top:10px; font-size:0.95rem; line-height:1.35; }
+
+  .terminal { background:#000814; border:1px solid rgba(0,200,150,0.08); padding:12px; border-radius:8px; color:#bfe3ff; font-family:ui-monospace, SFMono-Regular, Menlo, monospace; height:300px; overflow:auto; white-space:pre-wrap; }
+  .terminal .line { margin-bottom:6px; }
+
+  .all-grid { display:flex; gap:12px; flex-direction:column; }
+  @media(min-width:1000px){ .all-grid { flex-direction:row; } .pane { flex:1; } }
+  .pane { background: rgba(0,0,0,0.45); padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.03); min-height:160px; }
+
+  .muted { color:#9fbcd8; font-size:0.92rem; }
+  .link { color:#00c896; text-decoration:none; font-weight:700; }
+  .hidden { display:none; }
+
+  /* small badge for source */
+  .src-badge { display:inline-block; padding:4px 8px; border-radius:6px; font-weight:700; font-size:0.8rem; margin-left:8px; color:#021218; background:#c58b00; }
+</style>
+</head>
+<body>
+  <!-- Original media kept intact -->
+  <video class="bg-video" autoplay loop muted playsinline>
+    <source src="background/1761817527453041720p.mp4" type="video/mp4">
+  </video>
+  <div class="overlay"></div>
+  <audio id="bg-music" loop>
+    <source src="background/Programming___Coding___Hacking_music_vol.18__ANONYMOUS_HEADQUARTERS_(48k).mp3" type="audio/mpeg">
+  </audio>
+
+  <nav>
+    <div class="brand"><span style="font-size:14px">Cyber Tools</span> <span style="opacity:.9;font-size:12px;margin-left:6px">Browser Search</span></div>
+    <div class="mode-switch">
+      <button class="mode-btn active" id="btn-min" onclick="setMode('minimal')">Minimal</button>
+      <button class="mode-btn" id="btn-cards" onclick="setMode('cards')">Cards</button>
+      <button class="mode-btn" id="btn-osint" onclick="setMode('osint')">OSINT</button>
+      <button class="mode-btn" id="btn-all" onclick="setMode('all')">All-In</button>
+    </div>
+  </nav>
+
+  <div class="main">
+    <div class="search-row">
+      <input id="query" class="search-input" placeholder="Search anything — definitions, quick facts, or intel...">
+      <button class="search-btn" onclick="searchQuery()">Search</button>
+    </div>
+
+    <div class="controls">
+      <input id="domainFilter" class="filter" placeholder="Filter by domain (example.com) — optional" />
+      <select id="sortMode" class="filter" aria-label="Sort">
+        <option value="relevance">Smart relevance</option>
+        <option value="alpha">A → Z</option>
+      </select>
+      <div class="muted" style="margin-left:auto">MetaSearch (Wiki → DuckDuckGo → Qwant) — client-only</div>
+    </div>
+
+    <div class="results fade-in" id="results">
+      <div class="muted" style="margin-top:18px">Type a query and press Search. This tool will try Wikipedia, then DuckDuckGo, then Qwant automatically.</div>
+    </div>
+  </div>
+
+<script>
+/* Mode state */
+var mode = 'minimal';
+function setMode(m) {
+  mode = m;
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  if (m === 'minimal') document.getElementById('btn-min').classList.add('active');
+  if (m === 'cards') document.getElementById('btn-cards').classList.add('active');
+  if (m === 'osint') document.getElementById('btn-osint').classList.add('active');
+  if (m === 'all') document.getElementById('btn-all').classList.add('active');
+  document.getElementById('results').innerHTML = '';
+}
+
+/* autoplay music on first user interaction */
+window.addEventListener('click',()=>{ document.getElementById('bg-music').play().catch(()=>{}); }, { once:true });
+
+/* --- METASEARCH: Wiki -> DuckDuckGo -> Qwant --- */
+
+/* Try Wikipedia summary API */
+async function fetchWikipedia(q){
+  try {
+    const url = 'https://en.wikipedia.org/api/rest_v1/page/summary/' + encodeURIComponent(q);
+    const res = await fetch(url);
+    if(!res.ok) throw new Error('wiki no');
+    const json = await res.json();
+    // If page found return single item
+    if(json && (json.extract || json.title)) {
+      return [{
+        title: json.title || q,
+        snippet: json.extract || '',
+        url: json.content_urls && json.content_urls.desktop && json.content_urls.desktop.page ? json.content_urls.desktop.page : ('https://en.wikipedia.org/wiki/' + encodeURIComponent(q)),
+        source: 'Wikipedia',
+        score: 10
+      }];
+    }
+    return [];
+  } catch(e) {
+    console.warn('Wikipedia failed', e);
+    return [];
+  }
+}
+
+/* Try DuckDuckGo Instant Answer API (no key) */
+async function fetchDuckDuckGo(q) {
+  try {
+    const url = 'https://api.duckduckgo.com/?q=' + encodeURIComponent(q) + '&format=json&no_html=1&skip_disambig=1';
+    const res = await fetch(url);
+    if(!res.ok) throw new Error('ddg no');
+    const data = await res.json();
+    const items = [];
+    if (data && data.AbstractText) {
+      items.push({ title: data.Heading || q, snippet: data.AbstractText, url: data.AbstractURL || '', source: 'DuckDuckGo', score: scoreText(data.AbstractText,q) + 5 });
+    }
+    if (Array.isArray(data.RelatedTopics)) {
+      data.RelatedTopics.forEach(t => {
+        if (t.Text) items.push({ title: (t.Text.split(' - ')[0] || q), snippet: t.Text, url: t.FirstURL || '', source: 'DuckDuckGo', score: scoreText(t.Text,q) });
+        else if (t.Topics && Array.isArray(t.Topics)) {
+          t.Topics.forEach(tt => { if (tt.Text) items.push({ title: (tt.Text.split(' - ')[0] || q), snippet: tt.Text, url: tt.FirstURL || '', source: 'DuckDuckGo', score: scoreText(tt.Text,q) }); });
+        }
+      });
+    }
+    return items;
+  } catch(e) {
+    console.warn('DuckDuckGo failed', e);
+    return [];
+  }
+}
+
+/* Try Qwant public API (no key) */
+async function fetchQwant(q) {
+  try {
+    // Qwant public API v3
+    const url = 'https://api.qwant.com/v3/search/web?q=' + encodeURIComponent(q) + '&count=10&device=desktop&locale=en_US&offset=0';
+    const res = await fetch(url, { headers: { 'Accept': 'application/json' }});
+    if(!res.ok) throw new Error('qwant no');
+    const json = await res.json();
+    const items = [];
+    if (json && json.data && json.data.result && json.data.result.items) {
+      json.data.result.items.forEach(it => {
+        let title = it.title || it.pagemap && it.pagemap.metatags && it.pagemap.metatags[0] && it.pagemap.metatags[0]['og:title'] || q;
+        const snippet = it.excerpt || it.desc || '';
+        const url = it.url || it.link || '';
+        items.push({ title: title, snippet: snippet, url: url, source: 'Qwant', score: scoreText(snippet + ' ' + title,q) });
+      });
+    }
+    return items;
+  } catch(e) {
+    console.warn('Qwant failed', e);
+    return [];
+  }
+}
+
+/* Unified fetch chain: attempts sources in order, returns aggregated items */
+async function fetchMetaSearch(q) {
+  // 1) Wikipedia (fast summary)
+  const wiki = await fetchWikipedia(q);
+  if(wiki && wiki.length) return wiki; // if wiki found, prefer it
+
+  // 2) DuckDuckGo
+  const ddg = await fetchDuckDuckGo(q);
+  if(ddg && ddg.length) return ddg;
+
+  // 3) Qwant
+  const qwant = await fetchQwant(q);
+  if(qwant && qwant.length) return qwant;
+
+  // 4) If all failed, return empty
+  return [];
+}
+
+/* Main search entry - uses metasearch */
+async function searchQuery(){
+  const q = document.getElementById('query').value.trim();
+  if(!q) return;
+  const resultsEl = document.getElementById('results');
+  resultsEl.innerHTML = '<div class="muted">Searching…</div>';
+  try {
+    const items = await fetchMetaSearch(q);
+
+    // Domain filter
+    const domainFilter = document.getElementById('domainFilter').value.trim().toLowerCase();
+    let filtered = items.slice();
+    if(domainFilter) {
+      filtered = filtered.filter(it => (it.url||'').toLowerCase().includes(domainFilter) || (it.snippet||'').toLowerCase().includes(domainFilter));
+    }
+
+    // Sorting
+    const sortMode = document.getElementById('sortMode').value;
+    if(sortMode === 'relevance') filtered.sort((a,b)=> (b.score||0)-(a.score||0));
+    else if(sortMode === 'alpha') filtered.sort((a,b)=> (a.title||'').localeCompare(b.title||''));
+
+    // Render
+    renderByMode(filtered, q);
+  } catch(e) {
+    console.error(e);
+    resultsEl.innerHTML = '<div class="muted">Error fetching results. (Check network / CORS)</div>';
+  }
+}
+
+/* Basic text scoring */
+function scoreText(text, q) {
+  if(!text || !q) return 0;
+  const tokens = q.toLowerCase().split(/\s+/).filter(Boolean);
+  const t = text.toLowerCase();
+  let s = 0;
+  tokens.forEach(tok => {
+    const re = new RegExp(tok.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'g');
+    const m = t.match(re);
+    if(m) s += m.length * 2;
+  });
+  if(text.length < 200) s += 1;
+  return s;
+}
+
+/* Render helpers (same modes as before) */
+function renderByMode(items, query) {
+  const r = document.getElementById('results');
+  r.innerHTML = '';
+  if(mode === 'minimal') {
+    if(items.length === 0) { r.innerHTML = '<div class="muted">No results found.</div>'; return; }
+    items.forEach(it => {
+      const el = document.createElement('div'); el.className = 'minimal-item fade-in';
+      const title = document.createElement('div'); title.className='minimal-title'; title.textContent = it.title || query;
+      const badge = document.createElement('span'); badge.className='src-badge'; badge.textContent = it.source || 'Source';
+      title.appendChild(badge);
+      const txt = document.createElement('div'); txt.className = 'minimal-text'; txt.textContent = it.snippet || '';
+      el.appendChild(title); el.appendChild(txt);
+      if(it.url) {
+        const link = document.createElement('a'); link.className='link'; link.textContent = 'Open source'; link.href = it.url; link.target='_blank'; link.style.display='inline-block'; link.style.marginTop='8px';
+        el.appendChild(link);
+      }
+      r.appendChild(el);
+    });
+  } else if(mode === 'cards') {
+    const grid = document.createElement('div'); grid.className = 'card-grid';
+    if(items.length === 0) { grid.innerHTML = '<div class="muted">No results found.</div>'; r.appendChild(grid); return; }
+    items.forEach(it => {
+      const c = document.createElement('div'); c.className='card fade-in';
+      const top = document.createElement('div');
+      const title = document.createElement('a'); title.className='title'; title.textContent = it.title || query;
+      title.href = it.url || ('https://duckduckgo.com/?q=' + encodeURIComponent(it.title || query));
+      title.target = '_blank';
+      const badge = document.createElement('span'); badge.className='src-badge'; badge.textContent = it.source || 'Source';
+      top.appendChild(title); top.appendChild(badge);
+      const url = document.createElement('div'); url.className='url'; url.textContent = it.url || '';
+      const snip = document.createElement('div'); snip.className='snippet'; snip.textContent = it.snippet || '';
+      c.appendChild(top); c.appendChild(url); c.appendChild(snip);
+      grid.appendChild(c);
+    });
+    r.appendChild(grid);
+  } else if(mode === 'osint') {
+    const term = document.createElement('div'); term.className='terminal fade-in';
+    if(items.length === 0) { term.textContent = 'No results found.'; r.appendChild(term); return; }
+    r.appendChild(term);
+    let i = 0;
+    function streamNext() {
+      if(i >= items.length) return;
+      const it = items[i++];
+      writeLine(term, '> ' + (it.title || query) + ' [' + (it.source||'') + ']');
+      setTimeout(()=> {
+        if(it.snippet) writeLine(term, '  ' + sanitizeSnippet(it.snippet));
+        if(it.url) writeLine(term, '  SOURCE: ' + it.url);
+        term.scrollTop = term.scrollHeight;
+        setTimeout(streamNext, 450 + Math.random()*450);
+      }, 300 + Math.random()*300);
+    }
+    streamNext();
+  } else if(mode === 'all') {
+    const container = document.createElement('div'); container.className='all-grid';
+    const p1 = document.createElement('div'); p1.className='pane';
+    const hdr1 = document.createElement('div'); hdr1.className='muted'; hdr1.textContent='Minimal';
+    p1.appendChild(hdr1);
+    items.slice(0,5).forEach(it => {
+      const el = document.createElement('div'); el.className='minimal-item fade-in';
+      const title = document.createElement('div'); title.className='minimal-title'; title.textContent = it.title;
+      const badge = document.createElement('span'); badge.className='src-badge'; badge.textContent = it.source || 'Src';
+      title.appendChild(badge);
+      const txt = document.createElement('div'); txt.className='minimal-text'; txt.textContent = it.snippet;
+      el.appendChild(title); el.appendChild(txt); p1.appendChild(el);
+    });
+    const p2 = document.createElement('div'); p2.className='pane'; const hdr2 = document.createElement('div'); hdr2.className='muted'; hdr2.textContent='Cards'; p2.appendChild(hdr2);
+    items.slice(0,4).forEach(it => {
+      const c = document.createElement('div'); c.className='card fade-in';
+      const a = document.createElement('a'); a.className='title'; a.textContent = it.title; a.href = it.url || '#'; a.target='_blank';
+      const sn = document.createElement('div'); sn.className='snippet'; sn.textContent = it.snippet;
+      c.appendChild(a); c.appendChild(sn); p2.appendChild(c);
+    });
+    const p3 = document.createElement('div'); p3.className='pane'; const hdr3 = document.createElement('div'); hdr3.className='muted'; hdr3.textContent='OSINT (preview)'; p3.appendChild(hdr3);
+    const t = document.createElement('div'); t.className='terminal'; t.textContent = ''; p3.appendChild(t);
+    container.appendChild(p1); container.appendChild(p2); container.appendChild(p3);
+    r.appendChild(container);
+    items.slice(0,6).forEach((it, idx) => {
+      setTimeout(()=>{ writeLine(t, '> ' + (it.title||query)); setTimeout(()=>{ if(it.snippet) writeLine(t,'  ' + sanitizeSnippet(it.snippet)); }, 120); }, 200*idx + 200);
+    });
+  }
+}
+
+/* Terminal typing */
+function writeLine(termEl, text) {
+  const line = document.createElement('div'); line.className = 'line';
+  termEl.appendChild(line);
+  let i = 0;
+  const speed = 6 + Math.floor(Math.random()*10);
+  const timer = setInterval(()=> {
+    line.textContent += text.charAt(i++);
+    termEl.scrollTop = termEl.scrollHeight;
+    if(i >= text.length) clearInterval(timer);
+  }, speed);
+}
+
+function sanitizeSnippet(s) {
+  return (s||'').replace(/https?:\/\/\S+/g,'[link]');
+}
+
+/* Enter key triggers search */
+document.getElementById('query').addEventListener('keydown', function(e){
+  if(e.key === 'Enter') searchQuery();
+});
+</script>
+</body>
+</html>

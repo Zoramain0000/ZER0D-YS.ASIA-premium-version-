@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Password Strength & Pattern Analyzer — Safe Mode</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body {
+    margin:0;
+    height:100%;
+    font-family:"Segoe UI",system-ui,Arial,sans-serif;
+    background:#000;
+    color:#c58b00;
+  }
+
+  .bg-video {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: -3;
+    filter: brightness(.45);
+  }
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(180deg,rgba(0,0,0,.55),rgba(0,0,0,.65));
+    z-index: -2;
+  }
+  .wrap {
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    min-height:100vh;
+    padding:2rem;
+  }
+  .panel {
+    width:100%;
+    max-width:800px;
+    background:rgba(0,0,0,0.45);
+    border:1px solid rgba(197,139,0,0.12);
+    border-radius:12px;
+    padding:1.25rem;
+    backdrop-filter:blur(6px);
+  }
+  h1 { margin:0; font-size:1.4rem; color:#c58b00; }
+  p.lead { margin:6px 0 12px; color:#d7c38a; font-size:0.95rem; }
+  input {
+    width:100%;
+    padding:10px;
+    border-radius:8px;
+    border:1px solid rgba(197,139,0,0.12);
+    background:transparent;
+   
+    color:#c58b00;
+    font-size:1rem;
+    font-family:monospace;
+  }
+  .btn {
+    background:transparent;
+    border:1px solid #c58b00;
+    color:#c58b00;
+    padding:10px 14px;
+    border-radius:8px;
+    cursor:pointer;
+    font-weight:600;
+    transition:.2s;
+  }
+  .btn:hover { background:#c58b00; color:#070707; }
+  .results {
+    margin-top:1rem;
+    background:rgba(255,255,255,0.02);
+    border:1px solid rgba(255,255,255,0.03);
+    border-radius:8px;
+    padding:12px;
+  }
+  .bar {
+    width:100%;
+    height:10px;
+    background:#222;
+    border-radius:6px;
+    overflow:hidden;
+    margin-top:8px;
+  }
+  .bar-inner {
+    height:100%;
+    background:linear-gradient(90deg,#ff4b4b,#ffd56b,#00ff80);
+    width:0%;
+    transition:width .4s;
+  }
+  .metric { color:#d7c38a; margin:4px 0; }
+  .suspicious { color:#ff7b7b; font-weight:700; }
+  footer { text-align:center; margin-top:10px; color:#d7c38a; font-size:0.9rem; }
+
+  .start-wrapper {
+    position:fixed;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:10;
+  }
+  .start-btn {
+    background:rgba(0,0,0,0.6);
+    border:1px solid #c58b00;
+    color:#c58b00;
+    padding:14px 26px;
+    border-radius:10px;
+    font-size:1.05rem;
+    cursor:pointer;
+  }
+  .start-btn:hover { background:#c58b00; color:#070707; }
+</style>
+</head>
+<body>
+
+<video class="bg-video" autoplay loop muted playsinline>
+  <source src="background/1761817527453041720p.mp4" type="video/mp4">
+</video>
+<div class="overlay"></div>
+
+<audio id="bg-audio" loop>
+  <source src="background/Programming___Coding___Hacking_music_vol.18__ANONYMOUS_HEADQUARTERS_(48k).mp3" type="audio/mpeg">
+</audio>
+
+<div class="start-wrapper" id="start-wrapper">
+  <button class="start-btn" id="start-btn">Start Analyzer</button>
+</div>
+
+<div class="wrap">
+  <div class="panel" id="panel" style="display:none;">
+    <h1>Password Strength & Pattern Analyzer</h1>
+    
+    <p class="lead">Evaluate password strength, entropy, and common pattern risks. All analysis is local — no data leaves your device.</p>
+
+    <label><strong style="color:#d7c38a">Enter Password</strong></label>
+    <input id="password-input" type="password" placeholder="Enter password to analyze...">
+
+    <div class="row" style="margin-top:10px;display:flex;gap:.5rem;">
+      <button class="btn" id="analyze-btn">Analyze</button>
+      <button class="btn" id="toggle-visibility">Show</button>
+      <button class="btn" id="clear-btn">Clear</button>
+    </div>
+
+    <div class="results" id="results">
+      <p style="color:#d7c38a;">No analysis yet.</p>
+    </div>
+    <footer>Offline • Secure • Local Analysis Only</footer>
+  </div>
+</div>
+
+<script>
+const startBtn = document.getElementById('start-btn');
+const startWrapper = document.getElementById('start-wrapper');
+const panel = document.getElementById('panel');
+const bgAudio = document.getElementById('bg-audio');
+
+startBtn.onclick = () => {
+  bgAudio.play().catch(()=>{});
+  panel.style.display = 'block';
+  startWrapper.style.display = 'none';
+};
+
+// Pattern lists
+const commonPatterns = [
+  '1234','password','admin','qwerty','letmein','welcome',
+  '1111','0000','iloveyou','abc','test','root','god','user','monkey'
+];
+const keyboardSeq = ['qwerty','asdf','zxcv','123','789','poi','lkj','mnb'];
+
+// Main analysis
+document.getElementById('analyze-btn').onclick = () => {
+  const pw = document.getElementById('password-input').value;
+  const result = document.getElementById('results');
+  if (!pw) {
+    result.innerHTML = '<p class="metric">Enter a password first.</p>';
+    return;
+  }
+
+  const entropy = estimateEntropy(pw);
+  const strength = getStrengthLabel(entropy);
+  const patternWarnings = findPatterns(pw);
+  const leetDecode = decodeLeet(pw);
+  const crackedTime = estimateCrackTime(entropy);
+
+  result.innerHTML = `
+    <div class="metric"><strong>Length:</strong> ${pw.length} chars</div>
+    <div class="metric"><strong>Entropy:</strong> ${entropy.toFixed(2)} bits (${strength.label})</div>
+    <div class="bar"><div class="bar-inner" style="width:${strength.percent}%;"></div></div>
+    <div class="metric"><strong>Estimated Crack Time:</strong> ${crackedTime}</div>
+    <div class="metric"><strong>Detected Patterns:</strong> ${patternWarnings.length ? '<span class="suspicious">'+patternWarnings.join(', ')+'</span>' : 'None'}</div>
+    <div class="metric"><strong>Leetspeak Interpretation:</strong> ${leetDecode !== pw ? '<span>'+leetDecode+'</span>' : 'None / same'}</div>
+    <div class="metric"><strong>Advice:</strong> ${generateAdvice(entropy, pw, patternWarnings)}</div>
+  `;
+};
+
+// Helper functions
+function estimateEntropy(pw){
+  const charset = new Set();
+  for(const c of pw){
+    if(/[a-z]/.test(c)) charset.add('lower');
+    else if(/[A-Z]/.test(c)) charset.add('upper');
+    else if(/[0-9]/.test(c)) charset.add('num');
+    else charset.add('sym');
+  }
+  let charsetSize = 0;
+  if(charset.has('lower')) charsetSize += 26;
+  if(charset.has('upper')) charsetSize += 26;
+  if(charset.has('num')) charsetSize += 10;
+  if(charset.has('sym')) charsetSize += 32;
+  const entropy = Math.log2(Math.pow(charsetSize, pw.length));
+  return Math.min(entropy, 128);
+}
+
+function getStrengthLabel(ent){
+  if(ent < 28) return {label:'Very Weak',percent:15};
+  if(ent < 36) return {label:'Weak',percent:35};
+  if(ent < 60) return {label:'Moderate',percent:55};
+  if(ent < 90) return {label:'Strong',percent:75};
+  return {label:'Very Strong',percent:100};
+}
+
+function findPatterns(pw){
+  const p = pw.toLowerCase();
+  const hits=[];
+  for(const pat of commonPatterns){ if(p.includes(pat)) hits.push(pat); }
+  for(const seq of keyboardSeq){ if(p.includes(seq)) hits.push('keyboard seq:'+seq); }
+  if(/\d{4,}/.test(p)) hits.push('Numeric sequence');
+  if(/([a-z])\1{2,}/.test(p)) hits.push('Repeated letters');
+  return hits;
+}
+
+function decodeLeet(pw){
+  return pw.replace(/4/g,'a')
+           .replace(/3/g,'e')
+           .replace(/1/g,'i')
+           .replace(/0/g,'o')
+           .replace(/5/g,'s')
+           .replace(/7/g,'t');
+}
+
+function estimateCrackTime(ent){
+  const guessesPerSec = 1e9; // billions/sec (GPU speed)
+  const guesses = Math.pow(2, ent);
+  const sec = guesses / guessesPerSec;
+  if(sec < 60) return `${sec.toFixed(2)} sec`;
+  const min = sec/60; if(min < 60) return `${min.toFixed(1)} min`;
+  const hr = min/60; if(hr < 24) return `${hr.toFixed(1)} hr`;
+  const day = hr/24; if(day < 365) return `${day.toFixed(1)} days`;
+  const years = day/365; return `${years.toFixed(1)} years`;
+}
+
+function generateAdvice(ent,pw,patterns){
+  if(ent < 36) return "Too weak — add uppercase, symbols, and longer random words.";
+  if(patterns.length>0) return "Avoid using common patterns or predictable sequences.";
+  if(ent < 60) return "Consider passphrases (e.g., 4 random words).";
+  if(ent < 90) return "Strong — can be improved with length.";
+  return "Excellent password — resistant to brute-force attacks.";
+}
+
+// Toggle visibility
+document.getElementById('toggle-visibility').onclick = function(){
+  const inp = document.getElementById('password-input');
+  if(inp.type==='password'){ inp.type='text'; this.textContent='Hide'; }
+  else { inp.type='password'; this.textContent='Show'; }
+};
+document.getElementById('clear-btn').onclick = function(){
+  document.getElementById('password-input').value='';
+  document.getElementById('results').innerHTML='<p style="color:#d7c38a;">No analysis yet.</p>';
+};
+</script>
+</body>
+</html>

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>📸 EXIF Metadata Viewer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.min.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0f172a;
+      color: #f8fafc;
+      margin: 0;
+      padding: 2rem;
+    }
+    h1 {
+      color: #38bdf8;
+    }
+    input[type="file"] {
+      padding: 1rem;
+      background: #1e293b;
+      color: #f8fafc;
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+      margin-bottom: 1rem;
+    }
+    img {
+      max-width: 100%;
+      margin-top: 1rem;
+      border-radius: 8px;
+      border: 1px solid #334155;
+    }
+    pre {
+      background: #1e293b;
+      padding: 1rem;
+      border-radius: 6px;
+      color: #38fdd8;
+      overflow-x: auto;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>📸 EXIF Metadata Viewer</h1>
+  <input type="file" accept="image/*" id="imageInput" />
+  <img id="preview" alt="Image Preview" />
+  <pre id="output">Upload an image to extract EXIF metadata.</pre>
+
+  <script>
+    const input = document.getElementById('imageInput');
+    const output = document.getElementById('output');
+    const preview = document.getElementById('preview');
+
+    input.addEventListener('change', function () {
+      const file = this.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+
+      reader.onload = function (e) {
+        preview.src = e.target.result;
+        preview.style.display = 'block';
+
+        EXIF.getData(file, function () {
+          const allTags = EXIF.getAllTags(this);
+          if (Object.keys(allTags).length === 0) {
+            output.textContent = "⚠️ No EXIF metadata found.";
+            return;
+          }
+
+          let formatted = "📷 EXIF Metadata:\n";
+          for (const tag in allTags) {
+            formatted += `🔹 ${tag}: ${allTags[tag]}\n`;
+          }
+          output.textContent = formatted;
+        });
+      };
+
+      reader.readAsDataURL(file);
+    });
+  </script>
+
+</body>
+</html>

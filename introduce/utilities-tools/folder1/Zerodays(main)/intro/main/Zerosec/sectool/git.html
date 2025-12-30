@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>GitHub Project Finder</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+     background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: #ff0000;
+      margin: 0;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    h1 {
+      color: #ff0000;
+    }
+
+    .search-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 1rem 0;
+      max-width: 700px;
+      width: 100%;
+    }
+
+    input, select, button {
+      padding: 10px;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+    }
+
+    input {
+      flex: 2;
+      background: #00000065;
+      color: #ff0000;
+    }
+
+    select {
+      flex: 1;
+      background: #0000008f;
+      color: #ff0000;
+    }
+
+    button {
+      background: #ff0000;
+      color: rgb(0, 255, 42);
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #00000048;
+    }
+
+    .results {
+      margin-top: 1rem;
+      width: 100%;
+      max-width: 900px;
+    }
+
+    .repo {
+      background: #00000036;
+      border-left: 4px solid #ff0000;
+      padding: 1rem;
+      margin: 0.5rem 0;
+      border-radius: 6px;
+    }
+
+    .repo a {
+      text-decoration: none;
+      color: #ff0000;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .repo p {
+      margin: 0.5rem 0 0;
+      font-size: 14px;
+    }
+
+    .pagination {
+      display: flex;
+      gap: 10px;
+      margin-top: 1rem;
+    }
+
+    .pagination button {
+      padding: 8px 16px;
+      background-color: #00ff55;
+      color: #ff0000;
+    }
+
+    .pagination button:hover {
+      background-color: #00000057;
+    } 
+  </style>
+</head>
+<body>
+
+  <h1>🔍 GitHub Project Finder</h1>
+
+  <div class="search-controls">
+    <input type="text" id="query" placeholder="Enter keyword (e.g. AI, weather, scanner)">
+    <select id="language">
+      <option value="">All Languages</option>
+      <option value="JavaScript">JavaScript</option>
+      <option value="Python">Python</option>
+      <option value="HTML">HTML</option>
+      <option value="CSS">CSS</option>
+      <option value="Java">Java</option>
+      <option value="C++">C++</option>
+      <option value="Go">Go</option>
+    </select>
+    <select id="sort">
+      <option value="stars">Sort by Stars</option>
+      <option value="forks">Sort by Forks</option>
+      <option value="updated">Sort by Updated</option>
+    </select>
+    <button onclick="searchRepos()">Search</button>
+  </div>
+
+  <div id="results" class="results"></div>
+  <div id="pagination" class="pagination"></div>
+
+  <script>
+    let currentPage = 1;
+    let lastQuery = '';
+    let lastLang = '';
+    let lastSort = '';
+
+    async function searchRepos(page = 1) {
+      const query = document.getElementById('query').value.trim();
+      const language = document.getElementById('language').value;
+      const sort = document.getElementById('sort').value;
+
+      if (!query) {
+        alert("Please enter a search keyword.");
+        return;
+      }
+
+      lastQuery = query;
+      lastLang = language;
+      lastSort = sort;
+      currentPage = page;
+
+      const url = `https://api.github.com/search/repositories?q=${encodeURIComponent(query)}${language ? '+language:' + language : ''}&sort=${sort}&order=desc&page=${page}&per_page=10`;
+
+      const res = await fetch(url);
+      const data = await res.json();
+
+      const resultsDiv = document.getElementById('results');
+      const paginationDiv = document.getElementById('pagination');
+
+      resultsDiv.innerHTML = '';
+      paginationDiv.innerHTML = '';
+
+      if (data.items && data.items.length > 0) {
+        data.items.forEach(repo => {
+          const repoDiv = document.createElement('div');
+          repoDiv.classList.add('repo');
+          repoDiv.innerHTML = `
+            <a href="${repo.html_url}" target="_blank">${repo.full_name}</a>
+            <p>${repo.description || 'No description provided.'}</p>
+            <p>⭐ ${repo.stargazers_count} | 🍴 ${repo.forks_count} | 🧑‍💻 ${repo.language || 'Unknown'}</p>
+          `;
+          resultsDiv.appendChild(repoDiv);
+        });
+
+        // Pagination
+        if (data.total_count > 10) {
+          const prevBtn = document.createElement('button');
+          prevBtn.textContent = '⬅ Prev';
+          prevBtn.disabled = page === 1;
+          prevBtn.onclick = () => searchRepos(page - 1);
+          paginationDiv.appendChild(prevBtn);
+
+          const nextBtn = document.createElement('button');
+          nextBtn.textContent = 'Next ➡';
+          nextBtn.disabled = data.items.length < 10;
+          nextBtn.onclick = () => searchRepos(page + 1);
+          paginationDiv.appendChild(nextBtn);
+        }
+      } else {
+        resultsDiv.innerHTML = '<p>No repositories found.</p>';
+      }
+    }
+  </script>
+</body>
+</html>

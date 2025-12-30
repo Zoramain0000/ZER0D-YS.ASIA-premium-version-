@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>💡 Random Advice Generator</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <style>
+    body {
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+      font-family: 'Courier New', monospace;
+      margin: 0;
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    h1 { color: red; margin-bottom: 20px; }
+    .box {
+background: rgba(0,0,0,0.5);
+      padding: 20px;
+      border-radius: 10px;
+      max-width: 600px;
+      width: 100%;
+      box-shadow: 0 0 10px red;
+      text-align: center;
+    }
+    button {
+      margin: 10px;
+      padding: 10px 16px;
+      border: none;
+      background: red;
+      color: green;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1em;
+    }
+    button:hover {background: rgba(0,0,0,0.5);}
+    img {
+      margin-top: 20px;
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+      box-shadow: 0 0 10px red;
+      display: none;
+    }
+    pre {
+background: rgba(0,0,0,0.5);
+      color: red;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 15px;
+      white-space: pre-wrap;
+    }
+    .history {
+      margin-top: 15px;
+background: rgba(0,0,0,0.5);
+      padding: 10px;
+      border-radius: 8px;
+      max-height: 200px;
+      overflow-y: auto;
+      text-align: left;
+      font-size: 0.9em;
+    }
+    footer {
+      margin-top: 30px;
+      color: red;
+      font-size: 0.9em;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <h1>💡 Random Advice Generator</h1>
+  <div class="box">
+    <button onclick="fetchAdvice()">🔄 Get Advice</button>
+    <button onclick="copyAdvice()">📋 Copy Advice</button>
+    <button onclick="exportAdvice()">💾 Export JSON</button>
+
+    <pre id="output">Click "Get Advice" to start!</pre>
+
+    <h3>🕒 Visit History</h3>
+    <div class="history" id="historyLog">No history yet.</div>
+  </div>
+
+  <footer>
+    🔐 Powered by <a href="https://api.adviceslip.com" target="_blank">Advice Slip API</a> • Auto-refresh every 60 s • © 2025 ZeroDayAI
+  </footer>
+
+  <script>
+    let lastAdvice = null;
+    const historyList = [];
+
+    async function fetchAdvice() {
+      const out = document.getElementById('output');
+      const log = document.getElementById('historyLog');
+      out.textContent = '⏳ Fetching advice...';
+
+      try {
+        // Use unique timestamp to avoid caching
+        const res = await fetch(`https://api.adviceslip.com/advice?timestamp=${Date.now()}`);
+        const data = await res.json();
+        lastAdvice = data.slip;
+        historyList.push(data.slip);
+
+        out.textContent = `“${data.slip.advice}”`;
+        log.innerHTML = historyList
+          .map((s, i) => `${i+1}. “${s.advice}”`)
+          .join('\n');
+      } catch (e) {
+        out.textContent = '❌ Failed to fetch advice.';
+        console.error(e);
+      }
+    }
+
+    function copyAdvice() {
+      if (!lastAdvice) return alert('No advice to copy!');
+      navigator.clipboard.writeText(lastAdvice.advice)
+        .then(() => alert('✅ Copied!'))
+        .catch(() => alert('❌ Copy failed.'));
+    }
+
+    function exportAdvice() {
+      if (!lastAdvice) return alert('Nothing to export!');
+      const blob = new Blob([JSON.stringify(lastAdvice, null, 2)], {type:'application/json'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `advice_${lastAdvice.slip_id}.json`;
+      a.click();
+    }
+
+    setInterval(fetchAdvice, 60000);
+  </script>
+</body>
+</html>

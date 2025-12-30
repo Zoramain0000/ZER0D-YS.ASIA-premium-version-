@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>🎡 Advanced Wheel of Fortune</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+      min-height: 100vh;
+      margin: 0;
+    }
+
+    h1 {
+      margin-bottom: 10px;
+    }
+
+    .wheel-container {
+      position: relative;
+      width: 320px;
+      height: 320px;
+      margin-top: 20px;
+    }
+
+    .wheel {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      border: 10px solid red;
+      position: relative;
+      transition: transform 5s cubic-bezier(0.33, 1, 0.68, 1);
+    }
+
+    .segment {
+      position: absolute;
+      width: 50%;
+      height: 50%;
+      left: 50%;
+      top: 50%;
+      transform-origin: 0% 0%;
+      clip-path: polygon(0% 0%, 100% 0%, 0% 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: bold;
+      color: red;
+      text-shadow: 1px 1px 2px red;
+    }
+
+    .pointer {
+      width: 0;
+      height: 0;
+      border-left: 20px solid transparent;
+      border-right: 20px solid transparent;
+      border-bottom: 40px solid red;
+      position: absolute;
+      top: -40px;
+      left: calc(50% - 20px);
+    }
+
+    .controls {
+      margin-top: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    button {
+      background-color: red;
+      color: green;
+      border: none;
+      padding: 10px 20px;
+      font-size: 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin: 5px;
+    }
+   .button:hover{
+background: rgba(0, 0, 0, 0.5);
+   }
+    .balance-info,
+    #result {
+      margin-top: 10px;
+      font-size: 16px;
+    }
+
+    input[type="number"] {
+      padding: 5px;
+      font-size: 16px;
+      border-radius: 4px;
+      border: none;
+      width: 80px;
+      text-align: center;
+    }
+
+    .history {
+      margin-top: 20px;
+      max-height: 150px;
+      overflow-y: auto;
+      border: 1px solid red;
+      border-radius: 6px;
+      padding: 10px;
+      width: 300px;
+background: rgba(0, 0, 0, 0.5);
+    }
+
+    .history h3 {
+      margin-top: 0;
+    }
+
+    .history ul {
+      list-style: none;
+      padding-left: 0;
+      margin: 0;
+      font-size: 14px;
+    }
+
+    .music-controls {
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎡 Wheel of Fortune</h1>
+
+  <div class="wheel-container">
+    <div class="pointer"></div>
+    <div class="wheel" id="wheel"></div>
+  </div>
+
+  <div class="controls">
+    <div class="balance-info">
+      💰 Balance: $<span id="balance">1000</span>
+    </div>
+
+    <div>
+      Bet Amount: $<input type="number" id="betAmount" min="1" value="100">
+    </div>
+
+    <button onclick="spinWheel()">🎯 Spin</button>
+    <button onclick="toggleAutoSpin()">🔁 Toggle Auto Spin</button>
+
+    <div id="result"></div>
+
+    <div class="music-controls">
+      <button onclick="toggleMusic()">🎵 Toggle Music</button>
+    </div>
+  </div>
+
+  <div class="history">
+    <h3>📜 Spin History</h3>
+    <ul id="historyList"></ul>
+  </div>
+
+  <audio id="spinSound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_6fa0602e61.mp3?filename=spin-1-47756.mp3"></audio>
+  <audio id="bgMusic" loop src="https://cdn.pixabay.com/download/audio/2023/03/14/audio_2ba00d4ce1.mp3?filename=casino-music-140911.mp3"></audio>
+
+  <script>
+    const segments = [
+      { label: '100', color: '#e74c3c', value: 100 },
+      { label: '200', color: '#f1c40f', value: 200 },
+      { label: '300', color: '#2ecc71', value: 300 },
+      { label: '0',   color: '#95a5a6', value: 0 },
+      { label: '500', color: '#9b59b6', value: 500 },
+      { label: '1000', color: '#1abc9c', value: 1000 },
+      { label: '0',   color: '#34495e', value: 0 },
+      { label: '750', color: '#e67e22', value: 750 }
+    ];
+
+    const wheel = document.getElementById('wheel');
+    const resultEl = document.getElementById('result');
+    const balanceEl = document.getElementById('balance');
+    const betInput = document.getElementById('betAmount');
+    const spinSound = document.getElementById('spinSound');
+    const bgMusic = document.getElementById('bgMusic');
+    const historyList = document.getElementById('historyList');
+
+    let currentRotation = 0;
+    let balance = 1000;
+    const segmentAngle = 360 / segments.length;
+    let autoSpinning = false;
+    let autoSpinInterval = null;
+
+    function drawWheel() {
+      segments.forEach((segment, i) => {
+        const el = document.createElement('div');
+        el.className = 'segment';
+        el.innerText = segment.label;
+        el.style.background = segment.color;
+        el.style.transform = `rotate(${i * segmentAngle}deg) skewY(-60deg)`;
+        wheel.appendChild(el);
+      });
+    }
+
+    function spinWheel() {
+      const bet = parseInt(betInput.value);
+      if (isNaN(bet) || bet <= 0 || bet > balance) {
+        alert("Invalid bet amount!");
+        return;
+      }
+
+      balance -= bet;
+      balanceEl.innerText = balance;
+
+      const spinAngle = 360 * 5 + Math.floor(Math.random() * 360);
+      currentRotation += spinAngle;
+      wheel.style.transform = `rotate(${currentRotation}deg)`;
+
+      spinSound.currentTime = 0;
+      spinSound.play();
+
+      const normalizedAngle = (currentRotation % 360 + 360) % 360;
+      const segmentIndex = Math.floor(((360 - normalizedAngle + segmentAngle / 2) % 360) / segmentAngle);
+      const selected = segments[segmentIndex];
+
+      setTimeout(() => {
+        let win = selected.value;
+        balance += win;
+        balanceEl.innerText = balance;
+        const message = win > 0
+          ? `🎉 You won $${win}!`
+          : `😢 No luck this time...`;
+        resultEl.innerText = message;
+        addToHistory(win);
+      }, 5000);
+    }
+
+    function addToHistory(win) {
+      const li = document.createElement('li');
+      const now = new Date().toLocaleTimeString();
+      li.innerText = `${now} - ${win > 0 ? 'Won' : 'Lost'} $${win}`;
+      historyList.prepend(li);
+    }
+
+    function toggleMusic() {
+      if (bgMusic.paused) {
+        bgMusic.volume = 0.4;
+        bgMusic.play();
+      } else {
+        bgMusic.pause();
+      }
+    }
+
+    function toggleAutoSpin() {
+      autoSpinning = !autoSpinning;
+      if (autoSpinning) {
+        autoSpinInterval = setInterval(() => {
+          spinWheel();
+        }, 7000);
+      } else {
+        clearInterval(autoSpinInterval);
+      }
+    }
+
+    drawWheel();
+  </script>
+</body>
+</html>

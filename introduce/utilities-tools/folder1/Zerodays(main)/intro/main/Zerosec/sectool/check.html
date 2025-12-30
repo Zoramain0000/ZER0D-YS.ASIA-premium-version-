@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Phone Number Info Lookup</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+     background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      margin: 0; padding: 20px;
+      color: #ff0000;
+    }
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background: rgba(0, 0, 0, 0.39);
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.1);
+    }
+    h1 {
+      text-align: center;
+      color: #ff0000;
+      margin-bottom: 25px;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: 1px solid #ff0000;
+      box-sizing: border-box;
+    }
+    button {
+      margin-top: 15px;
+      padding: 12px 20px;
+      width: 100%;
+      background-color: #f00505;
+      border: none;
+      color: rgb(9, 255, 0);
+      font-weight: bold;
+      font-size: 16px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #00000052;
+    }
+    pre {
+      background: #00000041;
+      padding: 15px;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin-top: 20px;
+      font-size: 14px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .error {
+      color: red;
+      font-weight: bold;
+      margin-top: 20px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>📞 Phone Number Info Lookup</h1>
+    <input id="phoneInput" type="text" placeholder="Enter phone number (with or without country code)" />
+    <button onclick="lookupNumber()">Lookup</button>
+    <pre id="output"></pre>
+    <div id="error" class="error"></div>
+  </div>
+
+  <!-- Import libphonenumber-js via CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/libphonenumber-js@1.10.22/bundle/libphonenumber-js.min.js"></script>
+  <script>
+    const output = document.getElementById('output');
+    const errorDiv = document.getElementById('error');
+
+    function lookupNumber() {
+      const input = document.getElementById('phoneInput').value.trim();
+      output.textContent = '';
+      errorDiv.textContent = '';
+
+      if (!input) {
+        errorDiv.textContent = 'Please enter a phone number.';
+        return;
+      }
+
+      try {
+        // Parse phone number - allow detection of country code or default to 'US'
+        const phoneNumber = libphonenumber.parsePhoneNumberFromString(input);
+
+        if (!phoneNumber) {
+          throw new Error('Invalid phone number format.');
+        }
+
+        // Gather info
+        const info = {
+          "creator": "adjisan",
+          "status": "Success",
+          "Location": phoneNumber.country || "Unknown",
+          "Region Code": phoneNumber.country || "Unknown",
+          "Valid Number": phoneNumber.isValid(),
+          "Possible Number": phoneNumber.isPossible(),
+          "International Format": phoneNumber.formatInternational(),
+          "E164 Format": phoneNumber.format('E.164'),
+          "National Format": phoneNumber.formatNational(),
+          "Original Input": input,
+          "Country Calling Code": phoneNumber.countryCallingCode,
+          "Number Type": phoneNumber.getType() || "Unknown",
+        };
+
+        // Carrier detection is limited in JS lib, but we can show number type (mobile/fixed/etc)
+
+        // Timezone - not available from libphonenumber-js, so approximate based on country code:
+        // We'll show basic common timezones per country (limited)
+        info["Timezone"] = getTimezones(phoneNumber.country);
+
+        output.textContent = JSON.stringify(info, null, 4);
+      } catch (e) {
+        errorDiv.textContent = 'Error: ' + e.message;
+      }
+    }
+
+    // Basic country to timezone mapping (only a few common examples)
+    function getTimezones(countryCode) {
+      if (!countryCode) return "Unknown";
+
+const tzMap = {
+  AF: ['Asia/Kabul'],
+  AL: ['Europe/Tirane'],
+  DZ: ['Africa/Algiers'],
+  AS: ['Pacific/Pago_Pago'],
+  AD: ['Europe/Andorra'],
+  AO: ['Africa/Luanda'],
+  AG: ['America/Antigua'],
+  AR: ['America/Argentina/Buenos_Aires'],
+  AM: ['Asia/Yerevan'],
+  AU: ['Australia/Sydney', 'Australia/Perth', 'Australia/Adelaide', 'Australia/Hobart', 'Australia/Darwin'],
+  AT: ['Europe/Vienna'],
+  AZ: ['Asia/Baku'],
+  BS: ['America/Nassau'],
+  BH: ['Asia/Bahrain'],
+  BD: ['Asia/Dhaka'],
+  BB: ['America/Barbados'],
+  BY: ['Europe/Minsk'],
+  BE: ['Europe/Brussels'],
+  BZ: ['America/Belize'],
+  BJ: ['Africa/Porto-Novo'],
+  BM: ['Atlantic/Bermuda'],
+  BT: ['Asia/Thimphu'],
+  BO: ['America/La_Paz'],
+  BA: ['Europe/Sarajevo'],
+  BW: ['Africa/Gaborone'],
+  BR: ['America/Sao_Paulo', 'America/Manaus', 'America/Cuiaba', 'America/Fortaleza'],
+  BN: ['Asia/Brunei'],
+  BG: ['Europe/Sofia'],
+  BF: ['Africa/Ouagadougou'],
+  BI: ['Africa/Bujumbura'],
+  KH: ['Asia/Phnom_Penh'],
+  CM: ['Africa/Douala'],
+  CA: ['America/Toronto', 'America/Vancouver', 'America/Edmonton', 'America/Halifax', 'America/St_Johns'],
+  CV: ['Atlantic/Cape_Verde'],
+  CF: ['Africa/Bangui'],
+  TD: ['Africa/Ndjamena'],
+  CL: ['America/Santiago'],
+  CN: ['Asia/Shanghai'],
+  CO: ['America/Bogota'],
+  KM: ['Indian/Comoro'],
+  CD: ['Africa/Kinshasa', 'Africa/Lubumbashi'],
+  CG: ['Africa/Brazzaville'],
+  CR: ['America/Costa_Rica'],
+  HR: ['Europe/Zagreb'],
+  CU: ['America/Havana'],
+  CY: ['Asia/Nicosia'],
+  CZ: ['Europe/Prague'],
+  DK: ['Europe/Copenhagen'],
+  DJ: ['Africa/Djibouti'],
+  DM: ['America/Dominica'],
+  DO: ['America/Santo_Domingo'],
+  EC: ['America/Guayaquil'],
+  EG: ['Africa/Cairo'],
+  SV: ['America/El_Salvador'],
+  GQ: ['Africa/Malabo'],
+  ER: ['Africa/Asmara'],
+  EE: ['Europe/Tallinn'],
+  ET: ['Africa/Addis_Ababa'],
+  FJ: ['Pacific/Fiji'],
+  FI: ['Europe/Helsinki'],
+  FR: ['Europe/Paris'],
+  GA: ['Africa/Libreville'],
+  GM: ['Africa/Banjul'],
+  GE: ['Asia/Tbilisi'],
+  DE: ['Europe/Berlin'],
+  GH: ['Africa/Accra'],
+  GR: ['Europe/Athens'],
+  GD: ['America/Grenada'],
+  GT: ['America/Guatemala'],
+  GN: ['Africa/Conakry'],
+  GW: ['Africa/Bissau'],
+  GY: ['America/Guyana'],
+  HT: ['America/Port-au-Prince'],
+  HN: ['America/Tegucigalpa'],
+  HU: ['Europe/Budapest'],
+  IS: ['Atlantic/Reykjavik'],
+  IN: ['Asia/Kolkata'],
+  ID: ['Asia/Jakarta', 'Asia/Pontianak', 'Asia/Makassar', 'Asia/Jayapura'],
+  IR: ['Asia/Tehran'],
+  IQ: ['Asia/Baghdad'],
+  IE: ['Europe/Dublin'],
+  IL: ['Asia/Jerusalem'],
+  IT: ['Europe/Rome'],
+  JM: ['America/Jamaica'],
+  JP: ['Asia/Tokyo'],
+  JO: ['Asia/Amman'],
+  KZ: ['Asia/Almaty', 'Asia/Qyzylorda', 'Asia/Aqtobe', 'Asia/Aqtau', 'Asia/Oral', 'Asia/Almaty'],
+  KE: ['Africa/Nairobi'],
+  KI: ['Pacific/Tarawa'],
+  KP: ['Asia/Pyongyang'],
+  KR: ['Asia/Seoul'],
+  KW: ['Asia/Kuwait'],
+  KG: ['Asia/Bishkek'],
+  LA: ['Asia/Vientiane'],
+  LV: ['Europe/Riga'],
+  LB: ['Asia/Beirut'],
+  LS: ['Africa/Maseru'],
+  LR: ['Africa/Monrovia'],
+  LY: ['Africa/Tripoli'],
+  LI: ['Europe/Vaduz'],
+  LT: ['Europe/Vilnius'],
+  LU: ['Europe/Luxembourg'],
+  MG: ['Indian/Antananarivo'],
+  MW: ['Africa/Blantyre'],
+  MY: ['Asia/Kuala_Lumpur', 'Asia/Kuching'],
+  MV: ['Indian/Maldives'],
+  ML: ['Africa/Bamako'],
+  MT: ['Europe/Malta'],
+  MH: ['Pacific/Majuro'],
+  MR: ['Africa/Nouakchott'],
+  MU: ['Indian/Mauritius'],
+  MX: ['America/Mexico_City', 'America/Cancun', 'America/Hermosillo', 'America/Tijuana'],
+  FM: ['Pacific/Chuuk'],
+  MD: ['Europe/Chisinau'],
+  MC: ['Europe/Monaco'],
+  MN: ['Asia/Ulaanbaatar'],
+  ME: ['Europe/Podgorica'],
+  MA: ['Africa/Casablanca'],
+  MZ: ['Africa/Maputo'],
+  MM: ['Asia/Yangon'],
+  NA: ['Africa/Windhoek'],
+  NR: ['Pacific/Nauru'],
+  NP: ['Asia/Kathmandu'],
+  NL: ['Europe/Amsterdam'],
+  NZ: ['Pacific/Auckland', 'Pacific/Chatham'],
+  NI: ['America/Managua'],
+  NE: ['Africa/Niamey'],
+  NG: ['Africa/Lagos'],
+  NO: ['Europe/Oslo'],
+  OM: ['Asia/Muscat'],
+  PK: ['Asia/Karachi'],
+  PW: ['Pacific/Palau'],
+  PA: ['America/Panama'],
+  PG: ['Pacific/Port_Moresby'],
+  PY: ['America/Asuncion'],
+  PE: ['America/Lima'],
+  PH: ['Asia/Manila'],
+  PL: ['Europe/Warsaw'],
+  PT: ['Europe/Lisbon'],
+  QA: ['Asia/Qatar'],
+  RO: ['Europe/Bucharest'],
+  RU: ['Europe/Moscow', 'Asia/Yekaterinburg', 'Asia/Krasnoyarsk', 'Asia/Vladivostok', 'Asia/Novosibirsk'],
+  RW: ['Africa/Kigali'],
+  KN: ['America/St_Kitts'],
+  LC: ['America/St_Lucia'],
+  VC: ['America/St_Vincent'],
+  WS: ['Pacific/Apia'],
+  SM: ['Europe/San_Marino'],
+  ST: ['Africa/Sao_Tome'],
+  SA: ['Asia/Riyadh'],
+  SN: ['Africa/Dakar'],
+  RS: ['Europe/Belgrade'],
+  SC: ['Indian/Mahe'],
+  SL: ['Africa/Freetown'],
+  SG: ['Asia/Singapore'],
+  SK: ['Europe/Bratislava'],
+  SI: ['Europe/Ljubljana'],
+  SB: ['Pacific/Guadalcanal'],
+  SO: ['Africa/Mogadishu'],
+  ZA: ['Africa/Johannesburg'],
+  ES: ['Europe/Madrid', 'Africa/Ceuta'],
+  LK: ['Asia/Colombo'],
+  SD: ['Africa/Khartoum'],
+  SR: ['America/Paramaribo'],
+  SZ: ['Africa/Mbabane'],
+  SE: ['Europe/Stockholm'],
+  CH: ['Europe/Zurich'],
+  SY: ['Asia/Damascus'],
+  TW: ['Asia/Taipei'],
+  TJ: ['Asia/Dushanbe'],
+  TZ: ['Africa/Dar_es_Salaam'],
+  TH: ['Asia/Bangkok'],
+  TL: ['Asia/Dili'],
+  TG: ['Africa/Lome'],
+  TO: ['Pacific/Tongatapu'],
+  TT: ['America/Port_of_Spain'],
+  TN: ['Africa/Tunis'],
+  TR: ['Europe/Istanbul'],
+  TM: ['Asia/Ashgabat'],
+  TV: ['Pacific/Funafuti'],
+  UG: ['Africa/Kampala'],
+  UA: ['Europe/Kiev'],
+  AE: ['Asia/Dubai'],
+  GB: ['Europe/London'],
+  US: ['America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles', 'America/Anchorage', 'Pacific/Honolulu'],
+  UY: ['America/Montevideo'],
+  UZ: ['Asia/Tashkent'],
+  VU: ['Pacific/Efate'],
+  VE: ['America/Caracas'],
+  VN: ['Asia/Ho_Chi_Minh'],
+  YE: ['Asia/Aden'],
+  ZM: ['Africa/Lusaka'],
+  ZW: ['Africa/Harare']
+};
+
+
+      return tzMap[countryCode] ? tzMap[countryCode].join(', ') : "Unknown";
+    }
+  </script>
+</body>
+</html>

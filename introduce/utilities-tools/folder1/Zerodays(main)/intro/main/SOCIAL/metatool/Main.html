@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Metal OSINT Wikipedia Tool</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron&display=swap');
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      font-family: 'Orbitron', sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+    /* Sidebar styling */
+    #sidebar {
+      width: 180px;
+background: rgba(0, 0, 0, 0.5);
+      border-right: 2px solid red;
+      display: flex;
+      flex-direction: column;
+      padding: 20px 10px;
+      gap: 15px;
+      transition: width 0.3s ease, padding 0.3s ease;
+      overflow: hidden;
+    }
+    #sidebar.hidden {
+      width: 0;
+      padding: 20px 0;
+    }
+    #sidebar a {
+      color: red;
+      text-decoration: none;
+      background: #333;
+      padding: 10px 12px;
+      border: 1px solid red;
+      border-radius: 5px;
+      text-align: center;
+      font-weight: bold;
+      transition: background 0.3s, color 0.3s;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    #sidebar a:hover {
+background: rgba(0, 0, 0, 0.5);
+      color: red;
+      box-shadow: 0 0 10px red;
+    }
+
+    /* Main container holding header and content */
+    #mainContainer {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+      transition: margin-left 0.3s ease;
+    }
+
+    /* Adjust main container margin when sidebar hidden */
+    #mainContainer.fullWidth {
+      margin-left: 0;
+    }
+
+    header {
+      padding: 20px;
+background: rgba(0, 0, 0, 0.5);
+      text-align: center;
+      border-bottom: 2px solid red;
+      flex-shrink: 0;
+      position: relative;
+    }
+    header h1 {
+      color: red;
+      margin: 0;
+    }
+
+    /* Sidebar toggle button */
+    #sidebarToggle {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+background: rgba(0, 0, 0, 0.5);
+      border: none;
+      color: red;
+      font-weight: bold;
+      font-size: 20px;
+      padding: 5px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      user-select: none;
+      z-index: 1000;
+      transition: background 0.3s;
+    }
+    #sidebarToggle:hover {
+background: rgba(0, 0, 0, 0.5);
+    }
+
+    #tabs {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      background: #222;
+      padding: 10px;
+      flex-shrink: 0;
+      overflow-x: auto;
+    }
+    .tab {
+      color: red;
+background: rgba(0, 0, 0, 0.5);
+      border: 1px solid red;
+      margin: 5px;
+      padding: 8px 16px;
+      cursor: pointer;
+      transition: 0.3s;
+      border-radius: 4px;
+      user-select: none;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .tab.active {
+background: rgba(0, 0, 0, 0.5);
+      color: green;
+    }
+    #searchBar {
+      text-align: center;
+      margin: 20px;
+      flex-shrink: 0;
+    }
+    #searchInput {
+      padding: 10px;
+      width: 80%;
+      max-width: 600px;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
+background: rgba(0, 0, 0, 0.5);
+      color: red;
+      box-shadow: 0 0 10px red;
+    }
+    #results {
+      padding: 20px;
+      max-width: 800px;
+      margin: auto;
+      overflow-y: auto;
+      flex-grow: 1;
+    }
+    .result {
+background: rgba(0, 0, 0, 0.5);
+      padding: 15px;
+      border-left: 5px solid red;
+      margin-bottom: 15px;
+      border-radius: 6px;
+      cursor: pointer;
+      box-shadow: 0 0 5px red;
+    }
+    .result:hover {
+background: rgba(0, 0, 0, 0.5);
+    }
+    .result h3 {
+      margin: 0;
+      color: red;
+    }
+    .result p {
+      margin-top: 5px;
+      color: red;
+    }
+    footer {
+      text-align: center;
+      padding: 10px;
+      font-size: 12px;
+background: rgba(0, 0, 0, 0.5);
+      color: red;
+      border-top: 2px solid red;
+      flex-shrink: 0;
+    }
+    /* Modal styles */
+    #articleModal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      color: red;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      z-index: 9999;
+    }
+    #articleContent {
+background: rgba(0, 0, 0, 0.5);
+      padding: 20px;
+      max-width: 700px;
+      max-height: 80vh;
+      overflow-y: auto;
+      border-radius: 8px;
+      box-shadow: 0 0 20px red;
+    }
+    #closeModal {
+      position: absolute;
+      top: 15px;
+      right: 20px;
+      font-size: 30px;
+      color: red;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div id="sidebar">
+    <a href="tool/code.html"> Route Tracker</a>
+    <a href="tool/audiolab/ai-editing-tool/audionoise.html">Noise Removal</a>
+    <a href="tool/audiolab/ai-editing-tool/rm.html">Voice Removal </a>
+    <a href="tool/audiolab/ai-editing-tool/Voicecleaner.html">Voice Cleaner </a>
+    <a href="tool/audiolab/audio-editing-tools/8.html">8D Audio</a>
+    <a href="tool/audiolab/audio-editing-tools/advtrim.html">Trimmer/Effects</a>
+    <a href="tool/audiolab/audio-editing-tools/compress.html">Compressor</a>
+    <a href="tool/audiolab/audio-editing-tools/effect.html">Effect ll57</a>
+    <a href="tool/audiolab/audio-editing-tools/equalizer.html">Equalizer</a>
+    <a href="tool/audiolab/audio-editing-tools/nor.html">Audio Equalizer</a>
+    <a href="tool/audiolab/audio-editing-tools/merge.html">Audio Merger</a>
+    <a href="tool/audiolab/audio-editing-tools/reverse.html">Reverse Audio</a>
+    <a href="tool/audiolab/audio-editing-tools/Silencerem.html">Silence Removal</a>
+    <a href="tool/audiolab/audio-editing-tools/sound.html">Sound Mastering</a>
+    <a href="tool/audiolab/audio-editing-tools/Speedcheck.html">Speed Changer</a>
+    <a href="tool/audiolab/audio-editing-tools/voice.html">Voice Changer</a>
+    <a href="tool/audiolab/audio-editing-tools/tageditor.html">Tag Editor</a>
+    <a href="tool/audiolab/audio-editing-tools/volboost.html">Volume Booster</a>
+    <a href="osintdashboard.html">osint tools</a>
+  </div>
+
+  <div id="mainContainer">
+    <header>
+      <button id="sidebarToggle" title="Toggle Sidebar">&#9776;</button>
+      <h1>Metal OSINT Wikipedia Tool</h1>
+    </header>
+
+    <div id="tabs">
+      <div class="tab active" data-query="cybercrime">Cybercrime</div>
+      <div class="tab" data-query="osint">OSINT</div>
+      <div class="tab" data-query="security">Security</div>
+      <div class="tab" data-query="history">History</div>
+      <div class="tab" data-query="tools">Old Tools</div>
+      <div class="tab" data-query="dark web">Dark Web</div>
+      <div class="tab" data-query="hacking history">General</div>
+    </div>
+
+    <div id="searchBar">
+      <input type="text" id="searchInput" placeholder="Search Wikipedia topics..." />
+    </div>
+
+    <main id="results"></main>
+
+    <footer>
+      &copy; 2025 Metal OSINT Tool — Powered by Wikipedia.org
+    </footer>
+  </div>
+
+  <!-- Modal -->
+  <div id="articleModal">
+    <div id="closeModal">&times;</div>
+    <div id="articleContent">Loading...</div>
+  </div>
+
+  <script>
+    const resultsContainer = document.getElementById('results');
+    const searchInput = document.getElementById('searchInput');
+    const tabs = document.querySelectorAll('.tab');
+    const modal = document.getElementById('articleModal');
+    const modalContent = document.getElementById('articleContent');
+    const closeModal = document.getElementById('closeModal');
+    const sidebar = document.getElementById('sidebar');
+    const mainContainer = document.getElementById('mainContainer');
+    const sidebarToggle = document.getElementById('sidebarToggle');
+
+    let query = 'cybercrime';
+    let offset = 0;
+    let isLoading = false;
+
+    function setActiveTab(selected) {
+      tabs.forEach(tab => tab.classList.remove('active'));
+      selected.classList.add('active');
+    }
+
+    async function fetchResults(isScroll = false) {
+      if (isLoading || !query) return;
+      isLoading = true;
+
+      const api = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&sroffset=${offset}&srlimit=10&format=json&origin=*`;
+
+      try {
+        const res = await fetch(api);
+        const data = await res.json();
+        const searchResults = data.query.search;
+
+        if (!isScroll) resultsContainer.innerHTML = '';
+        if (searchResults.length === 0 && !isScroll) {
+          resultsContainer.innerHTML = '<p>No results found.</p>';
+          return;
+        }
+
+        searchResults.forEach(item => {
+          const div = document.createElement('div');
+          div.className = 'result';
+          div.innerHTML = `<h3>${item.title}</h3><p>${item.snippet}...</p>`;
+          div.addEventListener('click', () => openArticle(item.title));
+          resultsContainer.appendChild(div);
+        });
+
+        offset += 10;
+      } catch (err) {
+        resultsContainer.innerHTML = '<p style="color:red;">Error fetching data. Try again later.</p>';
+      }
+
+      isLoading = false;
+    }
+
+    async function openArticle(title) {
+      modal.style.display = 'flex';
+      modalContent.innerHTML = 'Loading...';
+      const page = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`;
+      try {
+        const res = await fetch(page);
+        const data = await res.json();
+        modalContent.innerHTML = `
+          <h2>${data.title}</h2>
+          <p>${data.extract}</p>
+          <a href="${data.content_urls.desktop.page}" target="_blank" style="color:red;">Read full article</a>
+        `;
+      } catch {
+        modalContent.innerHTML = '<p style="color:red;">Failed to load article.</p>';
+      }
+    }
+
+    closeModal.onclick = () => modal.style.display = 'none';
+    window.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; };
+
+    searchInput.addEventListener('input', () => {
+      offset = 0;
+      query = searchInput.value.trim() || 'cybercrime';
+      fetchResults(false);
+    });
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        query = tab.dataset.query;
+        offset = 0;
+        setActiveTab(tab);
+        searchInput.value = '';
+        fetchResults(false);
+      });
+    });
+
+    // Infinite scroll (for results container)
+    resultsContainer.addEventListener('scroll', () => {
+      if (resultsContainer.scrollTop + resultsContainer.clientHeight >= resultsContainer.scrollHeight - 50) {
+        fetchResults(true);
+      }
+    });
+
+    // Sidebar toggle button handler
+    sidebarToggle.addEventListener('click', () => {
+      sidebar.classList.toggle('hidden');
+      // Optional: adjust main container margin or width
+      if(sidebar.classList.contains('hidden')) {
+        mainContainer.classList.add('fullWidth');
+      } else {
+        mainContainer.classList.remove('fullWidth');
+      }
+    });
+
+    // Initial fetch
+    fetchResults(false);
+  </script>
+</body>
+</html>

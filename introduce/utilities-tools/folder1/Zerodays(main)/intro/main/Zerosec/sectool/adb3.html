@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>🚗 Advanced Live Navigator</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    body {
+      margin: 0;
+      font-family: "Segoe UI", sans-serif;
+     background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: #eee;
+    }
+    header {
+      background: #00000038;
+      padding: 1rem;
+      text-align: center;
+      border-bottom: 2px solid rgb(255, 0, 0);
+    }
+    header h1 {
+      margin: 0;
+      color: limegreen;
+    }
+    .controls {
+      padding: 1rem;
+      background: #2222223b;
+      text-align: center;
+    }
+    input,
+    button {
+      padding: 0.5rem;
+      margin: 0.3rem;
+      font-size: 1rem;
+      border-radius: 5px;
+      border: none;
+    }
+    input {
+      width: 250px;
+    }
+    button {
+      background: rgb(255, 0, 0);
+      color: rgb(0, 255, 76);
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #00000046;
+    }
+    #map {
+      height: 60vh;
+    }
+    #info, #directions {
+      background: #2e05053b;
+      padding: 1rem;
+      border-top: 1px solid rgb(255, 0, 0);
+    }
+    #directions {
+      max-height: 200px;
+      overflow-y: auto;
+      font-size: 0.95rem;
+    }
+    .direction-step {
+      margin-bottom: 0.5rem;
+    }
+    #status {
+      font-size: 0.9rem;
+      color: #ff0000;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🚗 Live Route Navigator</h1>
+    <p>Turn-by-turn directions with real road paths</p>
+  </header>
+
+  <div class="controls">
+    <input id="startInput" placeholder="Start (leave empty for GPS)" />
+    <input id="endInput" placeholder="Destination (e.g. Eiffel Tower)" />
+    <button onclick="setRoute()">Navigate</button>
+    <div id="status">Status: Ready</div>
+  </div>
+
+  <div id="map"></div>
+
+  <div id="info">
+    <p><strong>Distance:</strong> <span id="distance">-</span> |
+       <strong>ETA:</strong> <span id="eta">-</span>
+    </p>
+  </div>
+
+  <div id="directions">
+    <strong>Turn-by-Turn Guide:</strong>
+    <div id="steps"></div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const ORS_API_KEY = "5b3ce3597851110001cf62480b3cfbd5730140e486c780a3fbe741e8"; // Replace this
+
+    let map, userMarker, destMarker, routeLine;
+
+    function initMap() {
+      map = L.map("map").setView([0, 0], 2);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "© OpenStreetMap contributors",
+      }).addTo(map);
+      routeLine = L.geoJSON(null, { style: { color: "lime", weight: 5 } }).addTo(map);
+    }
+
+    async function geocode(address) {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`
+      );
+      const data = await res.json();
+      if (!data.length) throw new Error("Location not found.");
+      return [parseFloat(data[0].lon), parseFloat(data[0].lat)];
+    }
+
+    async function getRoute(start, end) {
+      const res = await fetch("https://api.openrouteservice.org/v2/directions/driving-car/geojson", {
+        method: "POST",
+        headers: {
+          "Authorization": ORS_API_KEY,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          coordinates: [start, end],
+          instructions: true,
+        }),
+      });
+
+      if (!res.ok) throw new Error("Route fetch failed.");
+      return await res.json();
+    }
+
+    async function setRoute() {
+      const startInput = document.getElementById("startInput").value.trim();
+      const endInput = document.getElementById("endInput").value.trim();
+      if (!endInput) return alert("Please enter a destination.");
+      document.getElementById("status").textContent = "Status: Calculating route...";
+
+      try {
+        let startCoords;
+        if (startInput === "") {
+          const pos = await new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject);
+          });
+          startCoords = [pos.coords.longitude, pos.coords.latitude];
+        } else {
+          startCoords = await geocode(startInput);
+        }
+
+        const endCoords = await geocode(endInput);
+        const routeData = await getRoute(startCoords, endCoords);
+
+        // Clear map
+        if (userMarker) map.removeLayer(userMarker);
+        if (destMarker) map.removeLayer(destMarker);
+        routeLine.clearLayers();
+
+        userMarker = L.marker([startCoords[1], startCoords[0]]).addTo(map).bindPopup("Start").openPopup();
+        destMarker = L.marker([endCoords[1], endCoords[0]]).addTo(map).bindPopup("Destination");
+
+        routeLine.addData(routeData);
+
+        const distKm = (routeData.features[0].properties.summary.distance / 1000).toFixed(2);
+        const durationMin = Math.round(routeData.features[0].properties.summary.duration / 60);
+        document.getElementById("distance").textContent = `${distKm} km`;
+        document.getElementById("eta").textContent = `${durationMin} mins`;
+
+        // Fit map
+        const coords = routeData.features[0].geometry.coordinates.map(([lon, lat]) => [lat, lon]);
+        map.fitBounds(coords);
+
+        // Show directions
+        const steps = routeData.features[0].properties.segments[0].steps;
+        const stepContainer = document.getElementById("steps");
+        stepContainer.innerHTML = "";
+        steps.forEach((step, index) => {
+          const div = document.createElement("div");
+          div.className = "direction-step";
+          div.textContent = `${index + 1}. ${step.instruction} (${(step.distance / 1000).toFixed(1)} km)`;
+          stepContainer.appendChild(div);
+        });
+
+        document.getElementById("status").textContent = "Status: Route ready.";
+      } catch (err) {
+        alert("Error: " + err.message);
+        document.getElementById("status").textContent = "Status: Route failed.";
+      }
+    }
+
+    window.onload = initMap;
+  </script>
+</body>
+</html>

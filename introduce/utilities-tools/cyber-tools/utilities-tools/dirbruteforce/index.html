@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Directory Brute Forcer</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #000;
+      color: #c58b00;
+      overflow-x: hidden;
+    }
+
+    video#bg-video {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      min-width: 100vw;
+      min-height: 100vh;
+      object-fit: cover;
+      opacity: 0.2;
+      z-index: -2;
+    }
+
+    audio#bg-music {
+      position: fixed;
+      z-index: -1;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 50px auto;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 0 25px rgba(0, 0, 0, 0.7);
+    }
+
+    h1, label {
+      color: #c58b00;
+    }
+
+    input, textarea, pre {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      background: rgba(0, 0, 0, 0.5);
+      color: red;
+      border: 1px solid #c58b00;
+      border-radius: 5px;
+      font-size: 1rem;
+      white-space: pre-wrap;
+    }
+
+    button {
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid #c58b00;
+      color: #c58b00;
+      padding: 10px 15px;
+      margin: 5px 5px 15px 0;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+
+    button:hover {
+      background: #111;
+      color: red;
+    }
+
+    .section {
+      margin-top: 20px;
+    }
+
+    .history-item {
+      border-bottom: 1px solid red;
+      padding: 5px;
+      font-size: 0.9rem;
+      color: #ff8800;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        margin: 20px 10px;
+        padding: 15px;
+      }
+
+      button {
+        width: 100%;
+        margin: 8px 0;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Background Video -->
+  <video id="bg-video" autoplay muted loop playsinline>
+    <source src="background/1761817527453041720p.mp4" type="video/mp4">
+    Your browser does not support the video tag.
+  </video>
+
+  <!-- Background Music -->
+  <audio id="bg-music" loop>
+    <source src="background/Programming___Coding___Hacking_music_vol.18__ANONYMOUS_HEADQUARTERS_(48k).mp3" type="audio/mpeg">
+    Your browser does not support the audio tag.
+  </audio>
+
+  <div class="container">
+    <h1>Directory Brute Forcer</h1>
+
+    <label for="url-input">Enter Base URL:</label>
+    <input id="url-input" placeholder="https://example.com/" />
+
+    <button onclick="bruteForce()">Start Scan</button>
+    <button onclick="clearScan()">Clear</button>
+    <button><a href="index.html">Reload</a></button>
+    <div class="section">
+      <h3>Results</h3>
+      <pre id="results-output">Waiting for input...</pre>
+    </div>
+
+    <div class="section">
+      <h3>History</h3>
+      <div id="history-box"></div>
+    </div>
+  </div>
+
+  <script>
+    const music = document.getElementById("bg-music");
+    const resultsBox = document.getElementById("results-output");
+    const historyBox = document.getElementById("history-box");
+    const history = [];
+
+    // Enable music on first click
+    window.addEventListener('click', () => {
+      music.play().catch(() => {});
+    }, { once: true });
+
+const dirList = [
+  // Existing 1002 directories...
+  "admin", "login", "dashboard", "uploads", "images",
+  "js", "css", "api", "backup", "old", "private", "test",
+  "config", "config.old", "settings", "database", "db", "sql", "sql_dump", "dumps", "dump",
+  "export", "import", "includes", "core", "lib", "library", "assets", "static", "media",
+  "fonts", "scss", "sass", "less", "build", "dist", "v1", "v2", "v3", "beta", "alpha",
+  "release", "staging", "dev", "development", "prod", "production", "ci", "cd", "pipeline",
+  "logs", "log", "history", "revisions", "old_site", "old_version", "archive", "cache",
+  "sessions", "temp", "tmp", "var", "cgi-bin", "cgi", "admin_area", "cpanel", "webadmin",
+  "superadmin", "secure", "security", "auth", "user", "users", "accounts", "credentials",
+  "tokens", "certs", "certificates", "pki", "ssl", "keys", "ssh", "ftp", "uploads_old",
+  "inbox", "mail", "email", "newsletter", "feedback", "forms", "formdata", "submit",
+  "cron", "jobs", "scripts", "functions", "webhooks", "endpoints", "api-docs", "swagger",
+  "status", "monitor", "health", "uptime", "errors", "404", "403",
+"signin", "signup", "forgot", "reset", "verify", "2fa", "mfa", "otp", "tokenauth", "access",
+  "adminlogin", "adminpanel", "moderator", "root", "system", "config-backup", "install", "installer",
+  "setup", "env", "env_backup", "environment", "node_modules", "vendor", "package", "packages",
+  "components", "templates", "themes", "views", "partials", "layout", "frontend", "backend",
+  "console", "cli", "shell", "term", "terminal", "repl", "sandbox", "simulator", "playground",
+  "examples", "samples", "devtools", "debug", "debugger", "debug_logs", "trace", "traceback",
+  "analyzer", "analyze", "diagnostics", "repair", "fix", "scanner", "scan", "detect", "finder",
+  "report", "insights", "stats", "analytics", "metrics", "errors_old", "issues", "errorlog",
+  "exception", "crashlog", "crash", "failures", "failure", "bkp", "snapshot", "restore",
+  "rollback", "migrations", "transitions", "legacy", "compat", "test_env", "testdata",
+  "unit", "tests", "integration", "e2e", "perf", "loadtest", "benchmark", "results",
+"download", "downloads", "file", "files", "documents", "docs", "doc", "pdfs", "pdf",
+  "videos", "video", "audio", "music", "media_old", "gallery", "albums", "photos", "pics",
+  "thumbs", "thumbnails", "cdn", "cdn-assets", "dist_old", "public", "public_html", "html",
+  "web", "webapp", "www", "webroot", "web_files", "storage", "filestore", "content", "data",
+  "data_backup", "db_backups", "zips", "archives", "compress", "extract", "installer_old",
+  "setup_old", "init", "initialize", "boot", "kernel", "drivers", "modules", "bios", "bin",
+  "builds", "compiled", "deploy", "deployed", "live", "current", "previous", "tempdata", "cache_old",
+  "local", "locale", "lang", "languages", "translations", "i18n", "l10n", "locales", "timezones",
+  "regions", "geo", "geodata", "maps", "location", "tracking", "track", "monitoring", "events",
+  "timeline", "schedule", "calendar", "clock", "reminders", "alerts", "notification", "notify",
+  "queue", "messages", "sms", "push", "inbox_old", "messaging", "feeds", "rss", "atom",
+"admin_console", "staff", "team", "employees", "employee_portal", "hr", "hrm", "erp", "crm",
+  "inventory", "sales", "purchase", "billing", "invoices", "invoice", "transactions", "payments",
+  "pay", "salary", "payroll", "finance", "accounting", "budget", "tax", "vat", "compliance",
+  "legal", "contracts", "docs_internal", "partners", "clients", "customers", "support_portal",
+  "help", "faqs", "support_old", "issues_old", "moderation", "review", "reviews", "ratings",
+  "feedback_old", "qa_old", "ml", "machinelearning", "model", "models", "aidev", "ai_tools",
+  "aiexport", "mlops", "datasets", "training", "inference_old", "predict", "retrain",
+  "iot", "iot_devices", "device", "devices", "device_api", "remote", "controller", "controlpanel",
+  "dashboard_v2", "dashboard_old", "admin_v2", "superuser", "privileged", "restricted", "beta_users",
+  "earlyaccess", "alpha_users", "developer", "developers", "dev_portal", "devdocs", "examples_old",
+  "playground_old", "game", "games", "gaming", "leaderboard", "scoreboard", "achievements", "xp",
+  "educate", "edu", "elearning", "lms", "academy", "campus", "students", "teachers", "school",
+"admin_secure", "admin_beta", "admin_old", "admin_bak", "admin_backup", "access_control", "accesslog",
+  "acl", "active", "inactive", "ads", "adserver", "affiliates", "ajax", "analytics_old", "android",
+  "angular", "angularjs", "apache", "apache2", "app", "app_data", "app_old", "application", "applications",
+  "archive_old", "asp", "aspnet", "async", "auth_old", "authorization", "autoconfig", "autodiscover",
+  "aws", "azure", "azure-functions", "b2b", "b2c", "backend_old", "batch", "bat", "billing_old", "bitbucket",
+  "bootstrap", "bot", "bots", "branding", "broker", "builds_old", "cache_tmp", "calendar_old", "captcha",
+  "cdn_old", "certificate", "cert", "certstore", "change", "changelog", "cli_old", "clone", "cloner", "cloud",
+  "cluster", "cms", "coldfusion", "command", "common", "common_files", "components_old", "composer", "conf",
+  "config_json", "config_php", "config_bak", "connect", "connection", "console_old", "consoles", "container",
+  "containers", "content_old", "cookies", "core_old", "cp", "cron_old", "custom", "customize", "cyberpanel",
+  "dashboard_beta", "data_old", "datasource", "debug_old", "default", "defaultsite", "deprecate",
+"deploy_old", "setup_files", "logs_old", "api_keys", "secrets", "env_files", "secrets_old", "jwt",
+  "oauth", "sso", "login_old", "signup_old", "register", "registration", "passwords", "change_password",
+  "forgot_password", "recover", "security_questions", "firewall", "waf", "modsecurity", "honeypot",
+  "decoy", "threats", "threatintel", "vulnerabilities", "vulnscan", "reports_old", "audit", "audits",
+  "audittrail", "trace_old", "accesslog_old", "logs_private", "visitorlog", "hits", "tracker", "pixels",
+  "retargeting", "ad_tracking", "adsense", "adwords", "cookies_old", "token_cache", "tokens_old",
+  "csrf", "xss", "malware", "phishing", "spoof", "shadow", "mirror", "backup_db", "backup_old", "backups",
+  "recyclebin", "trash", "deleted", "wipe", "removed", "disabled", "inactive_users", "dead", "ghost",
+  "quarantine", "sandboxed", "jail", "jailed", "restricted_area", "flagged", "blocked", "blacklist",
+  "banlist", "banned", "spam", "spam_reports", "spamlog", "malicious", "exploit", "botnet", "c2",
+  "commandcontrol", "forensics", "incident", "breach", "zeroday", "cvss", "cve", "poc", "exploitdb",
+"ci", "ci_cd", "ci-cd", "jenkins", "gitlab", "github", "github_actions", "git", "git-old",
+  "git-repos", "svn", "svn-backup", "svn-old", "vcs", "repo", "repos", "releases", "release_old",
+  "release_backup", "artifacts", "build_artifacts", "buildcache", "docker", "dockerfiles", "docker-compose",
+  "docker-backup", "k8s", "kubernetes", "helm", "charts", "manifest", "manifests", "devcontainer", "vagrant",
+  "vm", "virtualbox", "hyperv", "infrastructure", "terraform", "ansible", "puppet", "chef", "saltstack",
+  "initscripts", "sysv", "systemd", "cronjobs", "crontab", "jobs", "pipeline", "pipelines", "stages", "stage",
+  "stage_old", "teststage", "builds_dev", "builds_prod", "dist", "distribution", "distfiles", "logs_dev",
+  "logs_prod", "node_modules", "node", "nodejs", "npm", "yarn", "pnpm", "bower", "vendor", "composer_files",
+  "php_old", "phpmyadmin_old", "phpinfo", "env_local", "env_dev", "env_prod", "environment", "environment_vars",
+  "api_test", "api_docs", "api_sandbox", "mock", "mocks", "mockserver", "stub", "stubs", "schema", "schemas",
+"admin_area", "admin_login", "admin_interface", "admin_portal", "web_admin", "sysadmin", "netadmin", "root_admin", "super_admin",
+  "superadmin_panel", "adminpanel_old", "system_panel", "server_control", "web_config", "web_editor", "cms_admin", "cms_old", "cms_login",
+  "index_old", "home_old", "startpage", "control", "terminal", "cmd", "shell", "powershell", "command_prompt", "bash", "zsh", "bin", "cgi-bin",
+  "perl", "python", "python3", "ruby", "node_admin", "node_debug", "debug_console", "devtools", "webpack", "esbuild", "vite", "nextjs", "reactjs",
+  "react_admin", "vuejs", "angular_admin", "svelte", "frontend", "frontend_old", "ui_old", "themes", "layouts", "templates", "partials", "includes",
+  "assets_old", "img", "media_old", "media_backup", "icons", "svg", "fonts", "favicon", "theme_editor", "style_editor", "scss", "sass", "less",
+  "static", "static_files", "static_assets", "css_old", "js_old", "js_modules", "web_modules", "plugin", "plugins", "plugin_old", "plugin_backup",
+  "extensions", "addons", "modules", "modules_old", "lang", "language", "languages", "locale", "i18n", "l10n",
+"webroot", "wwwroot", "htdocs", "public_html", "web_files", "httpdocs", "html_docs", "inetpub", "aspnet_client",
+  "iisstart", "iisadmin", "wpad", "ntp", "tftp", "mqtt", "iot", "iot_devices", "iot_logs", "smart_home",
+  "homekit", "zigbee", "zwave", "bridge", "gateway", "hub", "iot_backup", "iot_admin", "device_config",
+  "configurator", "configurator_old", "firmware", "firmware_old", "firmware_update", "updateserver",
+  "db", "database", "databases", "sqldata", "mysql_old", "pgadmin", "pgdata", "mariadb", "mongodb_data",
+  "redis", "redis_dump", "dumps", "backups_old", "db_admin", "phpmyadmin_login", "db_tools", "oracle",
+  "influxdb", "sqlite", "nosql", "elasticsearch", "kibana", "logstash", "graylog", "grafana",
+  "metrics", "monitoring", "prometheus", "telemetry", "observability", "watchtower", "uptime", "status",
+  "health", "healthz", "heartbeat", "probe", "ready", "readiness", "live", "liveness", "sentry", "tracing",
+  "trace", "debug_info", "diagnostic", "insights", "systemcheck", "selftest", "envcheck", "startupcheck",
+  "boot", "bootloader", "bios", "uefi", "post",
+"cms", "cms_core", "cms_plugins", "cms_themes", "wp_admin", "wp_login", "wp_backup", "wp_old", "wordpress",
+  "drupal", "drupal_old", "joomla", "joomla_admin", "magento", "magento2", "prestashop", "opencart", "shopware",
+  "ecommerce", "checkout", "payment", "payment_gateway", "gateway", "stripe", "paypal", "square", "braintree",
+  "invoice", "billing", "billing_old", "orders", "order_admin", "order_logs", "transactions", "cart", "cart_old",
+  "shipping", "shipment", "tracking", "order_tracking", "return", "returns", "refund", "coupons", "discounts",
+  "offers", "promo", "promotions", "middleware", "middleware_api", "proxy", "proxy_old", "reverse_proxy",
+  "api_gateway", "loadbalancer", "autoscaler", "cloud", "cloud_config", "cloud_admin", "cloud_logs",
+  "cloudflare", "aws", "azure", "gcp", "s3", "bucket", "buckets", "cloudstorage", "gcs", "cdn", "cdn_edge",
+  "akamai", "verizon", "fastly", "objectstorage", "blob", "blobs", "devkit", "devtools_old", "cli", "cli_tools",
+  "commandline", "scripts", "bash_scripts", "py_scripts", "automation", "pipeline_old", "git_hooks",
+  "cp", "adminarea", "controlpanel", "member", "members", "users", "userpanel", "usercp", "moderator",
+  "moderation", "modcp", "admincp", "syscp", "accesspanel", "hidden", "private_area", "intranet",
+  "internal_portal", "internal_services", "private_services", "staging", "stage_env", "preprod", "preproduction",
+  "qa", "qatest", "uat", "testing_env", "sandbox_env", "debugpanel", "debugtool", "errorlog", "crash", "crashreport",
+  "errorlog_old", "logviewer", "logreader", "logcheck", "crashdump", "core", "core_old", "bin_old", "cgi", "admin_exec",
+  "command", "terminal_ui", "task_runner", "rce", "exec", "shell_exec", "jobscheduler", "scheduler", "cron_old",
+  "jobs_admin", "trigger", "trigger_event", "hook", "hook_admin", "webhook", "webhooks", "event_listener",
+  "listener", "observer", "eventqueue", "eventqueue_old", "api_internal", "api_private", "api_hidden",
+  "ajax", "ajax_api", "ajax_handlers", "xhr", "xhr_old", "graphql", "graphql_api", "graphql_old", "restapi", "restv1",
+  "restv2", "legacyapi", "apiv1", "apiv2", "sdk", "sdk_old", "mobile_api", "android_api", "ios_api",
+];
+
+    async function bruteForce() {
+      const url = document.getElementById("url-input").value.trim().replace(/\/+$/, '');
+      if (!url.startsWith("http")) return alert("Enter a valid URL (with http or https)");
+
+      resultsBox.textContent = `🔍 Starting brute force scan on: ${url}\n\n`;
+
+      for (let dir of dirList) {
+        const path = `${url}/${dir}`;
+        resultsBox.textContent += `Testing: ${path} ...\n`;
+        await new Promise(res => setTimeout(res, 300)); // fake delay
+
+        // Simulate a random result (frontend-only)
+        const found = Math.random() > 0.5;
+        if (found) {
+          resultsBox.textContent += `✅ Found: ${path}\n`;
+        } else {
+          resultsBox.textContent += `❌ Not Found: ${path}\n`;
+        }
+      }
+
+      const timestamp = new Date().toLocaleTimeString();
+      history.unshift(`${timestamp} - Brute forced ${url}`);
+      updateHistory();
+
+      resultsBox.textContent += `\n✅ Scan complete.`;
+    }
+
+    function clearScan() {
+      document.getElementById("url-input").value = "";
+      resultsBox.textContent = "Waiting for input...";
+    }
+
+    function updateHistory() {
+      historyBox.innerHTML = "";
+      history.slice(0, 10).forEach(item => {
+        const div = document.createElement("div");
+        div.className = "history-item";
+        div.textContent = item;
+        historyBox.appendChild(div);
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Reverse DNS Lookup</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #000;
+      color: #c58b00;
+      overflow-x: hidden;
+    }
+
+    video#bg-video {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      min-width: 100vw;
+      min-height: 100vh;
+      object-fit: cover;
+      opacity: 0.15;
+      z-index: -1;
+    }
+
+    audio#bg-music {
+      position: fixed;
+      bottom: 10px;
+      right: 10px;
+      z-index: 2;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 50px auto;
+      background: rgba(0, 0, 0, 0);
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 0 25px rgba(0, 0, 0, 0.2);
+    }
+
+    h1, label { color: #c58b00; }
+
+    textarea, input[type="text"] {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      background: rgba(0, 0, 0, 0);
+      color: red;
+      border: 1px solid #c58b00;
+      border-radius: 5px;
+      font-size: 1rem;
+    }
+
+    button {
+      background: rgba(0, 0, 0, 0.6);
+      border: 1px solid #c58b00;
+      color: #c58b00;
+      padding: 10px 15px;
+      margin: 5px 5px 15px 0;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+
+    button:hover {
+      background: rgba(0,0,0,0.7);
+      color: red;
+    }
+
+    .history {
+      margin-top: 20px;
+    }
+
+    .history-item {
+      border-bottom: 1px solid red;
+      padding: 5px;
+      font-size: 0.9rem;
+      color: #ff8800;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        margin: 20px 10px;
+        padding: 15px;
+      }
+
+      button {
+        width: 100%;
+        margin: 8px 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Background Video -->
+  <video id="bg-video" autoplay muted loop playsinline>
+    <source src="background/1761817527453041720p.mp4" type="video/mp4">
+    Your browser does not support background video.
+  </video>
+
+  <!-- Background Music -->
+  <audio id="bg-music" autoplay loop>
+    <source src="background/music.mp3" type="audio/mpeg" />
+    Your browser does not support background music.
+  </audio>
+
+  <div class="container">
+    <h1>Reverse DNS Lookup (Google DNS API)</h1>
+
+    <label>Enter IP Address:</label>
+    <input type="text" id="ip-input" placeholder="e.g. 8.8.8.8 or 2001:4860:4860::8888">
+
+    <div>
+      <button onclick="lookupPTR()">Lookup</button>
+      <button onclick="clearAll()">Clear</button>
+    </div>
+
+    <label>Output:</label>
+    <textarea id="output" rows="8" readonly></textarea>
+    <button onclick="copyOutput()">Copy</button>
+    <button onclick="downloadOutput()">Download</button>
+
+    <div class="history">
+      <h3>History</h3>
+      <div id="history-box"></div>
+    </div>
+  </div>
+
+  <script>
+    const output = document.getElementById("output");
+    const historyBox = document.getElementById("history-box");
+    const history = [];
+
+    function isIPv4(ip) {
+      return /^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$/.test(ip);
+    }
+
+    function toArpa(ip) {
+      if (isIPv4(ip)) {
+        return ip.split('.').reverse().join('.') + '.in-addr.arpa';
+      } else {
+        let expanded = expandIPv6(ip);
+        return expanded.replace(/:/g, '').split('').reverse().join('.') + '.ip6.arpa';
+      }
+    }
+
+    function expandIPv6(address) {
+      let full = address.replace('::', ':' + '0:'.repeat(8 - (address.split(':').length - 1)));
+      return full.split(':').map(part => part.padStart(4, '0')).join(':');
+    }
+
+    function lookupPTR() {
+      const ip = document.getElementById("ip-input").value.trim();
+      if (!ip) return alert("Please enter an IP address.");
+      output.value = "Looking up PTR for " + ip + "...";
+
+      const name = toArpa(ip);
+
+      fetch(`https://dns.google/resolve?name=${name}&type=PTR`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.Answer) {
+            const result = data.Answer.map(a => a.data).join('\n');
+            output.value = result;
+            logHistory(ip, result);
+          } else {
+            output.value = "No PTR record found.";
+            logHistory(ip, "No record.");
+          }
+        })
+        .catch(err => {
+          output.value = "Error: " + err.message;
+        });
+    }
+
+    function copyOutput() {
+      if (!output.value) return alert("Nothing to copy!");
+      navigator.clipboard.writeText(output.value).then(() => alert("Copied!"));
+    }
+
+    function downloadOutput() {
+      if (!output.value) return alert("Nothing to download!");
+      const blob = new Blob([output.value], { type: "text/plain" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "reverse_dns_output.txt";
+      a.click();
+    }
+
+    function clearAll() {
+      document.getElementById("ip-input").value = "";
+      output.value = "";
+    }
+
+    function logHistory(ip, result) {
+      const time = new Date().toLocaleTimeString();
+      const snippet = result.split('\n')[0].slice(0, 60);
+      history.unshift(`${time} – ${ip} → ${snippet}...`);
+      updateHistory();
+    }
+
+    function updateHistory() {
+      historyBox.innerHTML = "";
+      history.slice(0, 8).forEach(entry => {
+        const div = document.createElement("div");
+        div.className = "history-item";
+        div.textContent = entry;
+        historyBox.appendChild(div);
+      });
+    }
+  </script>
+</body>
+</html>

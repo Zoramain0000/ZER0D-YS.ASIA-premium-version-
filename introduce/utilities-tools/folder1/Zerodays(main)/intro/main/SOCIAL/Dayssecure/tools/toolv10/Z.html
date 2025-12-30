@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Lat/Long Log Generator</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    body {
+      font-family: "Segoe UI", sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+      margin: 0;
+      padding: 0;
+    }
+
+    h1 {
+      text-align: center;
+      padding: 20px;
+background: rgba(0, 0, 0, 0.5);
+      color: red;
+      margin: 0;
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+      padding: 15px;
+      background: red;
+    }
+
+    .controls input,
+    .controls button {
+      padding: 10px;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
+    }
+
+    .controls input {
+      width: 160px;
+background: rgba(0, 0, 0, 0.5);
+      color: red;
+    }
+
+    .controls button {
+      background-color: red;
+      color: green;
+      cursor: pointer;
+    }
+  .controls button:hover{
+background: rgba(0, 0, 0, 0.5);
+  }
+    #map {
+      height: 300px;
+      width: 100%;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    table, th, td {
+      border: 1px solid #333;
+    }
+
+    th, td {
+      padding: 12px;
+      text-align: center;
+    }
+
+    th {
+background: rgba(0, 0, 0, 0.5);
+      color: red;
+    }
+
+    .footer {
+      text-align: center;
+      margin: 20px;
+      color: red;
+    }
+
+    .loader {
+      text-align: center;
+      padding: 20px;
+      color: red;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🌍 Lat/Long Log Generator </h1>
+
+  <div class="controls">
+    <input type="number" id="lat" step="0.000001" placeholder="Latitude (-90 to 90)">
+    <input type="number" id="long" step="0.000001" placeholder="Longitude (-180 to 180)">
+    <button onclick="addLog()">Add Log</button>
+    <button onclick="generateRandom()">Random</button>
+    <button onclick="exportCSV()">Export CSV</button>
+    <button onclick="clearLogs()">Clear</button>
+  </div>
+
+  <div id="map"></div>
+
+  <table id="logTable">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Latitude</th>
+        <th>Longitude</th>
+        <th>Timestamp</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <div class="loader" id="loader">Scroll down to load more...</div>
+
+  <div class="footer">&copy; 2025 GeoLogger Infinite</div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    let count = 1;
+    const table = document.querySelector("#logTable tbody");
+    const loader = document.getElementById("loader");
+
+    const map = L.map('map').setView([20, 0], 2);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 18
+    }).addTo(map);
+
+    function addLog(lat = null, lon = null) {
+      const latitude = lat ?? parseFloat(document.getElementById("lat").value);
+      const longitude = lon ?? parseFloat(document.getElementById("long").value);
+
+      if (isNaN(latitude) || isNaN(longitude) || latitude > 90 || latitude < -90 || longitude > 180 || longitude < -180) {
+        alert("Please enter valid coordinates.");
+        return;
+      }
+
+      const row = table.insertRow();
+      row.insertCell(0).textContent = count++;
+      row.insertCell(1).textContent = latitude.toFixed(6);
+      row.insertCell(2).textContent = longitude.toFixed(6);
+      row.insertCell(3).textContent = new Date().toLocaleString();
+
+      const marker = L.marker([latitude, longitude]).addTo(map);
+      map.setView([latitude, longitude], 5);
+    }
+
+    function generateRandom() {
+      const lat = (Math.random() * 180 - 90).toFixed(6);
+      const lon = (Math.random() * 360 - 180).toFixed(6);
+      addLog(parseFloat(lat), parseFloat(lon));
+    }
+
+    function clearLogs() {
+      table.innerHTML = "";
+      count = 1;
+    }
+
+    function exportCSV() {
+      const rows = [["#", "Latitude", "Longitude", "Timestamp"]];
+      document.querySelectorAll("#logTable tbody tr").forEach(tr => {
+        const row = Array.from(tr.children).map(td => td.textContent);
+        rows.push(row);
+      });
+
+      const csv = rows.map(r => r.join(",")).join("\n");
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "latlong_logs.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function loadMoreLogs(amount = 10) {
+      for (let i = 0; i < amount; i++) generateRandom();
+    }
+
+    window.addEventListener("scroll", () => {
+      if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 200) {
+        loadMoreLogs();
+      }
+    });
+
+    // Initial random logs
+    loadMoreLogs(20);
+  </script>
+
+</body>
+</html>

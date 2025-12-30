@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Telegram OSINT Tool</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+      padding: 30px;
+    }
+
+    .container {
+      max-width: 700px;
+      margin: auto;
+background: rgba(0, 0, 0, 0.5);
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px red;
+    }
+
+    input, button, select {
+      padding: 10px;
+      margin: 10px 5px;
+      font-size: 16px;
+      border-radius: 6px;
+      border: none;
+    }
+
+    input {
+      width: 60%;
+background: rgba(0, 0, 0, 0.5);
+      color: red;
+    }
+
+    button {
+      background: red;
+      color: green;
+      cursor: pointer;
+    }
+
+    button:hover {
+background: rgba(0, 0, 0, 0.5);
+    }
+
+    .output {
+      margin-top: 20px;
+background: rgba(0, 0, 0, 0.5);
+      padding: 15px;
+      border-radius: 8px;
+      white-space: pre-wrap;
+    }
+
+    a {
+      color: red;
+    }
+
+    .error {
+      color: blue;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🕵️ Telegram OSINT Tool </h1>
+    <input type="text" id="username" placeholder="Enter Telegram username (without @)">
+    <button onclick="runOsint()">Analyze</button>
+    <button onclick="exportResults()">Export JSON</button>
+    <div class="output" id="output">Enter a username to begin OSINT.</div>
+  </div>
+
+  <script>
+    let results = {};
+
+    function runOsint() {
+      const username = document.getElementById("username").value.trim();
+      const output = document.getElementById("output");
+
+      if (!username.match(/^[a-zA-Z0-9_]{5,32}$/)) {
+        output.innerHTML = '<span class="error">Invalid username format. Must be 5-32 characters.</span>';
+        return;
+      }
+
+      output.innerHTML = `🔍 Running OSINT on: @${username}\n`;
+
+      const baseURL = `https://t.me/${username}`;
+      results = {
+        username: `@${username}`,
+        profileURL: baseURL,
+        timestamp: new Date().toISOString(),
+        checks: {}
+      };
+
+      // 1. Link Check
+      fetch(baseURL, { method: 'HEAD', mode: 'no-cors' })
+        .then(() => {
+          results.checks['exists'] = 'Possibly Exists (no redirect error)';
+          updateResults();
+        })
+        .catch(() => {
+          results.checks['exists'] = 'Not reachable';
+          updateResults();
+        });
+
+      // 2. Avatar URL guess
+      results.checks['avatarGuess'] = `https://t.me/i/userpic/320/${username}.jpg`;
+
+      // 3. Link Variants
+      results.checks['variants'] = [
+        `https://t.me/${username}`,
+        `https://telegram.me/${username}`,
+        `https://telegram.dog/${username}`,
+        `https://t.me/${username}?start=info`
+      ];
+
+      // 4. Bot Guess
+      if (username.endsWith("bot")) {
+        results.checks['bot'] = "Username ends with 'bot' – likely a Telegram Bot.";
+      }
+
+      updateResults();
+    }
+
+    function updateResults() {
+      const output = document.getElementById("output");
+      output.innerHTML = `🔍 OSINT Results for ${results.username}:\n`;
+      output.innerHTML += `🌐 Profile: <a href="${results.profileURL}" target="_blank">${results.profileURL}</a>\n\n`;
+
+      for (const [key, value] of Object.entries(results.checks)) {
+        if (Array.isArray(value)) {
+          output.innerHTML += `📁 ${key}:\n`;
+          value.forEach(v => output.innerHTML += `   • <a href="${v}" target="_blank">${v}</a>\n`);
+        } else {
+          output.innerHTML += `📌 ${key}: ${value}\n`;
+        }
+      }
+
+      output.innerHTML += `\n🕒 Checked at: ${results.timestamp}`;
+    }
+
+    function exportResults() {
+      const blob = new Blob([JSON.stringify(results, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `telegram_osint_${results.username.replace("@", "")}.json`;
+      a.click();
+    }
+  </script>
+</body>
+</html>

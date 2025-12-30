@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>GitHub User Location Tracker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    crossorigin=""
+  />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .container {
+background: rgba(0, 0, 0, 0.5)
+      border-radius: 10px;
+      padding: 20px;
+      max-width: 900px;
+      margin: auto;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+    }
+
+    input, button {
+      padding: 10px;
+      margin: 5px;
+      border-radius: 8px;
+      border: 1px solid red;
+    }
+
+    input {
+      width: 50%;
+    }
+
+    button {
+      background-color: red;
+      color: green;
+      border: none;
+      cursor: pointer;
+    }
+
+    button:hover {
+background: rgba(0, 0, 0, 0.5)
+    }
+
+    .profile {
+      border-top: 1px solid red;
+      margin-top: 20px;
+      padding-top: 20px;
+      text-align: left;
+    }
+
+    .profile img {
+      border-radius: 50%;
+      width: 80px;
+    }
+
+    .user-block {
+      margin-bottom: 20px;
+    }
+
+    #map {
+      height: 400px;
+      margin-top: 20px;
+      border-radius: 10px;
+    }
+
+    .export-buttons {
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>🐙 GitHub User Location Tracker</h2>
+    <input type="text" id="username" placeholder="Enter GitHub username" />
+    <button onclick="trackUser()">Track User</button>
+    <div class="export-buttons">
+      <button onclick="exportJSON()">Export JSON</button>
+      <button onclick="exportCSV()">Export CSV</button>
+    </div>
+    <div id="map"></div>
+    <div id="profiles"></div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script>
+    let map = L.map('map').setView([20, 0], 2);
+    let markers = [];
+    let trackedUsers = [];
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    async function trackUser() {
+      const username = document.getElementById("username").value.trim();
+      if (!username) return alert("Enter a GitHub username.");
+
+      if (trackedUsers.some(u => u.username === username)) {
+        return alert("User already tracked.");
+      }
+
+      try {
+        const userRes = await fetch(`https://api.github.com/users/${username}`);
+        if (!userRes.ok) return alert("GitHub user not found.");
+        const user = await userRes.json();
+
+        const reposRes = await fetch(user.repos_url);
+        const repos = await reposRes.json();
+
+        const location = user.location;
+        let lat = null, lon = null;
+        if (location) {
+          const locRes = await fetch(
+            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location)}`
+          );
+          const locData = await locRes.json();
+          if (locData.length > 0) {
+            lat = parseFloat(locData[0].lat);
+            lon = parseFloat(locData[0].lon);
+            const marker = L.marker([lat, lon])
+              .addTo(map)
+              .bindPopup(`${user.name || user.login} (${location})`)
+              .openPopup();
+            markers.push(marker);
+            map.setView([lat, lon], 4);
+          }
+        }
+
+        const userData = {
+          username: user.login,
+          name: user.name || user.login,
+          bio: user.bio || "No bio.",
+          followers: user.followers,
+          following: user.following,
+          location: location || "Unknown",
+          lat, lon,
+          repos: repos.slice(0, 5).map(r => r.name)
+        };
+
+        trackedUsers.push(userData);
+        displayUser(userData);
+      } catch (err) {
+        console.error(err);
+        alert("Error fetching data.");
+      }
+    }
+
+    function displayUser(user) {
+      const profilesDiv = document.getElementById("profiles");
+      const div = document.createElement("div");
+      div.className = "profile user-block";
+      div.innerHTML = `
+        <img src="https://github.com/${user.username}.png" alt="Avatar" />
+        <h3>${user.name}</h3>
+        <p><strong>Username:</strong> ${user.username}</p>
+        <p><strong>Bio:</strong> ${user.bio}</p>
+        <p><strong>Followers:</strong> ${user.followers} | <strong>Following:</strong> ${user.following}</p>
+        <p><strong>Location:</strong> ${user.location}</p>
+        <p><strong>Recent Repositories:</strong> ${user.repos.join(', ') || 'None'}</p>
+      `;
+      profilesDiv.appendChild(div);
+    }
+
+    function exportJSON() {
+      const json = JSON.stringify(trackedUsers, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      downloadFile(url, 'github_users.json');
+    }
+
+    function exportCSV() {
+      const csv = [
+        ["Username", "Name", "Location", "Followers", "Following", "Repositories"]
+      ];
+      trackedUsers.forEach(u => {
+        csv.push([
+          u.username,
+          u.name,
+          u.location,
+          u.followers,
+          u.following,
+          u.repos.join('; ')
+        ]);
+      });
+
+      const csvString = csv.map(row => row.map(v => `"${v}"`).join(",")).join("\n");
+      const blob = new Blob([csvString], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      downloadFile(url, 'github_users.csv');
+    }
+
+    function downloadFile(url, filename) {
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+  </script>
+</body>
+</html>

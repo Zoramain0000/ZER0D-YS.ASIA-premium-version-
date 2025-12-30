@@ -1,0 +1,857 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Advanced Social Username Generator — Cyber Theme</title>
+<style>
+  /* No :root usage — static colors only (keeps your theme) */
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;background:#000;color:#dbefff;font-family:"Segoe UI",system-ui,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+  /* Background media full-bleed */
+  .bg-video{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:-3;opacity:0.72;filter:contrast(1.05) saturate(1.05)}
+  .overlay{position:fixed;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0.08),rgba(0,0,0,0.78));z-index:-2}
+  nav{position:fixed;left:0;right:0;top:0;display:flex;justify-content:space-between;align-items:center;padding:12px 18px;background:rgba(0,0,0,0.4);border-bottom:1px solid rgba(255,255,255,0.04);z-index:40}
+  .brand{display:flex;align-items:center;gap:10px;color:#c58b00;font-weight:700}
+  .brand small{opacity:.85;font-weight:600;color:#00a8cc;margin-left:6px}
+  .wrap{max-width:1250px;margin:86px auto 40px;padding:18px}
+  .grid{display:grid;grid-template-columns:360px 1fr;gap:14px}
+  .panel{background:rgba(7,7,8,0.6);border:1px solid rgba(255,255,255,0.03);padding:12px;border-radius:10px}
+  h2{color:#00a8cc;margin-bottom:8px}
+  label{display:block;font-size:0.9rem;color:#9fbcd8;margin-bottom:6px}
+  input[type=text], input[type=number], select, textarea{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:#0b0b0c;color:#eaf6ff;font-family:monospace}
+  .controls-row{display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap}
+  .btn{padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:#c58b00;cursor:pointer}
+  .btn.primary{background:linear-gradient(90deg,#00c896,#00a8cc);color:#021218;border:none}
+  .small{font-size:0.86rem;color:#9fbcd8}
+  .muted{color:#9fbcd8}
+  .section{margin-bottom:12px}
+  .list{max-height:58vh;overflow:auto;padding:6px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);background:rgba(1,1,2,0.45)}
+  .result{display:flex;justify-content:space-between;align-items:center;padding:8px;border-radius:8px;margin-bottom:6px;background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00));border:1px solid rgba(255,255,255,0.02)}
+  .result .meta{display:flex;flex-direction:column}
+  .result .meta .name{font-weight:700;color:#00a8cc}
+  .result .meta .sub{font-size:12px;color:#9fbcd8}
+  .fav-panel{position:fixed;right:12px;top:72px;width:320px;max-height:60vh;overflow:auto;background:rgba(3,3,4,0.95);border:1px solid rgba(255,255,255,0.04);padding:10px;border-radius:10px;z-index:60;display:none}
+  .kbd-hint{font-size:12px;color:#9fbcd8}
+  .tag{display:inline-block;padding:4px 8px;border-radius:6px;background:rgba(255,255,255,0.02);font-size:12px;color:#9fbcd8;margin-right:6px;margin-bottom:6px}
+  .row{display:flex;gap:8px;align-items:center}
+  .col{display:flex;flex-direction:column;gap:8px}
+  footer{margin-top:18px;color:#9fbcd8;font-size:0.82rem}
+  .player{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;background:rgba(0,0,0,0.6);Padding:10px 12px;border-radius:12px;border:1px solid rgba(255,255,255,0.04);display:flex;gap:10px;align-items:center;z-index:60}
+  .visualizer{width:180px;height:28px;background:#001;border-radius:6px;display:block;overflow:hidden}
+  .vis-bar{height:100%;display:inline-block;vertical-align:bottom}
+  @media(max-width:980px){ .grid{grid-template-columns:1fr} .fav-panel{display:none} .wrap{margin-top:110px} }
+</style>
+</head>
+<body>
+  <!-- Background video -->
+  <video id="bgVideo" class="bg-video" autoplay loop muted playsinline>
+    <source src="background/1761817527453041720p.mp4" type="video/mp4">
+    <!-- fallback image -->
+  </video>
+  <div class="overlay"></div>
+
+  <!-- Background music (user can mute/unmute) -->
+  <audio id="bgMusic" loop crossorigin="anonymous">
+    <source src="background/Programming___Coding___Hacking_music_vol.18__ANONYMOUS_HEADQUARTERS_(48k).mp3" type="audio/mpeg">
+  </audio>
+
+  <!-- Top nav -->
+  <nav>
+    <div class="brand"><span style="font-size:14px">Cyber Tools</span><small>Username Generator</small></div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <div class="kbd-hint">Keys: <strong>G</strong> generate • <strong>F</strong> favorites • <strong>C</strong> copy all</div>
+      <button id="toggleBgMedia" class="btn" title="Toggle background sound/video">Media</button>
+    </div>
+  </nav>
+
+  <div class="wrap">
+    <div class="grid">
+      <!-- Left: Controls -->
+      <div class="panel" aria-label="Controls">
+        <h2>Generator Controls</h2>
+
+        <div class="section">
+          <label for="nameListMode">Name source</label>
+          <select id="nameListMode">
+            <option value="random">Random (built-in lists)</option>
+            <option value="custom">Custom (provide first + last)</option>
+          </select>
+        </div>
+
+        <div class="section">
+          <label>Custom FIRST names (comma separated)</label>
+          <textarea id="customFirst" rows="2" placeholder="alex,zoe,ryu"></textarea>
+        </div>
+
+        <div class="section">
+          <label>Custom LAST names (comma separated)</label>
+          <textarea id="customLast" rows="2" placeholder="rose,doe,khan"></textarea>
+        </div>
+
+        <div class="section">
+          <label>Pattern (tokens: {first}, {last}, {num}, {sep}, {emoji})</label>
+          <input id="pattern" value="{first}{sep}{last}{num}" />
+          <div class="small muted">Examples: {first}{sep}{last}{num} → alex_rose99 • {first}{emoji} → alex🔥</div>
+        </div>
+
+        <div class="section">
+          <label>Prefix / Suffix</label>
+          <div class="row">
+            <input id="prefix" placeholder="prefix e.g. the, iam, real" />
+            <input id="suffix" placeholder="suffix e.g. official, tv" />
+          </div>
+        </div>
+
+        <div class="section">
+          <label>Options</label>
+          <div class="controls-row">
+            <label class="small"><input id="allowLeet" type="checkbox" /> Leet transform</label>
+            <label class="small"><input id="allowEmoji" type="checkbox" checked /> Allow emoji</label>
+            <label class="small"><input id="allowNumbers" type="checkbox" checked /> Allow numbers</label>
+          </div>
+          <div class="controls-row">
+            <label class="small">Separator</label>
+            <select id="sepSelect">
+              <option value="_">underscore _</option>
+              <option value=".">dot .</option>
+              <option value="">none</option>
+              <option value="-">dash -</option>
+            </select>
+            <label class="small">Min length <input id="minLen" type="number" value="3" style="width:70px;margin-left:6px" /></label>
+            <label class="small">Max length <input id="maxLen" type="number" value="20" style="width:80px;margin-left:6px" /></label>
+          </div>
+        </div>
+
+        <div class="section">
+          <label>Platform Preset (preview)</label>
+          <select id="platformPreset">
+            <option value="custom">Custom</option>
+            <option value="tiktok">TikTok</option>
+            <option value="instagram">Instagram</option>
+            <option value="facebook">Facebook</option>
+            <option value="twitter">Twitter/X</option>
+          </select>
+          <input id="customPlatformUrl" placeholder="https://platform.com/USERNAME" value="https://tiktok.com/@USERNAME" />
+        </div>
+
+        <div class="section">
+          <label>Bulk generation</label>
+          <div class="controls-row">
+            <input id="count" type="number" value="40" style="width:90px" />
+            <button id="genBtn" class="btn primary">Generate</button>
+            <button id="bulkCopy" class="btn">Copy All</button>
+          </div>
+          <div class="controls-row">
+            <button id="exportCsv" class="btn">Export CSV</button>
+            <button id="clearResults" class="btn">Clear</button>
+          </div>
+        </div>
+
+        <div class="section">
+          <label>Favorites panel</label>
+          <div class="controls-row">
+            <label class="small"><input id="showFavs" type="checkbox" /> Show favorites</label>
+            <button id="clearFavs" class="btn">Clear favorites</button>
+          </div>
+        </div>
+
+        <footer class="small muted">
+          Built-in name lists (first / last). Local only. Background media may be muted by default due to browser policies — click once to enable.
+        </footer>
+      </div>
+
+      <!-- Right: Results -->
+      <div class="panel" aria-label="Results">
+        <h2>Generated Usernames</h2>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div class="small muted" id="resultsInfo">No results yet</div>
+          <div class="row">
+            <button id="favAll" class="btn">Fav All</button>
+            <button id="shuffleBtn" class="btn">Shuffle</button>
+          </div>
+        </div>
+
+        <div id="resultsList" class="list" role="list" aria-live="polite"></div>
+
+        <div style="margin-top:8px;display:flex;justify-content:space-between;align-items:center">
+          <div class="small muted" id="previewLabel">URL preview: —</div>
+          <div class="small muted">Theme: <span style="color:#c58b00">Cyber</span></div>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <div class="small muted">Tip: Use patterns with {first} {last} tokens; set separators and prefixes for brand consistency.</div>
+    </footer>
+  </div>
+
+  <!-- Favorites panel -->
+  <div id="favPanel" class="fav-panel" aria-label="Favorites">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <strong style="color:#00a8cc">Favorites</strong>
+      <div><button id="downloadFavs" class="btn">Export</button></div>
+    </div>
+    <div id="favList"></div>
+  </div>
+
+  <!-- Player (for background audio visualizer & controls) -->
+  <div id="playerUI" class="player" style="display:none">
+    <div id="playerTitle" style="min-width:160px;color:#e6eef6">Background</div>
+    <audio id="audioPlayer" controls crossorigin="anonymous" style="max-width:420px"></audio>
+    <div style="display:flex;gap:6px;align-items:center">
+      <button id="muteBtn" class="btn">Mute</button>
+      <div class="visualizer" id="visualizer"></div>
+    </div>
+  </div>
+
+<script>
+/* Advanced Cyber Username Generator — Single file
+   Features:
+   - first/last name lists (random)
+   - pattern engine with tokens
+   - bulk generation, dedupe, filters
+   - favorites (localStorage), export CSV
+   - platform URL preview with USERNAME token replacement
+   - background video + music (cyber style) with mute/unmute
+*/
+
+// ----- Name lists (first + last) -----
+const firstNames = [
+    "Alex", "Jordan", "Taylor", "Morgan", "Casey", "Jamie", "Blake", "Skyler", "Riley", "Dakota", 
+    "Abby", "Abigail", "Ada", "Addie", "Addison", "Adelaide", "Adele", "Adora", "Adriana", "Ælfgifu", 
+    "Æthelburh", "Agnes", "Aileen", "Alaina", "Alanna", "Alberta", "Albina", "Aleana", "Alexa", 
+    "Alexandra", "Alexandria", "Alexis", "Alice", "Alicia", "Alisha", "Alison", "Allyson", "Alma", 
+    "Althea", "Alvina", "Alyson", "Amanda", "Amber", "Amberley", "Amelia", "Amy", "Ana", "Andrea", 
+    "Andrée", "Andy", "Angel", "Angela", "Angelica", "Angelina", "Angella", "Angie", "Anna", 
+    "Annabelle", "Annabeth", "Anne", "Annette", "Annie", "Antonia", "April", "Arabella", "Arda", 
+    "Ariana", "Ariel", "Arya", "Ash", "Ashley", "Astrid", "Aubrey", "Audra", "Audrey", "Aurora", 
+    "Autumn", "Averil", "Avis", "Azalea", "Babette", "Barb", "Barbara", "Beatrice", "Beatrix", 
+    "Beau", "Becca", "Becki", "Becky", "Belinda", "Bella", "Berenice", "Bertha", "Betsy", 
+    "Bettina", "Betty", "Beverly", "Bianca", "Blair", "Blake", "Blanche", "Blossom", "Bobbi", 
+    "Bobby", "Bonnie", "Braden", "Brandy", "Brenda", "Brianna", "Bridget", "Brielle", "Brilliana", 
+    "Brooklyn", "Brynlee", "Bryony", "Caden", "Calla", "Candy", "Cara", "Cari", "Carina", 
+    "Carissa", "Carlena", "Carlene", "Carlie", "Carly", "Carmelita", "Carol", "Carol Ann", 
+    "Carol Anne", "Carole", "Carolina", "Caroline", "Carolyn", "Carrie Ann", "Carrie Anne", 
+    "Carroll", "Carry", "Carson", "Cary", "Casey", "Cassandra", "Cassidy", "Cathleen", "Cathy", 
+    "Cecilia", "Cecily", "Celestia", "Celia", "Celinda", "Chara", "Charis", "Charisse", 
+    "Charity", "Charla", "Charle", "Charlee", "Charlene", "Charley", "Charli", "Charlie", 
+    "Charlotte", "Charly", "Charlyne", "Charmaine", "Chas", "Chelsea", "Cherry", "Cheryl", 
+    "Chloe", "Chris", "Christabel", "Christi", "Christina", "Christine", "Christy", "Cindy", 
+    "Claire", "Clara", "Clare", "Claribel", "Clarice", "Clarissa", "Claudia", "Clementine", 
+    "Clover", "Cody", "Colette", "Colleen", "Constance", "Cora", "Coral", "Coraline", 
+    "Cordelia", "Courtney", "Crystal", "Cynthia",
+    "Daenerys", "Daisy", "Dana", "Dani", "Danielle", "Danna", "Daphne", "Darla", "Darlene", 
+    "Davina", "Dawn", "Deanna", "D", "Deanne", "Deb", "Debbie", "Deborah", "Dede", "Deja", 
+    "Delaney", "Delia", "Demetria", "Demi", "Denise", "Destiny", "Devon", "Diamond", "Diana", 
+    "Diane", "Dimity", "Donna", "Dora", "Doreen", "Doris", "Dorothy", "Dottie", "Drew", 
+    "Dulcie", "E", "Eadgifu", "Ealdgyth", "Ebony", "Edburga", "Eden", "Edith", "Edna", 
+    "Edris", "Edwina", "Effie", "Eileen", "Elaine", "Eleanor", "Elektra", "Elisha", "Eliza", 
+    "Elizabeth", "Ella", "Elle", "Ellen", "Ellie", "Ellis", "Elora", "Ember", "Emerald", 
+    "Emily", "Emma", "Enid", "Erika", "Erin", "Estelle", "Esther", "Esty", "Ethel", 
+    "Etheldreda", "Etty", "Eudora", "Eva", "Evan", "Evangelina", "Eve", "Evelyn", "F", 
+    "Fabienne", "Faith", "Fancy", "Faye", "Felicity", "Fern", "Finn", "Fiona", "Fleur", 
+    "Florence", "Frances", "Francie", "Francine", "Frankie", "Frederica", "Frida", "G", 
+    "Gage", "Gail", "Gale", "Gemma", "Gene", "Genevieve", "Georgene", "Georgette", "Georgia", 
+    "Georgiana", "Georgina", "Gertie", "Gertrude", "Gia", "Gina", "Ginny", "Giselle", 
+    "Gladys", "Glenda", "Glenna", "Gloria", "Glynis", "Goldie", "Grace", "Gussie", "Gwen", 
+    "Gwenda", "Gwendolen", "Gwendoline", "Gwendolyn", "Gwyneth",
+    "Haisley", "Haley", "Hannah", "Harmony", "Harriet", "Hayden", "Hayley", "Hazel", 
+    "Heather", "Heidi", "Helen", "Helena", "Helene", "Henrietta", "Hero", "Hester", 
+    "Hilary", "Hilda", "Hodierna", "Holly", "Honor", "Hope", "Hunter", 
+    "Ida", "Ila", "Imelda", "Imogen", "Ingrid", "Iona", "Irene", "Iris", 
+    "Irma", "Isa", "Isabel", "Isabella", "Isla", "Ivy", 
+    "Jacinta", "Jack", "Jackie", "Jacqueline", "Jacqui", "Jade", "Jaime", "Jamie", 
+    "Jan", "Jana", "Jane", "Janee", "Janelle", "Janet", "Janey", "Janie", 
+    "January", "Jasmine", "Jay", "Jayda", "Jayden", "Jayne", "Jaynie", 
+    "Jean", "Jeanie", "Jeannie", "Jemima", "Jemma", "Jenna", "Jennifer", "Jenny", 
+    "Jensen", "Jerri", "Jerry", "Jess", "Jessica", "Jessie", "Jill", 
+    "Joan", "Joanna", "Joanne", "Jodi", "Jodie", "Jody", "Joelle", 
+    "Joey", "Johnny", "Jolie", "Jordan", 
+    "Josephine", "Josie", "Joy", "Joyce", "Judith", "Julia", "Julianne", 
+    "Julie", "Juliet", "June", "Juniper", "Juno", "Justine", 
+    "Kailey", "Kalla", "Kara", "Karen", "Karin", "Karlee", "Karlene", 
+    "Karli", "Karlie", "Karly", "Karolyn", "Karrie", "Karyn", "Karyne", 
+    "Kasey", "Kate", "Katey", "Kathleen", "Kathryn", "Kathy", "Katie", 
+    "Katina", "Katrina", "Katy", "Kay", "Kayla", "Kaylee", "Kelly", 
+    "Kelsey", "Kierra", "Kim", "Kimberly", "Kira", "Kirsteen", 
+    "Kirstin", "Kitty", "Krista", "Kristen", "Kristi", "Kristin", 
+    "Kristy", "Kylie", "Kyra",
+    "Lacey", "Lana", "Lanna", "Lara", "Larissa", "Laura", "Laurel", "Lauren", 
+    "Laurence", "Lauretta", "Laurie", "Lauryn", "Lavender", "Leah", "Leanne", 
+    "Lee", "Leila", "Leisha", "Lena", "Lenna", "Leona", "Leonora", "Leslie", 
+    "Lettice", "Lexi", "Lila", "Liliana", "Lilibet", "Lilibeth", "Lilla", 
+    "Lillian", "Lillie", "Lilly", "Lily", "Lina", "Linda", "Lindsay", 
+    "Lindy", "Lisa", "Liza", "Lizzie", "Lois", "Loraine", "Lorelei", 
+    "Lorena", "Loretta", "Lori", "Lorinda", "Lorna", "Lorraine", "Lottie", 
+    "Lotty", "Louella", "Louisa", "Louise", "Lucia", "Lucinda", "Lucy", 
+    "Lydia", "Lyndsay", "Lynnette", "Lysette", "Mabel", "Mable", "Macy", 
+    "Madelaine", "Madeleine", "Madelyn", "Madge", "Madison", "Madonna", 
+    "Mae", "Maggie", "Magnolia", "Mallory", "Mandy", "Mara", "Marcia", 
+    "Marcie", "Margaret", "Margie", "Margo", "Maria", "Mariah", "Marian", 
+    "Marianne", "Marie", "Marigold", "Marilyn", "Marina", "Marissa", 
+    "Marjorie", "Marlene", "Marsha", "Marta", "Martha", "Martina", 
+    "Mary", "Mary Belle", "Maryanne", "Mason", "Matilda", "Maud", 
+    "Maude", "Maura", "Maureen", "Mavis", "Maxine", "May", "Maya", 
+    "Mayola", "McKenna", "Meara", "Medea", "Megan", "Mehitable", 
+    "Mel", "Melanie", "Melina", "Melinda", "Melissa", "Melody", 
+    "Mercedes", "Meredith", "Merilyn", "Merle", "Merrilyn", "Mia", 
+    "Micah", "Michele", "Michelle", "Mila", "Mildred", "Miley", 
+    "Millicent", "Millie", "Mina", "Mindi", "Mindy", "Minerva", 
+    "Minnie", "Miranda", "Miriam", "Misty", "Moira", "Molly", 
+    "Morgan", "Muriel", "Myra", "Myrna", "Myrtle",
+    "Nadia", "Nadine", "Naila", "Nancy", "Naomi", "Narcissa", "Nathalie", 
+    "Nena", "Nettie", "Netty", "Nevaeh", "Nia", "Nicki", "Nicola", 
+    "Nicole", "Nina", "Noel", "Noella", "Noelle",
+    "Napoleon", "Nate", "Nathan", "Nathanael", "Nathaniel", "Ned", "Nehemiah", 
+    "Neil", "Nelson", "Nestor", "Newt", "Newton", "Niall", "Nicholas", 
+    "Nick", "Nicodemus", "Nicolas", "Nigel", "Niles", "Noah", "Noam", 
+    "Norm", "Norman", "Nowell",
+    "Obadiah", "Odin", "Oliver", "Ollie", "Orion", "Orlando", "Orville", 
+    "Osbert", "Osborne", "Oscar", "Osric", "Oswald", "Otis", "Otto", 
+    "Owen", "Ozzie",
+    "Paddy", "Palmer", "Paris", "Patrick", "Patsy", "Patty", "Paul", 
+    "Peleg", "Percival", "Percy", "Perry", "Pete", "Peter", "Philip", 
+    "Phillipps", "Phineas", "Pierse", "Poe", "Porter", "Posy", "Preston",
+    "Quentin", "Quincy", "Quinn",
+    "Race", "Rafe", "Raife", "Raleigh", "Ralph", "Ralphie", "Ramsey", 
+    "Randall", "Randi", "Randolph", "Randy", "Raphael", "Rathbone", 
+    "Ray", "Raymond", "Reese", "Reggie", "Reginald", "Rembrandt", 
+    "Rendell", "Renssalaer", "Reuben", "Rex", "Reynold", "Rhett", 
+    "Rich", "Richard", "Richie", "Rick", "Ricky", "Riley", "Ritchie", 
+    "Rob", "Robbie", "Robert", "Robin", "Roderick", "Rodger", 
+    "Rodney", "Roger", "Rogers", "Roland", "Roman", "Ron", "Ronald", 
+    "Ronnie", "Rory", "Roscoe", "Ross", "Roualeyn", "Rowland", 
+    "Roy", "Rudolph", "Rudy", "Rufus", "Rupert", "Russ", "Russell", 
+    "Ryan", "Ryder",
+    "Sam", "Sammy", "Samson", "Samuel", "Sandy", "Sanford", "Saul", 
+    "Sawyer", "Scott", "Sean", "Sebastian", "Seth", "Seymour", 
+    "Shane", "Shaun", "Shawn", "Shayne", "Sheldon", "Shepherd", 
+    "Sid", "Sidney", "Sigmund", "Simon", "Sky", "Skyler", 
+    "Sloane", "Smith", "Sol", "Solomon", "Spencer", "Stan", 
+    "Stanford", "Stanley", "Stefan", "Stephen", "Stetson", 
+    "Steve", "Stevie", "Stevland", "Stewart", "Storm", "Stuart", 
+    "Swaine", "Syd", "Sydney", "Sylvester",
+    "Tanner", "Taran", "Taylor", "Tazewell", "Ted", "Tedd", "Teddy", 
+    "Terence", "Terry", "Thaddeus", "Theo", "Theodore", "Thomas", 
+    "Thor", "Tim", "Timmy", "Timothy", "Tobias", "Toby", "Tod", 
+    "Todd", "Toddy", "Tom", "Tommie", "Tommy", "Tony", "Tracy", 
+    "Travis", "Tregonwell", "Trent", "Trevor", "Trey", "Tristan", 
+    "Troy", "Truman", "Tucker", "Tyler", "Tyson",
+    "Ultan", "Ulysses", "Uriah",
+    "Val", "Valentine", "Vernon", "Vic", "Vicary", "Victor", "Vince", 
+    "Vincent", "Vinny", "Vivian",
+    "Wade", "Wadsworth", "Walden", "Waldo", "Walker", "Wallace", 
+    "Wally", "Walt", "Walter", "Warren", "Waverly", "Waylon", 
+    "Wayne", "Wells", "Wes", "Wesley", "Whitney", "Wilber", 
+    "Wilbert", "Wilbur", "Wilf", "Wilfred", "Wilfried", "Wilhelm", 
+    "Will", "Willard", "William", "Willis", "Willy", "Wilmon", 
+    "Wilson", "Winnie", "Winston", "Wolfgang", "Woodrow", 
+    "Woodruff", "Woody", "Wyatt", "Wyndham",
+    "Xander", "Xavier",
+    "Yancy",
+    "Zabdiel", "Zach", "Zachary", "Zack", "Zadoc", "Zak", "Zane", 
+    "Zayden", "Zeb", "Zechariah", "Zedekiah", "Zeke", "Zeph", 
+    "Zephaniah", "Zion"
+];
+    
+const lastNames = [
+  "Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis", "Rodriguez", "Martinez",
+  "Hernandez", "Lopez", "Gonzalez", "Wilson", "Anderson", "Thomas", "Taylor", "Moore", "Jackson", "Martin",
+  "Lee", "Perez", "Thompson", "White", "Harris", "Sanchez", "Clark", "Ramirez", "Lewis", "Robinson",
+  "Walker", "Young", "Allen", "King", "Wright", "Scott", "Torres", "Nguyen", "Hill", "Flores",
+  "Green", "Adams", "Nelson", "Baker", "Hall", "Rivera", "Campbell", "Mitchell", "Carter", "Roberts",
+  "Gomez", "Phillips", "Evans", "Turner", "Diaz", "Parker", "Cruz", "Edwards", "Collins", "Reyes",
+  "Stewart", "Morris", "Morales", "Murphy", "Cook", "Rogers", "Gutierrez", "Ortiz", "Morgan", "Cooper",
+  "Peterson", "Bailey", "Reed", "Kelly", "Howard", "Ramos", "Kim", "Cox", "Ward", "Richardson",
+  "Watson", "Brooks", "Chavez", "Wood", "James", "Bennett", "Gray", "Mendoza", "Ruiz", "Hughes",
+  "Price", "Alvarez", "Castillo", "Sanders", "Patel", "Myers", "Long", "Ross", "Foster", "Jimenez",
+  "Powell", "Jenkins", "Perry", "Russell", "Sullivan", "Bell", "Coleman", "Butler", "Henderson", "Barnes",
+  "Gonzales", "Fisher", "Vasquez", "Simmons", "Romero", "Jordan", "Patterson", "Alexander", "Hamilton", "Graham",
+  "Reynolds", "Griffin", "Wallace", "Moreno", "West", "Cole", "Hayes", "Bryant", "Herrera", "Gibson",
+  "Ellis", "Tran", "Medina", "Aguilar", "Stevens", "Murray", "Ford", "Castro", "Marshall", "Owens",
+  "Harrison", "Fernandez", "Mcdonald", "Woods", "Washington", "Kennedy", "Wells", "Vargas", "Henry", "Chen",
+  "Freeman", "Webb", "Tucker", "Guzman", "Burns", "Crawford", "Olson", "Simpson", "Porter", "Hunter",
+  "Gordon", "Mendez", "Silva", "Shaw", "Snyder", "Mason", "Dixon", "Munoz", "Hunt", "Hicks",
+  "Holmes", "Palmer", "Wagner", "Black", "Robertson", "Boyd", "Rose", "Stone", "Salazar", "Fox",
+  "Warren", "Mills", "Meyer", "Rice", "Schmidt", "Garza", "Daniels", "Ferguson", "Nichols", "Stephens",
+  "Soto", "Weaver", "Ryan", "Gardner", "Payne", "Grant", "Dunn", "Kelley", "Spencer", "Hawkins",
+  "Arnold", "Pierce", "Vazquez", "Hansen", "Peters", "Santos", "Hart", "Bradley", "Knight", "Elliott",
+  "Cunningham", "Duncan", "Armstrong", "Hudson", "Carroll", "Lane", "Riley", "Andrews", "Alvarado", "Ray",
+  "Delgado", "Berry", "Perkins", "Hoffman", "Johnston", "Matthews", "Pena", "Richards", "Contreras", "Willis",
+  "Carpenter", "Lawrence", "Sandoval", "Guerrero", "George", "Chapman", "Rios", "Estrada", "Ortega", "Watkins",
+  "Greene", "Nunez", "Wheeler", "Valdez", "Harper", "Burke", "Larson", "Santiago", "Maldonado", "Morrison",
+  "Franklin", "Carlson", "Austin", "Dominguez", "Carr", "Lawson", "Jacobs", "Obrien", "Lynch", "Singh",
+  "Vega", "Bishop", "Montgomery", "Oliver", "Jensen", "Harvey", "Williamson", "Gilbert", "Dean", "Sims",
+  "Espinoza", "Howell", "Li", "Wong", "Reid", "Hanson", "Le", "Mccoy", "Garrett", "Burton",
+  "Fuller", "Wang", "Weber", "Welch", "Rojas", "Lucas", "Marquez", "Fields", "Park", "Yang",
+  "Little", "Banks", "Padilla", "Day", "Walsh", "Bowman", "Schultz", "Luna", "Fowler", "Mejia",
+  "Davidson", "Acosta", "Brewer", "May", "Holland", "Juarez", "Newman", "Pearson", "Curtis", "Cortez",
+  "Douglas", "Schneider", "Joseph", "Barrett", "Navarro", "Figueroa", "Keller", "Avila", "Wade", "Molina",
+  "Stanley", "Hopkins", "Campos", "Barnett", "Bates", "Chambers", "Caldwell", "Beck", "Lambert", "Miranda",
+  "Byrd", "Craig", "Ayala", "Lowe", "Frazier", "Powers", "Neal", "Leonard", "Gregory", "Carrillo",
+  "Sutton", "Fleming", "Rhodes", "Shelton", "Schwartz", "Norris", "Jennings", "Watts", "Duran", "Walters",
+  "Cohen", "Mcdaniel", "Moran", "Parks", "Steele", "Vaughn", "Becker", "Holt", "Deleon", "Barker",
+  "Terry", "Hale", "Leon", "Hail", "Baldwin", "Kirk", "Underwood", "Wilkins", "Gaines", "Madden"
+];
+
+const emojis = [
+  "🔥","✨","💫","🌙","⚡","🎧","🎵","💻","🚀","🎮","🤖","🌐","🌀",
+  "🛸","📡","📱","💿","🧠","🎚️","🎛️","🎙️","📀","🕹️","📶","🛰️","📟","🛠️","📂","🗂️","📊","📈","📉","🧬","🕳️",
+  "🔮","💎","♾️","🔗","🛡️","💣","🖤","💥","📡","🔧","🧩","📋","🔍","🌌","🚦","🔋","🚨","🛰️","🥷","⌛","⛓️",
+  "🔓","🔒","🗝️","📜","🖥️","🧪","🕯️","💡","💻","🖱️","⌨️","📲","🪐","🌑","🌘","🌗","🌖","🌕","🌔","🌒","🌍",
+  "🌎","🌏","📡","🧭","🎞️","🪫","🤯","🧊","🧨","⚙️","⏳","📡","🔭","🌠","🌟","☄️","❄️","🌪️","🌁","🎇","📁",
+  "🧧","💾","💽","📼","🗃️","🗜️","📎","🪤","🛑","🔱","🎰","🎯","🧲","🪙","🛰️","🧱","🕸️","🕷️","🪄","💈",
+  "🪬","🪨","🪜","🗿","📃","🧾","📘","📗","📕","📙","📖","🏴‍☠️","🏁","🧿","🛕","🛍️","🎭","🔦","🎴","🧩",
+  "✨","🔆","🔅","✳️","❇️","🖇️","🌀","💠","♻️","🔂","🔁","🔀","📳","📴","📶","📡","🔉","🔊","🔇","✅",
+  "⚠️","🚫","⛔","♻️","🆗","🆕","🆙","📢","📨","📩","📧","📥","📤","📬","📫","🗳️","🧾","🧮","💸","💰",
+  "💳","🧾","🪙","💷","💶","💴","🧾","🧾","🔧","🔨","⚒️","🛠️","🧰","🔩","⚙️","🪛","🧱","💣","🛡️","🧬",
+  "🧫","🧪","🛰️","🛸","🚀","🧞‍♂️","🧟","🧙‍♂️","👨‍🚀","🧑‍🚀","🚧","🚦","🚨","🔋","🧨","⚡","🌩️","🌧️","🌫️","🌪️",
+  "🌊","🕳️","🌀","🌐","🛜","📡","🧠","🤖","👁️","🔭","📡","🛰️","🛸","🚀","💻","🖥️","⌨️","🖱️","🎧","📱",
+  "🎮","📟","📺","📼","💾","💿","📀","📷","📸","📹","🎥","🎞️","📡","🛜","🔌","💡","🔋","📡","📶","🌐",
+];
+
+// ----- Utilities -----
+function pick(list){ return list[Math.floor(Math.random()*list.length)]; }
+function slugifyForPreview(name){ return encodeURIComponent(name); }
+function uniqueArray(arr){ return Array.from(new Set(arr)); }
+
+// escape HTML
+function esc(s){ return String(s||'').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+// ----- UI elements -----
+const nameListMode = document.getElementById('nameListMode');
+const customFirst = document.getElementById('customFirst');
+const customLast = document.getElementById('customLast');
+const patternInput = document.getElementById('pattern');
+const prefixInput = document.getElementById('prefix');
+const suffixInput = document.getElementById('suffix');
+const allowLeet = document.getElementById('allowLeet');
+const allowEmoji = document.getElementById('allowEmoji');
+const allowNumbers = document.getElementById('allowNumbers');
+const sepSelect = document.getElementById('sepSelect');
+const minLenInput = document.getElementById('minLen');
+const maxLenInput = document.getElementById('maxLen');
+const countInput = document.getElementById('count');
+const genBtn = document.getElementById('genBtn');
+const resultsList = document.getElementById('resultsList');
+const resultsInfo = document.getElementById('resultsInfo');
+const bulkCopy = document.getElementById('bulkCopy');
+const exportCsv = document.getElementById('exportCsv');
+const clearResultsBtn = document.getElementById('clearResults');
+const favPanelCheckbox = document.getElementById('showFavs');
+const favPanel = document.getElementById('favPanel');
+const favList = document.getElementById('favList');
+const showFavsCheckbox = document.getElementById('showFavs');
+const clearFavsBtn = document.getElementById('clearFavs');
+const favAllBtn = document.getElementById('favAll');
+const platformPreset = document.getElementById('platformPreset');
+const customPlatformUrl = document.getElementById('customPlatformUrl');
+const resultsLabel = document.getElementById('previewLabel');
+const toggleBgMedia = document.getElementById('toggleBgMedia');
+const bgMusic = document.getElementById('bgMusic');
+const bgVideo = document.getElementById('bgVideo');
+const playerUI = document.getElementById('playerUI');
+const audioPlayer = document.getElementById('audioPlayer');
+const muteBtn = document.getElementById('muteBtn');
+const visualizer = document.getElementById('visualizer');
+const downloadFavs = document.getElementById('downloadFavs');
+const shuffleBtn = document.getElementById('shuffleBtn');
+
+// storage keys
+const LS_FAVS = 'cyber_usergen_favs_v1';
+const LS_PREFS = 'cyber_usergen_prefs_v1';
+
+let favorites = JSON.parse(localStorage.getItem(LS_FAVS) || '[]');
+let lastResults = [];
+
+// ----- Persistence: load prefs -----
+function loadPrefs(){
+  try{
+    const p = JSON.parse(localStorage.getItem(LS_PREFS) || '{}');
+    if(p.platform) platformPreset.value = p.platform;
+    if(p.pattern) patternInput.value = p.pattern;
+    if(p.sep) sepSelect.value = p.sep;
+    if(p.count) countInput.value = p.count;
+    if(p.minLen) minLenInput.value = p.minLen;
+    if(p.maxLen) maxLenInput.value = p.maxLen;
+    if(p.allowEmoji !== undefined) allowEmoji.checked = p.allowEmoji;
+    if(p.allowLeet !== undefined) allowLeet.checked = p.allowLeet;
+    if(p.allowNumbers !== undefined) allowNumbers.checked = p.allowNumbers;
+    if(p.nameMode) nameListMode.value = p.nameMode;
+    if(p.customFirst) customFirst.value = p.customFirst;
+    if(p.customLast) customLast.value = p.customLast;
+  }catch(e){}
+}
+function savePrefs(){
+  const p = {
+    platform: platformPreset.value,
+    pattern: patternInput.value,
+    sep: sepSelect.value,
+    count: countInput.value,
+    minLen: minLenInput.value,
+    maxLen: maxLenInput.value,
+    allowEmoji: allowEmoji.checked,
+    allowLeet: allowLeet.checked,
+    allowNumbers: allowNumbers.checked,
+    nameMode: nameListMode.value,
+    customFirst: customFirst.value,
+    customLast: customLast.value
+  };
+  localStorage.setItem(LS_PREFS, JSON.stringify(p));
+}
+
+// ----- Name pools -----
+function getFirstPool(){
+  if(nameListMode.value === 'custom'){
+    const text = customFirst.value || '';
+    const arr = text.split(',').map(s=>s.trim()).filter(Boolean);
+    if(arr.length) return arr;
+  }
+  return firstNames.slice();
+}
+function getLastPool(){
+  if(nameListMode.value === 'custom'){
+    const text = customLast.value || '';
+    const arr = text.split(',').map(s=>s.trim()).filter(Boolean);
+    if(arr.length) return arr;
+  }
+  return lastNames.slice();
+}
+
+// ----- Pattern engine -----
+function generateSingle(){
+  const poolFirst = getFirstPool();
+  const poolLast = getLastPool();
+  if(poolFirst.length===0 || poolLast.length===0) return null;
+  const first = pick(poolFirst);
+  const last = pick(poolLast);
+  const sepChoice = sepSelect.value !== undefined ? sepSelect.value : '_';
+  const sep = sepChoice || '';
+  const num = allowNumbers.checked ? (Math.random() < 0.6 ? String(Math.floor(Math.random()*900)+10) : '') : '';
+  const emoji = (allowEmoji.checked && Math.random() < 0.25) ? pick(emojis) : '';
+  const pattern = patternInput.value || '{first}{sep}{last}{num}';
+  const prefix = prefixInput.value || '';
+  const suffix = suffixInput.value || '';
+  // token replacement
+  let out = pattern.replace(/{first}/g, first)
+                   .replace(/{last}/g, last)
+                   .replace(/{sep}/g, sep)
+                   .replace(/{num}/g, num)
+                   .replace(/{emoji}/g, emoji);
+  // apply prefix/suffix
+  out = (prefix ? (prefix + (sep?sep:'')) : '') + out + (suffix ? ( (sep?sep:'') + suffix) : '');
+  // leet transform optionally (small chance)
+  if(allowLeet.checked && Math.random() < 0.35){
+    out = leetTransform(out);
+  }
+  // normalize: remove spaces
+  out = out.replace(/\s+/g, sep);
+  // filter length
+  const minL = parseInt(minLenInput.value||'1',10) || 1;
+  const maxL = parseInt(maxLenInput.value||'32',10) || 32;
+  if(out.length < minL || out.length > maxL) return null;
+  // final sanitize: disallow illegal chars for usernames (keep basic safe set)
+  out = out.replace(/[^\p{L}\p{N}_\-.🔥✨💫🌙⚡🎧🎵🚀🤖]/gu, ''); // allow many emoji present
+  // collapse repeated separators
+  out = out.replace(/[_\-.]{2,}/g, match => match[0]);
+  return out;
+}
+
+function leetTransform(s){
+  const map = {'a':'4','e':'3','i':'1','o':'0','s':'5','t':'7','l':'1','b':'8','g':'9'};
+  return s.split('').map(ch=> (Math.random() < 0.45 && map[ch.toLowerCase()]) ? map[ch.toLowerCase()] : ch ).join('');
+}
+
+// ----- Bulk Generation -----
+function generateBulk(n){
+  const out = [];
+  const attemptsMax = n * 8;
+  let attempts = 0;
+  while(out.length < n && attempts < attemptsMax){
+    attempts++;
+    const candidate = generateSingle();
+    if(!candidate) continue;
+    // dedupe & simple content filters
+    if(out.includes(candidate)) continue;
+    // platform reserved rules (optional): skip very short numeric-only names
+    if(/^[0-9]+$/.test(candidate)) continue;
+    out.push(candidate);
+  }
+  return out;
+}
+
+// ----- Render results -----
+function renderResults(list){
+  lastResults = list.slice();
+  resultsList.innerHTML = '';
+  if(list.length === 0){
+    resultsInfo.textContent = 'No results';
+    resultsLabel.textContent = 'URL preview: —';
+  } else {
+    resultsInfo.textContent = `${list.length} result(s)`;
+    list.forEach(name => {
+      const el = document.createElement('div'); el.className = 'result';
+      const meta = document.createElement('div'); meta.className='meta';
+      const n = document.createElement('div'); n.className='name'; n.innerHTML = esc(name);
+      const sub = document.createElement('div'); sub.className='sub'; sub.textContent = `length ${name.length}`;
+      meta.appendChild(n); meta.appendChild(sub);
+      const actions = document.createElement('div'); actions.className='actions';
+      const copy = document.createElement('button'); copy.className='btn'; copy.textContent='Copy'; copy.onclick = ()=>copyToClipboard(name);
+      const open = document.createElement('button'); open.className='btn'; open.textContent='Open'; open.onclick = ()=>openPlatform(name);
+      const fav = document.createElement('button'); fav.className='btn'; fav.textContent = favorites.includes(name) ? '★' : '☆';
+      fav.onclick = ()=>{ toggleFav(name); fav.textContent = favorites.includes(name) ? '★' : '☆'; renderFavList(); };
+      actions.appendChild(copy); actions.appendChild(open); actions.appendChild(fav);
+      el.appendChild(meta); el.appendChild(actions);
+      resultsList.appendChild(el);
+    });
+    // preview first
+    updatePreview(list[0]);
+  }
+}
+
+// ----- Clipboard & External open -----
+async function copyToClipboard(text){
+  try{ await navigator.clipboard.writeText(text); alert('Copied: ' + text); }
+  catch(e){ prompt('Copy username', text); }
+}
+
+function openPlatform(username){
+  const url = platformPreviewUrl(username);
+  if(!url) { alert('No platform set.'); return; }
+  window.open(url, '_blank');
+}
+
+function platformPreviewUrl(username){
+  const preset = platformPreset.value || 'custom';
+  let template = customPlatformUrl.value || 'https://platform.com/USERNAME';
+  if(preset === 'tiktok') template = 'https://www.tiktok.com/@USERNAME';
+  if(preset === 'instagram') template = 'https://www.instagram.com/USERNAME';
+  if(preset === 'facebook') template = 'https://www.facebook.com/USERNAME';
+  if(preset === 'twitter') template = 'https://twitter.com/USERNAME';
+  if(!template.includes('USERNAME')) template += (template.endsWith('/') ? '' : '/') + 'USERNAME';
+  return template.replace(/USERNAME/g, slugifyForPreview(username));
+}
+
+function updatePreview(username){
+  const url = platformPreviewUrl(username);
+  resultsLabel.textContent = 'URL preview: ' + (url || '—');
+}
+
+// ----- Favorites -----
+function toggleFav(name){
+  if(!name) return;
+  if(favorites.includes(name)) favorites = favorites.filter(x=>x!==name);
+  else favorites.push(name);
+  localStorage.setItem(LS_FAVS, JSON.stringify(favorites));
+  renderFavList();
+}
+function renderFavList(){
+  favList.innerHTML = '';
+  if(favorites.length === 0) favList.innerHTML = '<div class="small muted">No favorites</div>';
+  else {
+    favorites.forEach(n=>{
+      const row = document.createElement('div'); row.className='result';
+      const m = document.createElement('div'); m.className='meta'; m.innerHTML = `<div class="name">${esc(n)}</div><div class="sub">${n.length} chars</div>`;
+      const actions = document.createElement('div'); actions.className='actions';
+      const open = document.createElement('button'); open.className='btn'; open.textContent='Open'; open.onclick = ()=>openPlatform(n);
+      const remove = document.createElement('button'); remove.className='btn'; remove.textContent='Remove'; remove.onclick = ()=>{ favorites = favorites.filter(x=>x!==n); localStorage.setItem(LS_FAVS, JSON.stringify(favorites)); renderFavList(); };
+      actions.appendChild(open); actions.appendChild(remove);
+      row.appendChild(m); row.appendChild(actions);
+      favList.appendChild(row);
+    });
+  }
+  // toggle fav button states in results
+  Array.from(resultsList.querySelectorAll('.result')).forEach(div=>{
+    const txt = div.querySelector('.name').textContent;
+    const btn = div.querySelector('.actions button:last-child');
+    if(btn) btn.textContent = favorites.includes(txt) ? '★' : '☆';
+  });
+}
+
+// ----- Export CSV -----
+function exportCSV(list, filename='usernames.csv'){
+  const csv = ['username'].concat(list).join('\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+
+// ----- Copy all -----
+function copyAll(){
+  if(lastResults.length === 0){ alert('No results to copy'); return; }
+  const txt = lastResults.join('\n');
+  copyToClipboard(txt);
+}
+
+// ----- Shuffle -----
+function shuffleArray(a){
+  for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+  return a;
+}
+
+// ----- Events -----
+genBtn.addEventListener('click', ()=>{
+  savePrefs();
+  const n = parseInt(countInput.value||'40',10) || 40;
+  const res = generateBulk(n);
+  renderResults(res);
+});
+
+bulkCopy.addEventListener('click', copyAll);
+exportCsv.addEventListener('click', ()=>{ if(lastResults.length===0){ alert('No results'); return;} exportCSV(lastResults); });
+clearResultsBtn.addEventListener('click', ()=>{ lastResults = []; renderResults([]); });
+
+showFavsCheckbox.addEventListener('change', ()=>{
+  favPanel.style.display = showFavsCheckbox.checked ? 'block' : 'none';
+  renderFavList();
+});
+clearFavsBtn.addEventListener('click', ()=>{ if(confirm('Clear all favorites?')){ favorites = []; localStorage.setItem(LS_FAVS, JSON.stringify(favorites)); renderFavList(); }});
+favAllBtn.addEventListener('click', ()=>{
+  lastResults.forEach(n=>{ if(!favorites.includes(n)) favorites.push(n); });
+  localStorage.setItem(LS_FAVS, JSON.stringify(favorites));
+  renderFavList();
+});
+downloadFavs.addEventListener('click', ()=>{ if(favorites.length===0){ alert('No favorites'); return;} exportCSV(favorites,'favorites.csv'); });
+
+shuffleBtn.addEventListener('click', ()=>{ lastResults = shuffleArray(lastResults.slice()); renderResults(lastResults); });
+
+// keyboard shortcuts
+window.addEventListener('keydown',(e)=>{
+  if(e.key==='g' || e.key==='G'){ e.preventDefault(); genBtn.click(); }
+  if(e.key==='f' || e.key==='F'){ e.preventDefault(); showFavsCheckbox.checked = !showFavsCheckbox.checked; showFavsCheckbox.dispatchEvent(new Event('change')); }
+  if(e.key==='c' || e.key==='C'){ e.preventDefault(); copyAll(); }
+});
+
+// platform preset change -> update custom URL placeholder
+platformPreset.addEventListener('change', ()=>{
+  const p = platformPreset.value;
+  if(p==='tiktok') customPlatformUrl.value = 'https://www.tiktok.com/@USERNAME';
+  else if(p==='instagram') customPlatformUrl.value = 'https://www.instagram.com/USERNAME';
+  else if(p==='facebook') customPlatformUrl.value = 'https://www.facebook.com/USERNAME';
+  else if(p==='twitter') customPlatformUrl.value = 'https://twitter.com/USERNAME';
+  else customPlatformUrl.value = 'https://platform.com/USERNAME';
+});
+
+// results click to update preview (delegation)
+resultsList.addEventListener('click', (e)=>{
+  const target = e.target.closest('.result');
+  if(!target) return;
+  const name = target.querySelector('.name').textContent;
+  updatePreview(name);
+});
+
+// copy on single copy button
+resultsList.addEventListener('click', (e)=>{
+  if(e.target && e.target.textContent === 'Copy'){
+    const name = e.target.closest('.result').querySelector('.name').textContent;
+    copyToClipboard(name);
+  }
+});
+
+// open on single open button
+resultsList.addEventListener('click', (e)=>{
+  if(e.target && e.target.textContent === 'Open'){
+    const name = e.target.closest('.result').querySelector('.name').textContent;
+    openPlatform(name);
+  }
+});
+
+// ----- Background media control -----
+let bgMediaEnabled = false;
+toggleBgMedia.addEventListener('click', async ()=>{
+  // toggle both audio and video sound (video remains visual)
+  bgMediaEnabled = !bgMediaEnabled;
+  if(bgMediaEnabled){
+    try{
+      await bgMusic.play();
+    }catch(e){ console.warn('Audio autoplay blocked'); }
+    // show player UI
+    playerUI.style.display = 'flex';
+    audioPlayer.src = bgMusic.querySelector('source') ? bgMusic.querySelector('source').src : '';
+    audioPlayer.play().catch(()=>{});
+    muteBtn.textContent = 'Mute';
+    startVisualizer();
+  } else {
+    try{ bgMusic.pause(); }catch(e){}
+    playerUI.style.display = 'none';
+    stopVisualizer();
+  }
+});
+
+// mute button
+muteBtn.addEventListener('click', ()=>{
+  if(bgMusic.muted){ bgMusic.muted = false; audioPlayer.muted = false; muteBtn.textContent = 'Mute'; }
+  else { bgMusic.muted = true; audioPlayer.muted = true; muteBtn.textContent = 'Unmute'; }
+});
+
+// sync audio player controls to bgMusic
+audioPlayer.addEventListener('play', ()=>{ bgMusic.play().catch(()=>{}); });
+audioPlayer.addEventListener('pause', ()=>{ bgMusic.pause(); });
+
+// ----- Visualizer (simple) -----
+let audioCtx, analyser, sourceNode, rafId;
+function startVisualizer(){
+  try{
+    if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 128;
+    if(sourceNode) try{ sourceNode.disconnect(); }catch(e){}
+    sourceNode = audioCtx.createMediaElementSource(audioPlayer);
+    sourceNode.connect(analyser);
+    analyser.connect(audioCtx.destination);
+    renderViz();
+  }catch(e){ console.warn('Visualizer init failed', e); }
+}
+function renderViz(){
+  const bufferLength = analyser.frequencyBinCount;
+  const data = new Uint8Array(bufferLength);
+  visualizer.innerHTML = '';
+  const bars = Math.min(24, bufferLength);
+  for(let i=0;i<bars;i++){
+    const b = document.createElement('div'); b.className='vis-bar'; b.style.width = (100/bars)+'%'; b.style.marginRight='1px'; b.style.background='linear-gradient(180deg,#00c896,#00a8cc)'; b.style.height='4px';
+    visualizer.appendChild(b);
+  }
+  function draw(){
+    analyser.getByteFrequencyData(data);
+    for(let i=0;i<bars;i++){
+      const v = data[Math.floor(i*(bufferLength/bars))];
+      const h = Math.max(4, (v/255)*100);
+      const el = visualizer.children[i];
+      if(el) el.style.height = h + '%';
+    }
+    rafId = requestAnimationFrame(draw);
+  }
+  cancelAnimationFrame(rafId);
+  draw();
+}
+function stopVisualizer(){ try{ cancelAnimationFrame(rafId); }catch(e){} visualizer.innerHTML=''; }
+
+// ----- Init -----
+function init(){
+  // load prefs/favs
+  loadPrefs();
+  favorites = JSON.parse(localStorage.getItem(LS_FAVS) || '[]');
+  renderFavList();
+  // default: show player hidden (until user enables)
+  playerUI.style.display = 'none';
+  // ensure video muted (visual only) - user can enable audio
+  bgVideo.muted = true;
+  // attach click-once to allow autoplay to start audio when user interacts
+  window.addEventListener('click', async function once(){
+    try{ await bgMusic.play(); bgMusic.pause(); }catch(e){}
+    window.removeEventListener('click', once);
+  }, {once:true});
+}
+init();
+
+// ----- small helper: generate on load sample (but not autoplay) -----
+(function sampleGen(){
+  const sample = generateBulk(8);
+  renderResults(sample);
+})();
+
+</script>
+</body>
+</html>

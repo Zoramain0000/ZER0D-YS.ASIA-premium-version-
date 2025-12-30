@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Steganography Tool — Cyber Tools</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{
+      font-family: "Segoe UI", Roboto, system-ui, -apple-system;
+      background: black;
+      color: #c58b00;
+      min-height:100vh;
+      padding: 28px;
+    }
+
+    video.bg-video{
+      position:fixed;inset:0;width:100vw;height:100vh;object-fit:cover;z-index:-3;filter:brightness(.45) contrast(1.05)
+    }
+
+    .container{
+      max-width:1000px;margin:40px auto;padding:20px;background:rgba(0,0,0,0.45);
+      border:1px solid #c58b00;border-radius:12px;backdrop-filter:blur(6px);
+      box-shadow:0 10px 30px rgba(0,0,0,0.6);
+    }
+
+    h1{color:#ffc107;text-align:center;margin-bottom:12px;text-shadow:0 0 8px #00d4ff}
+    p.lead{color:#ffd78a;text-align:center;margin-bottom:16px}
+
+    .grid{display:grid;grid-template-columns:1fr 360px;gap:18px}
+    @media(max-width:880px){.grid{grid-template-columns:1fr}}
+
+    .panel{
+      background:rgba(0,0,0,0.35);padding:14px;border-radius:10px;border:1px solid #c58b00;
+    }
+
+    label{display:block;color:#ffc107;font-weight:700;margin-bottom:6px}
+    textarea, input[type="text"], input[type="password"], input[type="file"]{
+      width:100%;padding:10px;border-radius:8px;border:1px solid #c58b00;background:#0b0b0b;color:#ffc107;
+      margin-bottom:10px;font-family:monospace;
+    }
+
+    textarea{min-height:140px;resize:vertical}
+
+    .btn{
+      display:inline-block;padding:10px 14px;border-radius:8px;border:1px solid #c58b00;
+      background:rgba(0,0,0,0.55);color:#c58b00;font-weight:700;cursor:pointer;margin:6px 6px 6px 0;
+    }
+    .btn:hover{background:#c58b00;color:#000}
+
+    .dropzone{
+      border:2px dashed rgba(197,139,0,0.25);border-radius:8px;padding:16px;text-align:center;color:#ffd77a;
+      background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(0,0,0,0.02));
+      margin-bottom:12px;
+    }
+    .dropzone.dragover{border-color:#00d4ff;color:#00d4ff}
+
+    .preview{display:block;margin:8px auto 0;max-width:100%;border-radius:8px;border:1px solid rgba(197,139,0,0.12)}
+
+    .meta{font-size:13px;color:#cfeadf;margin-top:6px}
+    .status{margin-top:8px;color:#00ffcc;min-height:20px}
+
+    .small{font-size:13px;color:#ffd77a}
+    .note{font-size:12px;color:#bfa46a;margin-top:6px}
+
+    .right-col .panel{margin-bottom:12px}
+    .capacity{font-weight:700;color:#ffd77a}
+
+    footer{text-align:center;padding:18px;color:#c58b00;margin-top:18px}
+  </style>
+</head>
+<body>
+  <video class="bg-video" autoplay loop muted playsinline>
+    <source src="background/1761817527453041720p.mp4" type="video/mp4">
+  </video>
+
+  <audio id="bg-music" loop>
+    <source src="background/Programming___Coding___Hacking_music_vol.18__ANONYMOUS_HEADQUARTERS_(48k).mp3" type="audio/mpeg">
+  </audio>
+
+  <div class="container" role="main">
+    <h1>🕵️‍♂️ Steganography Tool</h1>
+    <p class="lead">Embed text inside an image (LSB). Optional passphrase obfuscation. No navigation — only main tool.</p>
+
+    <div class="grid">
+      <div>
+        <div class="panel">
+          <label>1) Choose or drop a cover image (PNG or JPEG)</label>
+          <div id="dropzone" class="dropzone">Drag & drop image here, or <input id="fileInput" type="file" accept="image/*" style="display:inline-block;width:auto;vertical-align:middle;margin-left:8px"></div>
+          <img id="preview" class="preview" alt="image preview" style="display:none">
+
+          <div class="meta" id="imgMeta"></div>
+
+          <label>2) Message to embed</label>
+          <textarea id="message" placeholder="Type or paste message to hide..."></textarea>
+
+          <label>3) Optional passphrase (obfuscation)</label>
+          <input id="passphrase" type="password" placeholder="Optional — XOR obfuscation key">
+
+          <div class="note">Embedding stores message length (32-bit) + message bytes. Passphrase XOR is not encryption — it's simple obfuscation to deter casual extraction.</div>
+
+          <div style="margin-top:12px">
+            <button id="encodeBtn" class="btn">Embed Message → Create Stego Image</button>
+            <button id="downloadBtn" class="btn" disabled>Download Stego PNG</button>
+            <button id="clearBtn" class="btn">Clear</button>
+          </div>
+
+          <div class="status" id="status">Ready.</div>
+        </div>
+
+        <div class="panel" style="margin-top:12px">
+          <label>Stego image preview / decode input</label>
+          <input id="stegoFile" type="file" accept="image/*">
+          <img id="stegoPreview" class="preview" alt="stego preview" style="display:none">
+          <div style="margin-top:8px">
+            <button id="decodeBtn" class="btn">Decode Hidden Message</button>
+          </div>
+
+          <label style="margin-top:10px">Decoded message</label>
+          <textarea id="decoded" readonly placeholder="Decoded message will appear here..."></textarea>
+          <div class="small">If you used a passphrase when embedding, enter it in the passphrase box above before decoding.</div>
+        </div>
+      </div>
+
+      <div class="right-col">
+        <div class="panel">
+          <label>Image capacity</label>
+          <div class="capacity" id="capacity">No image loaded</div>
+          <div class="note">Each pixel stores up to 3 bits (R,G,B LSB). Maximum message bytes = floor((width*height*3 - 32) / 8).</div>
+        </div>
+
+        <div class="panel">
+          <label>How it works</label>
+          <div class="small">
+            This tool uses the least-significant bit of R,G,B channels to store data. The first 32 bits store the message length (in bytes). The message bytes follow. Images are converted to PNG for download to avoid further compression loss.
+          </div>
+        </div>
+
+        <div class="panel">
+          <label>Tips</label>
+          <ul class="small">
+            <li>Use large PNG images for better capacity and robustness.</li>
+            <li>JPEG artifacts may break hidden data if recompressed — we convert and download as PNG to preserve bits.</li>
+            <li>Passphrase adds only byte-wise XOR obfuscation — use encryption beforehand for real secrecy.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>© 2025 Cyber Tools Toolkit — Steganography Module</footer>
+
+<script>
+  // play bg music on first click
+  window.addEventListener('click', ()=>{document.getElementById('bg-music').play().catch(()=>{});},{once:true});
+
+  // DOM refs
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('fileInput');
+  const preview = document.getElementById('preview');
+  const imgMeta = document.getElementById('imgMeta');
+  const capacityText = document.getElementById('capacity');
+
+  const messageEl = document.getElementById('message');
+  const passEl = document.getElementById('passphrase');
+  const encodeBtn = document.getElementById('encodeBtn');
+  const downloadBtn = document.getElementById('downloadBtn');
+  const clearBtn = document.getElementById('clearBtn');
+
+  const stegoFile = document.getElementById('stegoFile');
+  const stegoPreview = document.getElementById('stegoPreview');
+  const decodeBtn = document.getElementById('decodeBtn');
+  const decodedEl = document.getElementById('decoded');
+
+  const status = document.getElementById('status');
+
+  let loadedImage = null;     // HTMLImageElement
+  let canvas = null;          // working canvas
+  let stegoBlobUrl = null;
+
+  function setStatus(msg){
+    status.textContent = msg;
+  }
+
+  // drag/drop UI
+  dropzone.addEventListener('dragover', (e)=>{
+    e.preventDefault(); dropzone.classList.add('dragover');
+  });
+  dropzone.addEventListener('dragleave', ()=> dropzone.classList.remove('dragover'));
+  dropzone.addEventListener('drop', (e)=>{
+    e.preventDefault(); dropzone.classList.remove('dragover');
+    const f = e.dataTransfer.files && e.dataTransfer.files[0];
+    if(f) loadCoverImage(f);
+  });
+
+  fileInput.addEventListener('change', (e)=>{
+    const f = e.target.files && e.target.files[0];
+    if(f) loadCoverImage(f);
+    fileInput.value = '';
+  });
+
+  stegoFile.addEventListener('change', async (e)=>{
+    const f = e.target.files && e.target.files[0];
+    if(!f) return;
+    await loadStegoPreview(f);
+    stegoFile.value = '';
+  });
+
+  async function loadCoverImage(file){
+    if(!file.type.startsWith('image/')) { setStatus('Not an image file'); return; }
+    setStatus('Loading image...');
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = ()=>{
+      URL.revokeObjectURL(url);
+      loadedImage = img;
+      preview.src = img.src;
+      preview.style.display = 'block';
+      // create working canvas sized to image
+      canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      updateMeta();
+      setStatus('Image loaded.');
+      downloadBtn.disabled = true;
+      if(stegoBlobUrl){ URL.revokeObjectURL(stegoBlobUrl); stegoBlobUrl = null; }
+    };
+    img.onerror = ()=>{
+      URL.revokeObjectURL(url); setStatus('Failed to load image.');
+    };
+    img.src = url;
+  }
+
+  async function loadStegoPreview(file){
+    if(!file.type.startsWith('image/')) { setStatus('Not an image file'); return; }
+    setStatus('Loading stego image preview...');
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = ()=>{
+      URL.revokeObjectURL(url);
+      stegoPreview.src = img.src; stegoPreview.style.display = 'block';
+      setStatus('Stego image loaded for decoding.');
+    };
+    img.onerror = ()=>{ URL.revokeObjectURL(url); setStatus('Failed to load stego file.'); };
+    img.src = url;
+  }
+
+  function updateMeta(){
+    if(!canvas) { capacityText.textContent = 'No image loaded'; imgMeta.textContent=''; return; }
+    const w = canvas.width, h = canvas.height;
+    const capacityBits = w*h*3; // using R,G,B LSB
+    const capacityBytes = Math.floor((capacityBits - 32) / 8); // subtract 32 bits for length
+    capacityText.textContent = `${w} × ${h} — max ${capacityBytes} bytes`;
+    imgMeta.innerHTML = `Dimensions: <strong>${w} × ${h}</strong> — Capacity: <strong>${capacityBytes}</strong> bytes`;
+  }
+
+  // helper: text -> Uint8Array
+  function textToBytes(str){
+    return new TextEncoder().encode(str);
+  }
+  function bytesToText(bytes){
+    return new TextDecoder().decode(bytes);
+  }
+
+  // simple key derivation: create repeating key bytes from passphrase UTF-8
+  function deriveKeyBytes(pass, length){
+    if(!pass) return new Uint8Array(length);
+    const pbytes = textToBytes(pass);
+    const out = new Uint8Array(length);
+    for(let i=0;i<length;i++) out[i] = pbytes[i % pbytes.length] ^ ((i*31 + 17) & 0xFF);
+    return out;
+  }
+
+  // embed message bytes into image data's LSBs (R,G,B channels)
+  function embedMessageToImageData(imageData, messageBytes, passphrase){
+    const pixelCount = imageData.width * imageData.height;
+    const bitsCapacity = pixelCount * 3; // 3 bits per pixel (R,G,B)
+    const totalBitsNeeded = 32 + messageBytes.length * 8; // 32 bits for length + data
+    if(totalBitsNeeded > bitsCapacity) return false;
+
+    // create data view
+    const data = imageData.data; // Uint8ClampedArray, RGBA...
+    // optionally obfuscate message with passphrase
+    let payload = messageBytes;
+    if(passphrase && passphrase.length){
+      const key = deriveKeyBytes(passphrase, messageBytes.length);
+      payload = new Uint8Array(messageBytes.length);
+      for(let i=0;i<messageBytes.length;i++) payload[i] = messageBytes[i] ^ key[i];
+    }
+
+    // first 32 bits store payload length (unsigned 32-bit)
+    const len = messageBytes.length >>> 0;
+    const lenBits = [];
+    for(let i=31;i>=0;i--) lenBits.push((len >> i) & 1);
+
+    // prepare data bits array: length bits then payload bits (MSB first)
+    const dataBits = [];
+    dataBits.push(...lenBits);
+    for(let i=0;i<payload.length;i++){
+      for(let b=7;b>=0;b--) dataBits.push((payload[i] >> b) & 1);
+    }
+
+    // write bits into LSBs of R,G,B channels
+    let bitIndex = 0;
+    for(let px = 0; px < pixelCount && bitIndex < dataBits.length; px++){
+      const offset = px * 4;
+      // R
+      if(bitIndex < dataBits.length){ data[offset] = (data[offset] & 0xFE) | dataBits[bitIndex++]; }
+      // G
+      if(bitIndex < dataBits.length){ data[offset+1] = (data[offset+1] & 0xFE) | dataBits[bitIndex++]; }
+      // B
+      if(bitIndex < dataBits.length){ data[offset+2] = (data[offset+2] & 0xFE) | dataBits[bitIndex++]; }
+      // leave alpha untouched
+    }
+    return true;
+  }
+
+  // extract message bytes from imageData
+  function extractMessageFromImageData(imageData, passphrase){
+    const data = imageData.data;
+    const pixelCount = imageData.width * imageData.height;
+    const bits = [];
+
+    // read first 32 bits for length
+    let bitIndex = 0;
+    let len = 0;
+    // read length bits (32)
+    for(let px = 0; px < pixelCount && bitIndex < 32; px++){
+      const off = px * 4;
+      // R
+      if(bitIndex < 32){ len = (len << 1) | (data[off] & 1); bitIndex++; }
+      // G
+      if(bitIndex < 32){ len = (len << 1) | (data[off+1] & 1); bitIndex++; }
+      // B
+      if(bitIndex < 32){ len = (len << 1) | (data[off+2] & 1); bitIndex++; }
+    }
+    if(bitIndex < 32) return { error: 'Image too small or corrupted (no length header).' };
+    // now read len * 8 bits
+    const totalDataBits = len * 8;
+    const payloadBits = new Array(totalDataBits);
+    let pIdx = 0;
+    for(let px = Math.ceil(32/3); px < pixelCount && pIdx < totalDataBits; px++){
+      const off = px * 4;
+      if(pIdx < totalDataBits){ payloadBits[pIdx++] = data[off] & 1; }
+      if(pIdx < totalDataBits){ payloadBits[pIdx++] = data[off+1] & 1; }
+      if(pIdx < totalDataBits){ payloadBits[pIdx++] = data[off+2] & 1; }
+    }
+    if(pIdx < totalDataBits) return { error: 'Incomplete data — expected ' + len + ' bytes but found fewer.' };
+    // reconstruct bytes
+    const bytes = new Uint8Array(len);
+    for(let i=0;i<len;i++){
+      let val = 0;
+      for(let b=0;b<8;b++){
+        val = (val << 1) | payloadBits[i*8 + b];
+      }
+      bytes[i] = val;
+    }
+    // un-obfuscate if passphrase provided
+    let finalBytes = bytes;
+    if(passphrase && passphrase.length){
+      const key = deriveKeyBytes(passphrase, bytes.length);
+      finalBytes = new Uint8Array(bytes.length);
+      for(let i=0;i<bytes.length;i++) finalBytes[i] = bytes[i] ^ key[i];
+    }
+    return { bytes: finalBytes };
+  }
+
+  // encode button handler
+  encodeBtn.addEventListener('click', ()=>{
+    if(!canvas){ setStatus('No cover image loaded.'); return; }
+    const msg = messageEl.value || '';
+    if(!msg){ setStatus('Enter a message to embed.'); return; }
+    const msgBytes = textToBytes(msg);
+    const ctx = canvas.getContext('2d');
+    const imgData = ctx.getImageData(0,0,canvas.width,canvas.height);
+    const success = embedMessageToImageData(imgData, msgBytes, passEl.value);
+    if(!success){ setStatus('Message too large for this image. Reduce message size or use larger image.'); return; }
+    ctx.putImageData(imgData,0,0);
+    // convert canvas to PNG blob and enable download
+    canvas.toBlob((blob)=>{
+      if(!blob){ setStatus('Failed to generate stego image.'); return; }
+      if(stegoBlobUrl) URL.revokeObjectURL(stegoBlobUrl);
+      stegoBlobUrl = URL.createObjectURL(blob);
+      downloadBtn.disabled = false;
+      // preview stego
+      document.getElementById('stegoPreview').src = stegoBlobUrl;
+      document.getElementById('stegoPreview').style.display = 'block';
+      setStatus('Message embedded — preview available. Click "Download Stego PNG" to save.');
+    }, 'image/png', 1.0);
+  });
+
+  // download stego
+  downloadBtn.addEventListener('click', ()=>{
+    if(!stegoBlobUrl){ setStatus('No stego image to download.'); return; }
+    const a = document.createElement('a');
+    a.href = stegoBlobUrl;
+    a.download = 'stego-image.png';
+    document.body.appendChild(a); a.click(); a.remove();
+    setStatus('Downloaded stego-image.png');
+  });
+
+  // decode button handler
+  decodeBtn.addEventListener('click', async ()=>{
+    setStatus('Decoding...');
+    // prefer stegoPreview if shown, else try canvas (if user encoded in this session)
+    try{
+      let workImg = null;
+      if(stegoPreview && stegoPreview.src && stegoPreview.style.display !== 'none'){
+        workImg = new Image();
+        await new Promise((res, rej) => {
+          workImg.onload = res; workImg.onerror = rej;
+          workImg.src = stegoPreview.src;
+        });
+      } else if(canvas){
+        // use current canvas
+        workImg = new Image();
+        workImg.src = canvas.toDataURL('image/png');
+        await new Promise((res, rej)=>{ workImg.onload = res; workImg.onerror = rej; });
+      } else {
+        setStatus('No stego image to decode. Load the stego image using the file picker.');
+        return;
+      }
+      // draw to a temporary canvas
+      const c = document.createElement('canvas');
+      c.width = workImg.naturalWidth; c.height = workImg.naturalHeight;
+      const ctx = c.getContext('2d');
+      ctx.drawImage(workImg,0,0);
+      const imgData = ctx.getImageData(0,0,c.width,c.height);
+      const res = extractMessageFromImageData(imgData, passEl.value);
+      if(res.error){ setStatus('❌ ' + res.error); decodedEl.value = ''; return; }
+      decodedEl.value = bytesToText(res.bytes);
+      setStatus('✅ Message decoded. Review the decoded message box.');
+    }catch(err){
+      console.error(err);
+      setStatus('Decode failed: ' + (err && err.message ? err.message : err));
+    }
+  });
+
+  // clear button
+  clearBtn.addEventListener('click', ()=>{
+    loadedImage = null; canvas = null;
+    preview.src = ''; preview.style.display = 'none';
+    stegoPreview.src = ''; stegoPreview.style.display = 'none';
+    messageEl.value = ''; decodedEl.value = ''; passEl.value = '';
+    document.getElementById('imgMeta').textContent = '';
+    capacityText.textContent = 'No image loaded';
+    downloadBtn.disabled = true; setStatus('Cleared.');
+    if(stegoBlobUrl){ URL.revokeObjectURL(stegoBlobUrl); stegoBlobUrl = null; }
+  });
+
+  // when page resizes or image loads, update meta
+  window.addEventListener('resize', updateMeta);
+</script>
+</body>
+</html>

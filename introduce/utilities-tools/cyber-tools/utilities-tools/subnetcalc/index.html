@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Subnet Calculator</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #000;
+      color: #c58b00;
+      overflow-x: hidden;
+    }
+
+    video#bg-video {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      min-width: 100vw;
+      min-height: 100vh;
+      object-fit: cover;
+      opacity: 0.15;
+      z-index: -1;
+    }
+
+    audio#bg-music { display: none; }
+
+    .container {
+      max-width: 900px;
+      margin: 50px auto;
+      background: rgba(0, 0, 0, 0.2);
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 0 25px rgba(0, 0, 0, 0.2);
+    }
+
+    h1, label { color: #c58b00; }
+
+    input[type="text"], select {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      background: rgba(0, 0, 0, 0);
+      color: red;
+      border: 1px solid #c58b00;
+      border-radius: 5px;
+      font-size: 1rem;
+    }
+
+    button {
+      background: rgba(0, 0, 0, 0.6);
+      border: 1px solid #c58b00;
+      color: #c58b00;
+      padding: 10px 15px;
+      margin: 5px 5px 15px 0;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+
+    button:hover {
+      background: rgba(0, 0, 0, 0.7);
+      color: red;
+    }
+
+    .result, .history-item {
+      background: rgba(0, 0, 0, 0.1);
+      padding: 10px;
+      margin-top: 10px;
+      border: 1px solid #c58b00;
+      color: #ff8800;
+      font-family: monospace;
+      white-space: pre-wrap;
+    }
+
+    .history { margin-top: 20px; }
+
+    @media (max-width: 768px) {
+      .container { margin: 20px 10px; padding: 15px; }
+      button { width: 100%; margin: 8px 0; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Background Video -->
+  <video id="bg-video" autoplay muted loop playsinline>
+    <source src="background/1761817527453041720p.mp4" type="video/mp4">
+  </video>
+
+  <!-- Background Music -->
+  <audio id="bg-music" autoplay loop>
+    <source src="background/Programming___Coding___Hacking_music_vol.18__ANONYMOUS_HEADQUARTERS_(48k).mp3" type="audio/mp3">
+  </audio>
+
+  <div class="container">
+    <h1>Subnet Calculator</h1>
+
+    <label>Enter IP Address:</label>
+    <input type="text" id="ip" placeholder="e.g. 192.168.1.1">
+
+    <label>Select Subnet Mask (CIDR):</label>
+    <select id="cidr">
+      ${Array.from({ length: 33 }, (_, i) => `<option value="${i}">/${i}</option>`).join('')}
+    </select>
+
+    <div>
+      <button onclick="calculateSubnet()">Calculate</button>
+      <button onclick="clearFields()">Clear</button>
+      <button onclick="downloadResult()">Download</button>
+    </div>
+
+    <div class="result" id="result">Waiting for input...</div>
+
+    <div class="history">
+      <h3>History</h3>
+      <div id="history-box"></div>
+    </div>
+  </div>
+
+  <script>
+    const resultBox = document.getElementById("result");
+    const historyBox = document.getElementById("history-box");
+    const history = [];
+
+    function ipToBinary(ip) {
+      return ip.split('.').map(oct => ('00000000' + parseInt(oct).toString(2)).slice(-8)).join('');
+    }
+
+    function binaryToIp(bin) {
+      return [0, 8, 16, 24].map(i => parseInt(bin.slice(i, i + 8), 2)).join('.');
+    }
+
+    function calculateSubnet() {
+      const ip = document.getElementById("ip").value.trim();
+      const cidr = parseInt(document.getElementById("cidr").value);
+
+      if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(ip)) {
+        alert("Invalid IP address.");
+        return;
+      }
+
+      const ipBin = ipToBinary(ip);
+      const subnetBin = '1'.repeat(cidr).padEnd(32, '0');
+      const netAddrBin = [...ipBin].map((b, i) => b & subnetBin[i]).join('');
+      const broadcastBin = [...ipBin].map((b, i) => subnetBin[i] === '1' ? b : '1').join('');
+
+      const network = binaryToIp(netAddrBin);
+      const broadcast = binaryToIp(broadcastBin);
+      const usableHosts = cidr < 31 ? Math.pow(2, 32 - cidr) - 2 : (cidr === 31 ? 2 : 1);
+      const firstHost = cidr >= 31 ? "N/A" : binaryToIp((parseInt(netAddrBin, 2) + 1).toString(2).padStart(32, '0'));
+      const lastHost = cidr >= 31 ? "N/A" : binaryToIp((parseInt(broadcastBin, 2) - 1).toString(2).padStart(32, '0'));
+
+      const output = `IP Address      : ${ip}
+CIDR Notation   : /${cidr}
+Subnet Mask     : ${binaryToIp(subnetBin)}
+Network Address : ${network}
+Broadcast Addr  : ${broadcast}
+First Host      : ${firstHost}
+Last Host       : ${lastHost}
+Usable Hosts    : ${usableHosts}
+`;
+
+      resultBox.textContent = output;
+      logHistory(ip, cidr, network, broadcast);
+    }
+
+    function logHistory(ip, cidr, net, bc) {
+      const now = new Date().toLocaleTimeString();
+      const entry = `${now} → ${ip}/${cidr} → Net: ${net}, Broadcast: ${bc}`;
+      history.unshift(entry);
+      updateHistory();
+    }
+
+    function updateHistory() {
+      historyBox.innerHTML = "";
+      history.slice(0, 8).forEach(entry => {
+        const div = document.createElement("div");
+        div.className = "history-item";
+        div.textContent = entry;
+        historyBox.appendChild(div);
+      });
+    }
+
+    function clearFields() {
+      document.getElementById("ip").value = "";
+      resultBox.textContent = "Waiting for input...";
+    }
+
+    function downloadResult() {
+      if (!resultBox.textContent.includes("IP Address")) {
+        alert("No result to download.");
+        return;
+      }
+      const blob = new Blob([resultBox.textContent], { type: "text/plain" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "subnet_result.txt";
+      a.click();
+    }
+  </script>
+</body>
+</html>

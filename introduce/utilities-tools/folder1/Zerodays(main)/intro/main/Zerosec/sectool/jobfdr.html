@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Worldwide Job Finder Tool</title>
+<style>
+  /* Basic Reset */
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0; padding: 0;
+    background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+    color: #ff0000;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  header {
+    background-color: #0000002f;
+    color: rgb(255, 0, 0);
+    padding: 1rem 2rem;
+    text-align: center;
+    font-size: 1.8rem;
+    font-weight: 700;
+  }
+  main {
+    flex-grow: 1;
+    max-width: 900px;
+    margin: 1rem auto 3rem;
+    padding: 0 1rem;
+    width: 100%;
+  }
+  form {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+  input[type="text"] {
+    flex: 1 1 200px;
+    padding: 0.6rem 0.8rem;
+    font-size: 1rem;
+    border: 1.5px solid #ff0000;
+    border-radius: 4px;
+    transition: border-color 0.3s ease;
+  }
+  input[type="text"]:focus {
+    border-color: #ff0000;
+    outline: none;
+  }
+  button {
+    background-color: #ff0000;
+    border: none;
+    color: rgb(0, 255, 55);
+    padding: 0 1.2rem;
+    font-size: 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    flex-shrink: 0;
+  }
+  button:hover {
+    background-color: #00000000;
+  }
+  .jobs-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .job-item {
+    background: rgba(2, 1, 1, 0);
+    border-radius: 6px;
+    box-shadow: 0 2px 6px rgb(0 0 0 / 0.07);
+    margin-bottom: 1rem;
+    padding: 1rem 1.2rem;
+    transition: box-shadow 0.2s ease;
+  }
+  .job-item:hover {
+    box-shadow: 0 5px 15px rgb(0 0 0 / 0.12);
+  }
+  .job-title {
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin: 0 0 0.2rem;
+  }
+  .job-company {
+    font-weight: 600;
+    color: #e90000;
+    margin-right: 1rem;
+  }
+  .job-location {
+    color: #f80000;
+  }
+  .job-snippet {
+    margin-top: 0.5rem;
+    font-size: 0.95rem;
+    line-height: 1.3;
+    color: #ff0000;
+  }
+  .load-more {
+    display: block;
+    margin: 2rem auto 0;
+    padding: 0.8rem 1.8rem;
+    font-size: 1.1rem;
+    border-radius: 5px;
+    border: none;
+    background-color: #2a31352a;
+    color: rgb(255, 0, 0);
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  .load-more:hover {
+    background-color: #a3000050;
+  }
+  .loading {
+    text-align: center;
+    font-size: 1.2rem;
+    margin-top: 2rem;
+    color: #ff0000;
+  }
+  footer {
+    text-align: center;
+    padding: 1rem 2rem;
+    font-size: 0.9rem;
+    color: #ff0000;
+    border-top: 1px solid #ff0000;
+  }
+  @media (max-width: 600px) {
+    form {
+      flex-direction: column;
+    }
+    button {
+      width: 100%;
+      flex-shrink: 1;
+    }
+  }
+</style>
+</head>
+<body>
+<header>Worldwide Job Finder Tool</header>
+<main>
+  <form id="searchForm">
+    <input type="text" id="keyword" placeholder="Job title, skills, keywords..." autocomplete="off" required />
+    <input type="text" id="location" placeholder="Location (optional)" autocomplete="off" />
+    <button type="submit">Search</button>
+  </form>
+  <ul id="jobsList" class="jobs-list"></ul>
+  <button id="loadMoreBtn" class="load-more" style="display:none;">Load More</button>
+  <div id="loading" class="loading" style="display:none;">Loading jobs...</div>
+</main>
+<footer>Powered by Adzuna & JSearch APIs | No backend, purely frontend demo</footer>
+
+<script>
+(() => {
+  const ADZUNA_APP_ID = 'dd71a6ed';  // Replace with your Adzuna App ID
+  const ADZUNA_APP_KEY = '9d724061cc7e3d806da24705bff66587'; // Replace with your Adzuna App Key
+
+  // JSearch API info from RapidAPI
+  const JSEARCH_API_KEY = 'YOUR_RAPIDAPI_KEY'; // Replace with your RapidAPI Key
+  const JSEARCH_API_HOST = 'jsearch.p.rapidapi.com';
+
+  // DOM Elements
+  const searchForm = document.getElementById('searchForm');
+  const jobsList = document.getElementById('jobsList');
+  const loadMoreBtn = document.getElementById('loadMoreBtn');
+  const loadingDiv = document.getElementById('loading');
+
+  // State for pagination
+  let currentPageAdzuna = 1;
+  let currentPageJSearch = 1;
+  let keyword = '';
+  let location = '';
+  let isLoading = false;
+
+  // Job results aggregated and shown to user
+  let jobsData = [];
+
+  // Util: sanitize text
+  function escapeHTML(str) {
+    if (!str) return '';
+    return str.replace(/[&<>"']/g, function (m) {
+      return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[m];
+    });
+  }
+
+  // Util: Format job item HTML
+  function createJobHTML(job) {
+    const title = escapeHTML(job.title || 'Unknown title');
+    const company = escapeHTML(job.company || 'Unknown company');
+    const location = escapeHTML(job.location || 'Unknown location');
+    const snippet = escapeHTML(job.description || job.snippet || '').substring(0, 250) + (job.description?.length > 250 ? '...' : '');
+    const redirectUrl = job.redirect_url || job.url || '#';
+
+    return `
+      <li class="job-item">
+        <a href="${redirectUrl}" target="_blank" rel="noopener noreferrer" class="job-title">${title}</a>
+        <div>
+          <span class="job-company">${company}</span>
+          <span class="job-location">${location}</span>
+        </div>
+        <p class="job-snippet">${snippet}</p>
+      </li>
+    `;
+  }
+
+  // Fetch jobs from Adzuna API (https://developer.adzuna.com/overview)
+  async function fetchAdzunaJobs(keyword, location, page = 1) {
+    // Adzuna API endpoint & params
+    const country = 'gb'; // Use 'gb' by default for demo, can be 'us', 'ca', etc. Adzuna supports ~16 countries.
+    // Note: Worldwide support is limited in Adzuna; can extend by country code logic if needed.
+
+    // Location param if provided, else blank
+    const whereParam = location ? `&where=${encodeURIComponent(location)}` : '';
+
+    const url = `https://api.adzuna.com/v1/api/jobs/${country}/search/${page}?app_id=${ADZUNA_APP_ID}&app_key=${ADZUNA_APP_KEY}&results_per_page=10&what=${encodeURIComponent(keyword)}${whereParam}&content-type=application/json`;
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Adzuna API error');
+      const data = await res.json();
+      if (!data.results) return [];
+      // Map to uniform job object
+      return data.results.map(job => ({
+        title: job.title,
+        company: job.company.display_name,
+        location: job.location.display_name,
+        description: job.description,
+        redirect_url: job.redirect_url,
+      }));
+    } catch (e) {
+      console.warn('Adzuna fetch error:', e);
+      return [];
+    }
+  }
+
+  // Fetch jobs from JSearch API via RapidAPI
+  async function fetchJSearchJobs(keyword, location, page = 1) {
+    const url = `https://jsearch.p.rapidapi.com/search?query=${encodeURIComponent(keyword)}${location ? '%20' + encodeURIComponent(location) : ''}&page=${page}&num_pages=1&num_jobs=10`;
+    try {
+      const res = await fetch(url, {
+        headers: {
+          'X-RapidAPI-Key':"5b8890ad95mshf0ebc8a6ba4a937p1be967jsn622734b3efa6",
+          'X-RapidAPI-Host': "jsearch.p.rapidapi.com",
+        }
+      });
+      if (!res.ok) throw new Error('JSearch API error');
+      const data = await res.json();
+      if (!data.data) return [];
+      // Map to uniform job object
+      return data.data.map(job => ({
+        title: job.job_title,
+        company: job.employer_name,
+        location: job.job_city + (job.job_state ? ', ' + job.job_state : '') + (job.job_country ? ', ' + job.job_country : ''),
+        snippet: job.job_description,
+        url: job.job_apply_link || job.job_google_link || job.job_url,
+      }));
+    } catch (e) {
+      console.warn('JSearch fetch error:', e);
+      return [];
+    }
+  }
+
+  // Combine results from multiple sources, deduplicate by title+company+location
+  function combineJobs(adzunaJobs, jsearchJobs) {
+    const combined = [...adzunaJobs];
+    const seen = new Set(adzunaJobs.map(j => (j.title + j.company + j.location).toLowerCase()));
+    for (const job of jsearchJobs) {
+      const key = (job.title + job.company + job.location).toLowerCase();
+      if (!seen.has(key)) {
+        combined.push(job);
+        seen.add(key);
+      }
+    }
+    return combined;
+  }
+
+  // Render jobs on page (append)
+  function renderJobs(jobs, append = true) {
+    if (!append) jobsList.innerHTML = '';
+    jobs.forEach(job => {
+      jobsList.insertAdjacentHTML('beforeend', createJobHTML(job));
+    });
+  }
+
+  // Main load jobs function for current page
+  async function loadJobs(append = true) {
+    if (isLoading) return;
+    isLoading = true;
+    loadingDiv.style.display = 'block';
+    loadMoreBtn.style.display = 'none';
+
+    const [adzunaResults, jsearchResults] = await Promise.all([
+      fetchAdzunaJobs(keyword, location, currentPageAdzuna),
+      fetchJSearchJobs(keyword, location, currentPageJSearch),
+    ]);
+
+    // Increase pages for next fetch
+    currentPageAdzuna++;
+    currentPageJSearch++;
+
+    // Combine & deduplicate
+    const newJobs = combineJobs(adzunaResults, jsearchResults);
+
+    if (newJobs.length === 0 && !append) {
+      jobsList.innerHTML = `<li style="padding:1rem; color:#999;">No jobs found for "${keyword}" ${location ? 'in ' + location : ''}.</li>`;
+      loadMoreBtn.style.display = 'none';
+      loadingDiv.style.display = 'none';
+      isLoading = false;
+      return;
+    }
+
+    if (!append) {
+      jobsData = newJobs;
+      renderJobs(jobsData, false);
+    } else {
+      // Append new jobs but avoid duplicates in jobsData
+      const existingKeys = new Set(jobsData.map(j => (j.title + j.company + j.location).toLowerCase()));
+      const filteredNewJobs = newJobs.filter(j => !existingKeys.has((j.title + j.company + j.location).toLowerCase()));
+      jobsData = [...jobsData, ...filteredNewJobs];
+      renderJobs(filteredNewJobs, true);
+    }
+
+    loadingDiv.style.display = 'none';
+    isLoading = false;
+
+    // Show Load More if results exist
+    if (newJobs.length > 0) {
+      loadMoreBtn.style.display = 'inline-block';
+    } else {
+      loadMoreBtn.style.display = 'none';
+    }
+  }
+
+  // Event: form submit
+  searchForm.addEventListener('submit', e => {
+    e.preventDefault();
+    keyword = searchForm.keyword.value.trim();
+    location = searchForm.location.value.trim();
+    if (!keyword) return;
+
+    currentPageAdzuna = 1;
+    currentPageJSearch = 1;
+    jobsData = [];
+    jobsList.innerHTML = '';
+    loadMoreBtn.style.display = 'none';
+    loadJobs(false);
+  });
+
+  // Event: load more button
+  loadMoreBtn.addEventListener('click', () => {
+    loadJobs(true);
+  });
+
+})();
+</script>
+</body>
+</html>

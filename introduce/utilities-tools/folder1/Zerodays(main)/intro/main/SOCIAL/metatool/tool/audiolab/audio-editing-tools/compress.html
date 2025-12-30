@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Advanced Audio Compressor</title>
+<style>
+  body {
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+    color: red;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+  }
+  header {
+    padding: 1rem;
+    font-size: 1.5rem;
+    font-weight: bold;
+  }
+  main {
+background: rgba(0, 0, 0, 0.5);
+    border-radius: 8px;
+    padding: 1rem;
+    width: 90%;
+    max-width: 600px;
+    box-sizing: border-box;
+  }
+  input[type="file"] {
+    margin-bottom: 1rem;
+  }
+  audio {
+    width: 100%;
+    margin-bottom: 1rem;
+  }
+  label {
+    display: block;
+    margin: 0.5rem 0 0.2rem;
+  }
+  select, button {
+    width: 100%;
+    padding: 0.5rem;
+    margin-bottom: 1rem;
+    border-radius: 4px;
+    border: none;
+    font-size: 1rem;
+  }
+  button {
+    background: red;
+    color: green;
+    cursor: pointer;
+  }
+  button:disabled {
+background: rgba(0, 0, 0, 0.5)
+    cursor: not-allowed;
+  }
+  #progress {
+    width: 100%;
+    height: 10px;
+background: rgba(0, 0, 0, 0.9)
+    border-radius: 5px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+  }
+  #progress-bar {
+    height: 100%;
+    width: 0;
+background: rgba(0, 0, 0, 0.5)
+    transition: width 0.3s ease;
+  }
+  #status {
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+</style>
+</head>
+<body>
+<header>Advanced Audio Compression Tool</header>
+<main>
+  <input type="file" id="audioFile" accept="audio/*" />
+  <audio id="audioPlayer" controls></audio>
+
+  <label for="qualitySelect">Select Compression Quality:</label>
+  <select id="qualitySelect" disabled>
+    <option value="320k">High Quality (320 kbps)</option>
+    <option value="192k" selected>Medium Quality (192 kbps)</option>
+    <option value="128k">Standard Quality (128 kbps)</option>
+    <option value="64k">Low Quality (64 kbps)</option>
+    <option value="auto">Auto Compression</option>
+  </select>
+
+  <button id="compressBtn" disabled>Compress Audio</button>
+
+  <div id="progress" aria-label="Compression progress">
+    <div id="progress-bar"></div>
+  </div>
+  <div id="status"></div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
+<script>
+  const { createFFmpeg, fetchFile } = FFmpeg;
+  const ffmpeg = createFFmpeg({ log: true });
+
+  const audioFileInput = document.getElementById('audioFile');
+  const audioPlayer = document.getElementById('audioPlayer');
+  const qualitySelect = document.getElementById('qualitySelect');
+  const compressBtn = document.getElementById('compressBtn');
+  const progressBar = document.getElementById('progress-bar');
+  const status = document.getElementById('status');
+
+  let selectedFile = null;
+
+  audioFileInput.addEventListener('change', (e) => {
+    if (e.target.files.length === 0) return;
+    selectedFile = e.target.files[0];
+    const url = URL.createObjectURL(selectedFile);
+    audioPlayer.src = url;
+    qualitySelect.disabled = false;
+    compressBtn.disabled = false;
+    status.textContent = '';
+    progressBar.style.width = '0%';
+  });
+
+  compressBtn.addEventListener('click', async () => {
+    if (!selectedFile) return;
+
+    compressBtn.disabled = true;
+    qualitySelect.disabled = true;
+    status.textContent = 'Loading FFmpeg...';
+    progressBar.style.width = '0%';
+
+    if (!ffmpeg.isLoaded()) {
+      await ffmpeg.load();
+    }
+
+    status.textContent = 'Reading file...';
+
+    const inputName = 'input.' + selectedFile.name.split('.').pop();
+    const outputName = 'output.mp3';
+
+    ffmpeg.FS('writeFile', inputName, await fetchFile(selectedFile));
+
+    let bitrate = qualitySelect.value;
+    if (bitrate === 'auto') {
+      // Auto compression: choose bitrate based on file size (simple heuristic)
+      const sizeMB = selectedFile.size / (1024 * 1024);
+      if (sizeMB > 50) bitrate = '128k';
+      else if (sizeMB > 20) bitrate = '192k';
+      else bitrate = '256k';
+    }
+
+    status.textContent = `Compressing audio at ${bitrate}...`;
+
+    ffmpeg.setProgress(({ ratio }) => {
+      progressBar.style.width = `${(ratio * 100).toFixed(2)}%`;
+    });
+
+    try {
+      await ffmpeg.run('-i', inputName, '-b:a', bitrate, '-y', outputName);
+      const data = ffmpeg.FS('readFile', outputName);
+
+      const compressedBlob = new Blob([data.buffer], { type: 'audio/mp3' });
+      const compressedUrl = URL.createObjectURL(compressedBlob);
+
+      audioPlayer.src = compressedUrl;
+      status.textContent = `Compression complete! Original size: ${(selectedFile.size / (1024 * 1024)).toFixed(2)} MB, Compressed size: ${(compressedBlob.size / (1024 * 1024)).toFixed(2)} MB`;
+
+      // Create a download link
+      const downloadLink = document.createElement('a');
+      downloadLink.href = compressedUrl;
+      downloadLink.download = selectedFile.name.replace(/\.[^/.]+$/, '') + '_compressed.mp3';
+      downloadLink.textContent = 'Download Compressed Audio';
+      downloadLink.style.display = 'block';
+      downloadLink.style.marginTop = '1rem';
+      downloadLink.style.color = '#4caf50';
+      main.appendChild(downloadLink);
+    } catch (err) {
+      status.textContent = 'Error during compression: ' + err.message;
+    } finally {
+      compressBtn.disabled = false;
+      qualitySelect.disabled = false;
+      progressBar.style.width = '0%';
+    }
+  });
+</script>
+</body>
+</html>

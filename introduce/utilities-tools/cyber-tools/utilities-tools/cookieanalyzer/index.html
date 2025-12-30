@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cookie Security Analyzer</title>
+<style>
+* {
+margin: 0;
+padding: 0;
+box-sizing: border-box;
+}
+
+body {
+font-family: 'Segoe UI', sans-serif;
+background: #000;
+color: #c58b00;
+overflow-x: hidden;
+}
+
+video#bg-video {
+position: fixed;
+top: 50%;
+left: 50%;
+transform: translate(-50%, -50%);
+min-width: 100vw;
+min-height: 100vh;
+object-fit: cover;
+z-index: -2;
+opacity: 0.25;
+}
+
+.container {
+max-width: 900px;
+margin: 50px auto;
+padding: 25px;
+border-radius: 12px;
+background: rgba(0, 0, 0, 0.2);
+}
+
+h1, label {
+color: #c58b00;
+text-shadow: 1px 1px 3px black;
+}
+
+textarea {
+width: 100%;
+padding: 12px;
+margin: 10px 0;
+background: rgba(0, 0, 0, 0.3);
+color: #c58b00;
+border: 1px solid #c58b00;
+border-radius: 5px;
+font-size: 1rem;
+resize: vertical;
+}
+
+button {
+background: rgba(0, 0, 0, 0.4);
+border: 1px solid #c58b00;
+color: #c58b00;
+padding: 10px 15px;
+margin: 5px 5px 15px 0;
+border-radius: 5px;
+cursor: pointer;
+transition: 0.2s ease;
+}
+
+button:hover {
+background: rgba(255, 255, 255, 0.1);
+color: red;
+}
+
+pre {
+white-space: pre-wrap;
+background: rgba(0, 0, 0, 0.3);
+padding: 10px;
+border: 1px solid red;
+color: #00ffcc;
+margin: 10px 0;
+border-radius: 5px;
+}
+
+@media (max-width: 768px) {
+.container {
+margin: 20px 10px;
+padding: 15px;
+}
+
+button {
+width: 100%;
+margin: 8px 0;
+}
+}
+</style>
+</head>
+<body>
+<video id="bg-video" autoplay muted loop playsinline>
+<source src="background/1761817527453041720p.mp4" type="video/mp4">
+Your browser does not support the video tag.
+</video>
+
+<div class="container">
+<h1>🍪 Cookie Security Analyzer</h1>
+<label>Paste cookie header:</label>
+<textarea id="cookie-input" rows="5" placeholder="From your browser's developer tools"></textarea>
+<p><small>Note: Do NOT paste cookies from other websites.</small></p>
+
+<button onclick="analyzeCookies()">Analyze</button>
+<button onclick="clearAll()">Clear</button>
+
+<pre id="result-box">No result yet...</pre>
+<button onclick="copyResult()">Copy Result</button>
+</div>
+
+<script>
+const resultBox = document.getElementById("result-box");
+
+function clearAll() {
+document.getElementById("cookie-input").value = "";
+resultBox.textContent = "No result yet...";
+}
+
+function copyResult() {
+navigator.clipboard.writeText(resultBox.textContent)
+.then(() => alert("Result copied!"))
+.catch(() => alert("Failed to copy."));
+}
+
+function parseCookies(str) {
+const pairs = str.split(';').map(pair => pair.trim());
+const cookies = {};
+for (const pair of pairs) {
+const [key, val] = pair.split('=').map(s => s.trim());
+cookies[key] = val;
+}
+return cookies;
+}
+
+function analyzeCookies() {
+const cookieInput = document.getElementById("cookie-input");
+resultBox.textContent = "";
+
+try {
+const cookies = parseCookies(cookieInput.value);
+for (const domain in cookies) {
+if (/^(HttpOnly|Secure)$/.test(cookies[domain])) {
+resultBox.textContent += `\n✅ Cookie "${domain}" has HttpOnly flag.\n`;
+delete cookies[domain];
+}
+if (/^Secure$/.test(cookies[domain])) {
+resultBox.textContent += `\n🚫 Cookie "${domain}" lacks Secure flag.\n`;
+}
+}
+
+if (Object.keys(cookies).length > 0) {
+resultBox.textContent += `\nThe following cookies need attention:\n`;
+for (const domain in cookies) {
+resultBox.textContent += `- "${domain}" cookie needs review.\n`;
+}
+}
+
+if (!resultBox.textContent.trim()) {
+resultBox.textContent = "No issues detected!";
+}
+
+} catch (error) {
+console.error(error);
+alert("Error analyzing cookies. Check console for error messages.");
+resultBox.textContent = "Analysis failed. Check console logs.";
+}
+}</script>
+</body>
+</html>

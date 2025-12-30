@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>URL Encoder/Decoder</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #000;
+      color: #c58b00;
+      padding: 20px;
+      overflow-x: hidden;
+    }
+
+    video.bg-video {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      min-width: 100vw;
+      min-height: 100vh;
+      width: auto;
+      height: auto;
+      transform: translate(-50%, -50%);
+      object-fit: cover;
+      z-index: -2;
+      pointer-events: none;
+    }
+
+    .overlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: -1;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: auto;
+      background: rgba(0, 0, 0, 0.6);
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.9);
+    }
+
+    h1, h3, label {
+      color: #c58b00;
+    }
+
+    textarea, input {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      background: rgba(0,0,0,0.7);
+      color: red;
+      border: 1px solid #c58b00;
+      border-radius: 4px;
+      resize: vertical;
+      font-size: 1rem;
+    }
+
+    button {
+      background: rgba(0,0,0,0.6);
+      border: 1px solid #c58b00;
+      color: #c58b00;
+      padding: 10px 15px;
+      margin: 5px 4px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: all 0.2s ease;
+    }
+
+    button:hover {
+      background-color: #111;
+      color: red;
+    }
+
+    .stats, .history-box {
+      margin-top: 20px;
+      color: #c58b00;
+    }
+
+    .history-item {
+      border-bottom: 1px solid red;
+      padding: 6px;
+      cursor: pointer;
+      word-break: break-word;
+    }
+
+    .history-item:hover {
+      background: rgba(255, 0, 0, 0.1);
+    }
+
+    .download-button, .copy-button {
+      margin-top: 12px;
+    }
+
+    @media (max-width: 768px) {
+      body {
+        padding: 10px;
+      }
+
+      .container {
+        padding: 15px;
+      }
+
+      textarea, input {
+        font-size: 14px;
+      }
+
+      button {
+        width: 100%;
+        margin: 6px 0;
+      }
+    }
+
+    @media (min-width: 1400px) {
+      textarea, input {
+        font-size: 1.1rem;
+      }
+
+      button {
+        font-size: 1.1rem;
+        padding: 12px 18px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Background video and music -->
+  <video class="bg-video" autoplay muted loop playsinline>
+    <source src="background/1761817527453041720p.mp4" type="video/mp4">
+  </video>
+
+  <audio id="bg-music" autoplay loop>
+    <source src="background/Programming___Coding___Hacking_music_vol.18__ANONYMOUS_HEADQUARTERS_(48k).mp3" type="audio/mpeg">
+  </audio>
+
+  <div class="overlay"></div>
+
+  <div class="container">
+    <h1>URL Encoder/Decoder</h1>
+
+    <label>Input:</label>
+    <textarea id="input-text" rows="6" placeholder="Enter your text/code/url here..."></textarea>
+
+    <div>
+      <button onclick="runOperation('html-encode')">HTML Encode</button>
+      <button onclick="runOperation('html-decode')">HTML Decode</button>
+      <button onclick="runOperation('js-encode')">JS Encode</button>
+      <button onclick="runOperation('js-decode')">JS Decode</button>
+      <button onclick="runOperation('url-encode')">URL Encode</button>
+      <button onclick="runOperation('url-decode')">URL Decode</button>
+      <button onclick="runOperation('base64-encode')">Base64 Encode</button>
+      <button onclick="runOperation('base64-decode')">Base64 Decode</button>
+      <button onclick="clearAll()">Clear</button>
+    </div>
+
+    <label>Output:</label>
+    <textarea id="output-text" rows="6" readonly></textarea>
+
+    <button class="download-button" onclick="downloadOutput()">Download Output</button>
+    <button class="copy-button" onclick="copyOutput()">Copy Output</button>
+
+    <div class="stats">
+      <p><strong>Input Length:</strong> <span id="input-len">0</span> chars</p>
+      <p><strong>Output Length:</strong> <span id="output-len">0</span> chars</p>
+    </div>
+
+    <div class="history-box">
+      <h3>Operation History</h3>
+      <div id="history-list"></div>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('bg-music').volume = 0.3;
+
+    let history = [];
+
+    function encodeHTML(str) {
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;").replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+    }
+
+    function decodeHTML(str) {
+      return str.replace(/&amp;/g, "&").replace(/&lt;/g, "<")
+                .replace(/&gt;/g, ">").replace(/&quot;/g, '"')
+                .replace(/&#039;/g, "'");
+    }
+
+    function runOperation(type) {
+      const input = document.getElementById('input-text').value;
+      let output = '';
+
+      switch(type) {
+        case 'html-encode': output = encodeHTML(input); break;
+        case 'html-decode': output = decodeHTML(input); break;
+        case 'js-encode': output = encodeURIComponent(input); break;
+        case 'js-decode': output = decodeURIComponent(input); break;
+        case 'url-encode': output = encodeURI(input); break;
+        case 'url-decode': output = decodeURI(input); break;
+        case 'base64-encode': output = btoa(input); break;
+        case 'base64-decode':
+          try { output = atob(input); } catch { output = '[Invalid base64 input]'; }
+          break;
+        default: output = '[Unknown operation]';
+      }
+
+      document.getElementById('output-text').value = output;
+      updateStats();
+      logHistory(type, input, output);
+    }
+
+    function updateStats() {
+      document.getElementById('input-len').textContent =
+        document.getElementById('input-text').value.length;
+      document.getElementById('output-len').textContent =
+        document.getElementById('output-text').value.length;
+    }
+
+    function clearAll() {
+      document.getElementById('input-text').value = '';
+      document.getElementById('output-text').value = '';
+      updateStats();
+    }
+
+    function downloadOutput() {
+      const text = document.getElementById('output-text').value;
+      if (!text) return alert('Output is empty!');
+      const blob = new Blob([text], { type: 'text/plain' });
+      const link = document.createElement('a');
+      link.download = 'output.txt';
+      link.href = URL.createObjectURL(blob);
+      link.click();
+    }
+
+    function copyOutput() {
+      const text = document.getElementById('output-text').value;
+      if (!text) return alert("Output is empty!");
+      navigator.clipboard.writeText(text)
+        .then(() => alert("Output copied to clipboard!"))
+        .catch(() => alert("Failed to copy output."));
+    }
+
+    function logHistory(operation, input, output) {
+      const time = new Date().toLocaleTimeString();
+      const item = `${time} - ${operation.toUpperCase()}:\nIn: ${input.slice(0, 30)}\nOut: ${output.slice(0, 30)}`;
+      history.unshift(item);
+      displayHistory();
+    }
+
+    function displayHistory() {
+      const list = document.getElementById('history-list');
+      list.innerHTML = '';
+      if (history.length === 0) {
+        list.innerHTML = '<p>No operations yet.</p>';
+        return;
+      }
+
+      history.slice(0, 10).forEach((entry, idx) => {
+        const div = document.createElement('div');
+        div.className = 'history-item';
+        div.textContent = `${idx + 1}. ${entry}`;
+        div.onclick = () => alert(entry);
+        list.appendChild(div);
+      });
+    }
+
+    updateStats();
+    displayHistory();
+  </script>
+</body>
+</html>

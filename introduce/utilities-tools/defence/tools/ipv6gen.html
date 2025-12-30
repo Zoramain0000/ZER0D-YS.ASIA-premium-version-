@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cyber IPv6 Generator</title>
+
+<style>
+:root{
+  --gold:#cfae55;
+  --gold-soft:#ffdc7a;
+  --bg:#0a0a0a;
+  --border:rgba(207,174,85,.45);
+  --green:#7cff9a;
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+
+body{
+  font-family:Segoe UI,system-ui;
+  background:var(--bg);
+  color:var(--gold);
+  overflow-x:hidden;
+}
+
+/* BACKGROUND */
+video.bg{
+  position:fixed;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  filter:brightness(.35);
+  z-index:-2;
+}
+
+/* NAV */
+nav{
+  position:fixed;
+  top:0;
+  width:100%;
+  height:64px;
+  padding:0 24px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  background:rgba(0,0,0,.75);
+  backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+  z-index:10;
+}
+
+.brand{
+  font-size:1.4rem;
+  font-weight:700;
+}
+
+/* MAIN */
+.main{
+  padding:100px 28px 40px;
+  max-width:1100px;
+  margin:auto;
+}
+
+.section{
+  background:linear-gradient(180deg,#161616,#0b0b0b);
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:26px;
+  box-shadow:0 0 30px rgba(0,0,0,.6);
+}
+
+/* INPUTS */
+input, textarea{
+  width:100%;
+  padding:14px;
+  background:#111;
+  border:1px solid var(--border);
+  border-radius:12px;
+  color:white;
+  font-size:15px;
+  margin-bottom:12px;
+}
+
+textarea{
+  min-height:160px;
+  resize:vertical;
+}
+
+/* BUTTONS */
+.controls{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-bottom:14px;
+}
+
+button{
+  background:transparent;
+  color:var(--gold);
+  border:1px solid var(--gold);
+  padding:10px 18px;
+  border-radius:10px;
+  cursor:pointer;
+  transition:.25s;
+}
+
+button:hover{
+  background:var(--gold);
+  color:black;
+}
+
+/* INFO */
+.info{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+  gap:12px;
+  margin:14px 0;
+}
+
+.box{
+  background:#0f0f0f;
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:10px;
+}
+
+.label{opacity:.7}
+.value{color:var(--gold-soft);font-weight:600}
+
+/* OUTPUT */
+pre{
+  background:#000;
+  border-radius:14px;
+  padding:16px;
+  max-height:420px;
+  overflow:auto;
+  font-size:.92rem;
+  color:var(--green);
+  border:1px solid var(--border);
+  white-space:pre-wrap;
+}
+
+footer{
+  text-align:center;
+  padding:25px;
+  opacity:.65;
+}
+</style>
+</head>
+
+<body>
+
+<video class="bg" autoplay muted loop playsinline>
+  <source src="background/1761817527453041720p.mp4" type="video/mp4">
+</video>
+
+<nav>
+  <div class="brand">Cyber IPv6 Generator</div>
+  <button onclick="location.reload()">Reload</button>
+</nav>
+
+<div class="main">
+
+  <div class="section">
+    <h2>🌐 Advanced IPv6 Generator & Analyzer</h2>
+
+    <input id="ipv6Input" placeholder="Enter IPv6 address (optional for analyze / compress / expand)">
+
+    <div class="controls">
+      <button onclick="generateIPv6()">Generate IPv6</button>
+      <button onclick="compressIPv6()">Compress</button>
+      <button onclick="expandIPv6()">Expand</button>
+      <button onclick="validateIPv6()">Validate</button>
+      <button onclick="copyOutput()">Copy Output</button>
+      <button onclick="clearAll()">Clear</button>
+    </div>
+
+    <div class="info">
+      <div class="box">
+        <div class="label">Status</div>
+        <div class="value" id="status">Idle</div>
+      </div>
+      <div class="box">
+        <div class="label">Type</div>
+        <div class="value" id="type">—</div>
+      </div>
+      <div class="box">
+        <div class="label">Format</div>
+        <div class="value" id="format">—</div>
+      </div>
+    </div>
+
+    <pre id="output">Waiting for action...</pre>
+  </div>
+
+</div>
+
+<footer>
+© 2025 Cyber Tools Toolkit — IPv6 Generator Module
+</footer>
+
+<script>
+function randHex() {
+  return Math.floor(Math.random() * 0x10000).toString(16).padStart(4, "0");
+}
+
+function generateIPv6() {
+  let blocks = [];
+  for (let i = 0; i < 8; i++) blocks.push(randHex());
+
+  const full = blocks.join(":");
+  document.getElementById("output").textContent = full;
+  document.getElementById("status").textContent = "Generated";
+  document.getElementById("type").textContent = "Random IPv6";
+  document.getElementById("format").textContent = "Full (expanded)";
+}
+
+function validateIPv6() {
+  const v = document.getElementById("ipv6Input").value.trim();
+  if (!v) return;
+
+  const regex =
+    /^(([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|(([0-9a-fA-F]{1,4}:){1,7}:)|(([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4})|(([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2})|(([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3})|(([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4})|(([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5})|([0-9a-fA-F]{1,4}:)((:[0-9a-fA-F]{1,4}){1,6})|(:((:[0-9a-fA-F]{1,4}){1,7}|:))$/;
+
+  const valid = regex.test(v);
+
+  document.getElementById("output").textContent =
+    valid ? "Valid IPv6 address ✔" : "Invalid IPv6 address ✖";
+
+  document.getElementById("status").textContent = valid ? "Valid" : "Invalid";
+  document.getElementById("type").textContent = "Validation";
+  document.getElementById("format").textContent = "RFC 5952";
+}
+
+function expandIPv6() {
+  const input = document.getElementById("ipv6Input").value.trim();
+  if (!input) return;
+
+  let parts = input.split("::");
+  let left = parts[0] ? parts[0].split(":") : [];
+  let right = parts[1] ? parts[1].split(":") : [];
+
+  let missing = 8 - (left.length + right.length);
+  let middle = new Array(missing).fill("0000");
+
+  let full = [...left, ...middle, ...right]
+    .map(p => p.padStart(4, "0"))
+    .join(":");
+
+  document.getElementById("output").textContent = full;
+  document.getElementById("status").textContent = "Expanded";
+  document.getElementById("type").textContent = "IPv6 Expand";
+  document.getElementById("format").textContent = "Full 8-block";
+}
+
+function compressIPv6() {
+  const input = document.getElementById("ipv6Input").value.trim();
+  if (!input) return;
+
+  let blocks = input.split(":").map(b => b.replace(/^0+/, "") || "0");
+
+  let bestStart = -1, bestLen = 0;
+  for (let i = 0; i < blocks.length; i++) {
+    let j = i;
+    while (j < blocks.length && blocks[j] === "0") j++;
+    if (j - i > bestLen) {
+      bestLen = j - i;
+      bestStart = i;
+    }
+    i = j;
+  }
+
+  if (bestLen > 1) {
+    blocks.splice(bestStart, bestLen, "");
+    if (bestStart === 0) blocks.unshift("");
+    if (bestStart + bestLen === 8) blocks.push("");
+  }
+
+  const compressed = blocks.join(":").replace(/:{3,}/, "::");
+
+  document.getElementById("output").textContent = compressed;
+  document.getElementById("status").textContent = "Compressed";
+  document.getElementById("type").textContent = "IPv6 Compress";
+  document.getElementById("format").textContent = "RFC 5952";
+}
+
+function copyOutput(){
+  navigator.clipboard.writeText(
+    document.getElementById("output").textContent
+  );
+}
+
+function clearAll(){
+  document.getElementById("ipv6Input").value = "";
+  document.getElementById("output").textContent = "Waiting for action...";
+  document.getElementById("status").textContent = "Idle";
+  document.getElementById("type").textContent = "—";
+  document.getElementById("format").textContent = "—";
+}
+</script>
+
+</body>
+</html>

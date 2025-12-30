@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Advanced IPv6 Generator Tool</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+      font-family: 'Courier New', Courier, monospace;
+      padding: 20px;
+      margin: 0;
+    }
+
+    h1 {
+      text-align: center;
+      color: red;
+      margin-bottom: 20px;
+    }
+
+    .controls {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    select, input, button {
+background: rgba(0, 0, 0, 0.5);
+      border: 1px solid red;
+      color:red;
+      padding: 10px;
+      margin: 5px;
+      font-size: 16px;
+      border-radius: 6px;
+    }
+
+    button {
+      background-color: red;
+      cursor: pointer;
+    }
+
+    button:hover {
+background: rgba(0, 0, 0, 0.5);
+    }
+
+    #output {
+background: rgba(0, 0, 0, 0.5);
+      border: 1px solid red;
+      border-radius: 8px;
+      padding: 15px;
+      height: 350px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      font-size: 14px;
+    }
+
+    .ip {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+
+<h1>🔧 IPv6 Address Generator</h1>
+
+<div class="controls">
+  <label>Mode:</label>
+  <select id="mode">
+    <option value="standard">Standard IPv6</option>
+    <option value="compressed">Compressed IPv6 (::)</option>
+    <option value="mixed">IPv6 with Embedded IPv4</option>
+  </select>
+
+  <label>Count:</label>
+  <input type="number" id="count" value="5" min="1" max="100">
+
+  <br>
+  <button onclick="generateIPv6()">Generate</button>
+  <button onclick="exportToFile()">Export</button>
+</div>
+
+<div id="output"></div>
+
+<script>
+  function getRandomBlock() {
+    return Math.floor(Math.random() * 0x10000).toString(16);
+  }
+
+  function generateStandardIPv6() {
+    return Array.from({ length: 8 }, getRandomBlock).join(':');
+  }
+
+  function generateCompressedIPv6() {
+    const blocks = Array.from({ length: 8 }, getRandomBlock);
+    const zeroStart = Math.floor(Math.random() * 6);
+    blocks.splice(zeroStart, 2, '', '');
+    return blocks.join(':').replace(/(:{2,})/, '::');
+  }
+
+  function generateMixedIPv6() {
+    const ipv6Part = Array.from({ length: 6 }, getRandomBlock).join(':');
+    const ipv4Part = `${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}`;
+    return `${ipv6Part}:${ipv4Part}`;
+  }
+
+  function generateIPv6() {
+    const mode = document.getElementById("mode").value;
+    const count = Math.min(parseInt(document.getElementById("count").value), 100);
+    const output = document.getElementById("output");
+    output.innerHTML = "";
+
+    for (let i = 0; i < count; i++) {
+      let address = "";
+      if (mode === "standard") address = generateStandardIPv6();
+      else if (mode === "compressed") address = generateCompressedIPv6();
+      else if (mode === "mixed") address = generateMixedIPv6();
+
+      const line = `<span class="ip">${address}</span><br>`;
+      output.innerHTML += line;
+    }
+
+    output.scrollTop = output.scrollHeight;
+  }
+
+  function exportToFile() {
+    const content = document.getElementById("output").innerText;
+    const blob = new Blob([content], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "ipv6_addresses.txt";
+    a.click();
+
+    URL.revokeObjectURL(url);
+  }
+</script>
+
+</body>
+</html>

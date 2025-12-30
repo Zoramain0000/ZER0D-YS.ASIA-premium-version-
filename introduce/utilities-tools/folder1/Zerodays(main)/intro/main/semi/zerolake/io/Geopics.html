@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>🌍 Geo-Tagged YouTube Videos Map</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: Arial, sans-serif;
+    }
+    #map {
+      height: 100vh;
+      width: 100%;
+    }
+    #search-container {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 999;
+      background: rgba(0, 0, 0, 0.6);
+      color: white;
+      padding: 10px;
+      border-radius: 8px;
+      width: 360px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    }
+    #search-input {
+      width: 100%;
+      padding: 8px 10px;
+      font-size: 15px;
+      border: 1px solid #f00;
+      border-radius: 6px;
+      background: #fff;
+      color: #000;
+    }
+    #exportBtn {
+      margin-top: 8px;
+      width: 100%;
+      background: #28a745;
+      border: none;
+      color: #fff;
+      padding: 6px;
+      font-size: 14px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .leaflet-popup-content iframe {
+      width: 100%;
+      height: 180px;
+    }
+    .video-thumb {
+      width: 100%;
+      border-radius: 6px;
+      margin-bottom: 4px;
+    }
+  </style>
+</head>
+<body>
+
+<div id="search-container">
+  <input type="text" id="search-input" placeholder="🔍 Search a place (e.g. Manila, Paris, Tokyo)" />
+  <button id="exportBtn">📤 Export Videos as CSV</button>
+</div>
+
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  const YOUTUBE_API_KEY = 'AIzaSyCx-npwOh8AlRpBFpSEqkV0JDQZrceCRsM'; // 🔑 Replace with your own API key
+
+  const map = L.map('map').setView([20, 0], 2); // Default: random place!
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 18,
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
+
+  let videoMarkers = [];
+  let videoDataForExport = [];
+
+  function clearVideoMarkers() {
+    videoMarkers.forEach(marker => map.removeLayer(marker));
+    videoMarkers = [];
+    videoDataForExport = [];
+  }
+
+  function addVideoMarkers(videos) {
+    clearVideoMarkers();
+    videos.forEach(video => {
+      const lat = video.recordingDetails?.location?.latitude;
+      const lng = video.recordingDetails?.location?.longitude;
+      const title = video.snippet?.title || "Untitled";
+      const videoId = video.id;
+      const channel = video.snippet?.channelTitle || "Unknown";
+      const thumb = video.snippet?.thumbnails?.medium?.url;
+
+      if (lat && lng && videoId) {
+        const marker = L.marker([lat, lng]).addTo(map);
+        marker.bindPopup(`
+          <div>
+            <img class="video-thumb" src="${thumb}" alt="Thumbnail" />
+            <b>${title}</b><br/>
+            Channel: ${channel}<br/>
+            <iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe>
+          </div>
+        `);
+        videoMarkers.push(marker);
+        videoDataForExport.push({ title, channel, videoId, lat, lng });
+      }
+    });
+  }
+
+async function fetchVideosNear(lat, lon) {
+  const radius = 5000;
+  const maxResults = 10;
+  const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&location=${lat},${lon}&locationRadius=${radius}m&type=video&maxResults=${maxResults}&key=${YOUTUBE_API_KEY}`;
+
+  try {
+    const searchRes = await fetch(searchUrl);
+    const searchData = await searchRes.json();
+
+    if (!searchData.items || searchData.items.length === 0) {
+      alert("❌ No videos found for this location.");
+      return;
+    }
+
+    const videoIds = searchData.items
+      .map(item => item.id.videoId)
+      .filter(id => id) // filter out undefined/null
+      .join(',');
+
+    if (!videoIds) {
+      alert("⚠️ No valid video IDs found.");
+      return;
+    }
+
+    const detailUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,recordingDetails&id=${videoIds}&key=${YOUTUBE_API_KEY}`;
+    const detailRes = await fetch(detailUrl);
+    const detailData = await detailRes.json();
+
+    const videosWithLocation = detailData.items.filter(
+      video => video.recordingDetails?.location
+    );
+
+    if (!videosWithLocation.length) {
+      alert("📍 No geo-tagged videos found near this location.");
+      return;
+    }
+
+    addVideoMarkers(videosWithLocation);
+  } catch (err) {
+    alert("❗ Error fetching videos: " + err.message);
+  }
+}
+
+
+  document.getElementById('search-input').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') {
+      const query = this.value.trim();
+      if (!query) return;
+
+      fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`)
+        .then(res => res.json())
+        .then(data => {
+          if (!data.length) {
+            alert("❌ Place not found.");
+            return;
+          }
+
+          const { lat, lon, display_name } = data[0];
+          const parsedLat = parseFloat(lat);
+          const parsedLon = parseFloat(lon);
+
+          map.setView([parsedLat, parsedLon], 13);
+
+          if (window.searchMarker) map.removeLayer(window.searchMarker);
+          window.searchMarker = L.marker([parsedLat, parsedLon]).addTo(map)
+            .bindPopup(`<b>${display_name}</b>`).openPopup();
+
+          fetchVideosNear(parsedLat, parsedLon);
+        })
+        .catch(() => alert("❗ Error during place lookup."));
+    }
+  });
+
+  map.on('moveend', () => {
+    const center = map.getCenter();
+    fetchVideosNear(center.lat, center.lng);
+  });
+
+  document.getElementById('exportBtn').addEventListener('click', () => {
+    if (!videoDataForExport.length) {
+      alert("⚠️ No video data to export.");
+      return;
+    }
+
+    let csv = "Title,Channel,VideoID,Latitude,Longitude\n";
+    videoDataForExport.forEach(v => {
+      csv += `"${v.title.replace(/"/g, '""')}","${v.channel.replace(/"/g, '""')}","${v.videoId}",${v.lat},${v.lng}\n`;
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = "geo_youtube_videos.csv";
+    a.click();
+
+    window.URL.revokeObjectURL(url);
+  });
+
+  // Initial fetch
+  fetchVideosNear(20, 0);
+</script>
+</body>
+</html>

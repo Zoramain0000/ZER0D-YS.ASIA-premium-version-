@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>💰 Crypto Price Fetcher</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+      padding: 2rem;
+    }
+
+    h1 {
+      text-align: center;
+      color:  red  ;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: auto;
+      margin-top: 2rem;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      justify-content: center;
+    }
+
+    select, button {
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+      border-radius: 8px;
+      border: none;
+    }
+
+    button {
+      background: red;
+      color: green;
+      cursor: pointer;
+    }
+    button:hover{
+background: rgba(0, 0, 0, 0.5);
+    }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .card {
+background: rgba(0, 0, 0, 0.5);
+      padding: 1rem;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+
+    .card h2 {
+      margin: 0 0 0.5rem;
+      color: red;
+    }
+
+    .card p {
+      margin: 0.25rem 0;
+      font-size: 0.95rem;
+    }
+
+    .error {
+      color: red;
+      text-align: center;
+      margin-top: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>💰 Live Crypto Price Fetcher</h1>
+
+  <div class="container">
+    <div class="controls">
+      <select id="coinSelect" multiple size="5">
+        <option value="bitcoin">Bitcoin (BTC)</option>
+        <option value="ethereum">Ethereum (ETH)</option>
+        <option value="litecoin">Litecoin (LTC)</option>
+        <option value="dogecoin">Dogecoin (DOGE)</option>
+        <option value="solana">Solana (SOL)</option>
+        <option value="ripple">XRP</option>
+        <option value="cardano">Cardano (ADA)</option>
+        <option value="tron">TRON (TRX)</option>
+        <option value="polkadot">Polkadot (DOT)</option>
+        <option value="shiba-inu">Shiba Inu (SHIB)</option>
+      </select>
+      <button onclick="fetchPrices()">Fetch Prices</button>
+      <button onclick="startAutoRefresh()">🔄 Auto Refresh</button>
+    </div>
+
+    <div class="cards" id="priceCards"></div>
+    <div class="error" id="errorMessage"></div>
+  </div>
+
+  <script>
+    let refreshInterval;
+
+    async function fetchPrices() {
+      const selected = Array.from(document.getElementById("coinSelect").selectedOptions).map(opt => opt.value);
+      const container = document.getElementById("priceCards");
+      const error = document.getElementById("errorMessage");
+      container.innerHTML = "";
+      error.textContent = "";
+
+      if (selected.length === 0) {
+        error.textContent = "❗ Please select at least one cryptocurrency.";
+        return;
+      }
+
+      try {
+        const ids = selected.join(",");
+        const response = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`);
+        const data = await response.json();
+
+        selected.forEach(id => {
+          const price = data[id]?.usd;
+          const change = data[id]?.usd_24h_change?.toFixed(2);
+          if (price !== undefined) {
+            const card = document.createElement("div");
+            card.className = "card";
+            card.innerHTML = `
+              <h2>${capitalize(id)}</h2>
+              <p>💵 Price: $${price.toLocaleString()}</p>
+              <p>📈 24h Change: ${change > 0 ? "🔺" : "🔻"} ${change}%</p>
+            `;
+            container.appendChild(card);
+          }
+        });
+      } catch (err) {
+        error.textContent = "❌ Failed to fetch prices. Try again later.";
+      }
+    }
+
+    function capitalize(word) {
+      return word.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    }
+
+    function startAutoRefresh() {
+      clearInterval(refreshInterval);
+      fetchPrices();
+      refreshInterval = setInterval(fetchPrices, 60000); // refresh every 60s
+    }
+  </script>
+</body>
+</html>

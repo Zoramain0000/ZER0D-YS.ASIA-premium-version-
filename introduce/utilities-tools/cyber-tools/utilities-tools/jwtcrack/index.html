@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>JWT Secret Cracker</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #000;
+      color: #c58b00;
+      overflow-x: hidden;
+    }
+
+    video#bg-video {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      min-width: 100vw;
+      min-height: 100vh;
+      object-fit: cover;
+      z-index: -2;
+      opacity: 0.25;
+    }
+
+    audio#bg-music {
+      position: fixed;
+      z-index: -1;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 50px auto;
+      padding: 25px;
+      border-radius: 12px;
+      background: rgba(0, 0, 0, 0.2);
+    }
+
+    h1, label {
+      color: #c58b00;
+      text-shadow: 1px 1px 3px black;
+    }
+
+    input[type="text"], textarea {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      background: rgba(0, 0, 0, 0.3);
+      color: #c58b00;
+      border: 1px solid #c58b00;
+      border-radius: 5px;
+      font-size: 1rem;
+    }
+
+    button {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid #c58b00;
+      color: #c58b00;
+      padding: 10px 15px;
+      margin: 5px 5px 15px 0;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+
+    button:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: red;
+    }
+
+    pre {
+      white-space: pre-wrap;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 10px;
+      border: 1px solid red;
+      color: #00ffcc;
+      margin: 10px 0;
+      border-radius: 5px;
+    }
+
+    .history {
+      margin-top: 20px;
+    }
+
+    .history-item {
+      border-bottom: 1px solid red;
+      padding: 5px;
+      font-size: 0.9rem;
+      color: #ff8800;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        margin: 20px 10px;
+        padding: 15px;
+      }
+
+      button {
+        width: 100%;
+        margin: 8px 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Background Video -->
+  <video id="bg-video" autoplay muted loop playsinline>
+    <source src="background/1761817527453041720p.mp4" type="video/mp4" />
+    Your browser does not support the video tag.
+  </video>
+
+  <!-- Background Music -->
+  <audio id="bg-music" loop>
+    <source src="background/Programming___Coding___Hacking_music_vol.18__ANONYMOUS_HEADQUARTERS_(48k).mp3" type="audio/mpeg" />
+    Your browser does not support the audio tag.
+  </audio>
+
+  <div class="container">
+    <h1>🔑 JWT Secret Cracker</h1>
+    <label>Enter JWT Token:</label>
+    <textarea id="jwt-input" placeholder="Paste JWT token here..." rows="3"></textarea>
+
+    <label>Enter Secret (or leave blank for brute-force):</label>
+    <input type="text" id="secret-input" placeholder="e.g., 'secret123' or leave blank" />
+
+    <div>
+      <button onclick="crackJWT()">Crack JWT</button>
+      <button onclick="clearAll()">Clear</button>
+    </div>
+
+    <label>Result:</label>
+    <pre id="result-box">No result yet...</pre>
+    <button onclick="copyResult()">Copy Result</button>
+
+    <div class="history">
+      <h3>History</h3>
+      <div id="history-box"></div>
+    </div>
+  </div>
+
+  <script>
+    const music = document.getElementById("bg-music");
+    const resultBox = document.getElementById("result-box");
+    const historyBox = document.getElementById("history-box");
+    let history = [];
+
+    window.addEventListener('click', () => {
+      music.play().catch(() => {});
+    }, { once: true });
+
+    function crackJWT() {
+      const jwt = document.getElementById("jwt-input").value.trim();
+      const secret = document.getElementById("secret-input").value.trim();
+      resultBox.textContent = "Processing...";
+
+      if (!jwt) {
+        resultBox.textContent = "Please enter a JWT token.";
+        return;
+      }
+
+      try {
+        const parts = jwt.split('.');
+        if (parts.length !== 3) throw "Invalid JWT format";
+
+        const header = JSON.parse(atob(parts[0]));
+        const payload = JSON.parse(atob(parts[1]));
+        const signature = parts[2];
+
+        if (secret) {
+          // Verify the signature with the provided secret
+          const verified = verifySignature(parts[0], parts[1], signature, secret);
+          const result = {
+            header,
+            payload,
+            verified,
+            secret: verified ? "✅ Valid Secret" : "❌ Invalid Secret"
+          };
+          renderResult(result);
+          logHistory(jwt.slice(0, 20) + "...", verified ? "Valid Secret" : "Invalid Secret");
+        } else {
+          // Brute-force mode (demo: limited to common secrets)
+          const commonSecrets = ["secret", "password", "123456", "admin", "jwtsecret"];
+          let found = false;
+
+          for (const s of commonSecrets) {
+            if (verifySignature(parts[0], parts[1], signature, s)) {
+              found = true;
+              const result = {
+                header,
+                payload,
+                verified: true,
+                secret: `✅ Cracked: "${s}"`
+              };
+              renderResult(result);
+              logHistory(jwt.slice(0, 20) + "...", `Cracked: "${s}"`);
+              return;
+            }
+          }
+
+          if (!found) {
+            const result = {
+              header,
+              payload,
+              verified: false,
+              secret: "❌ No common secret matched."
+            };
+            renderResult(result);
+            logHistory(jwt.slice(0, 20) + "...", "No match");
+          }
+        }
+      } catch (e) {
+        resultBox.textContent = `Error: ${e.message || e}`;
+      }
+    }
+
+    function verifySignature(header, payload, signature, secret) {
+      // This is a simplified version. In a real tool, you'd use a proper HMAC algorithm.
+      const fakeSignature = btoa(header + payload + secret).slice(0, 43);
+      return fakeSignature === signature;
+    }
+
+    function renderResult(data) {
+      resultBox.textContent = JSON.stringify(data, null, 2);
+    }
+
+    function copyResult() {
+      const text = resultBox.textContent;
+      if (!text || text === "No result yet...") return alert("Nothing to copy!");
+      navigator.clipboard.writeText(text).then(() => alert("Result copied!"));
+    }
+
+    function clearAll() {
+      document.getElementById("jwt-input").value = "";
+      document.getElementById("secret-input").value = "";
+      resultBox.textContent = "No result yet...";
+    }
+
+    function logHistory(jwt, snippet) {
+      const time = new Date().toLocaleTimeString();
+      const line = `${time} - ${jwt}: ${snippet}`;
+      history.unshift(line);
+      updateHistory();
+    }
+
+    function updateHistory() {
+      historyBox.innerHTML = "";
+      history.slice(0, 8).forEach(entry => {
+        const div = document.createElement("div");
+        div.className = "history-item";
+        div.textContent = entry;
+        historyBox.appendChild(div);
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RECON - NG - simpleversion</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #121212;
+      color: #eee;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      background: #1e1e1e;
+      padding: 1rem;
+      text-align: center;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 1.8rem;
+      color: #4ea1ff;
+    }
+    nav {
+      background: #222;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      padding: 0.5rem 1rem;
+      gap: 1rem;
+    }
+    nav a, nav select {
+      color: #eee;
+      font-weight: bold;
+      text-decoration: none;
+      padding: 0.5rem 1rem;
+      border-radius: 5px;
+      background: #333;
+      border: 1px solid #444;
+      cursor: pointer;
+    }
+    nav a:hover, nav select:hover {
+      background: #444;
+    }
+    #main-content {
+      display: flex;
+      flex-grow: 1;
+      overflow: hidden;
+    }
+    #sidebar {
+      width: 250px;
+      background: #1f1f1f;
+      border-right: 1px solid #333;
+      padding: 1rem;
+      overflow-y: auto;
+    }
+    #sidebar h2 {
+      margin-bottom: 0.5rem;
+    }
+    .history-item {
+      background: #2a2a2a;
+      padding: 0.5rem;
+      margin: 0.25rem 0;
+      border-radius: 4px;
+      cursor: pointer;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    #content {
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 1rem;
+      overflow-y: auto;
+    }
+    #input-area {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    #target-input {
+      flex-grow: 1;
+      padding: 0.5rem;
+      border: none;
+      border-radius: 4px;
+      background: #333;
+      color: #fff;
+    }
+    #run-btn {
+      padding: 0.5rem 1rem;
+      background: #0078d7;
+      border: none;
+      border-radius: 4px;
+      color: white;
+      cursor: pointer;
+    }
+    #run-btn:hover {
+      background: #005a9c;
+    }
+    .section {
+      margin-bottom: 1rem;
+    }
+    .section h3 {
+      margin-bottom: 0.5rem;
+    }
+    pre {
+      background: #222;
+      padding: 1rem;
+      border-radius: 5px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    footer {
+      text-align: center;
+      padding: 1rem;
+      background: #1e1e1e;
+      font-size: 0.9em;
+      border-top: 1px solid #333;
+    }
+    .spinner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 2rem 0;
+    }
+    .spinner div {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #4ea1ff;
+      border-top: 4px solid transparent;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 0.5rem;
+    }
+    .spinner span {
+      color: #aaa;
+      font-size: 0.95rem;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Keylogger box styling inspired by TrackV2 */
+    #keylogger-box {
+      background: #1e1e1e;
+      margin-top: 2rem;
+      padding: 1rem;
+      border-top: 2px solid #444;
+      max-height: 300px;
+      overflow-y: auto;
+      font-family: 'Courier New', Courier, monospace;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+    #keylogger-box h3 {
+      color: #4ea1ff;
+      margin-bottom: 0.5rem;
+      user-select: none;
+    }
+    #keylogger-controls {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+      flex-wrap: wrap;
+    }
+    #keylogger-controls > * {
+      background: #333;
+      border: none;
+      color: #eee;
+      padding: 0.3rem 0.6rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      user-select: none;
+      transition: background 0.2s ease;
+    }
+    #keylogger-controls > *:hover {
+      background: #555;
+    }
+    #keylogger-search {
+      flex-grow: 1;
+      padding: 0.3rem 0.6rem;
+      border-radius: 4px;
+      border: 1px solid #444;
+      background: #222;
+      color: #eee;
+      font-size: 0.9rem;
+    }
+    #keylog {
+      flex-grow: 1;
+      overflow-y: auto;
+      background: #121212;
+      border-radius: 4px;
+      padding: 0.5rem;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      font-size: 0.85rem;
+      line-height: 1.3em;
+      user-select: text;
+      scrollbar-width: thin;
+      scrollbar-color: #4ea1ff #222;
+    }
+    #keylog::-webkit-scrollbar {
+      width: 8px;
+    }
+    #keylog::-webkit-scrollbar-track {
+      background: #222;
+    }
+    #keylog::-webkit-scrollbar-thumb {
+      background-color: #4ea1ff;
+      border-radius: 4px;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      #main-content { flex-direction: column; }
+      #sidebar {
+        width: 100%;
+        order: 2;
+        border-right: none;
+        border-top: 1px solid #333;
+      }
+    }
+  </style>
+</head>
+<body>
+<header>
+  <h1>Recon-ng with unique feature</h1>
+</header>
+
+<nav>
+  <select class="tool-redirect">
+    <option disabled selected>⚙️ Dashboard</option>
+    <option value="#">none</option>
+    <option value="ip.html"> Refresh</option>
+    <option value="ip.html"> Reload</option>
+    <option value="ip.html"> Reset page</option>
+  </select>
+  <select class="tool-redirect">
+    <option disabled selected>🔧 Utilities-tools</option>
+    <option value="#">none</option>
+    <option value="Utilities-tools/TrapTune.html" >Trackv2</option>
+    <option value="Utilities-tools/247.html" >Airplane Tracker</option>
+    <option value="Utilities-tools/finder.html" >Global Wi-Fi Finder</option>
+    <option value="Utilities-tools/intelligencex.html" >IP finder</option>
+    <option value="Utilities-tools/lcchecker.html" > License Finder</option>
+    <option value="Utilities-tools/local.html" > Graphic tracker</option>
+    <option value="Utilities-tools/Pro.html" >AI Question</option>
+  </select>
+  <a href="#keylogger-box" id="history-link">History</a>
+  <select class="tool-redirect">
+    <option disabled selected>⚙️ Settings Panel</option>
+    <option value="#">none</option>
+    <option value="security/Geo-github.html">GitHub Users Geo Explorer</option>
+    <option value="security/Geotracker.html">Geo Tracker</option>
+    <option value="security/Mac.html">MAC Address Lookup Tool</option>
+    <option value="security/maxmind.html">Unlimited IP Lookup Tool</option>
+    <option value="security/Pinner.html">ZeroDays DNS+DoH Resolver</option>
+    <option value="security/userfdr.html"> IP User Info Tool</option>
+  </select>
+</nav>
+
+<div id="main-content">
+  <div id="sidebar">
+    <h2>History</h2>
+    <div id="history"></div>
+  </div>
+  <div id="content">
+    <div id="input-area">
+      <input type="text" id="target-input" placeholder="Enter domain or IP...">
+      <button id="run-btn">Run Recon</button>
+    </div>
+    <div id="results"></div>
+
+    <!-- 🔑 Keylogger Section -->
+    <div id="keylogger-box">
+      <h3>🧠 Recon Keylogger</h3>
+      <div id="keylogger-controls">
+        <input type="text" id="keylogger-search" placeholder="Search keylogs..." title="Filter keylogs by text" />
+        <button id="clear-keylogs-btn" title="Clear all keylogs">Clear</button>
+        <button id="toggle-autoscroll-btn" title="Toggle auto-scroll">Auto-Scroll: On</button>
+        <select id="export-format" title="Select export format">
+          <option value="" disabled selected>Export as...</option>
+          <option value="txt">Text (.txt)</option>
+          <option value="json">JSON (.json)</option>
+          <option value="csv">CSV (.csv)</option>
+          <option value="md">Markdown (.md)</option>
+          <option value="pdf">PDF (.pdf)</option>
+        </select>
+        <button id="export-btn" title="Export keylogs">Export</button>
+      </div>
+      <div id="keylog"></div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  &copy; 2025 Recon Dashboard. Built for desktop & mobile.
+</footer>
+
+<script>
+const historyDiv = document.getElementById('history');
+const resultsDiv = document.getElementById('results');
+const targetInput = document.getElementById('target-input');
+const runBtn = document.getElementById('run-btn');
+const keylogDiv = document.getElementById('keylog');
+const keyloggerSearch = document.getElementById('keylogger-search');
+const clearKeylogsBtn = document.getElementById('clear-keylogs-btn');
+const toggleAutoscrollBtn = document.getElementById('toggle-autoscroll-btn');
+const exportFormatSelect = document.getElementById('export-format');
+const exportBtn = document.getElementById('export-btn');
+
+let historyLog = [];
+let keylogs = [];
+let autoScroll = true;
+
+// Load keylogs from localStorage
+function loadKeylogs() {
+  const stored = localStorage.getItem('recon_keylogs');
+  if (stored) {
+    try {
+      keylogs = JSON.parse(stored);
+    } catch {
+      keylogs = [];
+    }
+  }
+}
+
+// Save keylogs to localStorage
+function saveKeylogs() {
+  localStorage.setItem('recon_keylogs', JSON.stringify(keylogs));
+}
+
+// Add to history and render
+function addToHistory(target) {
+  if (!historyLog.includes(target)) {
+    historyLog.unshift(target);
+    if (historyLog.length > 100) historyLog.pop();
+    renderHistory();
+  }
+}
+
+function renderHistory() {
+  historyDiv.innerHTML = '';
+  historyLog.forEach(item => {
+    const div = document.createElement('div');
+    div.textContent = item;
+    div.classList.add('history-item');
+    div.onclick = () => {
+      targetInput.value = item;
+    };
+    historyDiv.appendChild(div);
+  });
+}
+
+// Sanitize output to prevent XSS
+function sanitizeHTML(str) {
+  return str.replace(/[&<>"]/g, m => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[m]));
+}
+
+// Render keylogs with optional filter
+function renderKeylogs(filter = '') {
+  keylogDiv.innerHTML = '';
+  const filtered = keylogs.filter(log => log.text.toLowerCase().includes(filter.toLowerCase()));
+  filtered.forEach(log => {
+    const div = document.createElement('div');
+    div.className = 'log-entry';
+    div.textContent = log.text;
+    keylogDiv.appendChild(div);
+  });
+  if (autoScroll && keylogDiv.scrollHeight > keylogDiv.clientHeight) {
+    keylogDiv.scrollTop = keylogDiv.scrollHeight;
+  }
+}
+
+// Add a new log entry
+function addKeylogEntry(target, dns, ipinfo, whois) {
+  const timestamp = new Date().toLocaleString();
+  const text = `[${timestamp}] Target: ${target}\n\nDNS:\n${dns}\n\nIP Info:\n${ipinfo}\n\nWHOIS:\n${whois}`;
+  keylogs.unshift({ timestamp, text });
+  if (keylogs.length > 1000) keylogs.pop();
+  saveKeylogs();
+  renderKeylogs(keyloggerSearch.value);
+}
+
+// Clear all keylogs
+function clearKeylogs() {
+  if (confirm('Are you sure you want to clear all keylogs? This action cannot be undone.')) {
+    keylogs = [];
+    saveKeylogs();
+    renderKeylogs();
+  }
+}
+
+// Toggle auto-scroll
+function toggleAutoScroll() {
+  autoScroll = !autoScroll;
+  toggleAutoscrollBtn.textContent = `Auto-Scroll: ${autoScroll ? 'On' : 'Off'}`;
+}
+
+// Export keylogs in various formats
+function exportKeylogs() {
+  if (keylogs.length === 0) {
+    alert('No keylogs to export.');
+    return;
+  }
+  const format = exportFormatSelect.value;
+  if (!format) {
+    alert('Please select an export format.');
+    return;
+  }
+
+  let content = '';
+  let filename = `recon_keylogs_${new Date().toISOString().slice(0,10)}`;
+
+  switch(format) {
+    case 'txt':
+      content = keylogs.map(k => k.text).join('\n\n---\n\n');
+      filename += '.txt';
+      downloadFile(content, filename, 'text/plain');
+      break;
+    case 'json':
+      content = JSON.stringify(keylogs, null, 2);
+      filename += '.json';
+      downloadFile(content, filename, 'application/json');
+      break;
+    case 'csv':
+      content = 'Timestamp,Log\n' + keylogs.map(k => `"${k.timestamp}","${k.text.replace(/"/g, '""')}"`).join('\n');
+      filename += '.csv';
+      downloadFile(content, filename, 'text/csv');
+      break;
+    case 'md':
+      content = keylogs.map(k => `### Log at ${k.timestamp}\n\n\`\`\`\n${k.text}\n\`\`\``).join('\n\n---\n\n');
+      filename += '.md';
+      downloadFile(content, filename, 'text/markdown');
+      break;
+    case 'pdf':
+      exportPDF();
+      break;
+    default:
+      alert('Unsupported export format.');
+  }
+}
+
+// Helper to download a file
+function downloadFile(content, filename, mime) {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// Export PDF using jsPDF (loaded dynamically)
+function exportPDF() {
+  if (!window.jspdf) {
+    loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js', () => {
+      createPDF();
+    });
+  } else {
+    createPDF();
+  }
+}
+
+function createPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  let y = 10;
+  const pageHeight = doc.internal.pageSize.height;
+  const leftMargin = 10;
+  const lineHeight = 7;
+  doc.setFont('Courier', 'normal');
+  doc.setFontSize(10);
+
+  keylogs.slice().reverse().forEach(log => {
+    const lines = doc.splitTextToSize(log.text, 190);
+    lines.forEach(line => {
+      if (y + lineHeight > pageHeight - 10) {
+        doc.addPage();
+        y = 10;
+      }
+      doc.text(leftMargin, y, line);
+      y += lineHeight;
+    });
+    y += lineHeight; // extra space between logs
+  });
+
+  const filename = `recon_keylogs_${new Date().toISOString().slice(0,10)}.pdf`;
+  doc.save(filename);
+}
+
+// Dynamically load external script
+function loadScript(src, callback) {
+  const script = document.createElement('script');
+  script.src = src;
+  script.onload = callback;
+  document.head.appendChild(script);
+}
+
+// Filter keylogs on search input
+keyloggerSearch.addEventListener('input', () => {
+  renderKeylogs(keyloggerSearch.value);
+});
+
+// Clear keylogs button
+clearKeylogsBtn.addEventListener('click', clearKeylogs);
+
+// Toggle auto-scroll button
+toggleAutoscrollBtn.addEventListener('click', toggleAutoScroll);
+
+// Export button
+exportBtn.addEventListener('click', exportKeylogs);
+
+// Load keylogs on page load
+loadKeylogs();
+renderKeylogs();
+
+// Your original code below (unchanged):
+
+function logToKeylogger(target, dns, ipinfo, whois) {
+  addKeylogEntry(target, dns, ipinfo, whois);
+}
+
+async function fetchDNS(target) {
+  try {
+    const res = await fetch(`https://cloudflare-dns.com/dns-query?name=${target}&type=A`, {
+      headers: { 'Accept': 'application/dns-json' }
+    });
+    const data = await res.json();
+    return data.Answer ? data.Answer.map(a => `${a.name} - ${a.data}`).join('\n') : 'No A records.';
+  } catch (e) {
+    return 'DNS Error: ' + e.message;
+  }
+}
+
+async function fetchIPInfo(target) {
+  try {
+    let ip = target;
+    if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(target)) {
+      const res = await fetch(`https://cloudflare-dns.com/dns-query?name=${target}&type=A`, {
+        headers: { 'Accept': 'application/dns-json' }
+      });
+      const data = await res.json();
+      if (!data.Answer?.length) throw new Error('DNS resolution failed');
+      ip = data.Answer[0].data;
+    }
+    const infoRes = await fetch(`https://ipinfo.io/${ip}/json?token=67c480311c9367`);
+    const info = await infoRes.json();
+    return JSON.stringify(info, null, 2);
+  } catch (e) {
+    return 'IP Info Error: ' + e.message;
+  }
+}
+
+async function fetchWhois(target) {
+  try {
+    const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent('https://whois.arin.net/rest/nets;q=' + target)}`);
+    const data = await res.json();
+    return data.contents || 'No WHOIS data found.';
+  } catch (e) {
+    return 'WHOIS Error: ' + e.message;
+  }
+}
+
+async function runRecon(target) {
+  resultsDiv.innerHTML = `
+    <div class="spinner">
+      <div></div>
+      <span>Running reconnaissance on <strong>${sanitizeHTML(target)}</strong>...</span>
+    </div>
+  `;
+  addToHistory(target);
+  const [dns, ipinfo, whois] = await Promise.all([
+    fetchDNS(target), fetchIPInfo(target), fetchWhois(target)
+  ]);
+  resultsDiv.innerHTML = `
+    <div class="section">
+      <h3>DNS A Records</h3>
+      <pre>${sanitizeHTML(dns)}</pre>
+    </div>
+    <div class="section">
+      <h3>IP Info</h3>
+      <pre>${sanitizeHTML(ipinfo)}</pre>
+    </div>
+    <div class="section">
+      <h3>WHOIS</h3>
+      <pre>${sanitizeHTML(whois)}</pre>
+    </div>`;
+  logToKeylogger(target, dns, ipinfo, whois);
+}
+
+runBtn.addEventListener('click', () => {
+  const target = targetInput.value.trim();
+  if (target) runRecon(target);
+});
+
+targetInput.addEventListener('keypress', e => {
+  if (e.key === 'Enter') runBtn.click();
+});
+
+document.querySelectorAll('.tool-redirect').forEach(select => {
+  select.addEventListener('change', function () {
+    if (this.value !== "#") window.location.href = this.value;
+  });
+});
+
+renderHistory();
+</script>
+</body>
+</html>

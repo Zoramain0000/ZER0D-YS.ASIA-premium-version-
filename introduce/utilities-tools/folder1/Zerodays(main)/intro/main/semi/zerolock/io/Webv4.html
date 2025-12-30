@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>🍹 Random Cocktail Creator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+      font-family: 'Courier New', monospace;
+      margin: 0;
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    h1 { color: red; margin-bottom: 20px; }
+
+    .box {
+background: rgba(0,0,0,0.5);
+      padding: 20px;
+      border-radius: 10px;
+      max-width: 700px;
+      width: 100%;
+      box-shadow: 0 0 10px #000;
+      text-align: center;
+    }
+
+    button {
+      margin: 8px;
+      padding: 10px 16px;
+      border: none;
+      background: red;
+      color: green;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1em;
+    }
+
+    button:hover { background: rgba(0,0,0,0.5);}
+
+    img {
+      margin-top: 15px;
+      max-width: 100%;
+      border-radius: 8px;
+      box-shadow: 0 0 10px red;
+    }
+
+    pre {
+background: rgba(0,0,0,0.5);
+      color: red;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 15px;
+      white-space: pre-wrap;
+      text-align: left;
+    }
+
+    .history {
+      margin-top: 15px;
+background: rgba(0,0,0,0.5);
+      padding: 10px;
+      border-radius: 8px;
+      max-height: 200px;
+      overflow-y: auto;
+      text-align: left;
+      font-size: 0.9em;
+    }
+
+    footer {
+      margin-top: 30px;
+      color: red;
+      font-size: 0.9em;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <h1>🍹 Random Cocktail Creator</h1>
+  <div class="box">
+    <button onclick="fetchCocktail()">🍸 Get Cocktail</button>
+    <button onclick="copyRecipe()">📋 Copy Recipe</button>
+    <button onclick="exportJSON()">💾 Export JSON</button>
+
+    <img id="cocktailImg" style="display:none;" />
+    <pre id="output">Click the button to discover a cocktail!</pre>
+
+    <h3>🕒 Visit History</h3>
+    <div class="history" id="historyLog">No history yet.</div>
+  </div>
+
+  <footer>
+    🔐 Powered by <a href="https://www.thecocktaildb.com" target="_blank" style="color:#0af;">TheCocktailDB API</a> • Auto-refresh every 60 s • © 2025 ZeroDayAI
+  </footer>
+
+  <script>
+    let lastCocktail = null;
+    const historyList = [];
+
+    async function fetchCocktail() {
+      const img = document.getElementById("cocktailImg");
+      const out = document.getElementById("output");
+      const log = document.getElementById("historyLog");
+
+      img.style.display = "none";
+      out.textContent = "⏳ Fetching a random cocktail...";
+
+      try {
+        const res = await fetch("https://www.thecocktaildb.com/api/json/v1/1/random.php");
+        const data = await res.json();
+        const drink = data.drinks[0];
+        lastCocktail = drink;
+        historyList.push({ name: drink.strDrink });
+
+        // Build ingredients list
+        let ingredients = "";
+        for (let i = 1; i <= 15; i++) {
+          const ing = drink[`strIngredient${i}`];
+          const meas = drink[`strMeasure${i}`];
+          if (ing) ingredients += `- ${ing}${meas ? `: ${meas}` : ""}\n`;
+        }
+
+        out.textContent = `
+🍹 ${drink.strDrink}
+📂 Category  : ${drink.strCategory}
+📌 Alcoholic : ${drink.strAlcoholic}
+📍 Glass     : ${drink.strGlass}
+
+📝 Ingredients:
+${ingredients}
+
+🛠️ Instructions:
+${drink.strInstructions}
+        `.trim();
+
+        img.src = drink.strDrinkThumb;
+        img.style.display = "block";
+
+        // Update history display
+        log.innerHTML = historyList.map((h, i) => `${i+1}. ${h.name}`).join("\n");
+      } catch (e) {
+        out.textContent = "❌ Error fetching cocktail.";
+        console.error(e);
+      }
+    }
+
+    function copyRecipe() {
+      if (!lastCocktail) return alert("Nothing to copy!");
+      let text = `🍹 ${lastCocktail.strDrink}\n\nIngredients:\n`;
+      for (let i = 1; i <= 15; i++) {
+        const ing = lastCocktail[`strIngredient${i}`];
+        const meas = lastCocktail[`strMeasure${i}`];
+        if (ing) text += `- ${ing}${meas ? ` (${meas})` : ""}\n`;
+      }
+      text += `\nInstructions:\n${lastCocktail.strInstructions}`;
+      navigator.clipboard.writeText(text)
+        .then(() => alert("✅ Recipe copied!"), () => alert("❌ Copy failed."));
+    }
+
+    function exportJSON() {
+      if (!lastCocktail) return alert("Nothing to export!");
+      const blob = new Blob([JSON.stringify(lastCocktail, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `cocktail_${lastCocktail.strDrink.replace(/\s/g,"_")}.json`;
+      a.click();
+    }
+
+    setInterval(fetchCocktail, 60000);
+  </script>
+</body>
+</html>

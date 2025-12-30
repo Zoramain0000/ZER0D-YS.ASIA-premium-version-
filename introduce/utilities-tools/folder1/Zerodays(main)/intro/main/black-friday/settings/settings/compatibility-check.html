@@ -1,0 +1,132 @@
+  <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>🔮 Compatibility Check Wizard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Courier New', monospace;
+background: #000 url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s') ;
+      color: red;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    header {
+      text-align: center;
+      padding: 20px;
+      font-size: 1.8em;
+      background: rgba(0, 0, 0, 0.7);
+      border-bottom: 2px solid red;
+    }
+
+    main {
+      flex: 1;
+      padding: 20px;
+    }
+
+    .check {
+      border: 1px solid red;
+      padding: 10px;
+      margin-bottom: 15px;
+      background: rgba(255, 0, 0, 0.05);
+    }
+
+    .pass {
+      color: lime;
+    }
+
+    .fail {
+      color: red;
+    }
+
+    h2 {
+      margin-top: 0;
+      font-size: 1.2em;
+      border-bottom: 1px solid red;
+      padding-bottom: 5px;
+    }
+
+    footer {
+      text-align: center;
+      font-size: 0.8em;
+      padding: 10px;
+      background: rgba(0, 0, 0, 0.6);
+      border-top: 1px solid red;
+    }
+
+    ul {
+      padding-left: 20px;
+    }
+  </style>
+</head>
+<body>
+  <header>🔮 Compatibility Check Wizard</header>
+  <main>
+    <div class="check" id="sysInfo">
+      <h2>🧠 System Info</h2>
+      <ul id="sysList"></ul>
+    </div>
+
+    <div class="check" id="featureCheck">
+      <h2>🧪 Feature Support</h2>
+      <ul id="featureList"></ul>
+    </div>
+  </main>
+
+  <footer>© 2025 ZeroDayAI — Educational & Ethical Use Only</footer>
+
+  <script>
+    function checkSupport(name, condition) {
+      return `<li>${name}: <span class="${condition ? 'pass' : 'fail'}">${condition ? '✔ Supported' : '✘ Not Supported'}</span></li>`;
+    }
+
+    function systemInfo() {
+      const list = document.getElementById("sysList");
+      const entries = [
+        ["User Agent", navigator.userAgent],
+        ["Platform", navigator.platform],
+        ["Language", navigator.language],
+        ["CPU Cores", navigator.hardwareConcurrency || "Unknown"],
+        ["Memory (approx)", navigator.deviceMemory ? navigator.deviceMemory + " GB" : "Unknown"],
+        ["Screen Resolution", screen.width + "x" + screen.height],
+        ["Color Depth", screen.colorDepth],
+        ["Timezone", Intl.DateTimeFormat().resolvedOptions().timeZone]
+      ];
+      list.innerHTML = entries.map(e => `<li>${e[0]}: <span class="pass">${e[1]}</span></li>`).join("");
+    }
+
+    function featureSupport() {
+      const list = document.getElementById("featureList");
+      const tests = [
+        ["WebGL", (() => {
+          try {
+            const canvas = document.createElement("canvas");
+            return !!window.WebGLRenderingContext && !!canvas.getContext("webgl");
+          } catch {
+            return false;
+          }
+        })()],
+        ["WebRTC", typeof RTCPeerConnection !== "undefined"],
+        ["WebAudio", typeof AudioContext !== "undefined" || typeof webkitAudioContext !== "undefined"],
+        ["Vibration API", "vibrate" in navigator],
+        ["Battery API", "getBattery" in navigator],
+        ["Geolocation", "geolocation" in navigator],
+        ["Clipboard API", "clipboard" in navigator],
+        ["Media Devices", !!navigator.mediaDevices],
+        ["Local Storage", "localStorage" in window],
+        ["Session Storage", "sessionStorage" in window],
+        ["Service Workers", "serviceWorker" in navigator],
+        ["Fullscreen API", "requestFullscreen" in document.documentElement]
+      ];
+      list.innerHTML = tests.map(([name, supported]) => checkSupport(name, supported)).join("");
+    }
+
+    systemInfo();
+    featureSupport();
+  </script>
+</body>
+</html>

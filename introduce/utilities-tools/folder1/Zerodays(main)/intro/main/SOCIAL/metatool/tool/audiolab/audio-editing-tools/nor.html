@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Advanced Audio Equalizer</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+
+    .container {
+      width: 90%;
+      max-width: 900px;
+      padding: 30px;
+background: rgba(0, 0, 0, 0.5);
+      border-radius: 10px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    }
+
+    h1, h2 {
+      text-align: center;
+      color: red;
+    }
+
+    .audio-info, .normalization-section, .equalizer-section {
+      margin: 20px 0;
+    }
+
+    label {
+      display: block;
+      margin: 10px 0
+background: rgba(0, 0, 0, 0.5);
+    }
+
+    input[type="range"] {
+      width: 100%;
+background: rgba(0, 0, 0, 0.5);
+    }
+
+    audio {
+      width: 100%;
+      margin-top: 10px;
+    }
+
+    .equalizer-band {
+      margin: 10px 0;
+      
+    }
+
+    button {
+      display: block;
+      width: 100%;
+      padding: 12px;
+      margin-top: 20px;
+      background-color: red;
+      color: green;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+background: rgba(0, 0, 0, 0.5);
+    }
+
+    input[type="file"] {
+      margin-top: 10px;
+background: rgba(0, 0, 0, 0.5);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎧 Advanced Audio Normalization Tool</h1>
+    
+    <div class="audio-info">
+      <p>Audio Name: <span id="audio-name">None</span></p>
+      <input type="file" id="file-input" accept="audio/*">
+      <audio id="audio-player" controls></audio>
+    </div>
+
+    <div class="normalization-section">
+      <h2>Normalization Filter</h2>
+      <label><input type="radio" name="normalization" value="original" checked> Original Audio</label>
+      <label><input type="radio" name="normalization" value="dynamic"> Dynamic Audio Normalizer</label>
+      <label><input type="radio" name="normalization" value="loudness"> Loudness Normalization</label>
+      <label><input type="radio" name="normalization" value="speech"> Speech Normalizer</label>
+    </div>
+
+    <div class="equalizer-section">
+      <h2>8-Band Equalizer</h2>
+      <div class="equalizer-band"><label>64Hz <input type="range" min="-12" max="12" value="0" step="1" data-freq="64"></label></div>
+      <div class="equalizer-band"><label>128Hz <input type="range" min="-12" max="12" value="0" step="1" data-freq="128"></label></div>
+      <div class="equalizer-band"><label>256Hz <input type="range" min="-12" max="12" value="0" step="1" data-freq="256"></label></div>
+      <div class="equalizer-band"><label>512Hz <input type="range" min="-12" max="12" value="0" step="1" data-freq="512"></label></div>
+      <div class="equalizer-band"><label>1kHz <input type="range" min="-12" max="12" value="0" step="1" data-freq="1000"></label></div>
+      <div class="equalizer-band"><label>2kHz <input type="range" min="-12" max="12" value="0" step="1" data-freq="2000"></label></div>
+      <div class="equalizer-band"><label>4kHz <input type="range" min="-12" max="12" value="0" step="1" data-freq="4000"></label></div>
+      <div class="equalizer-band"><label>8kHz <input type="range" min="-12" max="12" value="0" step="1" data-freq="8000"></label></div>
+    </div>
+
+    <button id="save-settings">💾 Save Settings</button>
+  </div>
+
+  <script>
+    const audioName = document.getElementById('audio-name');
+    const fileInput = document.getElementById('file-input');
+    const audioPlayer = document.getElementById('audio-player');
+
+    let audioContext, sourceNode, gainNodes = [], filters = [];
+
+    const frequencies = [64, 128, 256, 512, 1000, 2000, 4000, 8000];
+
+    fileInput.addEventListener('change', function() {
+      const file = this.files[0];
+      if (file) {
+        audioName.textContent = file.name;
+        const url = URL.createObjectURL(file);
+        audioPlayer.src = url;
+
+        if (audioContext) {
+          audioContext.close();
+        }
+
+        setupAudioProcessing(url);
+      }
+    });
+
+    function setupAudioProcessing(url) {
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+      const track = audioPlayer;
+      sourceNode = audioContext.createMediaElementSource(track);
+
+      filters = frequencies.map(freq => {
+        const filter = audioContext.createBiquadFilter();
+        filter.type = 'peaking';
+        filter.frequency.value = freq;
+        filter.Q.value = 1;
+        filter.gain.value = 0;
+        return filter;
+      });
+
+      // Chain the filters
+      filters.reduce((prev, curr) => {
+        prev.connect(curr);
+        return curr;
+      });
+
+      sourceNode.connect(filters[0]);
+      filters[filters.length - 1].connect(audioContext.destination);
+    }
+
+    document.querySelectorAll('input[data-freq]').forEach(slider => {
+      slider.addEventListener('input', () => {
+        const freq = parseInt(slider.dataset.freq);
+        const gain = parseFloat(slider.value);
+
+        const filter = filters.find(f => f.frequency.value === freq);
+        if (filter) {
+          filter.gain.value = gain;
+        }
+      });
+    });
+
+    document.getElementById('save-settings').addEventListener('click', () => {
+      const eqSettings = [];
+      document.querySelectorAll('input[data-freq]').forEach(slider => {
+        eqSettings.push({
+          frequency: slider.dataset.freq,
+          gain: slider.value
+        });
+      });
+
+      const normalization = document.querySelector('input[name="normalization"]:checked').value;
+      const settings = {
+        normalization,
+        equalizer: eqSettings
+      };
+
+      alert("Saved Settings:\n" + JSON.stringify(settings, null, 2));
+    });
+  </script>
+</body>
+</html>

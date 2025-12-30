@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Advanced Crypto Tracker</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+    }
+
+    header {
+      padding: 1rem 2rem;
+background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    header h1 {
+      font-size: 1.5rem;
+      margin: 0.5rem 0;
+    }
+
+    #controls {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    input, select, button {
+      padding: 0.5rem;
+      font-size: 1rem;
+      border-radius: 5px;
+      border: none;
+    }
+
+    #themeToggle {
+      background: #333;
+      color: red;
+      cursor: pointer;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem auto;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 1rem;
+      border-bottom: 1px solid #333;
+    }
+
+    th {
+      cursor: pointer;
+    }
+
+    tr:hover {
+      background-color: #1d1d1d;
+    }
+
+    .positive {
+      color: #00e676;
+    }
+
+    .negative {
+      color: #ff1744;
+    }
+
+    .light {
+      background: #f7f7f7;
+      color: #000;
+    }
+
+    .light header {
+      background: #ffffff;
+    }
+
+    .light tr:hover {
+      background: #e0e0e0;
+    }
+
+    .light input,
+    .light select,
+    .light button {
+      background: #ddd;
+      color: #000;
+    }
+
+    canvas {
+      width: 100%;
+      max-height: 300px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>📊 Advanced Crypto Tracker</h1>
+    <div id="controls">
+      <input type="text" id="search" placeholder="Search coin..." />
+      <select id="currency">
+        <option value="usd">USD</option>
+        <option value="eur">EUR</option>
+        <option value="btc">BTC</option>
+      </select>
+      <button id="exportCsv">Export CSV</button>
+      <button id="themeToggle">🌙 Theme</button>
+    </div>
+  </header>
+
+  <table id="cryptoTable">
+    <thead>
+      <tr>
+        <th data-sort="name">Name</th>
+        <th data-sort="price">Price</th>
+        <th data-sort="market_cap">Market Cap</th>
+        <th data-sort="volume">24h Volume</th>
+        <th data-sort="change">Change (24h)</th>
+        <th>Sparkline</th>
+      </tr>
+    </thead>
+    <tbody id="cryptoBody"></tbody>
+  </table>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    let coinsData = [];
+    let currentSort = { key: '', asc: true };
+    let currency = 'usd';
+
+    async function fetchCryptoData() {
+      try {
+        const res = await fetch(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=${currency}&order=market_cap_desc&per_page=25&page=1&sparkline=true&price_change_percentage=24h`);
+        coinsData = await res.json();
+        displayData(coinsData);
+      } catch (error) {
+        alert('Failed to load data. Try again later.');
+      }
+    }
+
+    function displayData(data) {
+      const tbody = document.getElementById('cryptoBody');
+      tbody.innerHTML = '';
+
+      data.forEach(coin => {
+        const row = document.createElement('tr');
+        const chartId = `sparkline-${coin.id}`;
+        row.innerHTML = `
+          <td><img src="${coin.image}" alt="${coin.name}" width="20"> ${coin.name} (${coin.symbol.toUpperCase()})</td>
+          <td>${currency.toUpperCase()} ${coin.current_price.toLocaleString()}</td>
+          <td>${currency.toUpperCase()} ${coin.market_cap.toLocaleString()}</td>
+          <td>${currency.toUpperCase()} ${coin.total_volume.toLocaleString()}</td>
+          <td class="${coin.price_change_percentage_24h >= 0 ? 'positive' : 'negative'}">
+            ${coin.price_change_percentage_24h.toFixed(2)}%
+          </td>
+          <td><canvas id="${chartId}" height="50"></canvas></td>
+        `;
+        tbody.appendChild(row);
+
+        const ctx = document.getElementById(chartId).getContext('2d');
+        new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: coin.sparkline_in_7d.price.map((_, i) => i),
+            datasets: [{
+              data: coin.sparkline_in_7d.price,
+              borderColor: '#00e676',
+              borderWidth: 1,
+              pointRadius: 0,
+              fill: false
+            }]
+          },
+          options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: { x: { display: false }, y: { display: false } }
+          }
+        });
+      });
+    }
+
+    function sortBy(key) {
+      if (currentSort.key === key) {
+        currentSort.asc = !currentSort.asc;
+      } else {
+        currentSort = { key, asc: true };
+      }
+
+      coinsData.sort((a, b) => {
+        let valA, valB;
+        switch (key) {
+          case 'name': valA = a.name.toLowerCase(); valB = b.name.toLowerCase(); break;
+          case 'price': valA = a.current_price; valB = b.current_price; break;
+          case 'market_cap': valA = a.market_cap; valB = b.market_cap; break;
+          case 'volume': valA = a.total_volume; valB = b.total_volume; break;
+          case 'change': valA = a.price_change_percentage_24h; valB = b.price_change_percentage_24h; break;
+        }
+        return currentSort.asc ? valA - valB : valB - valA;
+      });
+      displayData(coinsData);
+    }
+
+    document.querySelectorAll('th[data-sort]').forEach(th => {
+      th.addEventListener('click', () => sortBy(th.dataset.sort));
+    });
+
+    document.getElementById('search').addEventListener('input', e => {
+      const term = e.target.value.toLowerCase();
+      const filtered = coinsData.filter(c =>
+        c.name.toLowerCase().includes(term) || c.symbol.toLowerCase().includes(term)
+      );
+      displayData(filtered);
+    });
+
+    document.getElementById('currency').addEventListener('change', e => {
+      currency = e.target.value;
+      fetchCryptoData();
+    });
+
+    document.getElementById('exportCsv').addEventListener('click', () => {
+      const rows = [
+        ['Name', 'Symbol', 'Price', 'Market Cap', 'Volume', 'Change (24h)'],
+        ...coinsData.map(c => [
+          c.name, c.symbol.toUpperCase(),
+          c.current_price, c.market_cap,
+          c.total_volume, `${c.price_change_percentage_24h.toFixed(2)}%`
+        ])
+      ];
+
+      const csvContent = 'data:text/csv;charset=utf-8,' +
+        rows.map(e => e.join(',')).join('\n');
+
+      const link = document.createElement('a');
+      link.setAttribute('href', csvContent);
+      link.setAttribute('download', 'crypto_data.csv');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    });
+
+    document.getElementById('themeToggle').addEventListener('click', () => {
+      document.body.classList.toggle('light');
+    });
+
+fetchCryptoData();
+setInterval(fetchCryptoData, 10000); // Refresh every 10 seconds
+
+  </script>
+</body>
+</html>

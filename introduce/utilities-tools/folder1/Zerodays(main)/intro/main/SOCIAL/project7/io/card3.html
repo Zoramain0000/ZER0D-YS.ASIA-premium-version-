@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>💳 Credit Card Generator Tool</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      padding: 30px;
+      text-align: center;
+    }
+
+    h1 {
+      color: red;
+    }
+
+    .card {
+      width: 350px;
+      margin: 20px auto;
+      padding: 20px;
+      border-radius: 12px;
+background: rgba(0, 0, 0, 0.5);
+      color: red;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+      text-align: left;
+    }
+
+    .card h2 {
+      margin-top: 0;
+    }
+
+    .card p {
+      margin: 6px 0;
+      font-size: 15px;
+    }
+
+    button {
+      margin: 10px;
+      padding: 10px 20px;
+      background: red;
+      color: green;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      
+background: rgba(0, 0, 0, 0.5);
+
+    .brand {
+      text-transform: uppercase;
+      font-weight: bold;
+      font-size: 13px;
+      letter-spacing: 1px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>💳 Credit Card Generator</h1>
+
+<div class="card" id="cardBox">
+  <h2 id="cardBrand">VISA</h2>
+  <p><strong>Card Number:</strong> <span id="cardNumber">XXXX XXXX XXXX XXXX</span></p>
+  <p><strong>First Name:</strong> <span id="firstName">JOHN</span></p>
+  <p><strong>Last Name:</strong> <span id="lastName">DOE</span></p>
+  <p><strong>Expiry:</strong> <span id="cardExpiry">MM/YY</span></p>
+  <p><strong>CVV:</strong> <span id="cardCVV">XXX</span></p>
+</div>
+
+<button onclick="generateCard()">🔁 Generate Card</button>
+<button onclick="copyCard()">📋 Copy</button>
+
+<script>
+const cardBrands = {
+  VISA: { prefix: ["4"], length: 16 },
+  MasterCard: { prefix: ["51", "52", "53", "54", "55", "2221", "2720"], length: 16 },
+  Amex: { prefix: ["34", "37"], length: 15 },
+  Discover: { prefix: ["6011", "622126", "622925", "644", "645", "646", "647", "648", "649", "65"], length: 16 },
+  JCB: { prefix: ["3528", "3589"], length: 16 },
+  DinersClub: { prefix: ["300", "301", "302", "303", "304", "305", "36", "38", "39"], length: 14 },
+  UnionPay: { prefix: ["62"], length: 16 },
+  Maestro: { prefix: ["5018", "5020", "5038", "5612", "5893", "6304", "6759", "6761", "6762", "6763"], length: 16 },
+  RuPay: { prefix: ["6521", "6522", "60", "65", "508", "6069"], length: 16 },
+  MIR: { prefix: ["2200", "2201", "2202", "2203", "2204"], length: 16 },
+  Troy: { prefix: ["9792"], length: 16 },
+  NPSPridnestrovie: { prefix: ["605474"], length: 16 },
+  UPI: { prefix: ["6071", "6072", "6073"], length: 16 },
+  Verve: { prefix: ["506099", "506198", "507865", "650002", "650027"], length: 16 },
+  LankaPay: { prefix: ["357111"], length: 16 }
+};
+
+const firstNames = [
+    "Alex", "Jordan", "Taylor", "Morgan", "Casey", "Jamie", "Blake", "Skyler", "Riley", "Dakota", 
+    "Abby", "Abigail", "Ada", "Addie", "Addison", "Adelaide", "Adele", "Adora", "Adriana", "Ælfgifu", 
+    "Æthelburh", "Agnes", "Aileen", "Alaina", "Alanna", "Alberta", "Albina", "Aleana", "Alexa", 
+    "Alexandra", "Alexandria", "Alexis", "Alice", "Alicia", "Alisha", "Alison", "Allyson", "Alma", 
+    "Althea", "Alvina", "Alyson", "Amanda", "Amber", "Amberley", "Amelia", "Amy", "Ana", "Andrea", 
+    "Andrée", "Andy", "Angel", "Angela", "Angelica", "Angelina", "Angella", "Angie", "Anna", 
+    "Annabelle", "Annabeth", "Anne", "Annette", "Annie", "Antonia", "April", "Arabella", "Arda", 
+    "Ariana", "Ariel", "Arya", "Ash", "Ashley", "Astrid", "Aubrey", "Audra", "Audrey", "Aurora", 
+    "Autumn", "Averil", "Avis", "Azalea", "Babette", "Barb", "Barbara", "Beatrice", "Beatrix", 
+    "Beau", "Becca", "Becki", "Becky", "Belinda", "Bella", "Berenice", "Bertha", "Betsy", 
+    "Bettina", "Betty", "Beverly", "Bianca", "Blair", "Blake", "Blanche", "Blossom", "Bobbi", 
+    "Bobby", "Bonnie", "Braden", "Brandy", "Brenda", "Brianna", "Bridget", "Brielle", "Brilliana", 
+    "Brooklyn", "Brynlee", "Bryony", "Caden", "Calla", "Candy", "Cara", "Cari", "Carina", 
+    "Carissa", "Carlena", "Carlene", "Carlie", "Carly", "Carmelita", "Carol", "Carol Ann", 
+    "Carol Anne", "Carole", "Carolina", "Caroline", "Carolyn", "Carrie Ann", "Carrie Anne", 
+    "Carroll", "Carry", "Carson", "Cary", "Casey", "Cassandra", "Cassidy", "Cathleen", "Cathy", 
+    "Cecilia", "Cecily", "Celestia", "Celia", "Celinda", "Chara", "Charis", "Charisse", 
+    "Charity", "Charla", "Charle", "Charlee", "Charlene", "Charley", "Charli", "Charlie", 
+    "Charlotte", "Charly", "Charlyne", "Charmaine", "Chas", "Chelsea", "Cherry", "Cheryl", 
+    "Chloe", "Chris", "Christabel", "Christi", "Christina", "Christine", "Christy", "Cindy", 
+    "Claire", "Clara", "Clare", "Claribel", "Clarice", "Clarissa", "Claudia", "Clementine", 
+    "Clover", "Cody", "Colette", "Colleen", "Constance", "Cora", "Coral", "Coraline", 
+    "Cordelia", "Courtney", "Crystal", "Cynthia",
+    "Daenerys", "Daisy", "Dana", "Dani", "Danielle", "Danna", "Daphne", "Darla", "Darlene", 
+    "Davina", "Dawn", "Deanna", "D", "Deanne", "Deb", "Debbie", "Deborah", "Dede", "Deja", 
+    "Delaney", "Delia", "Demetria", "Demi", "Denise", "Destiny", "Devon", "Diamond", "Diana", 
+    "Diane", "Dimity", "Donna", "Dora", "Doreen", "Doris", "Dorothy", "Dottie", "Drew", 
+    "Dulcie", "E", "Eadgifu", "Ealdgyth", "Ebony", "Edburga", "Eden", "Edith", "Edna", 
+    "Edris", "Edwina", "Effie", "Eileen", "Elaine", "Eleanor", "Elektra", "Elisha", "Eliza", 
+    "Elizabeth", "Ella", "Elle", "Ellen", "Ellie", "Ellis", "Elora", "Ember", "Emerald", 
+    "Emily", "Emma", "Enid", "Erika", "Erin", "Estelle", "Esther", "Esty", "Ethel", 
+    "Etheldreda", "Etty", "Eudora", "Eva", "Evan", "Evangelina", "Eve", "Evelyn", "F", 
+    "Fabienne", "Faith", "Fancy", "Faye", "Felicity", "Fern", "Finn", "Fiona", "Fleur", 
+    "Florence", "Frances", "Francie", "Francine", "Frankie", "Frederica", "Frida", "G", 
+    "Gage", "Gail", "Gale", "Gemma", "Gene", "Genevieve", "Georgene", "Georgette", "Georgia", 
+    "Georgiana", "Georgina", "Gertie", "Gertrude", "Gia", "Gina", "Ginny", "Giselle", 
+    "Gladys", "Glenda", "Glenna", "Gloria", "Glynis", "Goldie", "Grace", "Gussie", "Gwen", 
+    "Gwenda", "Gwendolen", "Gwendoline", "Gwendolyn", "Gwyneth",
+    "Haisley", "Haley", "Hannah", "Harmony", "Harriet", "Hayden", "Hayley", "Hazel", 
+    "Heather", "Heidi", "Helen", "Helena", "Helene", "Henrietta", "Hero", "Hester", 
+    "Hilary", "Hilda", "Hodierna", "Holly", "Honor", "Hope", "Hunter", 
+    "Ida", "Ila", "Imelda", "Imogen", "Ingrid", "Iona", "Irene", "Iris", 
+    "Irma", "Isa", "Isabel", "Isabella", "Isla", "Ivy", 
+    "Jacinta", "Jack", "Jackie", "Jacqueline", "Jacqui", "Jade", "Jaime", "Jamie", 
+    "Jan", "Jana", "Jane", "Janee", "Janelle", "Janet", "Janey", "Janie", 
+    "January", "Jasmine", "Jay", "Jayda", "Jayden", "Jayne", "Jaynie", 
+    "Jean", "Jeanie", "Jeannie", "Jemima", "Jemma", "Jenna", "Jennifer", "Jenny", 
+    "Jensen", "Jerri", "Jerry", "Jess", "Jessica", "Jessie", "Jill", 
+    "Joan", "Joanna", "Joanne", "Jodi", "Jodie", "Jody", "Joelle", 
+    "Joey", "Johnny", "Jolie", "Jordan", 
+    "Josephine", "Josie", "Joy", "Joyce", "Judith", "Julia", "Julianne", 
+    "Julie", "Juliet", "June", "Juniper", "Juno", "Justine", 
+    "Kailey", "Kalla", "Kara", "Karen", "Karin", "Karlee", "Karlene", 
+    "Karli", "Karlie", "Karly", "Karolyn", "Karrie", "Karyn", "Karyne", 
+    "Kasey", "Kate", "Katey", "Kathleen", "Kathryn", "Kathy", "Katie", 
+    "Katina", "Katrina", "Katy", "Kay", "Kayla", "Kaylee", "Kelly", 
+    "Kelsey", "Kierra", "Kim", "Kimberly", "Kira", "Kirsteen", 
+    "Kirstin", "Kitty", "Krista", "Kristen", "Kristi", "Kristin", 
+    "Kristy", "Kylie", "Kyra",
+    "Lacey", "Lana", "Lanna", "Lara", "Larissa", "Laura", "Laurel", "Lauren", 
+    "Laurence", "Lauretta", "Laurie", "Lauryn", "Lavender", "Leah", "Leanne", 
+    "Lee", "Leila", "Leisha", "Lena", "Lenna", "Leona", "Leonora", "Leslie", 
+    "Lettice", "Lexi", "Lila", "Liliana", "Lilibet", "Lilibeth", "Lilla", 
+    "Lillian", "Lillie", "Lilly", "Lily", "Lina", "Linda", "Lindsay", 
+    "Lindy", "Lisa", "Liza", "Lizzie", "Lois", "Loraine", "Lorelei", 
+    "Lorena", "Loretta", "Lori", "Lorinda", "Lorna", "Lorraine", "Lottie", 
+    "Lotty", "Louella", "Louisa", "Louise", "Lucia", "Lucinda", "Lucy", 
+    "Lydia", "Lyndsay", "Lynnette", "Lysette", "Mabel", "Mable", "Macy", 
+    "Madelaine", "Madeleine", "Madelyn", "Madge", "Madison", "Madonna", 
+    "Mae", "Maggie", "Magnolia", "Mallory", "Mandy", "Mara", "Marcia", 
+    "Marcie", "Margaret", "Margie", "Margo", "Maria", "Mariah", "Marian", 
+    "Marianne", "Marie", "Marigold", "Marilyn", "Marina", "Marissa", 
+    "Marjorie", "Marlene", "Marsha", "Marta", "Martha", "Martina", 
+    "Mary", "Mary Belle", "Maryanne", "Mason", "Matilda", "Maud", 
+    "Maude", "Maura", "Maureen", "Mavis", "Maxine", "May", "Maya", 
+    "Mayola", "McKenna", "Meara", "Medea", "Megan", "Mehitable", 
+    "Mel", "Melanie", "Melina", "Melinda", "Melissa", "Melody", 
+    "Mercedes", "Meredith", "Merilyn", "Merle", "Merrilyn", "Mia", 
+    "Micah", "Michele", "Michelle", "Mila", "Mildred", "Miley", 
+    "Millicent", "Millie", "Mina", "Mindi", "Mindy", "Minerva", 
+    "Minnie", "Miranda", "Miriam", "Misty", "Moira", "Molly", 
+    "Morgan", "Muriel", "Myra", "Myrna", "Myrtle",
+    "Nadia", "Nadine", "Naila", "Nancy", "Naomi", "Narcissa", "Nathalie", 
+    "Nena", "Nettie", "Netty", "Nevaeh", "Nia", "Nicki", "Nicola", 
+    "Nicole", "Nina", "Noel", "Noella", "Noelle",
+    "Napoleon", "Nate", "Nathan", "Nathanael", "Nathaniel", "Ned", "Nehemiah", 
+    "Neil", "Nelson", "Nestor", "Newt", "Newton", "Niall", "Nicholas", 
+    "Nick", "Nicodemus", "Nicolas", "Nigel", "Niles", "Noah", "Noam", 
+    "Norm", "Norman", "Nowell",
+    "Obadiah", "Odin", "Oliver", "Ollie", "Orion", "Orlando", "Orville", 
+    "Osbert", "Osborne", "Oscar", "Osric", "Oswald", "Otis", "Otto", 
+    "Owen", "Ozzie",
+    "Paddy", "Palmer", "Paris", "Patrick", "Patsy", "Patty", "Paul", 
+    "Peleg", "Percival", "Percy", "Perry", "Pete", "Peter", "Philip", 
+    "Phillipps", "Phineas", "Pierse", "Poe", "Porter", "Posy", "Preston",
+    "Quentin", "Quincy", "Quinn",
+    "Race", "Rafe", "Raife", "Raleigh", "Ralph", "Ralphie", "Ramsey", 
+    "Randall", "Randi", "Randolph", "Randy", "Raphael", "Rathbone", 
+    "Ray", "Raymond", "Reese", "Reggie", "Reginald", "Rembrandt", 
+    "Rendell", "Renssalaer", "Reuben", "Rex", "Reynold", "Rhett", 
+    "Rich", "Richard", "Richie", "Rick", "Ricky", "Riley", "Ritchie", 
+    "Rob", "Robbie", "Robert", "Robin", "Roderick", "Rodger", 
+    "Rodney", "Roger", "Rogers", "Roland", "Roman", "Ron", "Ronald", 
+    "Ronnie", "Rory", "Roscoe", "Ross", "Roualeyn", "Rowland", 
+    "Roy", "Rudolph", "Rudy", "Rufus", "Rupert", "Russ", "Russell", 
+    "Ryan", "Ryder",
+    "Sam", "Sammy", "Samson", "Samuel", "Sandy", "Sanford", "Saul", 
+    "Sawyer", "Scott", "Sean", "Sebastian", "Seth", "Seymour", 
+    "Shane", "Shaun", "Shawn", "Shayne", "Sheldon", "Shepherd", 
+    "Sid", "Sidney", "Sigmund", "Simon", "Sky", "Skyler", 
+    "Sloane", "Smith", "Sol", "Solomon", "Spencer", "Stan", 
+    "Stanford", "Stanley", "Stefan", "Stephen", "Stetson", 
+    "Steve", "Stevie", "Stevland", "Stewart", "Storm", "Stuart", 
+    "Swaine", "Syd", "Sydney", "Sylvester",
+    "Tanner", "Taran", "Taylor", "Tazewell", "Ted", "Tedd", "Teddy", 
+    "Terence", "Terry", "Thaddeus", "Theo", "Theodore", "Thomas", 
+    "Thor", "Tim", "Timmy", "Timothy", "Tobias", "Toby", "Tod", 
+    "Todd", "Toddy", "Tom", "Tommie", "Tommy", "Tony", "Tracy", 
+    "Travis", "Tregonwell", "Trent", "Trevor", "Trey", "Tristan", 
+    "Troy", "Truman", "Tucker", "Tyler", "Tyson",
+    "Ultan", "Ulysses", "Uriah",
+    "Val", "Valentine", "Vernon", "Vic", "Vicary", "Victor", "Vince", 
+    "Vincent", "Vinny", "Vivian",
+    "Wade", "Wadsworth", "Walden", "Waldo", "Walker", "Wallace", 
+    "Wally", "Walt", "Walter", "Warren", "Waverly", "Waylon", 
+    "Wayne", "Wells", "Wes", "Wesley", "Whitney", "Wilber", 
+    "Wilbert", "Wilbur", "Wilf", "Wilfred", "Wilfried", "Wilhelm", 
+    "Will", "Willard", "William", "Willis", "Willy", "Wilmon", 
+    "Wilson", "Winnie", "Winston", "Wolfgang", "Woodrow", 
+    "Woodruff", "Woody", "Wyatt", "Wyndham",
+    "Xander", "Xavier",
+    "Yancy",
+    "Zabdiel", "Zach", "Zachary", "Zack", "Zadoc", "Zak", "Zane", 
+    "Zayden", "Zeb", "Zechariah", "Zedekiah", "Zeke", "Zeph", 
+    "Zephaniah", "Zion"
+];
+    
+const lastNames = [
+  "Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis", "Rodriguez", "Martinez",
+  "Hernandez", "Lopez", "Gonzalez", "Wilson", "Anderson", "Thomas", "Taylor", "Moore", "Jackson", "Martin",
+  "Lee", "Perez", "Thompson", "White", "Harris", "Sanchez", "Clark", "Ramirez", "Lewis", "Robinson",
+  "Walker", "Young", "Allen", "King", "Wright", "Scott", "Torres", "Nguyen", "Hill", "Flores",
+  "Green", "Adams", "Nelson", "Baker", "Hall", "Rivera", "Campbell", "Mitchell", "Carter", "Roberts",
+  "Gomez", "Phillips", "Evans", "Turner", "Diaz", "Parker", "Cruz", "Edwards", "Collins", "Reyes",
+  "Stewart", "Morris", "Morales", "Murphy", "Cook", "Rogers", "Gutierrez", "Ortiz", "Morgan", "Cooper",
+  "Peterson", "Bailey", "Reed", "Kelly", "Howard", "Ramos", "Kim", "Cox", "Ward", "Richardson",
+  "Watson", "Brooks", "Chavez", "Wood", "James", "Bennett", "Gray", "Mendoza", "Ruiz", "Hughes",
+  "Price", "Alvarez", "Castillo", "Sanders", "Patel", "Myers", "Long", "Ross", "Foster", "Jimenez",
+  "Powell", "Jenkins", "Perry", "Russell", "Sullivan", "Bell", "Coleman", "Butler", "Henderson", "Barnes",
+  "Gonzales", "Fisher", "Vasquez", "Simmons", "Romero", "Jordan", "Patterson", "Alexander", "Hamilton", "Graham",
+  "Reynolds", "Griffin", "Wallace", "Moreno", "West", "Cole", "Hayes", "Bryant", "Herrera", "Gibson",
+  "Ellis", "Tran", "Medina", "Aguilar", "Stevens", "Murray", "Ford", "Castro", "Marshall", "Owens",
+  "Harrison", "Fernandez", "Mcdonald", "Woods", "Washington", "Kennedy", "Wells", "Vargas", "Henry", "Chen",
+  "Freeman", "Webb", "Tucker", "Guzman", "Burns", "Crawford", "Olson", "Simpson", "Porter", "Hunter",
+  "Gordon", "Mendez", "Silva", "Shaw", "Snyder", "Mason", "Dixon", "Munoz", "Hunt", "Hicks",
+  "Holmes", "Palmer", "Wagner", "Black", "Robertson", "Boyd", "Rose", "Stone", "Salazar", "Fox",
+  "Warren", "Mills", "Meyer", "Rice", "Schmidt", "Garza", "Daniels", "Ferguson", "Nichols", "Stephens",
+  "Soto", "Weaver", "Ryan", "Gardner", "Payne", "Grant", "Dunn", "Kelley", "Spencer", "Hawkins",
+  "Arnold", "Pierce", "Vazquez", "Hansen", "Peters", "Santos", "Hart", "Bradley", "Knight", "Elliott",
+  "Cunningham", "Duncan", "Armstrong", "Hudson", "Carroll", "Lane", "Riley", "Andrews", "Alvarado", "Ray",
+  "Delgado", "Berry", "Perkins", "Hoffman", "Johnston", "Matthews", "Pena", "Richards", "Contreras", "Willis",
+  "Carpenter", "Lawrence", "Sandoval", "Guerrero", "George", "Chapman", "Rios", "Estrada", "Ortega", "Watkins",
+  "Greene", "Nunez", "Wheeler", "Valdez", "Harper", "Burke", "Larson", "Santiago", "Maldonado", "Morrison",
+  "Franklin", "Carlson", "Austin", "Dominguez", "Carr", "Lawson", "Jacobs", "Obrien", "Lynch", "Singh",
+  "Vega", "Bishop", "Montgomery", "Oliver", "Jensen", "Harvey", "Williamson", "Gilbert", "Dean", "Sims",
+  "Espinoza", "Howell", "Li", "Wong", "Reid", "Hanson", "Le", "Mccoy", "Garrett", "Burton",
+  "Fuller", "Wang", "Weber", "Welch", "Rojas", "Lucas", "Marquez", "Fields", "Park", "Yang",
+  "Little", "Banks", "Padilla", "Day", "Walsh", "Bowman", "Schultz", "Luna", "Fowler", "Mejia",
+  "Davidson", "Acosta", "Brewer", "May", "Holland", "Juarez", "Newman", "Pearson", "Curtis", "Cortez",
+  "Douglas", "Schneider", "Joseph", "Barrett", "Navarro", "Figueroa", "Keller", "Avila", "Wade", "Molina",
+  "Stanley", "Hopkins", "Campos", "Barnett", "Bates", "Chambers", "Caldwell", "Beck", "Lambert", "Miranda",
+  "Byrd", "Craig", "Ayala", "Lowe", "Frazier", "Powers", "Neal", "Leonard", "Gregory", "Carrillo",
+  "Sutton", "Fleming", "Rhodes", "Shelton", "Schwartz", "Norris", "Jennings", "Watts", "Duran", "Walters",
+  "Cohen", "Mcdaniel", "Moran", "Parks", "Steele", "Vaughn", "Becker", "Holt", "Deleon", "Barker",
+  "Terry", "Hale", "Leon", "Hail", "Baldwin", "Kirk", "Underwood", "Wilkins", "Gaines", "Madden"
+];
+function randomElement(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function generateLuhnNumber(prefix, length) {
+  let number = prefix;
+  while (number.length < (length - 1)) {
+    number += Math.floor(Math.random() * 10);
+  }
+
+  let sum = 0;
+  let reversed = number.split('').reverse();
+
+  for (let i = 0; i < reversed.length; i++) {
+    let digit = parseInt(reversed[i]);
+    if (i % 2 === 0) {
+      digit *= 2;
+      if (digit > 9) digit -= 9;
+    }
+    sum += digit;
+  }
+
+  let checkDigit = (10 - (sum % 10)) % 10;
+  return number + checkDigit;
+}
+
+function randomExpiry() {
+  const month = String(Math.floor(Math.random() * 12) + 1).padStart(2, '0');
+  const year = String(new Date().getFullYear() + Math.floor(Math.random() * 5) + 1).slice(-2);
+  return `${month}/${year}`;
+}
+
+function randomCVV(length = 3) {
+  let cvv = "";
+  for (let i = 0; i < length; i++) {
+    cvv += Math.floor(Math.random() * 10);
+  }
+  return cvv;
+}
+
+function formatCardNumber(num) {
+  return num.replace(/(.{4})/g, "$1 ").trim();
+}
+
+function generateCard() {
+  const brand = randomElement(Object.keys(cardBrands));
+  const brandInfo = cardBrands[brand];
+  const prefix = randomElement(brandInfo.prefix);
+  const number = generateLuhnNumber(prefix, brandInfo.length);
+  const first = randomElement(firstNames);
+  const last = randomElement(lastNames);
+  const expiry = randomExpiry();
+  const cvv = randomCVV(brand === "Amex" ? 4 : 3);
+
+  document.getElementById("cardBrand").textContent = brand;
+  document.getElementById("cardNumber").textContent = formatCardNumber(number);
+  document.getElementById("firstName").textContent = first;
+  document.getElementById("lastName").textContent = last;
+  document.getElementById("cardExpiry").textContent = expiry;
+  document.getElementById("cardCVV").textContent = cvv;
+}
+
+function copyCard() {
+  const number = document.getElementById("cardNumber").textContent;
+  const first = document.getElementById("firstName").textContent;
+  const last = document.getElementById("lastName").textContent;
+  const expiry = document.getElementById("cardExpiry").textContent;
+  const cvv = document.getElementById("cardCVV").textContent;
+  const brand = document.getElementById("cardBrand").textContent;
+
+  const all = `Brand: ${brand}\nNumber: ${number}\nFirst Name: ${first}\nLast Name: ${last}\nExpiry: ${expiry}\nCVV: ${cvv}`;
+  navigator.clipboard.writeText(all).then(() => alert("Card copied to clipboard!"));
+}
+
+window.onload = generateCard;
+</script>
+
+</body>
+</html>

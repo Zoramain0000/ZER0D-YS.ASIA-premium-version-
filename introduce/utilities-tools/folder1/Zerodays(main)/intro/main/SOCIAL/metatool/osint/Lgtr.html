@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Instagram Post Inspector</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 800px;
+      margin: auto;
+background: rgba(0, 0, 0, 0.5)
+      padding: 20px;
+      margin-top: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px red;
+    }
+    h1 {
+      text-align: center;
+      color: red;
+    }
+    input, textarea, button {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      font-size: 16px;
+    }
+    iframe {
+      width: 100%;
+      height: 500px;
+      border: none;
+      margin-top: 20px;
+    }
+    .info {
+      margin-top: 20px;
+    }
+    .info p {
+      margin: 5px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Instagram Public Post Inspector</h1>
+    <input type="text" id="postUrl" placeholder="Enter Instagram Post URL" />
+    <button onclick="loadInstagramEmbed()">Inspect Post</button>
+
+    <div id="previewSection" style="display:none;">
+      <iframe id="instaEmbed" allowtransparency="true" frameborder="0" scrolling="no" allowfullscreen></iframe>
+      <div class="info">
+        <label for="caption">Manual Caption (copy from IG):</label>
+        <textarea id="caption" placeholder="Paste caption text here..."></textarea>
+
+        <label for="hashtags">Manual Hashtags:</label>
+        <textarea id="hashtags" placeholder="#hashtag1 #hashtag2 ..."></textarea>
+
+        <label for="uploadDate">Manual Upload Date:</label>
+        <input type="text" id="uploadDate" placeholder="YYYY-MM-DD (optional)" />
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function loadInstagramEmbed() {
+      const url = document.getElementById("postUrl").value.trim();
+      const embed = document.getElementById("instaEmbed");
+      const preview = document.getElementById("previewSection");
+
+      if (!url.includes("instagram.com/p/")) {
+        alert("Invalid Instagram post URL.");
+        return;
+      }
+
+      const embedUrl = `https://www.instagram.com/p/${getPostCode(url)}/embed`;
+
+      embed.src = embedUrl;
+      preview.style.display = "block";
+    }
+
+    function getPostCode(url) {
+      const parts = url.split("/");
+      const code = parts.find(part => part.length === 11 || part.length === 10);
+      return code || "";
+    }
+  </script>
+</body>
+</html>

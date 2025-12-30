@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Password Generator v1.0</title>
+  <style>
+    body {
+      background-color: #0d0d0d;
+      color: #00ff00;
+      font-family: 'Courier New', monospace;
+      padding: 20px;
+      text-align: center;
+    }
+    h1 {
+      color: #ff0033;
+      font-size: 24px;
+      white-space: pre;
+    }
+    .intro {
+      margin-top: -30px;
+      color: #00ffff;
+      font-weight: bold;
+    }
+    .input-box {
+      margin-top: 20px;
+    }
+    input[type="number"] {
+      padding: 10px;
+      font-size: 16px;
+      width: 200px;
+      border: 2px solid #00ff00;
+      background: #000;
+      color: #00ff00;
+    }
+    button {
+      padding: 10px 20px;
+      background: #ff0033;
+      color: white;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    .output {
+      margin-top: 20px;
+      font-size: 20px;
+      color: #00ffff;
+      word-break: break-all;
+    }
+    .copy-btn {
+      margin-top: 10px;
+      background-color: #0088ff;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>
+    ██████╗        ██████╗ ███████╗███╗   ██╗<br>
+    ██╔══██╗      ██╔════╝ ██╔════╝████╗  ██║<br>
+    ██████╔╝█████╗██║  ███╗█████╗  ██╔██╗ ██║<br>
+    ██╔═══╝ ╚════╝██║   ██║██╔══╝  ██║╚██╗██║<br>
+    ██║           ╚██████╔╝███████╗██║ ╚████║<br>
+    ╚═╝            ╚═════╝ ╚══════╝╚═╝  ╚═══╝<br>
+                             v1.0
+  </h1>
+
+  <div class="intro">
+    <p>&lt;===[[ Coded by N17R0 ]]===&gt;</p>
+    <p>&lt;---( YOUTUBE - Noob Hackers )---></p>
+  </div>
+
+  <div class="input-box">
+    <label for="length">Enter Password Length:</label><br>
+    <input type="number" id="length" min="4" max="100" value="12" /><br>
+    <button onclick="generatePassword()">Generate Password</button>
+  </div>
+
+  <div class="output" id="outputArea"></div>
+  <button class="copy-btn" onclick="copyPassword()">Copy to Clipboard</button>
+
+  <script>
+    function generatePassword() {
+      const length = document.getElementById('length').value;
+      const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&*^';
+      let password = '';
+      for (let i = 0; i < length; i++) {
+        password += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      document.getElementById('outputArea').textContent = password;
+    }
+
+    function copyPassword() {
+      const password = document.getElementById('outputArea').textContent;
+      if (password) {
+        navigator.clipboard.writeText(password)
+          .then(() => alert("Password copied to clipboard!"))
+          .catch(err => alert("Failed to copy: " + err));
+      }
+    }
+  </script>
+
+</body>
+</html>

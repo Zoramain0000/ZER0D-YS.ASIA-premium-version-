@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>📍 Location ➜ IP Visual Tracker - ZeroDays</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Courier New', monospace;
+      background: #111;
+      color: #0f0;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      color: #ff5252;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: auto;
+      background: #1a1a1a;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px #000;
+    }
+
+    input, button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      font-size: 1em;
+      border: none;
+      border-radius: 8px;
+    }
+
+    input {
+      background: #333;
+      color: #0f0;
+    }
+
+    button {
+      background: #ff5252;
+      color: white;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #e53935;
+    }
+
+    #map {
+      height: 400px;
+      margin-top: 20px;
+      border-radius: 8px;
+    }
+
+    pre {
+      background: #000;
+      color: #0f0;
+      padding: 15px;
+      border-radius: 8px;
+      overflow-x: auto;
+    }
+
+    footer {
+      text-align: center;
+      color: #888;
+      margin-top: 20px;
+      font-size: 0.8em;
+    }
+
+    #checkBtn {
+      display: none;
+      background: #2196f3;
+    }
+
+    #checkBtn:hover {
+      background: #1e88e5;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>📍 Location ➜ IP Tracker Map</h1>
+
+  <div class="container">
+    <input type="text" id="placeInput" placeholder="Enter a location (e.g. Manila)">
+    <button onclick="searchLocation()">🎯 Reveal Target IP</button>
+    <button id="checkBtn" onclick="checkIPInfo()">🔎 Check IP Info</button>
+
+    <div id="map"></div>
+
+    <h3>🧾 IP & Geo Info</h3>
+    <pre id="infoOutput">Awaiting location...</pre>
+  </div>
+
+  <footer>
+    🔐 Educational use only. IP shown is simulated based on region. No real tracking.<br>
+    &copy; 2025 ZeroDayAI
+  </footer>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    let map = L.map('map').setView([12.8797, 121.7740], 5);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+    let marker;
+    let currentCoords = null;
+
+    async function searchLocation() {
+      const place = document.getElementById("placeInput").value.trim();
+      const output = document.getElementById("infoOutput");
+      const checkBtn = document.getElementById("checkBtn");
+
+      if (!place) {
+        alert("Please enter a location.");
+        return;
+      }
+
+      const geocodeURL = `https://api.opencagedata.com/geocode/v1/json?q=${encodeURIComponent(place)}&key=c9600f6ca6ed4312a533fc58bbcfd371`;
+
+      try {
+        const geoRes = await fetch(geocodeURL);
+        const geoData = await geoRes.json();
+
+        if (!geoData.results.length) {
+          output.textContent = "❌ Location not found.";
+          return;
+        }
+
+        const { lat, lng } = geoData.results[0].geometry;
+        currentCoords = { lat, lng }; // Store for later
+
+        if (marker) map.removeLayer(marker);
+        map.setView([lat, lng], 10);
+        marker = L.marker([lat, lng]).addTo(map)
+          .bindPopup(`<b>${place}</b><br>Coordinates: ${lat}, ${lng}`)
+          .openPopup();
+
+        output.textContent = `
+📍 Location Found: ${place}
+🛰 Coordinates    : ${lat}, ${lng}
+ℹ️ Click "Check IP Info" for simulated IP
+        `;
+        checkBtn.style.display = "block";
+
+      } catch (err) {
+        output.textContent = "❌ Error fetching geolocation.";
+        console.error(err);
+      }
+    }
+
+    async function checkIPInfo() {
+      const output = document.getElementById("infoOutput");
+      const safe = val => val || "N/A";
+
+      if (!currentCoords) {
+        output.textContent = "⚠️ No coordinates set.";
+        return;
+      }
+
+      try {
+        const ipRes = await fetch(`https://ip-api.com/json/?fields=query,city,regionName,country,isp,org,as`);
+        const ipData = await ipRes.json();
+
+        output.textContent += `
+📡 Simulated IP   : ${safe(ipData.query)}
+🌐 ISP / Org      : ${safe(ipData.isp)} / ${safe(ipData.org)}
+📍 Region         : ${safe(ipData.city)}, ${safe(ipData.regionName)}, ${safe(ipData.country)}
+🔢 ASN            : ${safe(ipData.as)}
+        `;
+      } catch (err) {
+        output.textContent += "\n❌ Error fetching IP data.";
+        console.error(err);
+      }
+    }
+  </script>
+</body>
+</html>

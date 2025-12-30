@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>🚗 Auto Driver's License Generator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      text-align: center;
+      padding: 20px;
+    }
+
+    h1 {
+      color: red;
+    }
+
+    .license {
+      width: 350px;
+      margin: 20px auto;
+background: rgba(0, 0, 0, 0.5);
+      color: red;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+      position: relative;
+      text-align: left;
+    }
+
+    .license img {
+      width: 80px;
+      height: 80px;
+      border-radius: 6px;
+      object-fit: cover;
+      border: 2px solid red;
+      position: absolute;
+      top: 20px;
+      right: 20px;
+    }
+
+    .license h2 {
+      margin: 0 0 10px;
+      color: red;
+    }
+
+    .license p {
+      margin: 5px 0;
+      font-size: 14px;
+    }
+
+    button {
+      background: red;
+      color: green;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin: 10px;
+    }
+
+    button:hover {
+background: rgba(0, 0, 0, 0.5);
+    }
+  </style>
+</head>
+<body>
+
+<h1>🚗 Auto Driver's License Generator</h1>
+
+<div class="license" id="licenseCard">
+  <img id="photo" src="" alt="Photo">
+  <h2 id="name">John Doe</h2>
+  <p><strong>ID:</strong> <span id="licenseNumber">XXXX-1234</span></p>
+  <p><strong>DOB:</strong> <span id="dob">1990-01-01</span></p>
+  <p><strong>Address:</strong> <span id="address">123 Elm Street</span></p>
+  <p><strong>Expires:</strong> <span id="expires">2032-12-31</span></p>
+</div>
+
+<button onclick="generateLicense()">🔁 Generate New</button>
+<button onclick="downloadLicense()">📥 Download</button>
+
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script>
+  const firstNames = ["John", "Jane", "Alex", "Maria", "Chris", "Sofia", "Liam", "Emma", "Noah", "Olivia"];
+  const lastNames = ["Smith", "Johnson", "Brown", "Taylor", "Anderson", "Lee", "Walker", "Hall", "Clark", "Lewis"];
+  const streets = ["Maple St", "Oak Ave", "Pine Dr", "Cedar Ln", "Elm St", "Birch Blvd", "Ash Rd", "Willow Way"];
+  const cities = ["New York", "Chicago", "Los Angeles", "Houston", "Phoenix", "Seattle", "Miami"];
+  const photos = [
+    "https://randomuser.me/api/portraits/men/1.jpg",
+    "https://randomuser.me/api/portraits/women/1.jpg",
+    "https://randomuser.me/api/portraits/men/10.jpg",
+    "https://randomuser.me/api/portraits/women/10.jpg",
+    "https://randomuser.me/api/portraits/men/22.jpg",
+    "https://randomuser.me/api/portraits/women/22.jpg"
+  ];
+
+  function random(arr) {
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
+
+  function randomNumber(length) {
+    let num = "";
+    for (let i = 0; i < length; i++) {
+      num += Math.floor(Math.random() * 10);
+    }
+    return num;
+  }
+
+  function randomDate(startYear = 1950, endYear = 2004) {
+    const year = Math.floor(Math.random() * (endYear - startYear)) + startYear;
+    const month = String(Math.floor(Math.random() * 12) + 1).padStart(2, '0');
+    const day = String(Math.floor(Math.random() * 28) + 1).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  function generateLicense() {
+    const name = `${random(firstNames)} ${random(lastNames)}`;
+    const licenseNum = `${randomNumber(4)}-${randomNumber(4)}`;
+    const dob = randomDate();
+    const exp = `${Number(dob.split("-")[0]) + 12}-${dob.split("-")[1]}-${dob.split("-")[2]}`;
+    const address = `${Math.floor(Math.random() * 9999)} ${random(streets)}, ${random(cities)}`;
+    const photo = random(photos);
+
+    document.getElementById("name").textContent = name;
+    document.getElementById("licenseNumber").textContent = licenseNum;
+    document.getElementById("dob").textContent = dob;
+    document.getElementById("expires").textContent = exp;
+    document.getElementById("address").textContent = address;
+    document.getElementById("photo").src = photo;
+  }
+
+  function downloadLicense() {
+    html2canvas(document.getElementById("licenseCard")).then(canvas => {
+      const link = document.createElement("a");
+      link.download = "driver_license.png";
+      link.href = canvas.toDataURL();
+      link.click();
+    });
+  }
+
+  // Auto-generate on load
+  window.onload = generateLicense;
+</script>
+
+</body>
+</html>

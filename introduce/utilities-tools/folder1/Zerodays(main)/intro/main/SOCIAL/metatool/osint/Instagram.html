@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Instagram/GitHub OSINT Tool - Web Version</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: r3d;
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      color: red;
+      text-align: center;
+    }
+    .container {
+      max-width: 600px;
+      margin: auto;
+background: rgba(0, 0, 0, 0.5)
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 20px red;
+    }
+    input, button {
+      width: 100%;
+      padding: 12px;
+      margin: 8px 0;
+      font-size: 16px;
+      border-radius: 5px;
+      border: none;
+    }
+    input {
+      background: #222;
+      color: #fff;
+    }
+    button {
+      background-color: red;
+      color: green;
+      cursor: pointer;
+    }
+    button:hover {
+background: rgba(0, 0, 0, 0.5)
+    }
+    img {
+      max-width: 100px;
+      border-radius: 50%;
+    }
+    .result {
+      margin-top: 20px;
+      padding: 15px;
+     background: red;
+      border-left: 4px solid red;
+    }
+    .label {
+      color: ;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>Instagram OSINT Tool</h1>
+  <div class="container">
+    <input type="text" id="username" placeholder="Enter Instagram Username (Public)">
+    <button onclick="lookupProfile()">Lookup Profile</button>
+    <div id="result" class="result" style="display:none;">
+      <p><span class="label">Username:</span> <span id="user"></span></p>
+      <p><span class="label">Full Name:</span> <span id="name"></span></p>
+      <p><span class="label">Bio:</span> <span id="bio"></span></p>
+      <p><span class="label">Profile Picture:</span><br><img id="pic" src=""></p>
+      <p><span class="label">External URL:</span> <a href="#" id="url" target="_blank">Open Link</a></p>
+    </div>
+  </div>
+
+  <script>
+    async function lookupProfile() {
+      const username = document.getElementById("username").value.trim();
+      if (!username) return alert("Please enter a username");
+
+      const res = await fetch(`https://api.github.com/users/${username}`); // MOCK: GitHub API used for UI demo
+      // Replace with actual scraper API or your backend
+
+      if (!res.ok) {
+        alert("Profile not found or API limit exceeded.");
+        return;
+      }
+
+      const data = await res.json();
+
+      // Mocked display
+      document.getElementById("user").textContent = data.login || username;
+      document.getElementById("name").textContent = data.name || "Unknown";
+      document.getElementById("bio").textContent = data.bio || "N/A";
+      document.getElementById("pic").src = data.avatar_url || "";
+      document.getElementById("url").href = data.blog || "#";
+      document.getElementById("url").textContent = data.blog || "No external link";
+      document.getElementById("result").style.display = "block";
+    }
+  </script>
+</body>
+</html>

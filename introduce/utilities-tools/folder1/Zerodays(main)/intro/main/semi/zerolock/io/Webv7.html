@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>🎞️ Random GIF Generator</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <style>
+    body {
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+      font-family: 'Courier New', monospace;
+      margin: 0;
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    h1 { color: red; margin-bottom: 20px; }
+    .box {
+background: rgba(0,0,0,0.5);
+      padding: 20px;
+      border-radius: 10px;
+      max-width: 600px;
+      width: 100%;
+      box-shadow: 0 0 10px red;
+      text-align: center;
+    }
+    button {
+      margin: 10px;
+      padding: 10px 16px;
+      border: none;
+      background: red;
+      color: green;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1em;
+    }
+    button:hover {background: rgba(0,0,0,0.5);}
+    img {
+      margin-top: 20px;
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+      box-shadow: 0 0 10px red;
+      display: none;
+    }
+    pre {
+background: rgba(0,0,0,0.5);
+      color: red;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 15px;
+      white-space: pre-wrap;
+    }
+    .history {
+      margin-top: 15px;
+background: rgba(0,0,0,0.5);
+      padding: 10px;
+      border-radius: 8px;
+      max-height: 200px;
+      overflow-y: auto;
+      text-align: left;
+      font-size: 0.9em;
+    }
+    footer {
+      margin-top: 30px;
+      color: red;
+      font-size: 0.9em;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎞️ Random GIF Generator</h1>
+  <div class="box">
+    <button onclick="fetchGif()">🔄 Get Random GIF</button>
+    <button onclick="copyInfo()">📋 Copy URL</button>
+    <button onclick="exportJSON()">💾 Export JSON</button>
+
+    <img id="gifImg" alt="Random GIF"/>
+    <pre id="output">Click to load a GIF!</pre>
+
+    <h3>🕒 Session History</h3>
+    <div class="history" id="historyLog">No history yet.</div>
+  </div>
+  <footer>
+    🔐 Powered by <a href="https://developers.giphy.com/docs/api#" target="_blank">GIPHY API</a> • Auto-refresh every 60 s • © 2025 ZeroDayAI
+  </footer>
+
+  <script>
+    const API_KEY = 'YHej6Si7PoGoKOoEyBTvKvBTUG9htvDL'; // Add your key
+    let lastGif = null;
+    const historyList = [];
+
+    async function fetchGif() {
+      const out = document.getElementById("output");
+      const img = document.getElementById("gifImg");
+      const log = document.getElementById("historyLog");
+      out.textContent = '⏳ Fetching random GIF...';
+      img.style.display = 'none';
+
+      try {
+        const res = await fetch(`https://api.giphy.com/v1/gifs/random?api_key=${API_KEY}&rating=g`);
+        const json = await res.json();
+        const g = json.data;
+        lastGif = g;
+        historyList.push({id: g.id, time: new Date().toLocaleTimeString()});
+
+        img.src = g.images.fixed_width.url;
+        img.onload = () => img.style.display = 'block';
+
+        out.textContent = `
+Title    : ${g.title || 'Untitled'}
+GIF URL  : ${g.images.original.url}
+Embed URL: ${g.embed_url}
+Rating   : ${g.rating.toUpperCase()}
+Timestamp: ${new Date().toLocaleTimeString()}
+        `.trim();
+
+        log.innerHTML = historyList
+          .map((h, i) => `${i+1}. ${h.id} @ ${h.time}`)
+          .join('\n');
+      } catch(err) {
+        out.textContent = '❌ Failed to fetch GIF.';
+        console.error(err);
+      }
+    }
+
+    function copyInfo() {
+      if (!lastGif) return alert('Nothing to copy!');
+      navigator.clipboard.writeText(lastGif.images.original.url)
+        .then(() => alert('✅ URL copied!'))
+        .catch(() => alert('❌ Copy failed.'));
+    }
+
+    function exportJSON() {
+      if (!lastGif) return alert('Nothing to export!');
+      const blob = new Blob([JSON.stringify(lastGif, null, 2)], {type:'application/json'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `gif_${lastGif.id}.json`;
+      a.click();
+    }
+
+    fetchGif();
+    setInterval(fetchGif, 60000);
+  </script>
+</body>
+</html>

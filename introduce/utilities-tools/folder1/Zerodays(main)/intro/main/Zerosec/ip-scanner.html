@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Advanced IP Scanner</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    body {
+      font-family: "Segoe UI", sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      max-width: 900px;
+      margin: auto;
+background: rgba(0,0,0,0.5);
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.6);
+    }
+    h1 {
+      color: red;
+      text-align: center;
+    }
+    textarea, input[type="text"] {
+      width: 100%;
+      padding: 12px;
+      font-size: 15px;
+      border-radius: 8px;
+      border: none;
+      margin-bottom: 15px;
+background: rgba(0,0,0,0.5);
+      color: red;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      background-color: red;
+      color: green;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-bottom: 15px;
+    }
+    button:hover {
+background: rgba(0,0,0,0.5);
+    }
+    #map {
+      height: 350px;
+      border-radius: 10px;
+      margin-top: 20px;
+    }
+    .results pre {
+      white-space: pre-wrap;
+      word-break: break-word;
+background: rgba(0,0,0,0.5);
+      padding: 15px;
+      border-radius: 10px;
+      margin-top: 10px;
+    }
+    .spinner {
+      text-align: center;
+      margin: 15px 0;
+    }
+    div{
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Advanced IP Scanner</h1>
+    <textarea id="ipList" rows="4" placeholder="Enter IP addresses (one per line)"></textarea>
+    <button onclick="scanIPs()">Scan IP(s)</button>
+    <button onclick="exportCSV()">Export CSV</button>
+    <div id="map"></div>
+    <div id="results" class="results"></div>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    const openPorts = [80, 443, 21, 22];
+    const map = L.map('map').setView([20, 0], 2);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    let csvData = [];
+
+    async function scanIPs() {
+      const input = document.getElementById("ipList").value.trim();
+      const resultsDiv = document.getElementById("results");
+      resultsDiv.innerHTML = "";
+      csvData = [["IP", "City", "Region", "Country", "Latitude", "Longitude", "ASN", "ISP", "Timezone", "Reverse DNS", "Open Ports"]];
+
+      const ips = input.split(/\r?\n/).map(ip => ip.trim()).filter(ip => ip);
+
+      for (const ip of ips) {
+        const resBox = document.createElement("pre");
+        resBox.textContent = `🔎 Scanning ${ip}...`;
+        resultsDiv.appendChild(resBox);
+
+        try {
+          const res = await fetch(`https://ipapi.co/${ip}/json/`);
+          const data = await res.json();
+
+          const report = `📍 IP Address: ${ip}
+🌆 City: ${data.city}
+🏞️ Region: ${data.region}
+🌍 Country: ${data.country_name} (${data.country_code})
+📍 Lat/Lng: ${data.latitude}, ${data.longitude}
+🏢 ISP: ${data.org}
+🔢 ASN: ${data.asn}
+🔁 Reverse DNS: ${data.hostname || 'N/A'}
+🕓 Timezone: ${data.timezone}
+🔓 Simulated Open Ports: ${openPorts.join(', ')}
+`;
+
+          resBox.textContent = report;
+          L.marker([data.latitude, data.longitude]).addTo(map)
+            .bindPopup(`<b>${ip}</b><br>${data.city}, ${data.country_name}`)
+            .openPopup();
+
+          csvData.push([
+            ip, data.city, data.region, data.country_name,
+            data.latitude, data.longitude, data.asn, data.org,
+            data.timezone, data.hostname || 'N/A',
+            openPorts.join(', ')
+          ]);
+        } catch (err) {
+          resBox.textContent = `❌ Failed to scan ${ip}`;
+        }
+      }
+    }
+
+    function exportCSV() {
+      let csv = csvData.map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+      let blob = new Blob([csv], { type: 'text/csv' });
+      let url = URL.createObjectURL(blob);
+      let a = document.createElement("a");
+      a.href = url;
+      a.download = "ip_scan_results.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+  </script>
+</body>
+</html>

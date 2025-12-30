@@ -1,0 +1,517 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Text & Code Encoders — Cyber Tools Toolkit</title>
+
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family: "Segoe UI", Roboto, system-ui, -apple-system;
+    background:black;color:#c58b00;min-height:100vh;padding:22px;
+  }
+  video.bg-video{position:fixed;inset:0;width:100vw;height:100vh;object-fit:cover;z-index:-3;filter:brightness(.45) contrast(1.05)}
+  nav{width:100%;background:rgba(0,0,0,0.6);border-bottom:1px solid #c58b00;padding:.8rem 1.2rem;position:fixed;top:0;left:0;z-index:30;display:flex;justify-content:space-between;align-items:center}
+  .brand{color:#ffc107;font-weight:700}
+  .music-toggle{background:transparent;border:1px solid #c58b00;color:#c58b00;padding:6px 10px;border-radius:8px;cursor:pointer}
+  .container{max-width:1200px;margin:100px auto;padding:18px;background:rgba(0,0,0,0.45);border:1px solid #c58b00;border-radius:12px}
+  h1{color:#ffc107;margin-bottom:8px}
+  .grid{display:grid;grid-template-columns:1fr 420px;gap:12px}
+  @media(max-width:980px){.grid{grid-template-columns:1fr}}
+  .panel{background:rgba(0,0,0,0.35);padding:12px;border-radius:10px;border:1px solid #c58b00;color:#ffd77a}
+  textarea,input,select{width:100%;padding:10px;border-radius:8px;border:1px solid #c58b00;background:#0b0b0b;color:#ffc107;margin-top:8px;font-family:monospace}
+  textarea{min-height:160px;resize:vertical}
+  .controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .btn{background:rgba(0,0,0,0.6);border:1px solid #c58b00;color:#c58b00;padding:8px 12px;border-radius:8px;cursor:pointer}
+  .btn:hover{background:#c58b00;color:#000}
+  .small{font-size:13px;color:#ffd77a}
+  .result-area{background:#080808;border:1px solid rgba(197,139,0,0.12);padding:10px;border-radius:8px;color:#9fffcf;min-height:120px;white-space:pre-wrap;font-family:monospace}
+  .section-title{color:#c58b00;font-weight:700;margin-top:10px}
+  .row{display:flex;gap:8px}
+  .row > *{flex:1}
+  .hint{font-size:12px;color:#bfa46a;margin-top:6px}
+</style>
+</head>
+<body>
+
+<video class="bg-video" autoplay loop muted playsinline>
+  <source src="background/1761817527453041720p.mp4" type="video/mp4">
+</video>
+
+<audio id="bg-music" loop>
+  <source src="background/Programming___Coding___Hacking_music_vol.18__ANONYMOUS_HEADQUARTERS_(48k).mp3" type="audio/mpeg">
+</audio>
+
+<nav>
+  <div class="brand">Text & Code Encoders</div>
+  <button id="musicToggle" class="music-toggle">Play Music</button>
+</nav>
+
+<div class="container" role="main">
+  <h1>🔁 Text & Code Encoders — Advanced Toolkit</h1>
+  <div class="small">Paste text/code, choose an encoder, set options and click <strong>Run</strong>. Everything runs in your browser — no backend.</div>
+
+  <div style="margin-top:12px" class="panel">
+    <label class="section-title">Input</label>
+    <textarea id="inputText" placeholder="Paste text or code here..."></textarea>
+    <div class="controls">
+      <input type="file" id="fileInput" />
+      <button class="btn" id="loadFile">Load File</button>
+      <button class="btn" id="clearInput">Clear</button>
+    </div>
+
+    <label class="section-title">Operation</label>
+    <div class="row">
+      <select id="operation">
+        <optgroup label="Encoders / Decoders">
+          <option value="base64_encode">Base64 → Encode</option>
+          <option value="base64_decode">Base64 → Decode</option>
+          <option value="base64_url_encode">Base64 (URL-safe) Encode</option>
+          <option value="hex_encode">Hex → Encode</option>
+          <option value="hex_decode">Hex → Decode</option>
+          <option value="url_encode">URL Encode</option>
+          <option value="url_decode">URL Decode</option>
+          <option value="html_escape">HTML Escape</option>
+          <option value="html_unescape">HTML Unescape</option>
+          <option value="rot13">ROT13</option>
+          <option value="caesar_encode">Caesar Encode (shift)</option>
+          <option value="caesar_decode">Caesar Decode (shift)</option>
+          <option value="vigenere_encode">Vigenère Encode</option>
+          <option value="vigenere_decode">Vigenère Decode</option>
+          <option value="xor">XOR (string/hex key)</option>
+          <option value="bin_from_text">Binary (bits) from Text</option>
+          <option value="text_from_bin">Text from Binary</option>
+          <option value="sha256">SHA-256 (hash)</option>
+          <option value="sha1">SHA-1 (hash)</option>
+          <option value="aes_encrypt">AES-GCM Encrypt (password)</option>
+          <option value="aes_decrypt">AES-GCM Decrypt (password)</option>
+          <option value="json_pretty">JSON Pretty / Format</option>
+          <option value="json_minify">JSON Minify</option>
+          <option value="js_minify">JS Minify (basic)</option>
+        </optgroup>
+      </select>
+    </div>
+
+    <div id="optionsArea">
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <input id="opt1" type="text" placeholder="option / key / passphrase" />
+        <input id="opt2" type="text" placeholder="extra option (e.g. shift number)" />
+      </div>
+      <div class="hint">Examples: for Caesar set shift in second field; for XOR give key in opt1 (string) or starting with 0x for hex key. AES uses opt1 as password.</div>
+    </div>
+
+    <div class="controls" style="margin-top:12px">
+      <button class="btn" id="runBtn">Run</button>
+      <button class="btn" id="copyOut">Copy Output</button>
+      <button class="btn" id="downloadOut">Download Output</button>
+    </div>
+
+    <label class="section-title">Output</label>
+    <div id="output" class="result-area">Result will appear here...</div>
+
+    <div class="hint" style="margin-top:10px">All cryptographic operations use Web Crypto API. AES-GCM output is base64 with salt+iv prefixed (safe local format).</div>
+  </div>
+
+  <div style="margin-top:12px" class="panel">
+    <strong>Utilities</strong>
+    <div style="margin-top:8px" class="controls">
+      <button class="btn" id="genRandom">Generate Random Bytes (Base64)</button>
+      <button class="btn" id="calcEntropy">Estimate Entropy (shannon)</button>
+      <button class="btn" id="clearOut">Clear Output</button>
+    </div>
+  </div>
+</div>
+
+<footer style="margin-top:18px;color:#c58b00">© 2025 Cyber Tools Toolkit — Encoders</footer>
+
+<script>
+/* ========== Music behavior ========== */
+const bgAudio = document.getElementById('bg-music');
+const musicToggle = document.getElementById('musicToggle');
+musicToggle.addEventListener('click', async ()=>{
+  try{
+    if(bgAudio.paused){ await bgAudio.play(); musicToggle.textContent='Pause Music'; musicToggle.classList.add('playing'); }
+    else { bgAudio.pause(); musicToggle.textContent='Play Music'; musicToggle.classList.remove('playing'); }
+  }catch(e){ console.warn('audio blocked', e); }
+});
+window.addEventListener('click', ()=> bgAudio.play().catch(()=>{}), { once: true });
+
+/* ========== DOM refs ========== */
+const inputText = document.getElementById('inputText');
+const operation = document.getElementById('operation');
+const opt1 = document.getElementById('opt1');
+const opt2 = document.getElementById('opt2');
+const runBtn = document.getElementById('runBtn');
+const output = document.getElementById('output');
+const copyOut = document.getElementById('copyOut');
+const downloadOut = document.getElementById('downloadOut');
+const loadFile = document.getElementById('loadFile');
+const fileInput = document.getElementById('fileInput');
+const clearInput = document.getElementById('clearInput');
+const clearOut = document.getElementById('clearOut');
+const genRandom = document.getElementById('genRandom');
+const calcEntropy = document.getElementById('calcEntropy');
+
+/* ========== Helpers ========== */
+function toBase64(bytes){
+  let binary = '';
+  const len = bytes.byteLength || bytes.length;
+  const view = new Uint8Array(bytes);
+  for(let i=0;i<len;i++) binary += String.fromCharCode(view[i]);
+  return btoa(binary);
+}
+function fromBase64(str){
+  const bin = atob(str);
+  const buf = new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) buf[i] = bin.charCodeAt(i);
+  return buf.buffer;
+}
+function textToUtf8Bytes(str){ return new TextEncoder().encode(str); }
+function utf8BytesToText(buf){ return new TextDecoder().decode(buf); }
+function hexEncode(bytes, uppercase=false){
+  const arr = new Uint8Array(bytes);
+  const s = Array.from(arr).map(b => b.toString(16).padStart(2,'0')).join('');
+  return uppercase ? s.toUpperCase() : s;
+}
+function hexDecode(hex){
+  const clean = hex.replace(/[^0-9a-fA-F]/g,'');
+  const len = clean.length / 2;
+  const out = new Uint8Array(len);
+  for(let i=0;i<len;i++) out[i] = parseInt(clean.substr(i*2,2),16);
+  return out.buffer;
+}
+function arrayBufferEqual(a,b){
+  if(a.byteLength !== b.byteLength) return false;
+  const A = new Uint8Array(a), B = new Uint8Array(b);
+  for(let i=0;i<A.length;i++) if(A[i]!==B[i]) return false;
+  return true;
+}
+function showResult(text){
+  output.textContent = text;
+}
+function downloadFile(filename, text){
+  const blob = new Blob([text], {type:'text/plain'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+}
+
+/* ========== File load ========== */
+loadFile.addEventListener('click', async ()=>{
+  if(!fileInput.files || !fileInput.files[0]) return alert('Choose a file first.');
+  const f = fileInput.files[0];
+  const txt = await f.text();
+  inputText.value = txt;
+});
+
+/* ========== Clear handlers ========== */
+clearInput.addEventListener('click', ()=> inputText.value = '');
+clearOut.addEventListener('click', ()=> output.textContent = '');
+
+/* ========== Copy / Download Output ========== */
+copyOut.addEventListener('click', ()=> navigator.clipboard.writeText(output.textContent).then(()=> alert('Copied output to clipboard')) );
+downloadOut.addEventListener('click', ()=> downloadFile('output.txt', output.textContent));
+
+/* ========== Randomness / Entropy ========== */
+genRandom.addEventListener('click', ()=>{
+  const len = 32;
+  const arr = new Uint8Array(len);
+  crypto.getRandomValues(arr);
+  showResult(toBase64(arr));
+});
+calcEntropy.addEventListener('click', ()=>{
+  const txt = inputText.value || '';
+  if(!txt) return alert('Paste some text to estimate entropy.');
+  const counts = {};
+  for(const ch of txt) counts[ch] = (counts[ch] || 0) + 1;
+  const N = txt.length;
+  let H = 0;
+  for(const k in counts){ const p = counts[k]/N; H -= p * Math.log2(p); }
+  showResult(`Shannon entropy: ${H.toFixed(6)} bits/symbol\nUnique symbols: ${Object.keys(counts).length}`);
+});
+
+/* ========== Main operations ========== */
+
+runBtn.addEventListener('click', async ()=>{
+  const op = operation.value;
+  const data = inputText.value || '';
+  const option1 = opt1.value || '';
+  const option2 = opt2.value || '';
+  try{
+    switch(op){
+      case 'base64_encode': {
+        const bytes = textToUtf8Bytes(data);
+        showResult(toBase64(bytes));
+        break;
+      }
+      case 'base64_decode': {
+        try{
+          const buf = fromBase64(data.trim());
+          showResult(utf8BytesToText(buf));
+        }catch(e){ showResult('Base64 decode failed: ' + e.message); }
+        break;
+      }
+      case 'base64_url_encode': {
+        const b = toBase64(textToUtf8Bytes(data)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+        showResult(b);
+        break;
+      }
+      case 'hex_encode': {
+        showResult(hexEncode(textToUtf8Bytes(data)));
+        break;
+      }
+      case 'hex_decode': {
+        try{
+          const buf = hexDecode(data.trim());
+          showResult(utf8BytesToText(buf));
+        }catch(e){ showResult('Hex decode failed: ' + e.message); }
+        break;
+      }
+      case 'url_encode': {
+        showResult(encodeURIComponent(data));
+        break;
+      }
+      case 'url_decode': {
+        try{ showResult(decodeURIComponent(data)); }catch(e){ showResult('URL decode failed: ' + e.message); }
+        break;
+      }
+      case 'html_escape': {
+        showResult(data.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'));
+        break;
+      }
+      case 'html_unescape': {
+        const txt = data.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&#039;/g,"'");
+        showResult(txt);
+        break;
+      }
+      case 'rot13': {
+        showResult(rot13(data));
+        break;
+      }
+      case 'caesar_encode': {
+        const shift = parseInt(option2||'3',10) || 0;
+        showResult(caesar(data, shift));
+        break;
+      }
+      case 'caesar_decode': {
+        const shift = parseInt(option2||'3',10) || 0;
+        showResult(caesar(data, -shift));
+        break;
+      }
+      case 'vigenere_encode': {
+        if(!option1) return alert('Enter a Vigenère key in option1');
+        showResult(vigenere(data, option1, true));
+        break;
+      }
+      case 'vigenere_decode': {
+        if(!option1) return alert('Enter a Vigenère key in option1');
+        showResult(vigenere(data, option1, false));
+        break;
+      }
+      case 'xor': {
+        if(!option1) return alert('Enter XOR key in option1 (string or 0x hex)');
+        showResult(xorTransform(data, option1));
+        break;
+      }
+      case 'bin_from_text': {
+        showResult(textToBinary(data));
+        break;
+      }
+      case 'text_from_bin': {
+        showResult(binaryToText(data));
+        break;
+      }
+      case 'sha256': {
+        const hash = await digest('SHA-256', textToUtf8Bytes(data));
+        showResult(hexEncode(hash, true));
+        break;
+      }
+      case 'sha1': {
+        const hash = await digest('SHA-1', textToUtf8Bytes(data));
+        showResult(hexEncode(hash, true));
+        break;
+      }
+      case 'aes_encrypt': {
+        if(!option1) return alert('Enter password in option1 for AES encryption.');
+        const encrypted = await aesGcmEncrypt(option1, textToUtf8Bytes(data));
+        showResult(encrypted);
+        break;
+      }
+      case 'aes_decrypt': {
+        if(!option1) return alert('Enter password in option1 for AES decryption.');
+        try{
+          const dec = await aesGcmDecrypt(option1, data.trim());
+          showResult(dec);
+        }catch(e){ showResult('AES decrypt failed: ' + e.message); }
+        break;
+      }
+      case 'json_pretty': {
+        try{ showResult(JSON.stringify(JSON.parse(data), null, 2)); }catch(e){ showResult('Invalid JSON: ' + e.message); }
+        break;
+      }
+      case 'json_minify': {
+        try{ showResult(JSON.stringify(JSON.parse(data))); }catch(e){ showResult('Invalid JSON: ' + e.message); }
+        break;
+      }
+      case 'js_minify': {
+        showResult(jsMinifyBasic(data));
+        break;
+      }
+      default:
+        showResult('Operation not implemented.');
+    }
+  }catch(err){
+    showResult('Error: ' + err.message);
+  }
+});
+
+/* ========== Implementations ========== */
+
+function rot13(s){
+  return s.replace(/[A-Za-z]/g, c=>{
+    const base = c<='Z' ? 65 : 97;
+    return String.fromCharCode((c.charCodeAt(0)-base+13)%26 + base);
+  });
+}
+
+function caesar(s, shift){
+  return s.replace(/[A-Za-z]/g, c=>{
+    const base = c<='Z' ? 65 : 97;
+    return String.fromCharCode((c.charCodeAt(0)-base+shift+26)%26 + base);
+  });
+}
+
+function vigenere(text, key, encode=true){
+  const cleanKey = key.replace(/[^A-Za-z]/g,'');
+  if(!cleanKey) return text;
+  const out = [];
+  let ki=0;
+  for(const ch of text){
+    const isUpper = /[A-Z]/.test(ch);
+    const isLower = /[a-z]/.test(ch);
+    if(isUpper || isLower){
+      const base = isUpper ? 65 : 97;
+      const kch = cleanKey[ki % cleanKey.length];
+      const kbase = (kch <= 'Z') ? 65 : 97;
+      const shift = (kch.charCodeAt(0) - kbase) % 26;
+      const delta = encode ? shift : -shift;
+      out.push(String.fromCharCode((ch.charCodeAt(0)-base+delta+26)%26 + base));
+      ki++;
+    } else out.push(ch);
+  }
+  return out.join('');
+}
+
+function xorTransform(text, key){
+  // key may be "0x..." hex or string; produce base64 output of XOR bytes
+  let keyBytes;
+  if(/^0x[0-9a-f]+$/i.test(key.trim())){
+    keyBytes = new Uint8Array(hexDecode(key.trim()));
+  } else {
+    keyBytes = textToUtf8Bytes(key);
+  }
+  const dataBytes = textToUtf8Bytes(text);
+  const out = new Uint8Array(dataBytes.length);
+  for(let i=0;i<dataBytes.length;i++) out[i] = dataBytes[i] ^ keyBytes[i % keyBytes.length];
+  // output as base64 for portability
+  return toBase64(out);
+}
+
+function textToBinary(s){
+  return Array.from(textToUtf8Bytes(s)).map(b => b.toString(2).padStart(8,'0')).join(' ');
+}
+function binaryToText(bits){
+  const clean = bits.replace(/[^01]/g,'');
+  const bytes = [];
+  for(let i=0;i<clean.length;i+=8) bytes.push(parseInt(clean.substr(i,8).padEnd(8,'0'),2));
+  return utf8BytesToText(new Uint8Array(bytes));
+}
+
+async function digest(algo, data){
+  const buf = await crypto.subtle.digest(algo, data);
+  return buf;
+}
+
+/* AES-GCM using PBKDF2 to derive key.
+   Format for encrypted output: BASE64( salt(16) || iv(12) || ciphertext )
+*/
+async function aesGcmEncrypt(password, plaintextBytes){
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const pwKey = await crypto.subtle.importKey('raw', textToUtf8Bytes(password), 'PBKDF2', false, ['deriveKey']);
+  const derived = await crypto.subtle.deriveKey(
+    {name:'PBKDF2', salt, iterations: 200000, hash: 'SHA-256'},
+    pwKey,
+    {name:'AES-GCM', length:256},
+    true,
+    ['encrypt']
+  );
+  const ct = await crypto.subtle.encrypt({name:'AES-GCM', iv}, derived, plaintextBytes);
+  // join salt + iv + ct
+  const combined = new Uint8Array(salt.byteLength + iv.byteLength + ct.byteLength);
+  combined.set(salt,0); combined.set(iv, salt.byteLength); combined.set(new Uint8Array(ct), salt.byteLength + iv.byteLength);
+  return toBase64(combined);
+}
+
+async function aesGcmDecrypt(password, b64){
+  const buf = fromBase64(b64);
+  const view = new Uint8Array(buf);
+  if(view.length < 28) throw new Error('Ciphertext too short.');
+  const salt = view.slice(0,16);
+  const iv = view.slice(16,28);
+  const ct = view.slice(28);
+  const pwKey = await crypto.subtle.importKey('raw', textToUtf8Bytes(password), 'PBKDF2', false, ['deriveKey']);
+  const derived = await crypto.subtle.deriveKey(
+    {name:'PBKDF2', salt, iterations: 200000, hash: 'SHA-256'},
+    pwKey,
+    {name:'AES-GCM', length:256},
+    true,
+    ['decrypt']
+  );
+  const pt = await crypto.subtle.decrypt({name:'AES-GCM', iv}, derived, ct.buffer);
+  return utf8BytesToText(pt);
+}
+
+/* Basic JS minify: remove comments and extra whitespace — conservative */
+function jsMinifyBasic(code){
+  // remove single-line comments
+  let out = code.replace(/\/\/[^\n\r]*/g,'');
+  // remove multi-line comments
+  out = out.replace(/\/\*[\s\S]*?\*\//g,'');
+  // collapse whitespace
+  out = out.replace(/\s+/g,' ');
+  return out.trim();
+}
+
+/* ========== Utility UI extras ========== */
+operation.addEventListener('change', ()=> {
+  const op = operation.value;
+  if(op.startsWith('aes_') || op==='xor' || op==='vigenere_encode' || op==='vigenere_decode' || op==='caesar_encode' || op==='caesar_decode'){
+    opt1.placeholder = op.startsWith('aes') ? 'password' : 'key / passphrase';
+    opt2.placeholder = (op.indexOf('caesar')===0) ? 'shift (number)' : 'extra option';
+  } else {
+    opt1.placeholder = 'option / key / passphrase';
+    opt2.placeholder = 'extra option';
+  }
+});
+
+/* ========== Simple tests to verify crypto available ========== */
+(async function testCrypto(){
+  try{
+    await crypto.subtle.digest('SHA-256', new Uint8Array([1,2,3]));
+  }catch(e){
+    console.warn('WebCrypto not available:', e);
+  }
+})();
+
+/* ========== Helper: hexDecode using function from above for XOR */ 
+function hexDecode(hexStr){
+  const clean = hexStr.replace(/^0x/i,'').replace(/[^0-9a-fA-F]/g,'');
+  const len = Math.floor(clean.length/2);
+  const out = new Uint8Array(len);
+  for(let i=0;i<len;i++) out[i] = parseInt(clean.substr(i*2,2), 16);
+  return out;
+}
+</script>
+</body>
+</html>

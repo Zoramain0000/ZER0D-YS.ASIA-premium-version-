@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Cyber Tools Toolkit</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: black;
+      color: #c58b00;
+      overflow-x: hidden;
+    }
+    video.bg-video {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      object-fit: cover;
+      z-index: -2;
+    }
+    nav {
+      width: 100%;
+      background: rgba(0,0,0,0.6);
+      border-bottom: 1px solid #c58b00;
+      padding: 0.8rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: fixed;
+      top: 0;
+      z-index: 10;
+    }
+    nav .brand {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #c58b00;
+    }
+    nav .nav-links {
+      display: flex;
+      gap: 1.5rem;
+    }
+    .sidebar {
+      width: 220px;
+      position: fixed;
+      top: 60px;
+      left: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.4);
+      border-right: 1px solid #c58b00;
+      padding: 1rem;
+      overflow-y: auto;
+      z-index: 9;
+      transform: translateX(0);
+      transition: transform 0.3s ease;
+    }
+    .sidebar.show { transform: translateX(0); }
+    .sidebar.hide { transform: translateX(-100%); }
+    .toggle-sidebar {
+      position: fixed;
+      top: 70px;
+      left: 10px;
+      background: rgba(0,0,0,0.5);
+      color: #ffc107;
+      border: 1px solid #c58b00;
+      padding: 6px 12px;
+      border-radius: 5px;
+      z-index: 15;
+      cursor: pointer;
+    }
+    .sidebar h3 {
+      font-size: 1.1rem;
+      margin: 1rem 0 0.5rem;
+    }
+    .sidebar ul { list-style: none; padding: 0; }
+    .sidebar li { margin: 0.5rem 0; }
+    .sidebar a {
+      color: #ffcc00;
+      text-decoration: none;
+      font-size: 0.95rem;
+    }
+    .main-content {
+      margin-left: 240px;
+      padding: 100px 30px 30px;
+      transition: margin-left 0.3s ease;
+    }
+    .main-content.full-width { margin-left: 0; }
+    .section {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid #c58b00;
+      padding: 1.5rem;
+      border-radius: 12px;
+      margin-bottom: 2rem;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+    }
+    .section h2, .section h3 { color: #ffc107; margin-bottom: 1rem; }
+    .section p { margin-bottom: 1rem; }
+    input {
+      padding: 0.5rem;
+      width: 100%;
+      border-radius: 6px;
+      border: 1px solid #c58b00;
+      background: #111;
+      color: #ffc107;
+      margin-bottom: 1rem;
+    }
+    footer {
+      text-align: center;
+      padding: 2rem;
+      font-size: 0.9rem;
+      color: #c58b00;
+    }
+    .start-btn {
+      background: rgba(0,0,0,0.5);
+      color: #c58b00;
+      border: 1px solid #c58b00;
+      padding: 10px 18px;
+      font-size: 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    @media (max-width: 1024px) {
+      .sidebar { transform: translateX(-100%); }
+      .sidebar.show { transform: translateX(0); }
+      .main-content { margin-left: 0; }
+    }
+  </style>
+</head>
+<body>
+  <video class="bg-video" autoplay loop muted playsinline>
+    <source src="background/1761817527453041720p.mp4" type="video/mp4">
+  </video>
+
+  <audio id="bg-music" loop>
+    <source src="background/Programming___Coding___Hacking_music_vol.18__ANONYMOUS_HEADQUARTERS_(48k).mp3" type="audio/mpeg">
+  </audio>
+
+  <nav>
+    <div class="brand">Cyber Tools Toolkit</div>
+    <div class="nav-links">
+      <button class="start-btn" onclick="window.location.href='index.html'">Go to reload</button>
+    </div>
+  </nav>
+
+  <div class="toggle-sidebar" onclick="toggleSidebar()">☰ Toggle Sidebar</div>
+
+  <div class="sidebar hide" id="sidebar">
+    <h3>Toolkits</h3>
+    <ul>
+      <li><a href="io/Base64.html">Base64 Encoder</a></li>
+      <li><a href="io/Hex-viewers.html">Hex Viewer Tool</a></li>
+      <li><a href="io/IP-Lookup.html">IP Lookup Tool</a></li>
+      <li><a href="io/JWT-viewers.html">JWT Viewer</a></li>
+      <li><a href="io/URL-encoders.html">URL Encoder/Decoder</a></li>
+    </ul>
+  </div>
+
+ <div class="main-content" id="main-content">
+  <div class="section">
+    <h2>🔐 IP & Network Utilities</h2>
+    <ul>
+      <li><a href="utilities-tools/iptracker/index.html">IP Tracker</a></li>
+      <li><a href="utilities-tools/pingtools/index.html">Ping & Traceroute</a></li>
+      <li><a href="utilities-tools/ipv6gen/index.html">IPv6 Generator</a></li>
+      <li><a href="utilities-tools/portscanner/index.html">Port Scanner</a></li>
+      <li><a href="utilities-tools/subnetcalc/index.html">Subnet Calculator</a></li>
+      <li><a href="utilities-tools/whois/index.html">WHOIS Lookup</a></li>
+      <li><a href="utilities-tools/dnslookup/index.html">DNS Lookup</a></li>
+      <li><a href="utilities-tools/reversedns/index.html">Reverse DNS</a></li>
+      <li><a href="utilities-tools/macvendor/index.html">MAC Address Vendor Lookup</a></li>
+      <li><a href="utilities-tools/geoip/index.html">GeoIP Locator</a></li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>📦 Encoders & Viewers</h2>
+    <ul>
+      <li><a href="utilities-tools/base64viewer/index.html">Base64 Encoder</a></li>
+      <li><a href="utilities-tools/jwtviewer/index.html">JWT Decoder</a></li>
+      <li><a href="utilities-tools/hexviewer/index.html">Hex Viewer</a></li>
+      <li><a href="utilities-tools/urlencoder/index.html">URL Encoder/Decoder</a></li>
+      <li><a href="utilities-tools/htmlencoder/index.html">HTML Entity Encoder</a></li>
+      <li><a href="utilities-tools/unicode/index.html">Unicode Converter</a></li>
+      <li><a href="utilities-tools/rot13/index.html">ROT13 Cipher</a></li>
+      <li><a href="utilities-tools/caesar/index.html">Caesar Cipher</a></li>
+      <li><a href="utilities-tools/vigenere/index.html">Vigenère Cipher</a></li>
+      <li><a href="utilities-tools/morse/index.html">Morse Code Translator</a></li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>🔍 Reconnaissance Tools</h2>
+    <ul>
+      <li><a href="utilities-tools/subdomain/index.html">Subdomain Enumerator</a></li>
+      <li><a href="utilities-tools/dirbruteforce/index.html">Directory Brute Forcer</a></li>
+      <li><a href="utilities-tools/robotstxt/index.html">Robots.txt Analyzer</a></li>
+      <li><a href="utilities-tools/sitemap/index.html">Sitemap Parser</a></li>
+      <li><a href="utilities-tools/wappalyzer/index.html">Technology Stack Detector</a></li>
+      <li><a href="utilities-tools/crtsh/index.html">Certificate Transparency Logs</a></li>
+      <li><a href="utilities-tools/API Test/index.html">API Service Explorer</a></li>
+      <li><a href="utilities-tools/dorker/index.html">Google Dork Generator</a></li>
+      <li><a href="utilities-tools/osint/index.html">OSINT Framework</a></li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>🛡️ Vulnerability Scanners</h2>
+    <ul>
+      <li><a href="utilities-tools/sqlinjection/index.html">SQL Injection Tester</a></li>
+      <li><a href="utilities-tools/lfi/index.html">Local File Inclusion Tester</a></li>
+      <li><a href="utilities-tools/rfi/index.html">Remote File Inclusion Tester</a></li>
+      <li><a href="utilities-tools/csrf/index.html">CSRF Token Analyzer</a></li>
+      <li><a href="utilities-tools/xxe/index.html">XXE Vulnerability Tester</a></li>
+      <li><a href="utilities-tools/ssrf/index.html">SSRF Testing Tool</a></li>
+      <li><a href="utilities-tools/cmdinjection/index.html">Command Injection Tester</a></li>
+      <li><a href="utilities-tools/pathtraversal/index.html">Path Traversal Scanner</a></li>
+      <li><a href="utilities-tools/clickjacking/index.html">Clickjacking Detector</a></li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>🔑 Authentication & Session Tools</h2>
+    <ul>
+      <li><a href="utilities-tools/bruteforce/index.html">Brute Force Login</a></li>
+      
+      <li><a href="utilities-tools/cookieanalyzer/index.html">Cookie Security Analyzer</a></li>
+      <li><a href="utilities-tools/jwtcrack/index.html">JWT Secret Cracker</a></li>
+      <li><a href="utilities-tools/oauthtest/index.html">OAuth Flow Tester</a></li>
+      <li><a href="utilities-tools/samltest/index.html">SAML Assertion Validator</a></li>
+      <li><a href="utilities-tools/ldapinjection/index.html">LDAP Injection Tester</a></li>
+      <li><a href="utilities-tools/passwordpolicy/index.html">Password Policy Checker</a></li>
+      <li><a href="utilities-tools/accountenum/index.html">Account Enumeration Tool</a></li>
+      <li><a href="utilities-tools/captchabypass/index.html">CAPTCHA Bypass Analyzer</a></li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>🌐 Web Application Security</h2>
+    <ul>
+      <li><a href="utilities-tools/cors/index.html">CORS Misconfiguration Tester</a></li>
+      <li><a href="utilities-tools/csp/index.html">Content Security Policy Analyzer</a></li>
+      <li><a href="utilities-tools/hsts/index.html">HSTS Header Checker</a></li>
+      <li><a href="utilities-tools/httpheaders/index.html">HTTP Security Headers Scanner</a></li>
+      <li><a href="utilities-tools/ssl/index.html">SSL Configuration Tester</a></li>
+      <li><a href="utilities-tools/mixedcontent/index.html">Mixed Content Detector</a></li>
+      <li><a href="utilities-tools/websocket/index.html">WebSocket Security Tester</a></li>
+      <li><a href="utilities-tools/graphql/index.html">GraphQL Introspection Scanner</a></li>
+      <li><a href="utilities-tools/api/index.html">REST API Security Tester</a></li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>💉 Payload Generators</h2>
+    <ul>
+      <li><a href="utilities-tools/xsspayload/index.html">XSS Payload Generator</a></li>
+      <li><a href="utilities-tools/sqlpayload/index.html">SQL Injection Payloads</a></li>
+      <li><a href="utilities-tools/nosqlpayload/index.html">NoSQL Injection Payloads</a></li>
+      <li><a href="utilities-tools/ldappayload/index.html">LDAP Injection Payloads</a></li>
+      <li><a href="utilities-tools/shellcode/index.html">Shellcode Generator</a></li>
+      <li><a href="utilities-tools/reverseshell/index.html">Reverse Shell Generator</a></li>
+      <li><a href="utilities-tools/webshell/index.html">Web Shell Generator</a></li>
+      <li><a href="utilities-tools/msfpayload/index.html">Metasploit Payload Builder</a></li>
+      <li><a href="utilities-tools/polyglot/index.html">Polyglot Payload Creator</a></li>
+      <li><a href="utilities-tools/bypass/index.html">WAF Bypass Payload Generator</a></li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>🔓 Cryptography Tools</h2>
+    <ul>
+      <li><a href="utilities-tools/hashcrack/index.html">Hash Cracker</a></li>
+      <li><a href="utilities-tools/hashgen/index.html">Hash Generator</a></li>
+      <li><a href="utilities-tools/aes/index.html">AES Encryption/Decryption</a></li>
+      <li><a href="utilities-tools/rsa/index.html">RSA Key Generator</a></li>
+      <li><a href="utilities-tools/steganography/index.html">Steganography Tool</a></li>
+      <li><a href="utilities-tools/keyspace/index.html">Keyspace Calculator</a></li>
+      <li><a href="utilities-tools/randomness/index.html">Randomness Tester</a></li>
+      <li><a href="utilities-tools/cryptanalysis/index.html">Frequency Analysis Tool</a></li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>🛰️ Open Mapping & Intelligence</h2>
+    <p>Use our OSM-based interface to discover public data, images, and cyber hotspots.</p>
+    <div id="map" style="height: 500px;"></div>
+  </div>
+
+  <div class="section">
+    <h2>📍 Code Launch & Exploit Interfaces</h2>
+    <ul>
+      <li><a href="utilities-tools/launcher/index.html">Remote Code Launcher</a></li>
+      <li><a href="utilities-tools/encoders/index.html">Text & Code Encoders</a></li>
+      <li><a href="utilities-tools/obfuscator/index.html">JavaScript Obfuscator</a></li>
+      <li><a href="utilities-tools/deobfuscator/index.html">Code Deobfuscator</a></li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>🕵️ Forensics & Analysis</h2>
+    <ul>
+      <li><a href="utilities-tools/metadataextractor/index.html">Metadata Extractor</a></li>
+      <li><a href="utilities-tools/filecarver/index.html">File Carver</a></li>
+    </ul>
+  </div>
+
+ 
+</div>
+
+
+  <footer>© 2025 Cyber Tools Toolkit — Zorathedevdeveloper00</footer>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    window.addEventListener('click', () => {
+      document.getElementById("bg-music").play().catch(() => {});
+    }, { once: true });
+
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      sidebar.classList.toggle('show');
+      sidebar.classList.toggle('hide');
+    }
+
+    const map = L.map('map');
+    const isMobile = /iPhone|iPad|iPod|Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const mapZoom = isMobile ? 2 : 3;
+    map.setView([20, 0], mapZoom);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+  </script>
+</body>
+</html>

@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>zerolake Responsive Dashboard</title>
+  <style>
+    /* Reset & base */
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+    body, html {
+      margin: 0; padding: 0; height: 100%;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+      overflow: hidden;
+      display: flex;
+      flex-direction: row;
+      min-height: 100vh;
+      font-size: clamp(12px, 1.2vw + 0.5rem, 18px); /* Responsive base font */
+    }
+
+    /* Sidebar */
+    .sidebar {
+      flex: 0 0 280px;
+background: rgba(0,0,0,0.5);
+      display: flex;
+      flex-direction: column;
+      padding: 1.5rem 1rem;
+      box-shadow: 2px 0 10px rgba(0,0,0,0.5);
+      transition: transform 0.3s ease;
+      overflow-y: auto;
+      height: 100vh;
+    }
+
+    .sidebar h1 {
+      color: red;
+      text-align: center;
+      font-size: clamp(1.5rem, 2vw + 0.5rem, 2.2rem);
+      margin-bottom: 2rem;
+      user-select: none;
+    }
+
+    .sidebar a {
+      text-decoration: none;
+      color: red;
+      padding: 0.8rem 1rem;
+      border-radius: 8px;
+      margin: 0.3rem 0;
+      font-weight: 600;
+      font-size: clamp(0.85rem, 1vw + 0.2rem, 1.1rem);
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      transition: background-color 0.25s ease, color 0.25s ease;
+      user-select: none;
+    }
+    .sidebar a:hover, .sidebar a:focus {
+background: rgba(0,0,0,0.5);
+      color: red;
+      outline: none;
+    }
+
+    /* Main content area */
+    .main {
+      flex: 1;
+      padding: 2rem 3vw;
+      overflow-y: auto;
+      height: 100vh;
+background: rgba(0,0,0,0.5);
+      display: flex;
+      flex-direction: column;
+      gap: 1.8rem;
+    }
+
+    /* Cards */
+    .tool-card {
+background: rgba(0,0,0,0.5);
+      padding: 1.8rem 2rem;
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      cursor: default;
+      user-select: none;
+    }
+
+    .tool-card:hover {
+      transform: scale(1.03);
+      box-shadow: 0 0 35px rgba(0, 0, 0, 0.5);
+    }
+
+    .tool-card h2 {
+      margin-top: 0;
+      font-size: clamp(1.3rem, 2vw + 0.5rem, 2rem);
+      color: red;
+    }
+
+    .tool-card p {
+      color: red;
+      font-size: clamp(1rem, 1vw + 0.2rem, 1.2rem);
+      line-height: 1.5;
+    }
+
+    /* Footer */
+    .footer {
+      margin-top: auto;
+      text-align: center;
+      font-size: clamp(0.75rem, 0.8vw + 0.1rem, 1rem);
+      color: red;
+      padding: 1rem 0;
+      user-select: none;
+    }
+
+    /* Responsive: Hide sidebar on small screens with toggle button */
+    @media (max-width: 900px) {
+      body {
+        flex-direction: column;
+        overflow: visible;
+      }
+      .sidebar {
+        position: fixed;
+        top: 0; left: 0;
+        height: 100vh;
+        width: 240px;
+        transform: translateX(-260px);
+        z-index: 1000;
+        box-shadow: 4px 0 15px rgba(0,0,0,0.5);
+      }
+      .sidebar.active {
+        transform: translateX(0);
+      }
+      .main {
+        flex: 1 1 auto;
+        padding: 1rem 1.5rem 3rem;
+        height: auto;
+        overflow-y: visible;
+      }
+      .toggle-sidebar-btn {
+        position: fixed;
+        top: 12px;
+        left: 12px;
+        background: red;
+        border: none;
+        color: green;
+        font-weight: 700;
+        font-size: 1.3rem;
+        padding: 0.6rem 1rem;
+        border-radius: 8px;
+        cursor: pointer;
+        z-index: 1100;
+        user-select: none;
+        box-shadow: 0 0 8px rgba(0,0,0,0.5);
+        transition: background-color 0.3s ease;
+      }
+      .toggle-sidebar-btn:hover {
+background: rgba(0,0,0,0.5);
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <button class="toggle-sidebar-btn" aria-label="Toggle sidebar menu">&#9776;</button>
+
+  <nav class="sidebar" role="navigation" aria-label="Main Navigation">
+    <h1>zerolake tools</h1>
+    <a href="io/apitest.html">API Testing Tool</a>
+    <a href="io/code.html">Code Runner</a>
+    <a href="io/Corp.html">CORS Policy Tester</a>
+    <a href="io/cost.html">IP Address Finder</a>
+    <a href="io/Discord.html">Discord Identity Generator</a>
+    <a href="io/emailfinder.html">Email Finder Pro - Infinite Generator</a>
+    <a href="io/eyewitness.html">EyeWitness Visual Viewer</a>
+    <a href="io/finder.html">Infosec Changer</a>
+    <a href="io/geo3.html">Geo WiFi Finder – OpenCelliD</a>
+    <a href="io/Geopics.html">Geo-Tagged YouTube Videos Map</a>
+    <a href="io/Geoplace.html">AutoPlace Explorer - Cities, Towns & Streets</a>
+    <a href="io/Geovid.html">Place Search + random photos similar</a>
+    <a href="io/Geowiki.html">Geo Wiki + Image Explorer</a>
+    <a href="io/snake.html">Snake Game</a>
+    <a href="io/sold.html">IP Tracker Dashboard</a>
+    <a href="io/upgrade.html">Advanced Business Finder</a>
+    <a href="io/yt.html"> YouTube Thumbnail & Info Grabber</a>
+  </nav>
+
+  <script>
+    // Sidebar toggle for small screens
+    const toggleBtn = document.querySelector('.toggle-sidebar-btn');
+    const sidebar = document.querySelector('.sidebar');
+
+    toggleBtn.addEventListener('click', () => {
+      sidebar.classList.toggle('active');
+    });
+
+    // Close sidebar on clicking outside when active (mobile)
+    document.addEventListener('click', (e) => {
+      if (!sidebar.contains(e.target) && !toggleBtn.contains(e.target) && sidebar.classList.contains('active')) {
+        sidebar.classList.remove('active');
+      }
+    });
+
+    // Keyboard accessibility: close sidebar with Escape key
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && sidebar.classList.contains('active')) {
+        sidebar.classList.remove('active');
+        toggleBtn.focus();
+      }
+    });
+  </script>
+
+</body>
+</html>

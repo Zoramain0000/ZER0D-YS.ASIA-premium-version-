@@ -1,0 +1,301 @@
+<!-- Save this as ip-device-tracker.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>🌐 Smart live Tracker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: #fff;
+    }
+    #container {
+      display: flex;
+      flex: 1;
+      flex-direction: row;
+    }
+    #sidebar {
+      width: 360px;
+background: rgba(0, 0, 0, 0.5);
+      padding: 20px;
+      overflow-y: auto;
+      border-right: 1px solid red;
+    }
+    #map { flex: 1; }
+    h2, h3 { color: red; margin: 0; }
+    .button {
+      width: 100%;
+      margin-top: 10px;
+      padding: 10px;
+      background: red;
+      color: green;
+      border: none;
+      border-radius: 5px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .button:hover {  
+      
+background: rgba(0, 0, 0, 0.5);
+    }
+    .input-field {
+      width: 100%;
+      padding: 8px;
+      margin-top: 10px;
+      border: 1px solid red;
+      border-radius: 4px;
+background: rgba(0, 0, 0, 0.5);
+      color: red;
+    }
+    #log-table {
+      width: 100%;
+      margin-top: 15px;
+      font-size: 0.85em;
+      border-collapse: collapse;
+    }
+    #log-table th, #log-table td {
+      border: 1px solid red;
+      padding: 6px;
+    }
+    #log-table th {
+      background: #2c2c2c;
+    }
+    #chart-container {
+      height: 200px;
+      margin-top: 20px;
+    }
+    @media (max-width: 768px) {
+      #container {
+        flex-direction: column;
+      }
+      #sidebar {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid red;
+        max-height: 60vh;
+      }
+      #map {
+        height: 40vh;
+      }
+    }
+  </style>
+</head>
+<body>
+<div id="container">
+  <div id="sidebar">
+    <h2>🌐 Smart live Tracker</h2>
+    <input type="text" id="ipInput" class="input-field" placeholder="Enter IP Address" />
+    <input type="text" id="filterInput" class="input-field" placeholder="🔍 Filter Logs..." oninput="filterLogs()" />
+
+    <button class="button" onclick="trackIP()">Track IP</button>
+    <button class="button" onclick="autoDetectDevice()">Auto Detect</button>
+    <button class="button" onclick="saveLog()">💾 Save Log</button>
+    <button class="button" onclick="clearLogs()">🧹 Clear Logs</button>
+    <button class="button" onclick="exportCSV()">📤 Export CSV</button>
+    <button class="button" onclick="exportPDF()">📝 Export PDF</button>
+
+    <div id="device-info" style="margin-top: 20px;">
+      <h3>📌 Info</h3>
+      <p><strong>ID:</strong> <span id="info-id">-</span></p>
+      <p><strong>Location:</strong> <span id="info-location">-</span></p>
+      <p><strong>ISP:</strong> <span id="info-isp">-</span></p>
+    </div>
+
+    <div id="chart-container">
+      <canvas id="logChart"></canvas>
+    </div>
+
+    <table id="log-table">
+      <thead>
+        <tr>
+          <th>IP</th>
+          <th>Time</th>
+          <th>Location</th>
+          <th>ISP</th>
+        </tr>
+      </thead>
+      <tbody id="log-body"></tbody>
+    </table>
+  </div>         
+  <div id="map"></div>
+</div>
+
+<script>
+  let map = L.map('map').setView([20, 0], 2);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap'
+  }).addTo(map);
+
+  let logs = JSON.parse(localStorage.getItem("trackerLogs") || "[]");
+  let currentLog = {}, marker, logChart;
+  let savedMarkers = [];
+
+  logs.forEach(log => {
+    addLogRow(log);
+    addSavedMarker(log);
+  });
+  updateChart();
+
+  function updateMap(lat, lon) {
+    if (marker) marker.setLatLng([lat, lon]);
+    else marker = L.marker([lat, lon]).addTo(map);
+    map.setView([lat, lon], 13);
+  }
+
+  function trackIP() {
+    const ip = document.getElementById('ipInput').value.trim();
+    if (!ip) return alert("Enter IP address.");
+    fetch(`https://ipapi.co/${ip}/json/`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.error) return alert(`Error: ${data.reason}`);
+        updateMap(data.latitude, data.longitude);
+        currentLog = {
+          id: data.ip || ip,
+          time: new Date().toLocaleString(),
+          location: `${data.city}, ${data.country_name}`,
+          isp: data.org || 'Unknown',
+          lat: data.latitude,
+          lon: data.longitude
+        };
+        updateInfo(currentLog);
+      }).catch(() => alert("Failed to fetch IP data."));
+  }
+
+  function autoDetectDevice() {
+    if (!navigator.geolocation) return alert("Geolocation not supported.");
+    navigator.geolocation.getCurrentPosition(pos => {
+      const lat = pos.coords.latitude;
+      const lon = pos.coords.longitude;
+      const id = "Localhost-" + Math.random().toString(36).substring(2, 7);
+      updateMap(lat, lon);
+      currentLog = {
+        id,
+        time: new Date().toLocaleString(),
+        location: `Lat: ${lat.toFixed(5)}, Lon: ${lon.toFixed(5)}`,
+        isp: "Local Device",
+        lat, lon
+      };
+      updateInfo(currentLog);
+    }, err => alert("Geolocation error: " + err.message));
+  }
+
+  function updateInfo(log) {
+    document.getElementById('info-id').textContent = log.id;
+    document.getElementById('info-location').textContent = log.location;
+    document.getElementById('info-isp').textContent = log.isp;
+  }
+
+  function saveLog() {
+    if (!currentLog.id) return alert("No log to save.");
+    logs.push(currentLog);
+    addLogRow(currentLog);
+    updateChart();
+    localStorage.setItem("trackerLogs", JSON.stringify(logs));
+    addSavedMarker(currentLog);
+    currentLog = {};
+  }
+
+  function addLogRow(log) {
+    const row = document.createElement("tr");
+    row.innerHTML = `<td>${log.id}</td><td>${log.time}</td><td>${log.location}</td><td>${log.isp}</td>`;
+    document.getElementById("log-body").appendChild(row);
+  }
+
+  function addSavedMarker(log) {
+    if (!log.lat || !log.lon) return;
+    const redMarker = L.circleMarker([log.lat, log.lon], {
+      radius: 5,
+      color: 'red',
+      fillColor: 'red',
+      fillOpacity: 0.7
+    }).addTo(map).bindPopup(`${log.id}<br>${log.location}`);
+    savedMarkers.push(redMarker);
+  }
+
+  function clearLogs() {
+    logs = [];
+    document.getElementById("log-body").innerHTML = '';
+    localStorage.removeItem("trackerLogs");
+    savedMarkers.forEach(m => map.removeLayer(m));
+    savedMarkers = [];
+    updateChart();
+  }
+
+  function filterLogs() {
+    const val = document.getElementById("filterInput").value.toLowerCase();
+    document.querySelectorAll('#log-body tr').forEach(row => {
+      row.style.display = row.textContent.toLowerCase().includes(val) ? '' : 'none';
+    });
+  }
+
+  function exportCSV() {
+    if (!logs.length) return alert("No logs to export.");
+    let csv = 'IP,Time,Location,ISP\n';
+    logs.forEach(l => { csv += `${l.id},${l.time},${l.location},${l.isp}\n`; });
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'tracker_logs.csv';
+    link.click();
+  }
+
+  function exportPDF() {
+    if (!logs.length) return alert("No logs to export.");
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    doc.text("IP Tracker Logs", 14, 16);
+    doc.autoTable({
+      head: [['IP', 'Time', 'Location', 'ISP']],
+      body: logs.map(log => [log.id, log.time, log.location, log.isp]),
+      startY: 20
+    });
+    doc.save("tracker_logs.pdf");
+  }
+
+  function updateChart() {
+    const ctx = document.getElementById('logChart').getContext('2d');
+    const counts = {};
+    logs.forEach(l => counts[l.id] = (counts[l.id] || 0) + 1);
+    const labels = Object.keys(counts);
+    const data = Object.values(counts);
+    if (logChart) logChart.destroy();
+    logChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Log Count',
+          data,
+          backgroundColor: '#8ab4f8',
+          borderColor: '#5a90f0',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: { beginAtZero: true, ticks: { color: '#fff' }, grid: { color: '#444' } },
+          x: { ticks: { color: '#fff' }, grid: { color: '#444' } }
+        },
+        plugins: {
+          legend: { labels: { color: '#fff' } }
+        }
+      }
+    });
+  }
+</script>
+</body>
+</html>

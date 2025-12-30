@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Video/Picture File Renamer Tool</title>
+<style>
+  body {
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+    color: red;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    max-width: 600px;
+    margin: 2rem auto;
+    padding: 1rem 2rem;
+  }
+  h1 {
+    text-align: center;
+    color: red;
+    margin-bottom: 1rem;
+  }
+  input[type="file"] {
+    display: block;
+    margin: 1rem 0 1rem 0;
+    width: 100%;
+    padding: 12px;
+    border-radius: 6px;
+background: rgba(0, 0, 0, 0.5);
+    color: red;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  .file-list {
+    margin-top: 1rem;
+  }
+  .file-item {
+background: rgba(0, 0, 0, 0.5);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .file-item > label {
+    font-weight: bold;
+    color: red;
+  }
+  .file-name-input {
+    padding: 10px;
+    font-size: 16px;
+    border-radius: 6px;
+    border: none;
+background: rgba(0, 0, 0, 0.5);
+    color: red;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  button.rename-btn {
+    background:red ;
+    border: none;
+    padding: 12px;
+    color: green;
+    font-weight: bold;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    margin-top: 0.5rem;
+    align-self: flex-start;
+    width: 150px;
+    transition: background 0.3s ease;
+  }
+  button.rename-btn:hover {
+background: rgba(0, 0, 0, 0.5);
+  }
+  .download-link {
+    margin-top: 0.5rem;
+    color: red;
+    font-weight: bold;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .download-link:hover {
+    text-decoration: underline;
+  }
+  .note {
+    font-size: 14px;
+    color: red;
+    margin-top: 2rem;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+  <h1>📁 Video/Picture File Renamer</h1>
+  <input type="file" id="fileInput" multiple accept="image/*,video/*" />
+  <div class="file-list" id="fileList"></div>
+  <div class="note">Upload multiple files, rename their filenames, then download the renamed copies.</div>
+
+  <script>
+    const fileInput = document.getElementById('fileInput');
+    const fileList = document.getElementById('fileList');
+
+    // Store files and their blobs to rename and download later
+    let filesData = [];
+
+    fileInput.addEventListener('change', (e) => {
+      filesData = [];
+      fileList.innerHTML = '';
+      const files = e.target.files;
+
+      if (files.length === 0) {
+        fileList.textContent = 'No files selected.';
+        return;
+      }
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+
+        // Store original file object
+        filesData.push(file);
+
+        // Create UI for each file to rename and download
+        const fileItem = document.createElement('div');
+        fileItem.className = 'file-item';
+
+        const originalNameLabel = document.createElement('label');
+        originalNameLabel.textContent = 'Original filename:';
+        fileItem.appendChild(originalNameLabel);
+
+        const originalName = document.createElement('div');
+        originalName.textContent = file.name;
+        fileItem.appendChild(originalName);
+
+        const renameLabel = document.createElement('label');
+        renameLabel.textContent = 'Rename to (keep extension):';
+        fileItem.appendChild(renameLabel);
+
+        // Pre-fill input with filename without extension
+        const dotIndex = file.name.lastIndexOf('.');
+        const baseName = dotIndex === -1 ? file.name : file.name.substring(0, dotIndex);
+        const ext = dotIndex === -1 ? '' : file.name.substring(dotIndex);
+
+        const renameInput = document.createElement('input');
+        renameInput.type = 'text';
+        renameInput.className = 'file-name-input';
+        renameInput.value = baseName;
+        fileItem.appendChild(renameInput);
+
+        const renameBtn = document.createElement('button');
+        renameBtn.className = 'rename-btn';
+        renameBtn.textContent = 'Download Renamed';
+        fileItem.appendChild(renameBtn);
+
+        // Handle rename + download on button click
+        renameBtn.addEventListener('click', () => {
+          const newNameRaw = renameInput.value.trim();
+          if (newNameRaw === '') {
+            alert('Please enter a valid new filename.');
+            return;
+          }
+
+          // Sanitize filename (remove forbidden characters)
+          const newName = sanitizeFilename(newNameRaw) + ext;
+
+          // Create Blob URL for download
+          const blobUrl = URL.createObjectURL(file);
+
+          // Create invisible <a> tag to trigger download
+          const a = document.createElement('a');
+          a.href = blobUrl;
+          a.download = newName;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+
+          // Revoke the blob URL after a short delay
+          setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+        });
+
+        fileList.appendChild(fileItem);
+      }
+    });
+
+    // Remove forbidden filename characters for most OS
+    function sanitizeFilename(name) {
+      return name.replace(/[\/*?:"<>|\\]/g, '').replace(/\s+/g, '_');
+    }
+  </script>
+</body>
+</html>

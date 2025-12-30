@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cyber MAC Vendor Lookup</title>
+
+<style>
+:root {
+  --gold:#cfae55;
+  --gold-soft:#ffdc7a;
+  --bg:#0b0b0b;
+  --border:rgba(207,174,85,.45);
+  --green:#7cff9a;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: "Segoe UI", system-ui;
+  background: var(--bg);
+  color: var(--gold);
+  overflow-x: hidden;
+}
+
+/* Background video */
+video.bg {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: brightness(.35);
+  z-index: -2;
+}
+
+/* Navbar */
+nav {
+  height: 64px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 24px;
+  background: rgba(0,0,0,.75);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+  position: fixed;
+  top: 0;
+  width: 100%;
+  z-index: 10;
+}
+
+.brand {
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+button {
+  background: transparent;
+  color: var(--gold);
+  border: 1px solid var(--gold);
+  padding: 10px 18px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: .25s;
+}
+
+button:hover {
+  background: var(--gold);
+  color: black;
+}
+
+/* Main */
+.main {
+  max-width: 1100px;
+  margin: auto;
+  padding: 100px 25px 40px;
+}
+
+/* Section */
+.section {
+  background: linear-gradient(180deg,#151515,#0a0a0a);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 26px;
+  box-shadow: 0 0 25px rgba(0,0,0,.6);
+  margin-bottom: 30px;
+}
+
+.section h2 {
+  color: var(--gold-soft);
+  margin-bottom: 18px;
+}
+
+/* Input */
+input {
+  width: 100%;
+  padding: 14px;
+  background: #111;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: white;
+  font-size: 15px;
+  margin-bottom: 12px;
+}
+
+/* Output */
+pre {
+  background: #000;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  max-height: 420px;
+  overflow: auto;
+  color: var(--green);
+  font-size: 0.92rem;
+  white-space: pre-wrap;
+}
+
+/* Info Box */
+.info {
+  margin-top: 12px;
+  padding: 14px;
+  border-radius: 12px;
+  background: rgba(0,0,0,.5);
+  border: 1px solid var(--border);
+  line-height: 1.6;
+}
+
+.info b {
+  color: var(--gold-soft);
+}
+
+footer {
+  text-align: center;
+  padding: 26px;
+  opacity: .7;
+}
+</style>
+</head>
+
+<body>
+
+<video class="bg" autoplay muted loop playsinline>
+  <source src="background/1761817527453041720p.mp4" type="video/mp4">
+</video>
+
+<nav>
+  <div class="brand">Cyber MAC Vendor Lookup</div>
+  <button onclick="location.reload()">Reload</button>
+</nav>
+
+<div class="main">
+
+  <div class="section">
+    <h2>🌐 Advanced MAC Vendor Lookup (Real API)</h2>
+
+    <input id="macInput" placeholder="Enter MAC Address (ex: 44:38:39:ff:ef:57)">
+
+    <button onclick="lookupMAC()">Lookup Vendor</button>
+
+    <pre id="output">Waiting for lookup...</pre>
+
+    <div class="info" id="infoBox">
+      <b>Status:</b> Idle<br>
+      <b>Lookup Type:</b> MAC Vendor<br>
+      <b>Backend:</b> None — API Based
+    </div>
+  </div>
+
+</div>
+
+<footer>
+© 2025 Cyber Tools Toolkit — Frontend Only · API Powered
+</footer>
+
+<script>
+async function lookupMAC() {
+  const mac = document.getElementById("macInput").value.trim();
+  const output = document.getElementById("output");
+  const info = document.getElementById("infoBox");
+
+  if (!mac) {
+    output.textContent = "Please enter a MAC address.";
+    return;
+  }
+
+  output.textContent = "Fetching vendor info...";
+  info.innerHTML = `
+    <b>Status:</b> Querying<br>
+    <b>Target:</b> ${mac}<br>
+    <b>Lookup:</b> MAC Vendor
+  `;
+
+  try {
+    // MAC address API
+    const url = `https://api.macvendors.com/${encodeURIComponent(mac)}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("Vendor not found");
+    const vendor = await res.text();
+
+    output.textContent = `MAC Address: ${mac}\nVendor: ${vendor}`;
+    info.innerHTML = `
+      <b>Status:</b> Success<br>
+      <b>MAC Vendor:</b> ${vendor}<br>
+      <b>Resolver:</b> api.macvendors.com
+    `;
+  } catch (err) {
+    output.textContent = "Error: Unable to fetch vendor info.";
+    info.innerHTML = "<b>Status:</b> Lookup failed";
+  }
+}
+</script>
+
+</body>
+</html>

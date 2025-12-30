@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>🌍 Travel Explorer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<!-- Leaflet for map -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<!-- jsPDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<!-- QRCode -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- pdf.js for PDF import -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.9.179/pdf.min.js"></script>
+<style>
+  body {
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+    font-family: 'Segoe UI', sans-serif;
+    margin: 0;
+    padding: 20px;
+    color: red;
+  }
+  h1 {
+    text-align: center;
+    color: red;
+    margin-bottom: 10px;
+  }
+  .form-container, .filter-container, .export-btns, .view-toggle, .import-container {
+    max-width: 900px;
+    margin: 0 auto 20px;
+  }
+  input, textarea, select, button {
+    width: 100%;
+    padding: 10px;
+    margin: 6px 0;
+    border-radius: 6px;
+    border: 1px solid red;
+    font-size: 14px;
+    box-sizing: border-box;
+  }
+  button {
+    background-color: red;
+    color: green;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  button:hover {
+background: rgba(0, 0, 0, 0.5);
+  }
+  #map {
+    width: 100%;
+    height: 300px;
+    margin-bottom: 20px;
+    border-radius: 10px;
+    border: 1px solid red;
+  }
+  .travel-list, .timeline-list {
+    max-width: 900px;
+    margin: 0 auto;
+    overflow-x: auto;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 720px;
+  }
+  th, td {
+    text-align: left;
+    padding: 10px;
+    border-bottom: 1px solid red;
+    vertical-align: top;
+  }
+  th {
+background: rgba(0, 0, 0, 0.5);
+    color: red;
+  }
+  td {
+background: rgba(0, 0, 0, 0.5);
+  }
+  .weather-info {
+    font-size: 12px;
+    margin-top: 5px;
+    color: red;
+  }
+  .gallery {
+    display: flex;
+    gap: 5px;
+    margin-top: 5px;
+    flex-wrap: wrap;
+  }
+  .gallery img {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 1px solid red;
+    cursor: pointer;
+    position: relative;
+  }
+  .tag {
+    font-size: 10px;
+background: rgba(0, 0, 0, 0.5);
+    padding: 2px 4px;
+    margin-top: 2px;
+    border-radius: 4px;
+    color: red;
+    max-width: 60px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .fav {
+    cursor: pointer;
+    font-size: 18px;
+    user-select: none;
+  }
+  .fav.active {
+    color: red;
+  }
+  #qrcode {
+    text-align: center;
+    margin-top: 20px;
+  }
+  .timeline-list {
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    padding: 10px;
+    background: white;
+  }
+  .timeline-item {
+    border-left: 3px solid red;
+    padding-left: 10px;
+    margin-bottom: 15px;
+    position: relative;
+  }
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -7px;
+    top: 10px;
+    width: 12px;
+    height: 12px;
+background: rgba(0, 0, 0, 0.5);
+    border-radius: 50%;
+  }
+  .timeline-date {
+    font-weight: bold;
+    color: red;
+    margin-bottom: 3px;
+  }
+  .stats-container {
+    max-width: 900px;
+    margin: 0 auto 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+  .stat-box {
+    flex: 1;
+background: rgba(0, 0, 0, 0.5);
+    border-radius: 10px;
+    padding: 15px;
+    box-shadow: 0 1px 5px rgb(0 0 0 / 0.1);
+  }
+  .view-toggle {
+    max-width: 900px;
+    margin: 0 auto 20px;
+    text-align: center;
+  }
+  .view-toggle button {
+    width: auto;
+    margin: 0 5px;
+    padding: 8px 15px;
+  }
+  .import-container label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 5px;
+  }
+  @media (max-width: 768px) {
+    th, td {
+      display: block;
+      width: 100%;
+    }
+    table {
+      min-width: unset;
+    }
+    .stats-container {
+      flex-direction: column;
+    }
+  }
+  tbody tr {
+    cursor: grab;
+  }
+  /* Fullscreen gallery modal */
+  #galleryModal {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    left: 0;top: 0;
+    width: 100%;height: 100%;
+    background: rgba(0,0,0,0.5);
+    justify-content: center;
+    align-items: center;
+  }
+  #galleryModal img {
+    max-width: 90%;
+    max-height: 90%;
+    border-radius: 10px;
+  }
+  #galleryModal .closeBtn {
+    position: fixed;
+    top: 20px;
+    right: 30px;
+    font-size: 30px;
+    color: red;
+    cursor: pointer;
+    user-select: none;
+  }
+</style>
+</head>
+<body>
+
+<h1>🌍 Travel Explorer</h1>
+
+<div class="form-container">
+  <input type="text" id="name" placeholder="Place Name" autocomplete="off" />
+  <input type="text" id="country" placeholder="Country" autocomplete="off" />
+<select id="category">
+  <option value="">Select Category</option>
+  <option>Nature</option>
+  <option>Culture</option>
+  <option>Urban</option>
+  <option>Beach</option>
+  <option>Adventure</option>
+  <option>Historical</option>
+  <option>Wildlife</option>
+  <option>Mountain</option>
+  <option>Desert</option>
+  <option>Island</option>
+  <option>Religious</option>
+  <option>Food & Culinary</option>
+  <option>Art & Museums</option>
+  <option>Entertainment</option>
+  <option>Wellness & Spa</option>
+  <option>Festival & Events</option>
+  <option>Luxury</option>
+  <option>Rural</option>
+  <option>Shopping</option>
+  <option>Sports & Recreation</option>
+</select>
+
+  <textarea id="description" rows="3" placeholder="Short description..."></textarea>
+  <input type="file" id="images" multiple accept="image/*" />
+  <button onclick="addPlace()">➕ Add Destination</button>
+</div>
+
+<div class="import-container">
+  <label for="importCsv">Import from CSV:</label>
+  <input type="file" id="importCsv" accept=".csv" />
+  <label for="importPdf" style="margin-top:10px;">Import from PDF (basic):</label>
+  <input type="file" id="importPdf" accept=".pdf" />
+</div>
+
+<div class="filter-container">
+  <input type="text" id="search" placeholder="🔍 Search places..." oninput="renderPlaces()" autocomplete="off" />
+  <select id="filterCategory" onchange="renderPlaces()">
+    <option value="">All Categories</option>
+ <option>Nature</option>
+  <option>Culture</option>
+  <option>Urban</option>
+  <option>Beach</option>
+  <option>Adventure</option>
+  <option>Historical</option>
+  <option>Wildlife</option>
+  <option>Mountain</option>
+  <option>Desert</option>
+  <option>Island</option>
+  <option>Religious</option>
+  <option>Food & Culinary</option>
+  <option>Art & Museums</option>
+  <option>Entertainment</option>
+  <option>Wellness & Spa</option>
+  <option>Festival & Events</option>
+  <option>Luxury</option>
+  <option>Rural</option>
+  <option>Shopping</option>
+  <option>Sports & Recreation</option>
+  </select>
+</div>
+
+<div class="export-btns">
+  <button onclick="exportCSV()">📤 Export to CSV</button>
+  <button onclick="exportPDF()">📤 Export to PDF</button>
+  <button onclick="generateQRCode()">🔗 Generate QR Code</button>
+</div>
+
+<div id="qrcode"></div>
+
+<div class="view-toggle">
+  <button onclick="setView('table')" id="btnTable">Table View</button>
+  <button onclick="setView('timeline')" id="btnTimeline">Timeline View</button>
+</div>
+
+<div class="stats-container">
+  <div class="stat-box">
+    <h3>Category Counts</h3>
+    <canvas id="categoryChart" height="150"></canvas>
+  </div>
+  <div class="stat-box">
+    <h3>Map Stats</h3>
+    <div id="mapStats">Loading map...</div>
+  </div>
+</div>
+
+<div id="map"></div>
+
+<div class="travel-list">
+  <table id="placesTable">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Country</th>
+        <th>Category</th>
+        <th>Description</th>
+        <th>Images</th>
+        <th>Fav</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+    </tbody>
+  </table>
+</div>
+
+<div class="timeline-list" id="timelineList" style="display:none;">
+  <!-- Timeline items go here -->
+</div>
+
+<!-- Fullscreen gallery modal -->
+<div id="galleryModal">
+  <span class="closeBtn" onclick="closeGallery()">&times;</span>
+  <img id="galleryModalImg" src="" alt="Gallery Image" />
+</div>
+
+<script>
+  let places = JSON.parse(localStorage.getItem('travelPlaces') || '[]');
+  let map, markers = [];
+  let categoryChart;
+  let currentView = 'table';
+
+  // Initialize map
+  function initMap() {
+    map = L.map('map').setView([20, 0], 2);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+    updateMapMarkers();
+  }
+
+  // Add place
+  async function addPlace() {
+    const name = document.getElementById('name').value.trim();
+    const country = document.getElementById('country').value.trim();
+    const category = document.getElementById('category').value;
+    const description = document.getElementById('description').value.trim();
+    const imagesInput = document.getElementById('images');
+    if (!name || !country || !category) {
+      alert('Please fill in Name, Country, and Category.');
+      return;
+    }
+
+    // Convert images to base64
+    const images = await Promise.all(Array.from(imagesInput.files).map(file => fileToBase64(file)));
+
+    const newPlace = {
+      id: Date.now(),
+      name, country, category, description, images,
+      favorite: false,
+      dateAdded: new Date().toISOString()
+    };
+    places.push(newPlace);
+    savePlaces();
+    clearForm();
+    renderPlaces();
+    updateMapMarkers();
+    updateStats();
+  }
+
+  // File to base64
+  function fileToBase64(file) {
+    return new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onload = e => resolve(e.target.result);
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // Clear form inputs
+  function clearForm() {
+    document.getElementById('name').value = '';
+    document.getElementById('country').value = '';
+    document.getElementById('category').value = '';
+    document.getElementById('description').value = '';
+    document.getElementById('images').value = '';
+  }
+
+  // Save places to localStorage
+  function savePlaces() {
+    localStorage.setItem('travelPlaces', JSON.stringify(places));
+  }
+
+  // Toggle favorite
+  function toggleFavorite(id) {
+    const place = places.find(p => p.id === id);
+    if (place) {
+      place.favorite = !place.favorite;
+      savePlaces();
+      renderPlaces();
+    }
+  }
+
+  // Delete place
+  function deletePlace(id) {
+    if (!confirm('Are you sure you want to delete this place?')) return;
+    places = places.filter(p => p.id !== id);
+    savePlaces();
+    renderPlaces();
+    updateMapMarkers();
+    updateStats();
+  }
+
+  // Render places in table or timeline
+  function renderPlaces() {
+    if(currentView === 'table') {
+      renderTableView();
+    } else {
+      renderTimelineView();
+    }
+    updateStats();
+  }
+
+  // Render table view
+  function renderTableView() {
+    document.querySelector('.travel-list').style.display = 'block';
+    document.getElementById('timelineList').style.display = 'none';
+
+    const tbody = document.querySelector('#placesTable tbody');
+    tbody.innerHTML = '';
+
+    const searchTerm = document.getElementById('search').value.toLowerCase();
+    const filterCategory = document.getElementById('filterCategory').value;
+
+    let filtered = places.filter(place => {
+      const matchSearch = place.name.toLowerCase().includes(searchTerm) ||
+                          place.country.toLowerCase().includes(searchTerm) ||
+                          place.description.toLowerCase().includes(searchTerm);
+      const matchCategory = filterCategory ? place.category === filterCategory : true;
+      return matchSearch && matchCategory;
+    });
+
+    if(filtered.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#64748b;">No places found</td></tr>';
+      return;
+    }
+
+    for(let place of filtered) {
+      const tr = document.createElement('tr');
+
+      tr.innerHTML = `
+        <td>${escapeHTML(place.name)}</td>
+        <td>${escapeHTML(place.country)}</td>
+        <td>${escapeHTML(place.category)}</td>
+        <td>${escapeHTML(place.description)}</td>
+        <td>${renderGallery(place)}</td>
+        <td><span class="fav${place.favorite ? ' active' : ''}" onclick="toggleFavorite(${place.id})" title="Toggle Favorite">★</span></td>
+        <td><button onclick="deletePlace(${place.id})">🗑️ Delete</button></td>
+      `;
+      tbody.appendChild(tr);
+    }
+  }
+
+  // Render timeline view
+  function renderTimelineView() {
+    document.querySelector('.travel-list').style.display = 'none';
+    const timeline = document.getElementById('timelineList');
+    timeline.style.display = 'block';
+
+    const searchTerm = document.getElementById('search').value.toLowerCase();
+    const filterCategory = document.getElementById('filterCategory').value;
+
+    let filtered = places.filter(place => {
+      const matchSearch = place.name.toLowerCase().includes(searchTerm) ||
+                          place.country.toLowerCase().includes(searchTerm) ||
+                          place.description.toLowerCase().includes(searchTerm);
+      const matchCategory = filterCategory ? place.category === filterCategory : true;
+      return matchSearch && matchCategory;
+    });
+
+    filtered.sort((a,b) => new Date(a.dateAdded) - new Date(b.dateAdded));
+
+    if(filtered.length === 0) {
+      timeline.innerHTML = '<p style="text-align:center;color:#64748b;">No places found</p>';
+      return;
+    }
+
+    timeline.innerHTML = '';
+    for(let place of filtered) {
+      const div = document.createElement('div');
+      div.className = 'timeline-item';
+      div.innerHTML = `
+        <div class="timeline-date">${new Date(place.dateAdded).toLocaleDateString()}</div>
+        <div><strong>${escapeHTML(place.name)}</strong> (${escapeHTML(place.country)})</div>
+        <div>Category: ${escapeHTML(place.category)}</div>
+        <div>Description: ${escapeHTML(place.description)}</div>
+        <div class="gallery">${renderGallery(place, false)}</div>
+        <div><button onclick="deletePlace(${place.id})">🗑️ Delete</button></div>
+      `;
+      timeline.appendChild(div);
+    }
+  }
+
+  // Render gallery thumbnails with clickable images
+  function renderGallery(place, clickable = true) {
+    if(!place.images || place.images.length === 0) return '';
+    return place.images.map((img, i) => 
+      `<img src="${img}" alt="Image" ${clickable ? `onclick="openGallery('${img}')"` : ''} />`
+    ).join('');
+  }
+
+  // Escape HTML to prevent XSS
+  function escapeHTML(str) {
+    return str.replace(/[&<>"']/g, function(m) {
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];
+    });
+  }
+
+  // Update map markers
+  async function updateMapMarkers() {
+    markers.forEach(m => map.removeLayer(m));
+    markers = [];
+
+    for(let place of places) {
+      try {
+        let coords = await geocode(place.name + ', ' + place.country);
+        if(coords) {
+          let marker = L.marker(coords).addTo(map).bindPopup(`<strong>${escapeHTML(place.name)}</strong><br>${escapeHTML(place.country)}<br>${escapeHTML(place.category)}`);
+          markers.push(marker);
+        }
+      } catch(e) {
+        // ignore geocode errors
+      }
+    }
+    if(markers.length > 0) {
+      const group = L.featureGroup(markers);
+      map.fitBounds(group.getBounds().pad(0.5));
+    }
+    updateMapStats();
+  }
+
+  // Simple geocode using Nominatim API (free open API)
+  async function geocode(query) {
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`;
+    const resp = await fetch(url, {headers: {'User-Agent': 'TravelExplorerApp/1.0'}});
+    if(!resp.ok) return null;
+    const data = await resp.json();
+    if(data.length === 0) return null;
+    return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+  }
+
+  // Export CSV
+  function exportCSV() {
+    if(places.length === 0) {
+      alert('No places to export.');
+      return;
+    }
+    const header = ['Name','Country','Category','Description','Favorite','Date Added','Images Count'];
+    const rows = places.map(p => [
+      `"${p.name.replace(/"/g, '""')}"`,
+      `"${p.country.replace(/"/g, '""')}"`,
+      `"${p.category}"`,
+      `"${p.description.replace(/"/g, '""')}"`,
+      p.favorite ? 'Yes' : 'No',
+      p.dateAdded,
+      p.images.length
+    ]);
+    let csvContent = [header.join(','), ...rows.map(r => r.join(','))].join('\n');
+    downloadFile('travel_places.csv', 'text/csv;charset=utf-8;', csvContent);
+  }
+
+  // Export PDF using jsPDF
+  function exportPDF() {
+    if(places.length === 0) {
+      alert('No places to export.');
+      return;
+    }
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    doc.setFontSize(18);
+    doc.text('Travel Explorer Destinations', 10, 20);
+
+    let y = 30;
+    for(let place of places) {
+      if(y > 270) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.setFontSize(14);
+      doc.text(place.name + ' (' + place.country + ')', 10, y);
+      y += 8;
+      doc.setFontSize(11);
+      doc.text('Category: ' + place.category, 10, y);
+      y += 6;
+      let descLines = doc.splitTextToSize(place.description, 180);
+      doc.text(descLines, 10, y);
+      y += descLines.length * 6 + 4;
+      doc.setFontSize(9);
+      doc.text('Favorite: ' + (place.favorite ? 'Yes' : 'No'), 10, y);
+      y += 10;
+    }
+    doc.save('travel_places.pdf');
+  }
+
+  // Download helper
+  function downloadFile(filename, mime, content) {
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // Generate QR Code linking to this page (or a URL)
+  function generateQRCode() {
+    const container = document.getElementById('qrcode');
+    container.innerHTML = '';
+    new QRCode(container, {
+      text: window.location.href,
+      width: 128,
+      height: 128,
+      colorDark: '#2563eb',
+      colorLight: '#f0f9ff',
+      correctLevel: QRCode.CorrectLevel.H
+    });
+  }
+
+  // Set view (table or timeline)
+  function setView(view) {
+    currentView = view;
+    document.getElementById('btnTable').disabled = (view === 'table');
+    document.getElementById('btnTimeline').disabled = (view === 'timeline');
+    renderPlaces();
+  }
+
+  // Escape HTML for safe display
+  // Already defined above
+
+  // Import CSV file (simple parser)
+  document.getElementById('importCsv').addEventListener('change', async function() {
+    const file = this.files[0];
+    if(!file) return;
+    const text = await file.text();
+    const lines = text.split(/\r?\n/).filter(l => l.trim() !== '');
+    // Expect header: Name,Country,Category,Description,Favorite,Date Added,Images Count (Images Count ignored here)
+    if(lines.length < 2) {
+      alert('CSV has no data.');
+      return;
+    }
+    let importedCount = 0;
+    for(let i=1; i<lines.length; i++) {
+      const cols = parseCSVLine(lines[i]);
+      if(cols.length < 4) continue;
+      const [name,country,category,description,favorite,dateAdded] = cols;
+      places.push({
+        id: Date.now() + i,
+        name, country, category, description,
+        favorite: favorite && favorite.toLowerCase() === 'yes',
+        dateAdded: dateAdded || new Date().toISOString(),
+        images: []
+      });
+      importedCount++;
+    }
+    savePlaces();
+    renderPlaces();
+    alert(`Imported ${importedCount} places.`);
+    this.value = '';
+  });
+
+  // Simple CSV line parser (handles quoted commas)
+  function parseCSVLine(line) {
+    const result = [];
+    let cur = '', inQuotes = false;
+    for(let i=0; i<line.length; i++) {
+      const c = line[i];
+      if(c === '"') {
+        if(inQuotes && line[i+1] === '"') {
+          cur += '"';
+          i++;
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if(c === ',' && !inQuotes) {
+        result.push(cur);
+        cur = '';
+      } else {
+        cur += c;
+      }
+    }
+    result.push(cur);
+    return result;
+  }
+
+  // Gallery modal controls
+  function openGallery(src) {
+    const modal = document.getElementById('galleryModal');
+    const img = document.getElementById('galleryModalImg');
+    img.src = src;
+    modal.style.display = 'flex';
+  }
+
+  function closeGallery() {
+    document.getElementById('galleryModal').style.display = 'none';
+  }
+
+  // Update stats: category counts and map stats
+  function updateStats() {
+    updateCategoryChart();
+    updateMapStats();
+  }
+
+  // Category counts chart
+  function updateCategoryChart() {
+    const counts = {};
+    for(let place of places) {
+      counts[place.category] = (counts[place.category] || 0) + 1;
+    }
+    const labels = Object.keys(counts);
+    const data = Object.values(counts);
+
+    if(categoryChart) {
+      categoryChart.data.labels = labels;
+      categoryChart.data.datasets[0].data = data;
+      categoryChart.update();
+      return;
+    }
+
+    const ctx = document.getElementById('categoryChart').getContext('2d');
+    categoryChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Places Count',
+          data: data,
+          backgroundColor: '#2563eb'
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: {
+            beginAtZero:true,
+            precision:0
+          }
+        },
+        plugins: {
+          legend: { display: false }
+        }
+      }
+    });
+  }
+
+  // Update map stats info
+  function updateMapStats() {
+    const container = document.getElementById('mapStats');
+    const favCount = places.filter(p => p.favorite).length;
+    const total = places.length;
+    container.innerHTML = `<p>Total places: <strong>${total}</strong></p><p>Favorites: <strong>${favCount}</strong></p>`;
+  }
+
+  // Search and filter event handlers
+  document.getElementById('search').addEventListener('input', renderPlaces);
+  document.getElementById('filterCategory').addEventListener('change', renderPlaces);
+
+  // Initialize
+  window.onload = () => {
+    initMap();
+    renderPlaces();
+    setView('table');
+  };
+</script>
+
+</body>
+</html>

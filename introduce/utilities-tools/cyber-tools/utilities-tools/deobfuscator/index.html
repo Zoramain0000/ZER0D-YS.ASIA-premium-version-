@@ -1,0 +1,584 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Code Deobfuscator — Cyber Tools Toolkit</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family: "Segoe UI", Roboto, system-ui, -apple-system;
+    background:black;color:#c58b00;min-height:100vh;padding:22px;
+  }
+  video.bg-video{position:fixed;inset:0;width:100vw;height:100vh;object-fit:cover;z-index:-3;filter:brightness(.45) contrast(1.05)}
+  nav{width:100%;background:rgba(0,0,0,0.6);border-bottom:1px solid #c58b00;padding:.8rem 1.2rem;position:fixed;top:0;left:0;z-index:30;display:flex;justify-content:space-between;align-items:center}
+  .brand{color:#ffc107;font-weight:700}
+  .music-toggle{background:transparent;border:1px solid #c58b00;color:#c58b00;padding:6px 10px;border-radius:8px;cursor:pointer}
+  .container{max-width:1200px;margin:100px auto;padding:18px;background:rgba(0,0,0,0.45);border:1px solid #c58b00;border-radius:12px}
+  h1{color:#ffc107;margin-bottom:8px}
+  .panel{background:rgba(0,0,0,0.35);padding:12px;border-radius:10px;border:1px solid #c58b00;color:#ffd77a;margin-bottom:12px}
+  textarea,input,select{width:100%;padding:10px;border-radius:8px;border:1px solid #c58b00;background:#0b0b0b;color:#ffc107;margin-top:8px;font-family:monospace}
+  textarea{min-height:180px;resize:vertical}
+  .controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .btn{background:rgba(0,0,0,0.6);border:1px solid #c58b00;color:#c58b00;padding:8px 12px;border-radius:8px;cursor:pointer}
+  .btn:hover{background:#c58b00;color:#000}
+  .small{font-size:13px;color:#ffd77a}
+  .result-area{background:#080808;border:1px solid rgba(197,139,0,0.12);padding:10px;border-radius:8px;color:#9fffcf;min-height:120px;white-space:pre-wrap;font-family:monospace}
+  .step-log{background:#0a0a0a;border-left:4px solid #c58b00;padding:8px;margin-top:8px;color:#ffd77a;font-size:13px}
+  .grid{display:grid;grid-template-columns:1fr 420px;gap:12px}
+  @media(max-width:980px){.grid{grid-template-columns:1fr}}
+  footer{text-align:center;padding:14px;color:#c58b00;margin-top:12px}
+  .warning{background:#2b0000;color:#ffb3b3;padding:8px;border-radius:6px;margin-top:8px}
+  .muted{color:#bfa46a;font-size:13px}
+</style>
+</head>
+<body>
+
+<video class="bg-video" autoplay loop muted playsinline>
+  <source src="background/1761817527453041720p.mp4" type="video/mp4">
+</video>
+
+<audio id="bg-music" loop>
+  <source src="background/Programming___Coding___Hacking_music_vol.18__ANONYMOUS_HEADQUARTERS_(48k).mp3" type="audio/mpeg">
+</audio>
+
+<nav>
+  <div class="brand">Code Deobfuscator (Safe)</div>
+  <button id="musicToggle" class="music-toggle">Play Music</button>
+</nav>
+
+<div class="container" role="main">
+  <h1>🛠️ Advanced Code Deobfuscator</h1>
+  <div class="small">This tool performs **static** deobfuscation: decodes base64/hex/unicode escapes and unwraps common eval/Function wrappers — without executing the input. Use the sandbox run only for trusted output.</div>
+
+  <div class="panel">
+    <label>Input obfuscated code (paste or load file):</label>
+    <textarea id="inputCode" placeholder="// Paste obfuscated JS here"></textarea>
+
+    <div class="controls">
+      <input type="file" id="fileInput" accept=".js,text/plain" />
+      <button class="btn" id="loadBtn">Load File</button>
+      <button class="btn" id="clearBtn">Clear</button>
+      <button class="btn" id="deobBtn">Deobfuscate</button>
+      <button class="btn" id="beautifyBtn">Beautify</button>
+      <button class="btn" id="renameBtn">Rename Obf Vars (heuristic)</button>
+    </div>
+
+    <div class="muted">Options:</div>
+    <div class="controls" style="margin-top:6px">
+      <label style="display:flex;align-items:center"><input type="checkbox" id="iterative" checked> Iterative decode (repeat until stable)</label>
+      <label style="display:flex;align-items:center"><input type="checkbox" id="decodeHex" checked> Decode \xNN / \uNNNN</label>
+      <label style="display:flex;align-items:center"><input type="checkbox" id="renameHeur" checked> Auto-rename random identifiers</label>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div>
+      <div class="panel">
+        <label>Deobfuscated output:</label>
+        <textarea id="outputCode" readonly placeholder="Deobfuscated result will appear here"></textarea>
+
+        <div class="controls" style="margin-top:8px">
+          <button class="btn" id="copyBtn">Copy</button>
+          <button class="btn" id="downloadBtn">Download</button>
+          <button class="btn" id="runSandboxBtn">Run in Sandbox (optional)</button>
+        </div>
+
+        <div class="warning" id="runWarn" style="display:none">
+          ⚠️ Sandbox run executes the deobfuscated code inside an isolated iframe. Only run code you understand or in a controlled environment.
+        </div>
+      </div>
+
+      <div class="panel">
+        <strong>Deobfuscation log</strong>
+        <div id="logBox" class="step-log">No actions yet.</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="panel">
+        <strong>Sandbox preview & console</strong>
+        <iframe id="sandbox" sandbox="allow-scripts" style="width:100%;height:300px;border:1px solid rgba(197,139,0,0.12);border-radius:6px;background:#fff"></iframe>
+        <pre id="sandboxConsole" class="result-area" style="height:160px;overflow:auto">Sandbox messages appear here.</pre>
+        <div class="muted">Iframe has <code>sandbox="allow-scripts"</code>. It cannot access parent DOM except via postMessage.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>© 2025 Cyber Tools Toolkit — Code Deobfuscator</footer>
+
+<script>
+/* ===== music ===== */
+const bgAudio = document.getElementById('bg-music');
+const musicToggle = document.getElementById('musicToggle');
+musicToggle.addEventListener('click', async ()=>{
+  try {
+    if(bgAudio.paused){ await bgAudio.play(); musicToggle.textContent='Pause Music'; musicToggle.classList.add('playing'); }
+    else { bgAudio.pause(); musicToggle.textContent='Play Music'; musicToggle.classList.remove('playing'); }
+  } catch(e) { console.warn(e); }
+});
+window.addEventListener('click', ()=> bgAudio.play().catch(()=>{}), { once:true });
+
+/* ===== DOM refs ===== */
+const inputCode = document.getElementById('inputCode');
+const outputCode = document.getElementById('outputCode');
+const logBox = document.getElementById('logBox');
+const fileInput = document.getElementById('fileInput');
+const loadBtn = document.getElementById('loadBtn');
+const clearBtn = document.getElementById('clearBtn');
+const deobBtn = document.getElementById('deobBtn');
+const beautifyBtn = document.getElementById('beautifyBtn');
+const renameBtn = document.getElementById('renameBtn');
+const copyBtn = document.getElementById('copyBtn');
+const downloadBtn = document.getElementById('downloadBtn');
+const runSandboxBtn = document.getElementById('runSandboxBtn');
+const sandboxFrame = document.getElementById('sandbox');
+const sandboxConsole = document.getElementById('sandboxConsole');
+const runWarn = document.getElementById('runWarn');
+
+const iterativeCheck = document.getElementById('iterative');
+const decodeHexCheck = document.getElementById('decodeHex');
+const renameHeurCheck = document.getElementById('renameHeur');
+
+/* ===== helpers ===== */
+function log(msg){ logBox.textContent = (new Date()).toLocaleTimeString() + ' — ' + msg + '\n' + logBox.textContent; }
+function downloadText(filename, text){
+  const a=document.createElement('a'); a.href = URL.createObjectURL(new Blob([text],{type:'text/plain'})); a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+}
+function copyText(text){ navigator.clipboard.writeText(text).then(()=> alert('Copied to clipboard')); }
+
+/* ===== file load ===== */
+loadBtn.addEventListener('click', async ()=> {
+  if(!fileInput.files || !fileInput.files[0]) return alert('Choose a file first');
+  const txt = await fileInput.files[0].text();
+  inputCode.value = txt;
+  log('File loaded: ' + fileInput.files[0].name);
+});
+
+/* ===== clear ===== */
+clearBtn.addEventListener('click', ()=> { inputCode.value=''; outputCode.value=''; log('Cleared input and output'); });
+
+/* ===== core static decoding functions ===== */
+
+// safe base64 decode for data that is known to be base64 text
+function safeBase64Decode(s){
+  try{
+    // some obfuscators remove padding; restore
+    const padded = s + '==='.slice((s.length+3)%4);
+    const bin = atob(padded);
+    // try to decode as UTF-8
+    try { return decodeURIComponent(escape(bin)); } catch(e) { return bin; }
+  }catch(e){
+    return null;
+  }
+}
+
+// decode hex escape sequences like \xHH and \uHHHH and unicode escapes
+function decodeEscapes(str){
+  // Replace \xNN
+  let out = str.replace(/\\x([0-9a-fA-F]{2})/g, (m,hex)=> String.fromCharCode(parseInt(hex,16)));
+  // Replace \u{HHHH} or \uHHHH
+  out = out.replace(/\\u\{([0-9a-fA-F]+)\}/g, (m,hex)=> String.fromCodePoint(parseInt(hex,16)));
+  out = out.replace(/\\u([0-9a-fA-F]{4})/g, (m,hex)=> String.fromCharCode(parseInt(hex,16)));
+  // decode common escaped sequences
+  out = out.replace(/\\n/g,'\n').replace(/\\r/g,'\r').replace(/\\t/g,'\t').replace(/\\'/g,"'").replace(/\\"/g,'"').replace(/\\\\/g,'\\');
+  return out;
+}
+
+// find base64-looking strings inside patterns like atob('...') or eval(atob('...'))
+function findAtobPayloads(code){
+  const results = [];
+  // patterns: atob('...') or window.atob("...") or eval(atob('...'))
+  const re = /(?:atob|window\.atob)\(\s*(['"`])([A-Za-z0-9+/=_-]{10,})\1\s*\)/g;
+  let m;
+  while((m=re.exec(code))!==null){
+    results.push({match:m[0], quote:m[1], payload:m[2], index:m.index});
+  }
+  return results;
+}
+
+// detect eval(Function(...atob...)) wrappers: match eval\(.*atob('...')\). We'll decode inner base64 without executing.
+function unwrapEvalAtob(code){
+  let changed=false;
+  let out = code;
+  // find patterns: eval(atob('...')) or eval(Function(atob('...'))()) etc.
+  // We decode base64 substrings appearing inside atob(...) and replace atob('..') with the decoded string literal (escaped)
+  const payloads = findAtobPayloads(code);
+  for(const p of payloads){
+    const dec = safeBase64Decode(p.payload);
+    if(dec !== null){
+      const safeLiteral = JSON.stringify(dec); // quoted JS string
+      out = out.replace(p.match, safeLiteral); // replace atob('...') with "decoded..."
+      changed = true;
+      log('Decoded atob payload at index ' + p.index);
+    }
+  }
+  // also replace eval("...") where "..." is string literal content (strip surrounding eval)
+  // but do not execute: only if it's a string literal or concatenation of literals
+  // find eval("..."); -> replace with string content
+  out = out.replace(/eval\s*\(\s*(['"`])([\s\S]*?)\1\s*\)/g, (m,quote,inner)=>{
+    // inner is a literal; we return inner content (not executed)
+    log('Unwrapped eval(string) to literal (no execute)');
+    return JSON.stringify(inner);
+  });
+  return {out, changed};
+}
+
+// decode hex string literals like "\x68\x65\x6c\x6c\x6f" or "0x66,0x6f,..." in arrays
+function decodeHexLiterals(code){
+  let changed=false;
+  let out = code;
+  // hex escape sequences in strings
+  out = out.replace(/(['"`])((?:\\x[0-9a-fA-F]{2}|\\u[0-9a-fA-F]{4}|\\.|[^\\])*?)\1/g, (m,quote,content)=>{
+    const decoded = decodeEscapes(content);
+    // if decoded crew contains many non-printable? we'll decide threshold: if result has printable length > half, replace
+    const printable = decoded.replace(/[^\x20-\x7E]/g,'').length;
+    if(printable > decoded.length * 0.4 && decoded !== content){
+      changed = true;
+      log('Decoded escape sequences inside string literal');
+      return quote + decoded + quote;
+    }
+    return m;
+  });
+  // arrays of hex numbers like [0x68,0x65,...] -> try to convert to string
+  out = out.replace(/\[\s*(?:0x[0-9a-fA-F]{2}\s*,\s*){3,}\s*0x[0-9a-fA-F]{2}\s*\]/g, (m)=>{
+    try{
+      const nums = m.replace(/[\[\]\s]/g,'').split(',').map(x=>parseInt(x,16));
+      const s = String.fromCharCode(...nums);
+      if(s.match(/^[\x09\x0A\x0D\x20-\x7E]+$/)){ changed=true; log('Converted hex array to string'); return JSON.stringify(s); }
+      return m;
+    }catch(e){ return m; }
+  });
+  return {out, changed};
+}
+
+// flatten simple string concatenations of literals: "a"+"b"+"c" -> "abc"
+function flattenLiteralConcats(code){
+  let changed=false;
+  const out = code.replace(/(['"`])((?:\\.|(?!\1).)*)\1(?:\s*\+\s*(['"`])((?:\\.|(?!\3).)*)\3)+/g, (m)=>{
+    // find all string parts and join them
+    const parts = [];
+    const re = /(['"`])((?:\\.|(?!\1).)*)\1/g;
+    let mm;
+    while((mm=re.exec(m))!==null) parts.push(decodeEscapes(mm[2]));
+    if(parts.length>1){
+      changed=true; log('Flattened string concatenation of '+parts.length+' parts');
+      return JSON.stringify(parts.join(''));
+    }
+    return m;
+  });
+  return {out, changed};
+}
+
+/* ===== tokenizer to allow safe identifier renaming (skip strings/comments) ===== */
+
+// simple tokenizer that yields {type, value}; types: string, comment, regex, identifier, other
+function tokenizeJS(code){
+  const tokens=[];
+  const len = code.length;
+  let i=0;
+  while(i<len){
+    const ch = code[i];
+    // strings
+    if(ch === '"' || ch === "'" || ch === '`'){
+      const quote = ch;
+      let j = i+1;
+      let s = ch;
+      while(j<len){
+        const c = code[j];
+        s += c;
+        if(c === '\\') { if(j+1<len){ s += code[j+1]; j+=2; continue; } }
+        if(c === quote){ j++; break; }
+        j++;
+      }
+      tokens.push({type:'string', value:s});
+      i = j; continue;
+    }
+    // line comment
+    if(ch === '/' && code[i+1] === '/'){
+      let j = i+2;
+      while(j<len && code[j] !== '\n') j++;
+      tokens.push({type:'comment', value: code.slice(i, j)});
+      i = j; continue;
+    }
+    // block comment
+    if(ch === '/' && code[i+1] === '*'){
+      let j = i+2;
+      while(j < len && !(code[j]==='*' && code[j+1]==='/')) j++;
+      j = Math.min(len, j+2);
+      tokens.push({type:'comment', value: code.slice(i, j)});
+      i = j; continue;
+    }
+    // regex literal (approx): starts with / and previous non-space token ends with one that allows regex (like = ( , : [ ! ? return)
+    if(ch === '/'){
+      // simple heuristic: check previous non-space char
+      const prev = code.slice(0,i).trim().slice(-1);
+      const allow = '([{=:+!;,?'.includes(prev) || prev === undefined || prev === '';
+      if(allow){
+        let j = i+1; let inClass=false;
+        while(j<len){
+          const c = code[j];
+          if(c === '\\') { j+=2; continue; }
+          if(c === '[') { inClass=true; j++; continue; }
+          if(c === ']') { inClass=false; j++; continue; }
+          if(c === '/' && !inClass){ j++; break; }
+          j++;
+        }
+        // include flags
+        while(j<len && /[gimuys]/.test(code[j])) j++;
+        tokens.push({type:'regex', value: code.slice(i,j)});
+        i = j; continue;
+      }
+    }
+    // identifier or number or operator
+    if(/[A-Za-z_$]/.test(ch)){
+      let j=i+1;
+      while(j<len && /[A-Za-z0-9_$]/.test(code[j])) j++;
+      tokens.push({type:'identifier', value: code.slice(i,j)});
+      i=j; continue;
+    }
+    // whitespace
+    if(/\s/.test(ch)){
+      let j=i+1; while(j<len && /\s/.test(code[j])) j++;
+      tokens.push({type:'whitespace', value: code.slice(i,j)});
+      i=j; continue;
+    }
+    // other single char
+    tokens.push({type:'other', value: ch});
+    i++;
+  }
+  return tokens;
+}
+
+// replace only identifiers using a mapping, reconstructing code preserving strings/comments
+function replaceIdentifiers(code, mapping){
+  const tokens = tokenizeJS(code);
+  let out = '';
+  for(const t of tokens){
+    if(t.type === 'identifier' && mapping[t.value]){
+      out += mapping[t.value];
+    } else {
+      out += t.value;
+    }
+  }
+  return out;
+}
+
+/* ===== heuristic variable renaming: detect suspicious simple names like abcdE1 etc ===== */
+function findObfuscatedIdentifiers(code){
+  // collect identifiers from tokenizer excluding common words
+  const tokens = tokenizeJS(code);
+  const counts = {};
+  for(const t of tokens){
+    if(t.type === 'identifier'){
+      const v = t.value;
+      // skip reserved keywords and common names
+      if(/^(var|let|const|function|if|else|for|while|return|switch|case|break|new|this|typeof|in|of|try|catch|finally|class|extends|import|export)$/i.test(v)) continue;
+      counts[v] = (counts[v]||0) + 1;
+    }
+  }
+  // heuristics: names likely obfuscated: length 5-12, many mixed case, no vowels, contain lots of random letters
+  const candidates = Object.keys(counts).filter(name=>{
+    if(name.length < 3 || name.length > 20) return false;
+    // likely random if contains both upper and lower or digits and letters and not readable
+    const vowelCount = (name.match(/[aeiouAEIOU]/g)||[]).length;
+    const consonantRatio = (name.length - vowelCount) / name.length;
+    const hasDigits = /\d/.test(name);
+    const looksRandom = consonantRatio > 0.6 || hasDigits || /[A-Z]/.test(name) && /[a-z]/.test(name);
+    // also skip names that are obviously words
+    if(/^(str|text|data|result|cnt|i|j|k|len|num|obj|fn|req|res)$/.test(name.toLowerCase())) return false;
+    return looksRandom;
+  });
+  // sort by frequency desc
+  candidates.sort((a,b)=>counts[b]-counts[a]);
+  return candidates;
+}
+
+/* ===== main deobfuscation pipeline ===== */
+
+function deobfuscateOnce(code, opts){
+  let working = code;
+  let changedAny=false;
+  // 1) decode atob(...) base64 payloads
+  const {out:unwrapped, changed:unwrappedChanged} = unwrapEvalAtob(working);
+  if(unwrappedChanged){ working = unwrapped; changedAny=true; }
+
+  // 2) decode escape sequences in string literals if option set
+  if(opts.decodeHex){
+    const {out:hexOut, changed:hexChanged} = decodeHexLiterals(working);
+    if(hexChanged){ working = hexOut; changedAny=true; }
+  }
+
+  // 3) flatten literal concatenations
+  const {out:flatOut, changed:flatChanged} = flattenLiteralConcats(working);
+  if(flatChanged){ working = flatOut; changedAny=true; }
+
+  // 4) attempt to decode any remaining base64-like inline strings outside atob
+  // pattern: "base64string" of length > 20 and only base64 chars
+  working = working.replace(/(['"`])([A-Za-z0-9+\/=]{20,})\1/g, (m,q,inner)=>{
+    const dec = safeBase64Decode(inner);
+    if(dec !== null && dec.length > 0 && dec.length < 20000){
+      changedAny = true;
+      log('Decoded standalone base64 literal');
+      return JSON.stringify(dec);
+    }
+    return m;
+  });
+
+  return {code:working, changed: changedAny};
+}
+
+function deobfuscate(code, opts){
+  log('Starting deobfuscation pipeline' + (opts.iterative ? ' (iterative)' : ''));
+  let prev = code;
+  let round = 0;
+  while(true){
+    round++;
+    const res = deobfuscateOnce(prev, opts);
+    outputProgress(`Round ${round}: changes=${res.changed}`);
+    if(!res.changed) { log('No more transformations detected'); break; }
+    prev = res.code;
+    if(!opts.iterative) break;
+    if(round >= 10){ log('Reached iteration limit'); break; }
+  }
+  return prev;
+}
+
+/* ===== beautifier: naive JS pretty-printer (indent braces) ===== */
+function beautifyJS(code){
+  // a conservative beautifier: insert newlines around braces and semicolons and indent blocks
+  // This is not a full parser — it uses tokenization to avoid touching strings/comments.
+  const tokens = tokenizeJS(code);
+  let out = '';
+  let indent = 0;
+  const indentStr = '  ';
+  const newlineAfter = new Set([';','{','}']);
+  for(let i=0;i<tokens.length;i++){
+    const t = tokens[i];
+    if(t.type === 'other' && t.value === '{'){
+      // write space then { then newline and indent++
+      out = out.trimEnd();
+      out += ' {\n';
+      indent++;
+      out += indentStr.repeat(indent);
+      continue;
+    }
+    if(t.type === 'other' && t.value === '}'){
+      // newline before }, reduce indent
+      out = out.replace(/\s*$/,'');
+      out += '\n';
+      indent = Math.max(0, indent-1);
+      out += indentStr.repeat(indent) + '}\n' + indentStr.repeat(indent);
+      continue;
+    }
+    if(t.type === 'other' && t.value === ';'){
+      out += ';\n' + indentStr.repeat(indent);
+      continue;
+    }
+    // normal tokens: append value
+    out += t.value;
+  }
+  // cleanup: collapse multiple blank lines
+  out = out.replace(/\n{3,}/g,'\n\n');
+  return out.trim();
+}
+
+/* ===== rename heuristic ===== */
+function renameObfuscated(code){
+  const candidates = findObfuscatedIdentifiers(code);
+  if(candidates.length === 0){ log('No suspicious obfuscated identifiers found'); return code; }
+  const mapping = {};
+  for(let i=0;i<candidates.length;i++){
+    mapping[candidates[i]] = 'v' + (i+1);
+  }
+  const replaced = replaceIdentifiers(code, mapping);
+  log('Renamed ' + Object.keys(mapping).length + ' identifiers (heuristic)');
+  return replaced;
+}
+
+/* ===== UI actions ===== */
+
+deobBtn.addEventListener('click', ()=> {
+  const opts = { iterative: iterativeCheck.checked, decodeHex: decodeHexCheck.checked };
+  const code = inputCode.value || '';
+  if(!code) return alert('Paste obfuscated code first');
+  log('User started deobfuscation');
+  let out = deobfuscate(code, opts);
+  // optionally rename
+  if(renameHeurCheck.checked){
+    const before = out;
+    out = renameObfuscated(out);
+    if(before !== out) log('Applied heuristic renaming');
+  }
+  outputCode.value = out;
+  log('Deobfuscation finished');
+});
+
+beautifyBtn.addEventListener('click', ()=> {
+  const code = outputCode.value || inputCode.value || '';
+  if(!code) return alert('Nothing to beautify');
+  const pretty = beautifyJS(code);
+  outputCode.value = pretty;
+  log('Applied beautifier');
+});
+
+renameBtn.addEventListener('click', ()=> {
+  const code = outputCode.value || inputCode.value || '';
+  if(!code) return alert('Nothing to rename');
+  const out = renameObfuscated(code);
+  outputCode.value = out;
+});
+
+copyBtn.addEventListener('click', ()=> copyText(outputCode.value || '') );
+downloadBtn.addEventListener('click', ()=> {
+  const text = outputCode.value || '';
+  if(!text) return alert('Nothing to download');
+  downloadText('deobfuscated.js', text);
+});
+
+/* ===== Sandbox execution (optional, explicit) ===== */
+runSandboxBtn.addEventListener('click', ()=> {
+  const code = outputCode.value || inputCode.value || '';
+  if(!code) return alert('Nothing to run in sandbox');
+  // show warning
+  runWarn.style.display = 'block';
+  sandboxConsole.textContent = 'Sandbox starting...';
+  // build srcdoc with forwarding console
+  const srcdoc = `
+<!doctype html><html><head><meta charset="utf-8"></head>
+<body>
+<script>
+  (function(){
+    function post(type,msg){ try{ parent.postMessage({type:type, msg: String(msg)}, '*'); }catch(e){} }
+    console.log = function(){ post('log', Array.from(arguments).join(' ')); };
+    console.error = function(){ post('error', Array.from(arguments).join(' ')); };
+    window.addEventListener('error', function(e){ post('error', e.message + ' at ' + e.filename + ':' + e.lineno); });
+  })();
+</script>
+<script>
+try {
+${code}
+} catch(e){ console.error('Runtime error: ' + e); }
+</script>
+</body></html>`;
+  sandboxFrame.srcdoc = srcdoc;
+  log('Sandboxed run started (iframe)');
+});
+
+// receive messages from sandbox
+window.addEventListener('message', (ev)=> {
+  const d = ev.data || {};
+  if(d.type === 'log') sandboxConsole.textContent += '[log] ' + d.msg + '\n';
+  else if(d.type === 'error') sandboxConsole.textContent += '[error] ' + d.msg + '\n';
+});
+
+/* ===== initial demo content ===== */
+inputCode.value = `// Demo packed example: eval(atob('Y29uc29sZS5sb2coJ0hlbGxvIGZyb20gYmFzZTY0Jyk7'));`;
+
+/* ===== small progress helper ===== */
+function outputProgress(msg){ /* could show small progress UI — for now log */ log(msg); }
+
+</script>
+</body>
+</html>

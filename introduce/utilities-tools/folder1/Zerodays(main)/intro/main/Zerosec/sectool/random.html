@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Advanced Image & GIF Fetcher</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    h1 {
+      color: red;
+      margin-bottom: 10px;
+    }
+
+    .controls {
+      margin-top: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    input, button, select {
+      padding: 10px;
+      margin: 5px;
+      font-size: 16px;
+      border-radius: 6px;
+      border: none;
+    }
+
+    input {
+      width: 250px;
+    }
+
+    button {
+      background: red;
+      color: green;
+      cursor: pointer;
+      transition: 0.3s ease;
+    }
+
+    button:hover {
+background: rgba(0, 0, 0, 0.5);
+    }
+
+    .gallery {
+      margin-top: 30px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 20px;
+      max-width: 1200px;
+    }
+
+    .img-card {
+background: rgba(0, 0, 0, 0.5);
+      padding: 10px;
+      border-radius: 10px;
+      box-shadow: 0 0 8px red;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: var(--img-size, 300px);
+    }
+
+    .img-card img {
+      max-width: 100%;
+      border-radius: 8px;
+    }
+
+    .download-btn {
+      margin-top: 10px;
+      background: red;
+      color: green;
+    }
+
+    .download-btn:hover {
+background: rgba(0, 0, 0, 0.5);
+    }
+
+    .slideshow {
+      margin-top: 20px;
+      border: 2px solid red;
+      border-radius: 10px;
+      max-width: 500px;
+      overflow: hidden;
+    }
+
+    .slideshow img {
+      width: 100%;
+      display: none;
+    }
+
+    .slideshow img.active {
+      display: block;
+    }
+
+    .slider-container {
+      margin-top: 15px;
+      color: red;
+    }
+
+    #dropZone {
+      margin-top: 20px;
+      border: 2px dashed red;
+      padding: 20px;
+      text-align: center;
+      width: 300px;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>Advanced Image & GIF Fetcher</h1>
+  <div class="controls">
+    <button onclick="fetchPicsum()">Random Picsum Image</button>
+    <input type="text" id="searchQuery" placeholder="Search (e.g., cats)" />
+    <select id="apiSource">
+      <option value="unsplash">Unsplash</option>
+      <option value="pixabay">Pixabay</option>
+      <option value="giphy">GIPHY</option>
+      <option value="tenor">Tenor</option>
+      <option value="imgur">Imgur</option>
+    </select>
+    <button onclick="searchImages()">Search</button>
+    <button onclick="startSlideshow()">▶️ Start Slideshow</button>
+    <button onclick="stopSlideshow()">⏹️ Stop Slideshow</button>
+    <button onclick="downloadAll()">📦 Download All as ZIP</button>
+
+    <div class="slider-container">
+      <label>Preview Size: <span id="sliderValue">300</span>px</label><br>
+      <input type="range" id="sizeSlider" min="100" max="500" value="300">
+    </div>
+
+    <div id="dropZone">📁 Drop images or GIFs here<br>or<br><input type="file" id="fileInput" multiple></div>
+  </div>
+
+  <div class="slideshow" id="slideshow"></div>
+  <div class="gallery" id="gallery"></div>
+
+  <script>
+    let imageLinks = [];
+    let slideshowTimer;
+
+    const gallery = document.getElementById('gallery');
+    const slideshow = document.getElementById('slideshow');
+    const sizeSlider = document.getElementById('sizeSlider');
+    const sliderValue = document.getElementById('sliderValue');
+    const fileInput = document.getElementById('fileInput');
+    const dropZone = document.getElementById('dropZone');
+
+    document.documentElement.style.setProperty('--img-size', sizeSlider.value + 'px');
+    sizeSlider.addEventListener('input', () => {
+      document.documentElement.style.setProperty('--img-size', sizeSlider.value + 'px');
+      sliderValue.textContent = sizeSlider.value;
+    });
+
+    slideshow.addEventListener('mouseenter', () => clearInterval(slideshowTimer));
+    slideshow.addEventListener('mouseleave', () => startSlideshow());
+
+    dropZone.addEventListener('dragover', e => {
+      e.preventDefault();
+      dropZone.style.borderColor = '#00c2aa';
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.style.borderColor = '#00ffd5';
+    });
+
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault();
+      dropZone.style.borderColor = '#00ffd5';
+      handleFiles(e.dataTransfer.files);
+    });
+
+    fileInput.addEventListener('change', () => handleFiles(fileInput.files));
+
+    function handleFiles(files) {
+      Array.from(files).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = e => {
+          const url = e.target.result;
+          imageLinks.push(url);
+          addImageCard(url, url);
+          updateSlideshow();
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function fetchPicsum() {
+      const url = `https://picsum.photos/500?random=${Math.floor(Math.random() * 10000)}`;
+      imageLinks.push(url);
+      addImageCard(url, url);
+      updateSlideshow();
+    }
+
+    function addImageCard(src, downloadLink) {
+      const card = document.createElement('div');
+      card.className = 'img-card';
+      const img = document.createElement('img');
+      img.src = src;
+      const btn = document.createElement('button');
+      btn.className = 'download-btn';
+      btn.textContent = 'Download';
+      btn.onclick = () => downloadFile(downloadLink);
+      card.appendChild(img);
+      card.appendChild(btn);
+      gallery.appendChild(card);
+    }
+
+    function downloadFile(url) {
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'image';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+
+    function updateSlideshow() {
+      slideshow.innerHTML = '';
+      imageLinks.forEach((url, idx) => {
+        const img = document.createElement('img');
+        img.src = url;
+        if (idx === 0) img.classList.add('active');
+        slideshow.appendChild(img);
+      });
+    }
+
+    function startSlideshow() {
+      const imgs = slideshow.querySelectorAll('img');
+      if (!imgs.length) return;
+      let index = 0;
+      imgs.forEach(img => img.classList.remove('active'));
+      imgs[index].classList.add('active');
+      slideshowTimer = setInterval(() => {
+        imgs[index].classList.remove('active');
+        index = (index + 1) % imgs.length;
+        imgs[index].classList.add('active');
+      }, 3000);
+    }
+
+    function stopSlideshow() {
+      clearInterval(slideshowTimer);
+    }
+
+    function downloadAll() {
+      const zip = new JSZip();
+      const imgFolder = zip.folder("images");
+      const promises = imageLinks.map((url, i) => fetch(url)
+        .then(res => res.blob())
+        .then(blob => imgFolder.file(`image_${i + 1}.${blob.type.split('/')[1] || 'jpg'}`, blob))
+      );
+
+      Promise.all(promises).then(() => {
+        zip.generateAsync({ type: "blob" }).then(content => {
+          saveAs(content, "images.zip");
+        });
+      });
+    }
+
+    function searchImages() {
+      const query = document.getElementById('searchQuery').value.trim();
+      const source = document.getElementById('apiSource').value;
+      if (!query) return alert("Enter a search term.");
+
+      const unsplashKey = "TMSp2fVAKeSyv9oQylO8usZVkmlYknt9upc7m-busaA";
+      const pixabayKey = "50365091-30cb71db572f877d877fd1248";
+      const giphyKey = "dc6zaTOxFJmzC";
+      const tenorKey = "LIVDSRZULELA";
+      const imgurClientId = "f1f3c440ad04b87f89a88f0cf69cfc7867ffa1de";
+
+      imageLinks = [];
+      gallery.innerHTML = '';
+      slideshow.innerHTML = '';
+
+      if (source === "unsplash") {
+        fetch(`https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=9&client_id=${unsplashKey}`)
+        .then(res => res.json())
+        .then(data => {
+          data.results.forEach(photo => {
+            imageLinks.push(photo.urls.full);
+            addImageCard(photo.urls.small, photo.links.download);
+          });
+          updateSlideshow();
+        });
+      } else if (source === "pixabay") {
+        fetch(`https://pixabay.com/api/?key=${pixabayKey}&q=${encodeURIComponent(query)}&image_type=photo&per_page=9`)
+        .then(res => res.json())
+        .then(data => {
+          data.hits.forEach(hit => {
+            imageLinks.push(hit.largeImageURL);
+            addImageCard(hit.previewURL, hit.largeImageURL);
+          });
+          updateSlideshow();
+        });
+      } else if (source === "giphy") {
+        fetch(`https://api.giphy.com/v1/gifs/search?api_key=${giphyKey}&q=${encodeURIComponent(query)}&limit=9`)
+        .then(res => res.json())
+        .then(data => {
+          data.data.forEach(gif => {
+            imageLinks.push(gif.images.original.url);
+            addImageCard(gif.images.fixed_height.url, gif.images.original.url);
+          });
+          updateSlideshow();
+        });
+      } else if (source === "tenor") {
+        fetch(`https://tenor.googleapis.com/v2/search?q=${encodeURIComponent(query)}&key=${tenorKey}&limit=9`)
+        .then(res => res.json())
+        .then(data => {
+          data.results.forEach(gif => {
+            const gifUrl = gif.media_formats.gif.url;
+            imageLinks.push(gifUrl);
+            addImageCard(gifUrl, gifUrl);
+          });
+          updateSlideshow();
+        });
+      } else if (source === "imgur") {
+        fetch(`https://api.imgur.com/3/gallery/search/top/all/1?q=${encodeURIComponent(query)}`, {
+          headers: { Authorization: `Client-ID ${imgurClientId}` }
+        })
+        .then(res => res.json())
+        .then(data => {
+          data.data.forEach(item => {
+            if (item.images) {
+              item.images.forEach(img => {
+                if (img.type && img.type.startsWith("image/")) {
+                  imageLinks.push(img.link);
+                  addImageCard(img.link, img.link);
+                }
+              });
+            }
+          });
+          updateSlideshow();
+        });
+      }
+    }
+  </script>
+</body>
+</html>

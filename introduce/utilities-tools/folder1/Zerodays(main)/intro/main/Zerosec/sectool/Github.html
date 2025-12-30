@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GitHub Finder Tool</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+     background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: #ff0000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem;
+    }
+
+    h1 {
+      color: #ff0101;
+    }
+
+    .search-box {
+      display: flex;
+      margin: 1rem 0;
+      width: 100%;
+      max-width: 500px;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      padding: 10px;
+      font-size: 16px;
+      border: none;
+      border-radius: 6px 0 0 6px;
+      background: #00000025;
+      color: #ff0000;
+    }
+
+    button {
+      padding: 10px 20px;
+      background: #ff0000;
+      color: rgb(0, 255, 55);
+      border: none;
+      border-radius: 0 6px 6px 0;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    button:hover {
+      background: #00000023;
+    }
+
+    .profile, .repos {
+      width: 100%;
+      max-width: 600px;
+      background: #0000002a;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-top: 1rem;
+      box-shadow: 0 0 10px rgba(255,255,255,0.05);
+    }
+
+    .profile-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .profile-header img {
+      width: 80px;
+      border-radius: 50%;
+      border: 2px solid #ff0000;
+    }
+
+    .profile-info h2 {
+      margin: 0;
+    }
+
+    .repos ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .repos li {
+      background: #00000050;
+      margin: 0.5rem 0;
+      padding: 0.5rem;
+      border-left: 4px solid #ff0000;
+    }
+
+    .repos a {
+      color: #ff0000;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    .error {
+      color: #ff0d00;
+      margin-top: 1rem;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🔍 GitHub Finder Tool</h1>
+  <div class="search-box">
+    <input type="text" id="usernameInput" placeholder="Enter GitHub username..." />
+    <button onclick="searchUser()">Search</button>
+  </div>
+
+  <div id="error" class="error"></div>
+  <div id="profile" class="profile" hidden></div>
+  <div id="repos" class="repos" hidden></div>
+
+  <script>
+    async function searchUser() {
+      const username = document.getElementById('usernameInput').value.trim();
+      const profileDiv = document.getElementById('profile');
+      const reposDiv = document.getElementById('repos');
+      const errorDiv = document.getElementById('error');
+
+      profileDiv.hidden = true;
+      reposDiv.hidden = true;
+      errorDiv.textContent = '';
+
+      if (!username) {
+        errorDiv.textContent = '❌ Please enter a GitHub username.';
+        return;
+      }
+
+      try {
+        const userRes = await fetch(`https://api.github.com/users/${username}`);
+        if (!userRes.ok) throw new Error('User not found');
+        const user = await userRes.json();
+
+        profileDiv.innerHTML = `
+          <div class="profile-header">
+            <img src="${user.avatar_url}" alt="Avatar of ${user.login}" />
+            <div class="profile-info">
+              <h2>${user.name || user.login}</h2>
+              <p>${user.bio || 'No bio available.'}</p>
+              <p>📍 ${user.location || 'Unknown location'}</p>
+              <p>👥 ${user.followers} followers · ${user.following} following</p>
+              <p>📦 ${user.public_repos} public repos</p>
+            </div>
+          </div>
+        `;
+        profileDiv.hidden = false;
+
+        const reposRes = await fetch(`https://api.github.com/users/${username}/repos?sort=updated&per_page=5`);
+        const repos = await reposRes.json();
+
+        reposDiv.innerHTML = `<h3>📁 Recent Repositories</h3><ul>` +
+          repos.map(repo => `
+            <li>
+              <a href="${repo.html_url}" target="_blank">${repo.name}</a>
+              <p>${repo.description || 'No description'}</p>
+            </li>
+          `).join('') + '</ul>';
+        reposDiv.hidden = false;
+      } catch (err) {
+        errorDiv.textContent = '❌ Error: ' + err.message;
+      }
+    }
+  </script>
+</body>
+</html>

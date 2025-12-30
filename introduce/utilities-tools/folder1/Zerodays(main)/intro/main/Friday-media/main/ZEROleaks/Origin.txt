@@ -1,0 +1,67 @@
+ <div class="sidebar" id="sidebar">
+    <div class="search-box">
+      <input type="text" id="searchInput" onkeyup="filterLinks()" placeholder="🔍 Search tools..." />
+    </div>
+
+    <h2>🌐 Web / IP / Domain</h2>
+    <a href="main/org/iplookup.html">🌍 IP Lookup</a> @
+    <a href="main/org/portscannerip.html">🔎 Port Scanner</a> @
+    <a href="main/org/subdomainlister.html">📡 Subdomain Finder</a> @
+    <a href="main/org/webscraper.html">🕸️ Web Scraper</a>@
+    <a href="main/org/websift.html">🌐 Web Sift</a> @
+    <a href="main/org/v1domainfinder.html">🌐 v1 Domain Finder</a> @
+    <a href="main/org/vulscanpro.html">🛡️ Vulnerability Scanner</a>@
+    <a href="main/org/org/Whatweb.html">🔍 WhatWeb Pro+</a> @
+    <a href="main/org/WhatWeb.html">🔍 WhatWeb (Lite)</a> @
+
+    <h2>🔐 Security / Crypto</h2>
+    <a href="main/org/pgen.html">🔐 Password Generator</a> @
+    <a href="main/org/sifreanalizai.html">🧠 Password Strength</a> @
+    <a href="main/org/tokenbreaker.html">🪙 JWT Token Breaker</a> @
+    <a href="https://jwtsecret.com/generate" target="_blank">🗝️ JWT Secret Pro+</a @>
+    <a href="main/org/zipcracker.html">🧨 Zip Cracker</a> @
+    <a href="main/org/firebasereaper.html">🔥 Firebase Reaper</a> @
+    <a href="main/org/stncryppre1.html">🔒 Text Encryptor</a> @
+    <a href="main/org/stncryppre2.html">🔐 Encryption Tool</a> @
+    <a href="main/org/shellspoof.html">🧙 File Spoofer</a> @
+
+    <h2>📦 Encoders / Analysis</h2>
+    <a href="main/org/base64image.html">🖼️ Base64 Image Tool</a>@
+    <a href="main/org/encodedecode.html">🔁 Encode / Decode</a> @
+    <a href="main/org/pdfinfo.html">📄 PDF Info Tool</a> @
+    <a href="main/org/emailheaderanalyzer.html">✉️ Email Header Analyzer</a> @
+    <a href="main/org/stnexif.html">📸 EXIF Metadata</a> @
+    <a href="main/org/hashfinderfile.html">🔎 Hash Finder</a>@
+    <a href="main/org/likegrep.html">📂 Text File Analyzer</a> @
+    <a href="main/org/strings.html">🔤 String Extractor</a> @
+    <a href="main/org/nreaper.html">📡 HTTP Packet Analyzer</a> @
+
+    <h2>🛠️ Utility Tools</h2>
+    <a href="main/org/convert.html">🔄 Converter</a> @
+    <a href="main/org/function.html">⚙️ Function Tester</a> @
+    <a href="main/org/led.html">💡 LED Light Tool</a> @
+    <a href="main/org/opener.html">📂 Universal File Opener</a>@
+    <a href="main/org/renkdegistirici.html">🎨 Color Replacer</a> @
+    <a href="main/org/timestampmanipulation.html">🕒 Timestamp Modifier</a> @
+
+    <h2>📚 Books / ISBN</h2>
+    <a href="main/org/isbinfogoogleapi.html">📘 Google Books Lookup</a> @
+    <a href="main/org/isbnnumber.html">🔢 ISBN Generator</a> @
+
+    <h2>🧠 AI / Search / Visuals</h2>
+    <a href="main/org/search.html">🔍 DuckDuckGo Search</a>
+    <a href="main/org/search3.html">🌐 Search Engine</a>
+    <a href="main/org/viewgen.html">🧾 ViewState Tool</a>
+    <a href="https://patorjk.com/software/taag/#p=testall&f=Isometric3&t=ZORA" target="_blank">🎨 ASCII Art</a>
+    <a href="https://www.browserling.com/tools/random-password" target="_blank">🌀 Browserling Password</a>
+
+    <h2>📝 Wordlist Tools</h2>
+    <a href="main/org/wordlistgen.html">📝 Wordlist Gen</a>
+    <a href="main/org/wordlistgen2.html">📄 Wordlist Gen 2</a>
+    <a href="main/org/ZCPM.html"></a>
+    <a href="main/org/youtubeosint.html">youtube finder</a>
+    <a href="main/org/UIC.html"></a>
+    <a href="main/org/sllc.html"></a>
+    <a href="main/org/Encryptionweb.html"></a>
+    <span class="toggle-mode" onclick="toggleTheme()">🌗 Toggle Theme</span>
+  </div>

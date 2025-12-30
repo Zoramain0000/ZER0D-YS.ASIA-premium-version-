@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>🌐 Web Sift Tool</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <style>
+    body {
+      background: #0f172a;
+      color: #f1f5f9;
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      color: #38bdf8;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: auto;
+      background: #1e293b;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 10px #00000050;
+    }
+
+    input, button, textarea {
+      width: 100%;
+      margin-bottom: 10px;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      font-size: 1rem;
+    }
+
+    input {
+      background: #334155;
+      color: #f1f5f9;
+    }
+
+    button {
+      background: #38bdf8;
+      color: #000;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #0ea5e9;
+    }
+
+    textarea {
+      background: #0f172a;
+      color: #f1f5f9;
+      font-family: monospace;
+      height: 200px;
+      resize: vertical;
+    }
+
+    .btn-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .status {
+      text-align: center;
+      color: #facc15;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🌐 Web Sift Tool</h1>
+  <div class="container">
+    <div class="status" id="statusMsg">Enter a URL to analyze and sift through content.</div>
+
+    <input type="text" id="urlInput" placeholder="Enter full URL (https://example.com)" />
+    <input type="text" id="keywordInput" placeholder="Optional keyword to search in page..." />
+
+    <div class="btn-group">
+      <button onclick="siftPage()">🔍 Analyze</button>
+      <button onclick="exportText()">📁 Export TXT</button>
+    </div>
+
+    <textarea id="outputArea" placeholder="Results will appear here..."></textarea>
+  </div>
+
+  <script>
+    async function siftPage() {
+      const url = document.getElementById("urlInput").value.trim();
+      const keyword = document.getElementById("keywordInput").value.trim().toLowerCase();
+      const output = document.getElementById("outputArea");
+      const status = document.getElementById("statusMsg");
+
+      if (!url.startsWith("http")) {
+        status.textContent = "⚠️ Please enter a valid URL (http or https).";
+        return;
+      }
+
+      output.value = "";
+      status.textContent = "⏳ Fetching and parsing page...";
+
+      try {
+        const proxy = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+        const res = await fetch(proxy);
+        const html = await res.text();
+
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, "text/html");
+
+        const title = doc.querySelector("title")?.innerText || "N/A";
+        const desc = doc.querySelector("meta[name='description']")?.content || "N/A";
+        const charset = doc.characterSet || "N/A";
+        const lang = doc.documentElement.lang || "N/A";
+
+        const links = Array.from(doc.querySelectorAll("a"))
+          .map(a => a.href)
+          .filter(href => href.startsWith("http"));
+
+        const images = Array.from(doc.querySelectorAll("img"))
+          .map(img => img.src)
+          .filter(src => src);
+
+        let bodyText = doc.body?.innerText || "";
+        const keywordMatches = keyword
+          ? (bodyText.match(new RegExp(keyword, "gi")) || []).length
+          : "N/A";
+
+        output.value =
+`🔍 Web Sift Analysis
+=========================
+🔗 URL: ${url}
+📝 Title: ${title}
+🗒️ Description: ${desc}
+🧬 Charset: ${charset}
+🌍 Language: ${lang}
+🔎 Keyword: "${keyword || "N/A"}"
+🧠 Keyword Matches: ${keywordMatches}
+
+🔗 Links (${links.length}):
+${links.slice(0, 20).join("\n")}
+
+🖼 Images (${images.length}):
+${images.slice(0, 20).join("\n")}
+`;
+
+        status.textContent = "✅ Analysis complete.";
+      } catch (err) {
+        status.textContent = "❌ Failed to fetch or parse page.";
+        output.value = `Error: ${err}`;
+      }
+    }
+
+    function exportText() {
+      const text = document.getElementById("outputArea").value;
+      const blob = new Blob([text], { type: "text/plain" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "websift_output.txt";
+      a.click();
+    }
+  </script>
+</body>
+</html>

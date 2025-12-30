@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Advanced File Manager</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      margin: 0;
+      font-family: "Segoe UI", sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+    }
+
+    header {
+background: rgba(0,0,0,0.5);
+      color: red;
+      padding: 1rem;
+      font-size: 1.4em;
+      text-align: center;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: row;
+      height: calc(100vh - 70px);
+    }
+
+    .sidebar {
+      width: 250px;
+background: rgba(0,0,0,0.5);
+      overflow-y: auto;
+      border-right: 1px solid red;
+      padding: 10px;
+    }
+
+    .content {
+      flex-grow: 1;
+      padding: 10px;
+      overflow-y: auto;
+background: rgba(0,0,0,0.5);
+    }
+
+    .file-item {
+      cursor: pointer;
+      padding: 6px;
+      margin: 4px 0;
+      border-radius: 4px;
+    }
+
+    .file-item:hover {
+background: rgba(0,0,0,0.5);
+    }
+
+    pre {
+background: rgba(0,0,0,0.5);
+      color: red;
+      padding: 1rem;
+      overflow-x: auto;
+      border-radius: 8px;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 8px 12px;
+      background: red;
+      color: green;
+      border: none;
+      border-radius: 4px;
+      margin: 5px 5px 5px 0;
+      cursor: pointer;
+    }
+
+    .btn:hover {
+background: rgba(0,0,0,0.5);
+    }
+
+    .tab {
+      padding: 6px 10px;
+background: rgba(0,0,0,0.5);
+      display: inline-block;
+      margin-right: 5px;
+      border-radius: 6px 6px 0 0;
+      cursor: pointer;
+    }
+
+    .tab.active {
+background: rgba(0,0,0,0.5);
+      border-bottom: 2px solid red;
+    }
+
+    .tab-container {
+      margin-bottom: 10px;
+      border-bottom: 2px solid red;
+    }
+  </style>
+  <link href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+</head>
+<body>
+  <header>📁 Advanced File Manager</header>
+
+  <div class="container">
+    <div class="sidebar">
+      <button class="btn" onclick="openFolder()">📂 Open Folder</button>
+      <div id="fileList"></div>
+    </div>
+    <div class="content">
+      <div class="tab-container" id="tabContainer"></div>
+      <div id="fileContent">Open a file to view/edit</div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-javascript.min.js"></script>
+
+  <script>
+    let openFiles = {};
+
+    async function openFolder() {
+      const dirHandle = await window.showDirectoryPicker();
+      await loadDirectory(dirHandle);
+    }
+
+    async function loadDirectory(dirHandle) {
+      document.getElementById('fileList').innerHTML = '';
+      for await (const [name, handle] of dirHandle.entries()) {
+        if (handle.kind === 'file') {
+          const div = document.createElement('div');
+          div.textContent = name;
+          div.className = 'file-item';
+          div.onclick = () => openFile(handle);
+          document.getElementById('fileList').appendChild(div);
+        }
+      }
+    }
+
+    async function openFile(handle) {
+      const file = await handle.getFile();
+      const content = await file.text();
+      const ext = file.name.split('.').pop().toLowerCase();
+      const lang = getLanguage(ext);
+
+      if (!openFiles[file.name]) {
+        openFiles[file.name] = { content, lang };
+        const tab = document.createElement('div');
+        tab.textContent = file.name;
+        tab.className = 'tab';
+        tab.onclick = () => showFile(file.name);
+        tab.id = `tab-${file.name}`;
+        document.getElementById('tabContainer').appendChild(tab);
+      }
+
+      showFile(file.name);
+    }
+
+    function showFile(filename) {
+      const { content, lang } = openFiles[filename];
+      document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+      document.getElementById(`tab-${filename}`).classList.add('active');
+      document.getElementById('fileContent').innerHTML =
+        `<pre><code class="language-${lang}">${Prism.highlight(content, Prism.languages[lang] || Prism.languages.markup, lang)}</code></pre>`;
+    }
+
+    function getLanguage(ext) {
+      const map = {
+        js: 'javascript',
+        html: 'markup',
+        css: 'css',
+        json: 'json',
+        py: 'python',
+        php: 'php',
+        java: 'java',
+        cpp: 'cpp',
+        txt: 'markup'
+      };
+      return map[ext] || 'markup';
+    }
+  </script>
+</body>
+</html>

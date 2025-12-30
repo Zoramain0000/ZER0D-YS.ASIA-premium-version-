@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Snake Game</title>
+  <style>
+    body {
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .game-container {
+      margin-top: 40px;
+      text-align: center;
+background: rgba(0, 0, 0, 0.5);
+    }
+
+    canvas {
+      background-color: #222;
+      border: 2px solid #444;
+    }
+
+    .info {
+      margin-top: 10px;
+    }
+
+    #gameOver {
+      margin-top: 20px;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    button {
+      margin-left: 10px;
+      padding: 5px 10px;
+      border: none;
+      border-radius: 4px;
+      background-color: red;
+      color: green;
+      cursor: pointer;
+    }
+
+    button:hover {
+background: rgba(0, 0, 0, 0.5);
+    }
+  </style>
+</head>
+<body>
+  <div class="game-container">
+    <h1>Snake Game</h1>
+    <canvas id="gameCanvas" width="400" height="400"></canvas>
+
+    <div class="info">
+      <span>Score: <span id="score">0</span></span>
+      <button id="restartBtn">Restart</button>
+    </div>
+
+    <div id="gameOver" class="hidden">
+      <p>Game Over!</p>
+      <button id="playAgainBtn">Play Again</button>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    const box = 20;
+    const rows = canvas.height / box;
+    const cols = canvas.width / box;
+
+    let snake = [{ x: 9 * box, y: 9 * box }];
+    let direction = "RIGHT";
+    let food = spawnFood();
+    let score = 0;
+    let interval;
+    let gameOver = false;
+
+    const scoreDisplay = document.getElementById("score");
+    const restartBtn = document.getElementById("restartBtn");
+    const gameOverDiv = document.getElementById("gameOver");
+    const playAgainBtn = document.getElementById("playAgainBtn");
+
+    document.addEventListener("keydown", changeDirection);
+    restartBtn.addEventListener("click", resetGame);
+    playAgainBtn.addEventListener("click", resetGame);
+
+    function spawnFood() {
+      return {
+        x: Math.floor(Math.random() * cols) * box,
+        y: Math.floor(Math.random() * rows) * box
+      };
+    }
+
+    function changeDirection(e) {
+      const key = e.keyCode;
+      if (key === 37 && direction !== "RIGHT") direction = "LEFT";
+      else if (key === 38 && direction !== "DOWN") direction = "UP";
+      else if (key === 39 && direction !== "LEFT") direction = "RIGHT";
+      else if (key === 40 && direction !== "UP") direction = "DOWN";
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      for (let i = 0; i < snake.length; i++) {
+        ctx.fillStyle = i === 0 ? "lime" : "white";
+        ctx.fillRect(snake[i].x, snake[i].y, box, box);
+        ctx.strokeStyle = "#111";
+        ctx.strokeRect(snake[i].x, snake[i].y, box, box);
+      }
+
+      ctx.fillStyle = "red";
+      ctx.fillRect(food.x, food.y, box, box);
+
+      let head = { ...snake[0] };
+      if (direction === "LEFT") head.x -= box;
+      if (direction === "RIGHT") head.x += box;
+      if (direction === "UP") head.y -= box;
+      if (direction === "DOWN") head.y += box;
+
+      // Collision with wall
+      if (
+        head.x < 0 || head.x >= canvas.width ||
+        head.y < 0 || head.y >= canvas.height ||
+        snake.some(seg => seg.x === head.x && seg.y === head.y)
+      ) {
+        clearInterval(interval);
+        gameOver = true;
+        gameOverDiv.classList.remove("hidden");
+        return;
+      }
+
+      snake.unshift(head);
+
+      if (head.x === food.x && head.y === food.y) {
+        food = spawnFood();
+        score += 10;
+        scoreDisplay.textContent = score;
+      } else {
+        snake.pop();
+      }
+    }
+
+    function resetGame() {
+      snake = [{ x: 9 * box, y: 9 * box }];
+      direction = "RIGHT";
+      food = spawnFood();
+      score = 0;
+      scoreDisplay.textContent = score;
+      gameOver = false;
+      gameOverDiv.classList.add("hidden");
+      clearInterval(interval);
+      interval = setInterval(draw, 100);
+    }
+
+    // Start the game
+    resetGame();
+  </script>
+</body>
+</html>

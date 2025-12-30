@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>🛡️ IP Private Scanner</title>
+  <style>
+    body {
+      margin: 0; padding: 0;
+      background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+      font-family: 'Consolas', monospace;
+      display: flex; flex-direction: column; height: 100vh;
+    }
+    header {
+      padding: 12px 20px;
+      background: rgba(0,0,0,0.5);
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    }
+    label {
+      font-weight: bold; font-size: 14px;
+    }
+    select, input[type=button] {
+      font-family: monospace; font-size: 14px; padding: 6px 12px;
+      border-radius: 4px; border: none; outline: none; cursor: pointer;
+    }
+    select {
+      background: rgba(0,0,0,0.5); color: red;
+    }
+    input[type=button] {
+      background: red; color: green;
+    }
+    input[type=button]:hover {
+      background: rgba(0,0,0,0.5);
+    }
+    input[type=text] {
+      flex-grow: 1; min-width: 180px;
+      font-family: monospace; font-size: 14px;
+      padding: 6px 10px; border-radius: 4px;
+      border: none; outline: none;
+      background: rgba(0,0,0,0.5); color: red;
+    }
+    #logContainer {
+      flex-grow: 1; overflow-y: auto;
+      background: rgba(0,0,0,0.5);
+    }
+    table {
+      width: 100%; border-collapse: collapse; font-size: 12px;
+    }
+    thead tr {
+      background: rgba(0,0,0,0.5);
+      position: sticky; top: 0; z-index: 2;
+    }
+    th, td {
+      padding: 8px 12px; border-bottom: 1px solid #333;
+      white-space: nowrap; text-align: left;
+    }
+    tbody tr:hover {
+      background: #333;
+    }
+    #loadingIndicator {
+      padding: 10px 0; text-align: center;
+      color: red; font-style: italic;
+    }
+    @media (max-width: 600px) {
+      th, td {
+        padding: 6px 8px; font-size: 11px;
+      }
+      input[type=text] {
+        font-size: 12px;
+        background: rgba(0,0,0,0.5); color: red;
+      }
+      select, input[type=button] {
+        font-size: 12px; padding: 5px 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <label for="countrySelect">Select Country:</label>
+  <select id="countrySelect"></select>
+  <input type="button" id="generateBtn" value="Generate Logs" />
+  <input type="text" id="searchInput" placeholder="Search logs..." />
+  <input type="button" id="downloadBtn" value="Download Logs" />
+</header>
+
+<div id="logContainer">
+  <table>
+    <thead>
+      <tr>
+        <th>IP Address</th>
+        <th>Country</th>
+        <th>Date</th>
+        <th>Time</th>
+        <th>User-Agent</th>
+      </tr>
+    </thead>
+    <tbody id="logBody"></tbody>
+  </table>
+  <div id="loadingIndicator" hidden>Loading...</div>
+</div>
+
+<script>
+(() => {
+const countries = [
+  "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda", "Argentina",
+  "Armenia", "Australia", "Austria", "Azerbaijan", "Bahamas", "Bahrain", "Bangladesh", "Barbados",
+  "Belarus", "Belgium", "Belize", "Benin", "Bhutan", "Bolivia", "Bosnia and Herzegovina",
+  "Botswana", "Brazil", "Brunei", "Bulgaria", "Burkina Faso", "Burundi", "Cabo Verde", "Cambodia",
+  "Cameroon", "Canada", "Central African Republic", "Chad", "Chile", "China", "Colombia",
+  "Comoros", "Congo", "Costa Rica", "Croatia", "Cuba", "Cyprus", "Czech Republic", "Denmark",
+  "Djibouti", "Dominica", "Dominican Republic", "Ecuador", "Egypt", "El Salvador",
+  "Equatorial Guinea", "Eritrea", "Estonia", "Eswatini", "Ethiopia", "Fiji", "Finland",
+  "France", "Gabon", "Gambia", "Georgia", "Germany", "Ghana", "Greece", "Grenada", "Guatemala",
+  "Guinea", "Guinea-Bissau", "Guyana", "Haiti", "Honduras", "Hungary", "Iceland", "India",
+  "Indonesia", "Iran", "Iraq", "Ireland", "Israel", "Italy", "Jamaica", "Japan", "Jordan",
+  "Kazakhstan", "Kenya", "Kiribati", "Kuwait", "Kyrgyzstan", "Laos", "Latvia", "Lebanon",
+  "Lesotho", "Liberia", "Libya", "Liechtenstein", "Lithuania", "Luxembourg", "Madagascar",
+  "Malawi", "Malaysia", "Maldives", "Mali", "Malta", "Marshall Islands", "Mauritania",
+  "Mauritius", "Mexico", "Micronesia", "Moldova", "Monaco", "Mongolia", "Montenegro",
+  "Morocco", "Mozambique", "Myanmar", "Namibia", "Nauru", "Nepal", "Netherlands", "New Zealand",
+  "Nicaragua", "Niger", "Nigeria", "North Korea", "North Macedonia", "Norway", "Oman",
+  "Pakistan", "Palau", "Palestine", "Panama", "Papua New Guinea", "Paraguay", "Peru",
+  "Philippines", "Poland", "Portugal", "Qatar", "Romania", "Russia", "Rwanda",
+  "Saint Kitts and Nevis", "Saint Lucia", "Saint Vincent and the Grenadines", "Samoa",
+  "San Marino", "Sao Tome and Principe", "Saudi Arabia", "Senegal", "Serbia", "Seychelles",
+  "Sierra Leone", "Singapore", "Slovakia", "Slovenia", "Solomon Islands", "Somalia",
+  "South Africa", "South Korea", "South Sudan", "Spain", "Sri Lanka", "Sudan", "Suriname",
+  "Sweden", "Switzerland", "Syria", "Taiwan", "Tajikistan", "Tanzania", "Thailand",
+  "Timor-Leste", "Togo", "Tonga", "Trinidad and Tobago", "Tunisia", "Turkey", "Turkmenistan",
+  "Tuvalu", "Uganda", "Ukraine", "United Arab Emirates", "United Kingdom", "United States",
+  "Uruguay", "Uzbekistan", "Vanuatu", "Vatican City", "Venezuela", "Vietnam", "Yemen",
+  "Zambia", "Zimbabwe"
+];
+
+
+  const browsers = [
+    { name: "Chrome", versions: ["114.0", "115.0", "116.0", "117.0"] },
+    { name: "Firefox", versions: ["114.0", "115.0", "116.0"] },
+    { name: "Safari", versions: ["15.1", "16.0", "16.1"] },
+    { name: "Edge", versions: ["114.0", "115.0", "116.0"] },
+    { name: "Opera", versions: ["88.0", "89.0", "90.0"] }
+  ];
+
+  const osVersions = {
+    windows: ["10.0", "11.0", "8.1"],
+    mac: ["10_15_7", "11_6", "12_3", "13_0"],
+    linux: ["x86_64", "arm64"],
+    android: ["10", "11", "12", "13"],
+    ios: ["14_4", "15_0", "15_1", "16_0"]
+  };
+
+  const devices = [
+    "Pixel 6", "Pixel 7", "iPhone 13", "iPhone 14", "Galaxy S21", "iPad Pro"
+  ];
+
+  const BATCH_SIZE = 50;
+  const MAX_LOGS = 100000;
+
+  let totalLogsGenerated = 0;
+  let currentCountry = null;
+  let allEntries = [];
+
+  const countrySelect = document.getElementById('countrySelect');
+  const generateBtn = document.getElementById('generateBtn');
+  const searchInput = document.getElementById('searchInput');
+  const logBody = document.getElementById('logBody');
+  const logContainer = document.getElementById('logContainer');
+  const loadingIndicator = document.getElementById('loadingIndicator');
+  const downloadBtn = document.getElementById('downloadBtn');
+
+  countries.forEach(c => {
+    const option = document.createElement('option');
+    option.value = c;
+    option.textContent = c;
+    countrySelect.appendChild(option);
+  });
+
+  function randInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  function generatePrivateIPv4() {
+    const range = randInt(1, 5);
+    switch (range) {
+      case 1: return `10.${randInt(0,255)}.${randInt(0,255)}.${randInt(1,254)}`;
+      case 2: return `172.${randInt(16,31)}.${randInt(0,255)}.${randInt(1,254)}`;
+      case 3: return `192.168.${randInt(0,255)}.${randInt(1,254)}`;
+      case 4: return `127.${randInt(0,255)}.${randInt(0,255)}.${randInt(1,254)}`;
+      case 5: return `169.254.${randInt(0,255)}.${randInt(1,254)}`;
+    }
+  }
+
+  function randomDate() {
+    const d = new Date(Date.now() - randInt(0, 30) * 86400000);
+    return d.toISOString().slice(0, 10);
+  }
+
+  function randomTime() {
+    return `${String(randInt(0, 23)).padStart(2, '0')}:${String(randInt(0, 59)).padStart(2, '0')}:${String(randInt(0, 59)).padStart(2, '0')}`;
+  }
+
+  function generateUserAgent() {
+    const osType = randInt(1, 5);
+    let os = "";
+    switch (osType) {
+      case 1: os = `Windows NT ${osVersions.windows[randInt(0, osVersions.windows.length - 1)]}`; break;
+      case 2: os = `Macintosh; Intel Mac OS X ${osVersions.mac[randInt(0, osVersions.mac.length - 1)]}`; break;
+      case 3: os = `X11; Linux ${osVersions.linux[randInt(0, osVersions.linux.length - 1)]}`; break;
+      case 4: os = `Linux; Android ${osVersions.android[randInt(0, osVersions.android.length - 1)]}; ${devices[randInt(0, devices.length - 1)]}`; break;
+      case 5: os = `iPhone; CPU iPhone OS ${osVersions.ios[randInt(0, osVersions.ios.length - 1)]} like Mac OS X`; break;
+    }
+    const browser = browsers[randInt(0, browsers.length - 1)];
+    const version = browser.versions[randInt(0, browser.versions.length - 1)];
+    return `Mozilla/5.0 (${os}) AppleWebKit/537.36 (KHTML, like Gecko) ${browser.name}/${version} Safari/537.36`;
+  }
+
+  function createRow(entry) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${entry.ip}</td><td>${entry.country}</td><td>${entry.date}</td><td>${entry.time}</td><td>${entry.userAgent}</td>`;
+    return tr;
+  }
+
+  function generateLogEntryForCountry(country) {
+    return {
+      ip: generatePrivateIPv4(),
+      country,
+      date: randomDate(),
+      time: randomTime(),
+      userAgent: generateUserAgent()
+    };
+  }
+
+  function loadMoreLogs() {
+    if (totalLogsGenerated >= MAX_LOGS) {
+      loadingIndicator.textContent = "✅ End of logs.";
+      loadingIndicator.hidden = false;
+      return;
+    }
+    loadingIndicator.hidden = false;
+    setTimeout(() => {
+      const fragment = document.createDocumentFragment();
+      for (let i = 0; i < BATCH_SIZE && totalLogsGenerated < MAX_LOGS; i++, totalLogsGenerated++) {
+        const entry = generateLogEntryForCountry(currentCountry);
+        allEntries.push(entry);
+        fragment.appendChild(createRow(entry));
+      }
+      logBody.appendChild(fragment);
+      loadingIndicator.hidden = true;
+    }, 100);
+  }
+
+  function resetLogs() {
+    totalLogsGenerated = 0;
+    allEntries = [];
+    logBody.innerHTML = '';
+    loadingIndicator.textContent = "Loading...";
+    loadingIndicator.hidden = true;
+  }
+
+  generateBtn.addEventListener('click', () => {
+    const selected = countrySelect.value;
+    if (!selected) return alert('Please select a country.');
+    currentCountry = selected;
+    resetLogs();
+    loadMoreLogs();
+    searchInput.value = '';
+  });
+
+  searchInput.addEventListener('input', () => {
+    const filter = searchInput.value.toLowerCase();
+    [...logBody.children].forEach(row => {
+      const text = row.textContent.toLowerCase();
+      row.style.display = text.includes(filter) ? '' : 'none';
+    });
+  });
+
+  downloadBtn.addEventListener('click', () => {
+    const csv = "IP Address,Country,Date,Time,User-Agent\n" +
+      allEntries.map(e => `${e.ip},${e.country},${e.date},${e.time},${e.userAgent}`).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "private_ip_logs.csv";
+    a.click();
+  });
+
+  logContainer.addEventListener('scroll', () => {
+    if (loadingIndicator.hidden &&
+        logContainer.scrollTop + logContainer.clientHeight >= logContainer.scrollHeight - 50 &&
+        !searchInput.value.trim()) {
+      loadMoreLogs();
+    }
+  });
+
+  countrySelect.value = countries[0];
+  currentCountry = countries[0];
+  loadMoreLogs();
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Advanced Sound Mastering Tool</title>
+<style>
+  body {
+    background: #121212;
+    color: #eee;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0; padding: 0;
+    display: flex; flex-direction: column; align-items: center;
+    min-height: 100vh;
+  }
+  header {
+    padding: 1rem;
+    font-size: 1.5rem;
+    font-weight: bold;
+  }
+  main {
+    width: 90vw;
+    max-width: 900px;
+    background: #222;
+    border-radius: 8px;
+    padding: 1rem;
+    box-sizing: border-box;
+    margin-bottom: 2rem;
+  }
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  input[type="file"] {
+    color: #eee;
+  }
+  button {
+    background: #3a86ff;
+    border: none;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  button:disabled {
+    background: #555;
+    cursor: not-allowed;
+  }
+  audio {
+    width: 100%;
+    margin-bottom: 1rem;
+  }
+  .slider-group {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  .slider-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .slider-container label {
+    margin-bottom: 0.3rem;
+    font-size: 0.9rem;
+  }
+  input[type="range"] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 8px;
+    border-radius: 5px;
+    background: #444;
+    outline: none;
+    cursor: pointer;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    background: #3a86ff;
+    cursor: pointer;
+    border-radius: 50%;
+    border: none;
+    margin-top: -5px;
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    background: #3a86ff;
+    cursor: pointer;
+    border-radius: 50%;
+    border: none;
+  }
+  .effects {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+  .effects label {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    cursor: pointer;
+  }
+  .effects input[type="checkbox"] {
+    cursor: pointer;
+  }
+  footer {
+    font-size: 0.8rem;
+    color: #666;
+    margin-bottom: 1rem;
+  }
+</style>
+</head>
+<body>
+<header>Advanced Sound Mastering Tool</header>
+<main>
+  <div class="controls">
+    <input type="file" id="audioFile" accept="audio/*" />
+    <button id="playPause" disabled>Play</button>
+    <button id="saveBtn" disabled>Save Processed Audio</button>
+  </div>
+  <audio id="audio" controls></audio>
+
+  <div class="slider-group" aria-label="Volume control">
+    <div class="slider-container">
+      <label for="volume">Volume</label>
+      <input type="range" id="volume" min="0" max="2" step="0.01" value="1" />
+    </div>
+  </div>
+
+  <h3>Equalizer (5 Bands)</h3>
+  <div class="slider-group" aria-label="Equalizer controls">
+    <div class="slider-container">
+      <label for="eqBass">Bass (60Hz)</label>
+      <input type="range" id="eqBass" min="-30" max="30" step="0.1" value="0" />
+    </div>
+    <div class="slider-container">
+      <label for="eqLowMid">Low Mid (250Hz)</label>
+      <input type="range" id="eqLowMid" min="-30" max="30" step="0.1" value="0" />
+    </div>
+    <div class="slider-container">
+      <label for="eqMid">Mid (1000Hz)</label>
+      <input type="range" id="eqMid" min="-30" max="30" step="0.1" value="0" />
+    </div>
+    <div class="slider-container">
+      <label for="eqHighMid">High Mid (4000Hz)</label>
+      <input type="range" id="eqHighMid" min="-30" max="30" step="0.1" value="0" />
+    </div>
+    <div class="slider-container">
+      <label for="eqTreble">Treble (10000Hz)</label>
+      <input type="range" id="eqTreble" min="-30" max="30" step="0.1" value="0" />
+    </div>
+  </div>
+
+  <h3>Audio Effects</h3>
+  <div class="effects" role="group" aria-label="Audio effects toggles">
+    <label><input type="checkbox" id="compressorToggle" /> Compressor</label>
+    <label><input type="checkbox" id="reverbToggle" /> Reverb</label>
+    <label><input type="checkbox" id="bitcrusherToggle" /> Bitcrusher</label>
+  </div>
+
+  <h3>Bitcrusher Settings</h3>
+  <div class="slider-group" aria-label="Bitcrusher settings">
+    <div class="slider-container">
+      <label for="bitDepth">Bit Depth</label>
+      <input type="range" id="bitDepth" min="1" max="16" step="1" value="8" />
+    </div>
+    <div class="slider-container">
+      <label for="frequencyReduction">Frequency Reduction</label>
+      <input type="range" id="frequencyReduction" min="1" max="20" step="1" value="4" />
+    </div>
+  </div>
+</main>
+<footer>© 2025 Sound Mastering Tool - No backend, fully client-side</footer>
+
+<script>
+  // Setup Web Audio Context and nodes
+  const audioElement = document.getElementById('audio');
+  const fileInput = document.getElementById('audioFile');
+  const playPauseBtn = document.getElementById('playPause');
+  const saveBtn = document.getElementById('saveBtn');
+  const volumeSlider = document.getElementById('volume');
+
+  // Equalizer sliders
+  const eqBass = document.getElementById('eqBass');
+  const eqLowMid = document.getElementById('eqLowMid');
+  const eqMid = document.getElementById('eqMid');
+  const eqHighMid = document.getElementById('eqHighMid');
+  const eqTreble = document.getElementById('eqTreble');
+
+  // Effects toggles
+  const compressorToggle = document.getElementById('compressorToggle');
+  const reverbToggle = document.getElementById('reverbToggle');
+  const bitcrusherToggle = document.getElementById('bitcrusherToggle');
+
+  // Bitcrusher settings
+  const bitDepthSlider = document.getElementById('bitDepth');
+  const freqReductionSlider = document.getElementById('frequencyReduction');
+
+  let audioCtx;
+  let sourceNode;
+  let gainNode;
+  let eqNodes = [];
+  let compressorNode;
+  let convolverNode;
+  let bitcrusherNode;
+  let destinationNode;
+
+  let audioBuffer;
+
+  // Create EQ filters
+  function createEQFilters(ctx) {
+    const bands = [
+      { freq: 60, type: 'lowshelf' },
+      { freq: 250, type: 'peaking' },
+      { freq: 1000, type: 'peaking' },
+      { freq: 4000, type: 'peaking' },
+      { freq: 10000, type: 'highshelf' },
+    ];
+    return bands.map(band => {
+      const filter = ctx.createBiquadFilter();
+      filter.type = band.type;
+      filter.frequency.value = band.freq;
+      filter.Q.value = 1;
+      filter.gain.value = 0;
+      return filter;
+    });
+  }
+
+  // Create compressor
+```js
+  function createCompressor(ctx) {
+    const compressor = ctx.createDynamicsCompressor();
+    compressor.threshold.setValueAtTime(-24, ctx.currentTime);
+    compressor.knee.setValueAtTime(30, ctx.currentTime);
+    compressor.ratio.setValueAtTime(12, ctx.currentTime);
+    compressor.attack.setValueAtTime(0.003, ctx.currentTime);
+    compressor.release.setValueAtTime(0.25, ctx.currentTime);
+    return compressor;
+  }
+
+  // Create reverb (convolver) with impulse response
+  async function createReverb(ctx) {
+    const convolver = ctx.createConvolver();
+    // Simple impulse response generation (small reverb)
+    const irBuffer = ctx.createBuffer(2, ctx.sampleRate * 3, ctx.sampleRate);
+    for (let channel = 0; channel < irBuffer.numberOfChannels; channel++) {
+      const channelData = irBuffer.getChannelData(channel);
+      for (let i = 0; i < channelData.length; i++) {
+        channelData[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / channelData.length, 2);
+      }
+    }
+    convolver.buffer = irBuffer;
+    return convolver;
+  }
+
+  // Bitcrusher node (ScriptProcessorNode)
+  function createBitcrusher(ctx, bitDepth = 8, frequencyReduction = 4) {
+    const node = ctx.createScriptProcessor(4096, 1, 1);
+    let phaser = 0;
+    let lastSampleValue = 0;
+    node.onaudioprocess = function (e) {
+      const input = e.inputBuffer.getChannelData(0);
+      const output = e.outputBuffer.getChannelData(0);
+      for (let i = 0; i < input.length; i++) {
+        phaser += frequencyReduction;
+        if (phaser >= 1.0) {
+          phaser -= 1.0;
+          // Quantize sample to bit depth
+          const step = Math.pow(0.5, bitDepth);
+          lastSampleValue = step * Math.floor(input[i] / step + 0.5);
+        }
+        output[i] = lastSampleValue;
+      }
+    };
+    return node;
+  }
+
+  // Connect nodes in order
+  function connectAudioGraph() {
+    if (!audioCtx) return;
+    if (sourceNode) sourceNode.disconnect();
+
+    sourceNode = audioCtx.createBufferSource();
+    sourceNode.buffer = audioBuffer;
+
+    gainNode = audioCtx.createGain();
+    gainNode.gain.value = volumeSlider.value;
+
+    eqNodes = createEQFilters(audioCtx);
+    compressorNode = createCompressor(audioCtx);
+    convolverNode = null;
+    bitcrusherNode = null;
+
+    // Connect EQ nodes in series
+    sourceNode.connect(eqNodes[0]);
+    for (let i = 0; i < eqNodes.length - 1; i++) {
+      eqNodes[i].connect(eqNodes[i + 1]);
+    }
+
+    let lastNode = eqNodes[eqNodes.length - 1];
+
+    // Insert compressor if enabled
+    if (compressorToggle.checked) {
+      lastNode.connect(compressorNode);
+      lastNode = compressorNode;
+    }
+
+    // Insert reverb if enabled
+    if (reverbToggle.checked) {
+      createReverb(audioCtx).then(convolver => {
+        convolverNode = convolver;
+        lastNode.connect(convolverNode);
+        convolverNode.connect(gainNode);
+      });
+    }
+
+    // Insert bitcrusher if enabled
+    if (bitcrusherToggle.checked) {
+      bitcrusherNode = createBitcrusher(audioCtx, parseInt(bitDepthSlider.value), parseInt(freqReductionSlider.value));
+      if (convolverNode) {
+        convolverNode.disconnect();
+        convolverNode.connect(bitcrusherNode);
+      } else {
+        lastNode.connect(bitcrusherNode);
+      }
+      bitcrusherNode.connect(gainNode);
+    } else {
+      if (!convolverNode) {
+        lastNode.connect(gainNode);
+      }
+    }
+
+    gainNode.connect(audioCtx.destination);
+  }
+
+  // Update EQ gains from sliders
+  function updateEQ() {
+    if (!eqNodes.length) return;
+    eqNodes[0].gain.value = parseFloat(eqBass.value);
+    eqNodes[1].gain.value = parseFloat(eqLowMid.value);
+    eqNodes[2].gain.value = parseFloat(eqMid.value);
+    eqNodes[3].gain.value = parseFloat(eqHighMid.value);
+    eqNodes[4].gain.value = parseFloat(eqTreble.value);
+  }
+
+  // Update volume
+  function updateVolume() {
+    if (gainNode) {
+      gainNode.gain.value = parseFloat(volumeSlider.value);
+    }
+  }
+
+  // Play or pause audio
+  function togglePlay() {
+    if (!audioCtx) return;
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+    if (audioElement.paused) {
+      audioElement.play();
+      playPauseBtn.textContent = 'Pause';
+    } else {
+      audioElement.pause();
+      playPauseBtn.textContent = 'Play';
+    }
+  }
+
+  // Load audio file into buffer
+  fileInput.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (audioCtx) {
+      audioCtx.close();
+    }
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const arrayBuffer = await file.arrayBuffer();
+    audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+
+    audioElement.src = URL.createObjectURL(file);
+    playPauseBtn.disabled = false;
+    saveBtn.disabled = false;
+
+    connectAudioGraph();
+    updateEQ();
+    updateVolume();
+  });
+
+  // Update EQ on slider change
+  [eqBass, eqLowMid, eqMid, eqHighMid, eqTreble].forEach(slider => {
+    slider.addEventListener('input', () => {
+      updateEQ();
+    });
+  });
+
+  // Update volume on slider change
+  volumeSlider.addEventListener('input', () => {
+    updateVolume();
+  });
+
+  // Update graph on effect toggles
+  [compressorToggle, reverbToggle, bitcrusherToggle].forEach(toggle => {
+    toggle.addEventListener('change', () => {
+      connectAudioGraph();
+    });
+  });
+
+  // Update bitcrusher settings live
+  [bitDepthSlider, freqReductionSlider].forEach(slider => {
+    slider.addEventListener('input', () => {
+      if (bitcrusherToggle.checked) {
+        connectAudioGraph();
+      }
+    });
+  });
+
+  // Play/pause button
+  playPauseBtn.addEventListener('click', () => {
+    togglePlay();
+  });
+
+  // Save processed audio as WAV
+  saveBtn.addEventListener('click', async () => {
+    if (!audioBuffer) return;
+
+    // OfflineAudioContext for rendering processed audio
+    const offlineCtx = new OfflineAudioContext(
+      audioBuffer.numberOfChannels,
+      audioBuffer.length,
+      audioBuffer.sampleRate
+    );
+
+    // Create nodes for offline processing
+    const offlineSource = offlineCtx.createBufferSource();
+    offlineSource.buffer = audioBuffer;
+
+    const offlineGain = offlineCtx.createGain();
+    offlineGain.gain.value = parseFloat(volumeSlider.value);
+
+    const offlineEQ = createEQFilters(offlineCtx);
+    offlineEQ[0].gain.value = parseFloat(eqBass.value);
+    offlineEQ[1].gain.value = parseFloat(eqLowMid.value);
+    offlineEQ[2].gain.value = parseFloat(eqMid.value);
+    offlineEQ[3].gain.value = parseFloat(eqHighMid.value);
+    offlineEQ[4].gain.value = parseFloat(eqTreble.value);
+
+    const offlineCompressor = createCompressor(offlineCtx);
+
+    // Offline reverb
+    const offlineConvolver = offlineCtx.createConvolver();
+    const irBuffer = offlineCtx.createBuffer(2, offlineCtx.sampleRate * 3, offlineCtx.sampleRate);
+    for (let channel = 0; channel < irBuffer.numberOfChannels; channel++) {
+      const channelData = irBuffer.getChannelData(channel);
+      for (let i = 0; i < channelData.length; i++) {
+        channelData[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / channelData.length, 2);
+      }
+    }
+    offlineConvolver.buffer = irBuffer;
+
+    // Bitcrusher offline is complex; skipping for offline rendering
+
+    // Connect offline graph
+    offlineSource.connect(offlineEQ[0]);
+    for (let i = 0; i < offlineEQ.length - 1; i++) {
+      offlineEQ[i].connect(offlineEQ[i + 1]);
+    }
+
+    let lastNode = offlineEQ[offlineEQ.length - 1];
+
+    if (compressorToggle.checked) {
+      lastNode.connect(offlineCompressor);
+      lastNode = offlineCompressor;
+    }
+
+    if (reverbToggle.checked) {
+      lastNode.connect(offlineConvolver);
+      lastNode = offlineConvolver;
+    }
+
+    lastNode.connect(offlineGain);
+    offlineGain.connect(offlineCtx.destination);
+
+    offlineSource.start();
+
+    const renderedBuffer = await offlineCtx.startRendering();
+
+    // Convert buffer to WAV and download
+    const wavBlob = bufferToWav(renderedBuffer);
+    const url = URL.createObjectURL(wavBlob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'mastered_audio.wav';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  // WAV encoding helper
+  function bufferToWav(buffer) {
+    const numChannels = buffer.numberOfChannels;
+    const sampleRate = buffer.sampleRate;
+    const format = 1; // PCM
+    const bitDepth = 16;
+
+    let result;
+    if (numChannels === 2) {
+      result = interleave(buffer.getChannelData(0), buffer.getChannelData(1));
+    } else {
+      result = buffer.getChannelData(0);
+    }
+
+    const bufferLength = result.length * (bitDepth / 8);
+    const wavBuffer = new ArrayBuffer(44 + bufferLength);
+    const view = new DataView(wavBuffer);
+
+    /* RIFF identifier */
+    writeString(view, 0, 'RIFF');
+    /* file length */
+    view.setUint32(4, 36 + bufferLength, true);
+    /* RIFF type */
+    writeString(view, 8, 'WAVE');
+    /* format chunk identifier */
+    writeString(view, 12, 'fmt ');
+    /* format chunk length */
+    view.setUint32(16, 16, true);
+    /* sample format (raw) */
+    view.setUint16(20, format, true);
+    /* channel count */
+    view.setUint16(22, numChannels, true);
+    /* sample rate */
+    view.setUint32(24, sampleRate, true);
+    /* byte rate (sample rate * block align) */
+    view.setUint32(28, sampleRate * numChannels * (bitDepth / 8), true);
+    /* block align (channel count * bytes per sample) */
+    view.setUint16(32, numChannels * (bitDepth / 8), true);
+    /* bits per sample */
+    view.setUint16(34, bitDepth, true);
+    /* data chunk identifier */
+    writeString(view, 36, 'data');
+    /* data chunk length */
+    view.setUint32(40, bufferLength, true);
+
+    // Write PCM samples
+    floatTo16BitPCM(view, 44, result);
+
+    return new Blob([view], { type: 'audio/wav' });
+  }
+
+  function writeString(view, offset, string) {
+    for (let i = 0; i < string.length; i++) {
+      view.setUint8(offset + i, string.charCodeAt(i));
+    }
+  }
+
+  function floatTo16BitPCM(output, offset, input) {
+    for (let i = 0; i < input.length; i++, offset += 2) {
+      let s = Math.max(-1, Math.min(1, input[i]));
+      s = s < 0 ? s * 0x8000 : s * 0x7FFF;
+      output.setInt16(offset, s, true);
+    }
+  }
+
+  function interleave(inputL, inputR) {
+    const length = inputL.length + inputR.length;
+    const result = new Float32Array(length);
+
+    let index = 0;
+    let inputIndex = 0;
+
+    while (index < length) {
+      result[index++] = inputL[inputIndex];
+      result[index++] = inputR[inputIndex];
+      inputIndex++;
+    }
+    return result;
+  }
+</script>
+</body>
+</html>
+add new feature ,echo, flange, whoosh, reverb, gate, clipper, resonant low pass filter,  bandlimiy band pass filter, bandlimiy notch filter, low shelf filter, high shelf filter parametric filter, 3d audio,  limiter, compressor, bitcrusher, 

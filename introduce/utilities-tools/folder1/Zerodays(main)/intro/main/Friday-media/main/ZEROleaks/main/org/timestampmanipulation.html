@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>File Timestamp Manipulation Tool</title>
+<style>
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #121212;
+    color: #eee;
+    margin: 0; padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+  }
+  header {
+    background: #1f1f1f;
+    width: 100%;
+    padding: 1rem;
+    text-align: center;
+    font-size: 1.8rem;
+    font-weight: bold;
+    border-bottom: 2px solid #444;
+  }
+  main {
+    flex: 1;
+    width: 90%;
+    max-width: 600px;
+    margin: 2rem auto;
+    background: #222;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 0 15px #000;
+  }
+  label {
+    display: block;
+    margin-top: 1rem;
+    font-weight: 600;
+  }
+  input[type="file"] {
+    margin-top: 0.5rem;
+  }
+  .file-info {
+    margin-top: 1rem;
+    background: #333;
+    padding: 1rem;
+    border-radius: 6px;
+    font-family: monospace;
+    font-size: 0.9rem;
+  }
+  .datetime-inputs {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    flex-wrap: wrap;
+  }
+  .datetime-inputs input {
+    flex: 1 1 80px;
+    padding: 0.4rem;
+    border-radius: 4px;
+    border: none;
+    font-size: 1rem;
+    background: #444;
+    color: #eee;
+    text-align: center;
+  }
+  button {
+    margin-top: 1.5rem;
+    width: 100%;
+    padding: 0.7rem;
+    font-size: 1.1rem;
+    font-weight: 700;
+    background: #4caf50;
+    border: none;
+    border-radius: 6px;
+    color: white;
+    cursor: pointer;
+    transition: background 0.3s ease;
+  }
+  button:disabled {
+    background: #666;
+    cursor: not-allowed;
+  }
+  button:hover:not(:disabled) {
+    background: #45a049;
+  }
+  .message {
+    margin-top: 1rem;
+    font-weight: 600;
+    text-align: center;
+  }
+  .error {
+    color: #ff5555;
+  }
+  .success {
+    color: #55ff55;
+  }
+  footer {
+    text-align: center;
+    padding: 1rem;
+    font-size: 0.8rem;
+    color: #666;
+  }
+</style>
+</head>
+<body>
+<header>File Timestamp Manipulation Tool</header>
+<main>
+  <label for="fileInput">Select a file to modify its timestamp:</label>
+  <input type="file" id="fileInput" />
+
+  <div class="file-info" id="fileInfo" style="display:none;">
+    <div><strong>File Name:</strong> <span id="fileName"></span></div>
+    <div><strong>File Size:</strong> <span id="fileSize"></span> bytes</div>
+    <div><strong>Original Last Modified:</strong> <span id="fileLastModified"></span></div>
+  </div>
+
+  <label>Set New Date and Time:</label>
+  <div class="datetime-inputs" id="datetimeInputs" style="display:none;">
+    <input type="number" id="yearInput" placeholder="Year (e.g. 2025)" min="1970" max="3000" />
+    <input type="number" id="monthInput" placeholder="Month (1-12)" min="1" max="12" />
+    <input type="number" id="dayInput" placeholder="Day (1-31)" min="1" max="31" />
+    <input type="number" id="hourInput" placeholder="Hour (0-23)" min="0" max="23" />
+    <input type="number" id="minuteInput" placeholder="Minute (0-59)" min="0" max="59" />
+    <input type="number" id="secondInput" placeholder="Second (0-59)" min="0" max="59" />
+  </div>
+
+  <button id="applyBtn" disabled>Apply New Timestamp & Download</button>
+
+  <div class="message" id="message"></div>
+</main>
+<footer>© 2025 Timestamp Manipulation Tool - Fully client-side, no backend</footer>
+
+<script>
+  const fileInput = document.getElementById('fileInput');
+  const fileInfo = document.getElementById('fileInfo');
+  const fileNameSpan = document.getElementById('fileName');
+  const fileSizeSpan = document.getElementById('fileSize');
+  const fileLastModifiedSpan = document.getElementById('fileLastModified');
+  const datetimeInputs = document.getElementById('datetimeInputs');
+  const applyBtn = document.getElementById('applyBtn');
+  const message = document.getElementById('message');
+
+  let selectedFile = null;
+
+  // Reset UI elements when file changes or on load
+  function resetUI() {
+    fileInfo.style.display = 'none';
+    datetimeInputs.style.display = 'none';
+    applyBtn.disabled = true;
+    message.textContent = '';
+    message.className = 'message';
+  }
+
+  // When user selects a file
+  fileInput.addEventListener('change', () => {
+    resetUI();
+    if (fileInput.files.length === 0) return;
+
+    selectedFile = fileInput.files[0];
+    fileNameSpan.textContent = selectedFile.name;
+    fileSizeSpan.textContent = selectedFile.size.toLocaleString();
+    fileLastModifiedSpan.textContent = new Date(selectedFile.lastModified).toLocaleString();
+
+    fileInfo.style.display = 'block';
+    datetimeInputs.style.display = 'flex';
+
+    // Pre-fill inputs with original date/time
+    const dt = new Date(selectedFile.lastModified);
+    document.getElementById('yearInput').value = dt.getFullYear();
+    document.getElementById('monthInput').value = dt.getMonth() + 1;
+    document.getElementById('dayInput').value = dt.getDate();
+    document.getElementById('hourInput').value = dt.getHours();
+    document.getElementById('minuteInput').value = dt.getMinutes();
+    document.getElementById('secondInput').value = dt.getSeconds();
+
+    applyBtn.disabled = false;
+  });
+
+  // When user clicks apply button
+  applyBtn.addEventListener('click', () => {
+    message.textContent = '';
+    message.className = 'message';
+
+    if (!selectedFile) {
+      message.textContent = 'No file selected.';
+      message.classList.add('error');
+      return;
+    }
+
+    // Read inputs
+    const year = parseInt(document.getElementById('yearInput').value, 10);
+    const month = parseInt(document.getElementById('monthInput').value, 10);
+    const day = parseInt(document.getElementById('dayInput').value, 10);
+    const hour = parseInt(document.getElementById('hourInput').value, 10);
+    const minute = parseInt(document.getElementById('minuteInput').value, 10);
+    const second = parseInt(document.getElementById('secondInput').value, 10);
+
+    // Validate date/time inputs
+    if (
+      isNaN(year) || year < 1000 || year > 9000 ||
+      isNaN(month) || month < 1 || month > 12 ||
+      isNaN(day) || day < 1 || day > 31 ||
+      isNaN(hour) || hour < 0 || hour > 23 ||
+      isNaN(minute) || minute < 0 || minute > 59 ||
+      isNaN(second) || second < 0 || second > 59
+    ) {
+      message.textContent = 'Please enter valid date and time values.';
+      message.classList.add('error');
+      return;
+    }
+
+    // Check if day is valid for the given month/year
+    const testDate = new Date(year, month - 1, day);
+    if (testDate.getFullYear() !== year || testDate.getMonth() !== month - 1 || testDate.getDate() !== day) {
+      message.textContent = 'Invalid date for the given month/year.';
+      message.classList.add('error');
+      return;
+    }
+
+    // Create new timestamp
+    const newTimestamp = new Date(year, month - 1, day, hour, minute, second).getTime();
+
+    // Create new File object with updated lastModified timestamp
+    const newFile = new File([selectedFile], selectedFile.name, {
+      type: selectedFile.type,
+      lastModified: newTimestamp
+    });
+
+    // Trigger download of the new file
+    const url = URL.createObjectURL(newFile);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = newFile.name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+
+    message.textContent = `File ready for download with new timestamp: ${new Date(newTimestamp).toLocaleString()}`;
+    message.classList.add('success');
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>🔑 Windows Product Key Finder</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem;
+      min-height: 100vh;
+    }
+
+    h1 {
+      color: red;
+      font-size: 2rem;
+      margin-bottom: 1rem;
+    }
+
+    .key-box {
+background: rgba(0,0,0,0.5);
+      padding: 1.5rem 2rem;
+      border-radius: 10px;
+      text-align: center;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+      max-width: 700px;
+      width: 100%;
+      transition: background-color 0.3s;
+    }
+
+    .key-display {
+      font-size: 1rem;
+      letter-spacing: 1.5px;
+      margin: 1rem 0;
+      color: red;
+      user-select: all;
+      word-break: break-word;
+      white-space: pre-wrap;
+      text-align: left;
+background: rgba(0,0,0,0.5);
+      padding: 1rem;
+      border-radius: 6px;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+    }
+
+    .key-display.visible {
+      opacity: 1;
+    }
+
+    select, input, button {
+background: rgba(0,0,0,0.5);
+      color: red;
+      border: 1px solid red;
+      padding: 0.75rem;
+      margin: 0.5rem 0;
+      font-size: 1rem;
+      border-radius: 8px;
+      width: 100%;
+    }
+
+    button {
+      background-color: red;
+      color: green;
+      cursor: pointer;
+      border: none;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+background: rgba(0,0,0,0.5);
+    }
+
+    label {
+      display: block;
+      margin-top: 1rem;
+      margin-bottom: 0.25rem;
+      text-align: left;
+    }
+
+    .actions {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-top: 1rem;
+    }
+
+    .analytics {
+      margin-top: 1rem;
+      font-size: 0.9rem;
+      color: red;
+      text-align: left;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔐 Windows Product Key Finder</h1>
+  <div class="key-box">
+    <label for="version">Select Windows Version:</label>
+    <select id="version" onchange="updateEditions()">
+      <option value="Windows 11">Windows 11</option>
+      <option value="Windows 10">Windows 10</option>
+    </select>
+
+    <label for="edition">Select Edition:</label>
+    <select id="edition" onchange="updateTheme()"></select>
+
+    <label for="amount">Number of Keys:</label>
+    <input type="number" id="amount" min="1" max="100" value="1" />
+
+    <div id="key" class="key-display">XXXXX-XXXXX-XXXXX-XXXXX-XXXXX</div>
+
+    <div class="actions">
+      <button onclick="generateKey()">🔁 Generate Key(s)</button>
+      <button onclick="copyKey()">📋 Copy</button>
+      <button onclick="downloadKeys('csv')">⬇️ Export CSV</button>
+      <button onclick="downloadKeys('txt')">⬇️ Export TXT</button>
+    </div>
+
+    <div class="analytics" id="analytics">
+      Keys Generated: 0<br>
+      Last Generated: N/A
+    </div>
+  </div>
+
+  <script>
+    const keyEl = document.getElementById("key");
+    const versionSelect = document.getElementById("version");
+    const editionSelect = document.getElementById("edition");
+    const amountInput = document.getElementById("amount");
+    const analyticsEl = document.getElementById("analytics");
+
+    let totalKeysGenerated = 0;
+
+    const editions = {
+      "Windows 11": [
+        "Windows 11 Home", "Windows 11 Home N", "Windows 11 Home Single Language",
+        "Windows 11 Home Country Specific", "Windows 11 Pro", "Windows 11 Pro N",
+        "Windows 11 Pro for Workstations", "Windows 11 Pro for Workstations N",
+        "Windows 11 Pro Education", "Windows 11 Pro Education N", "Windows 11 Education",
+        "Windows 11 Enterprise", "Windows 11 Enterprise N", "Windows 11 Enterprise G",
+        "Windows 11 Enterprise G N", "Windows 11 Enterprise LTSC 2019", "Windows 11 Enterprise N LTSC 2019"
+      ],
+      "Windows 10": [
+        "Windows 10 Home", "Windows 10 Home N", "Windows 10 Home Single Language",
+        "Windows 10 Pro", "Windows 10 Pro N", "Windows 10 Pro for Workstations",
+        "Windows 10 Pro N for Workstations", "Windows 10 S", "Windows 10 Education",
+        "Windows 10 Education N", "Windows 10 Pro Education N", "Windows 10 Enterprise",
+        "Windows 10 Enterprise G", "Windows 10 Enterprise G N", "Windows 10 Enterprise N",
+        "Windows 10 Enterprise S"
+      ]
+    };
+
+    const editionThemes = {
+      "Pro": "#0f172a", "Enterprise": "#1e1b4b", "Education": "#1a3b5d",
+      "Home": "#164e63", "LTSC": "#3f3f46", "S": "#4a044e", "G": "#334155"
+    };
+
+    function updateEditions() {
+      const selectedVersion = versionSelect.value;
+      editionSelect.innerHTML = "";
+      editions[selectedVersion].forEach(edition => {
+        const option = document.createElement("option");
+        option.value = edition;
+        option.textContent = edition;
+        editionSelect.appendChild(option);
+      });
+      updateTheme();
+      generateKey();
+    }
+
+    function updateTheme() {
+      const edition = editionSelect.value;
+      let theme = "#0f172a";
+      for (const key in editionThemes) {
+        if (edition.includes(key)) {
+          theme = editionThemes[key];
+          break;
+        }
+      }
+      document.body.style.backgroundColor = theme;
+    }
+
+    function generateKey() {
+      const charset = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+      const amount = Math.max(1, Math.min(100, parseInt(amountInput.value)));
+      const generateGroup = () => {
+        let group = "";
+        for (let i = 0; i < 5; i++) {
+          group += charset.charAt(Math.floor(Math.random() * charset.length));
+        }
+        return group;
+      };
+
+      let keys = "";
+      for (let i = 0; i < amount; i++) {
+        const fullKey = `${generateGroup()}-${generateGroup()}-${generateGroup()}-${generateGroup()}-${generateGroup()}`;
+        keys += fullKey + (i < amount - 1 ? "\n" : "");
+      }
+
+      keyEl.classList.remove("visible");
+      setTimeout(() => {
+        keyEl.textContent = keys;
+        keyEl.classList.add("visible");
+      }, 100);
+
+      totalKeysGenerated += amount;
+      const now = new Date().toLocaleString();
+      analyticsEl.innerHTML = `Keys Generated: ${totalKeysGenerated}<br>Last Generated: ${now}`;
+    }
+
+    function copyKey() {
+      navigator.clipboard.writeText(keyEl.textContent).then(() => {
+        alert("✅ Keys copied to clipboard!");
+      });
+    }
+
+    function downloadKeys(format) {
+      const keys = keyEl.textContent.trim().split("\n");
+      const edition = editionSelect.value.replace(/[^a-zA-Z0-9]/g, "_");
+      const version = versionSelect.value.replace(/[^a-zA-Z0-9]/g, "_");
+      const filename = `windows_keys_${version}_${edition}.${format}`;
+
+      let content = (format === "csv" ? "Key\n" : "") + keys.join("\n");
+
+      const blob = new Blob([content], { type: "text/plain" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    // Initialize
+    updateEditions();
+  </script>
+</body>
+</html>

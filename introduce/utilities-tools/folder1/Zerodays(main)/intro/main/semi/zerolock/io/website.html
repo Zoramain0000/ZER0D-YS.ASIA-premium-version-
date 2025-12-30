@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Website Name Ideas </title>
+<style>
+  /* Reset & base */
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0; padding: 1rem;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+    color: red;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  h1 {
+    color: red;
+    margin-bottom: 0.2rem;
+  }
+  p {
+    margin-top: 0; margin-bottom: 1rem;
+    color: red;
+    max-width: 600px;
+    text-align: center;
+  }
+  .container {
+    max-width: 960px;
+    width: 100%;
+background: rgba(0,0,0,0.5);
+    border-radius: 12px;
+    padding: 1.5rem 2rem;
+    box-shadow: 0 0 15px red;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  label {
+    font-weight: 700;
+    color: red;
+  }
+  input[type=number] {
+    width: 80px;
+    padding: 0.4rem;
+    font-size: 1rem;
+    border-radius: 6px;
+    border: none;
+background: rgba(0,0,0,0.5);
+    color: red;
+    margin-left: 0.5rem;
+  }
+  button {
+    background: red;
+    border: none;
+    color: green;
+    font-weight: 700;
+    font-size: 1rem;
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.3s ease;
+  }
+  button:disabled {
+background: rgba(0,0,0,0.5);
+    cursor: not-allowed;
+  }
+  button:hover:not(:disabled) {
+background: rgba(0,0,0,0.5);
+  }
+  .actions {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  section {
+background: rgba(0,0,0,0.5);
+    border-radius: 10px;
+    padding: 1rem;
+    max-height: 450px;
+    overflow-y: auto;
+  }
+  section h2 {
+    margin-top: 0;
+    color: red;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    color: red;
+  }
+  th, td {
+    padding: 0.5rem 0.8rem;
+    border-bottom: 1px solid red;
+    vertical-align: middle;
+    text-align: left;
+  }
+  th {
+background: rgba(0,0,0,0.5);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    user-select: none;
+    cursor: pointer;
+  }
+  th.sort-asc::after {
+    content: " ▲";
+  }
+  th.sort-desc::after {
+    content: " ▼";
+  }
+  .timestamp {
+    font-size: 0.85rem;
+    color: red;
+    white-space: nowrap;
+  }
+  #searchInput {
+    width: 100%;
+    max-width: 300px;
+    padding: 0.4rem 0.6rem;
+    font-size: 1rem;
+    border-radius: 6px;
+    border: none;
+background: rgba(0,0,0,0.5);
+    color: red;
+    margin-bottom: 1rem;
+  }
+  @media (max-width: 600px) {
+    th, td {
+      font-size: 0.9rem;
+      padding: 0.4rem 0.6rem;
+    }
+    #searchInput {
+      max-width: 100%;
+    }
+  }
+</style>
+</head>
+<body>
+
+<h1>Website Name Ideas </h1>
+<p>Generate creative website name ideas (without domain extensions), log them with timestamps, search, sort, and export your ideas easily.</p>
+
+<div class="container" role="main" aria-label="Website name ideas log generator">
+  <label for="countInput">Number of website name ideas to generate (1-999,999):</label>
+  <input type="number" id="countInput" min="1" max="30" value="10" aria-describedby="countHelp" />
+  <div id="countHelp" style="color:#a5d6a7; font-size:0.9rem; margin-bottom:1rem;">Choose how many creative website name ideas to generate.</div>
+
+  <div class="actions" role="group" aria-label="Action buttons">
+    <button id="generateBtn" type="button">Finding Name Ideas</button>
+    <button id="exportLogBtn" type="button" disabled>Export Logs as CSV</button>
+    <button id="clearLogBtn" type="button" disabled>Clear Logs</button>
+  </div>
+
+  <input type="search" id="searchInput" placeholder="Search names..." aria-label="Search generated website names" />
+
+  <section aria-live="polite" aria-atomic="true" aria-relevant="additions">
+    <h2>Generated Website Name Ideas</h2>
+    <div id="resultsArea" tabindex="0" aria-label="Generated website name ideas results">
+      <em>No names generated yet. Click "Generate Name Ideas" to start.</em>
+    </div>
+  </section>
+
+  <section aria-live="polite" aria-atomic="true" aria-relevant="additions">
+    <h2>Logs</h2>
+    <pre id="logArea" tabindex="0" aria-label="Logs output area" style="white-space: pre-wrap; margin:0; max-height: 200px; overflow-y: auto; color:#a5d6a7;">
+Logs will appear here...
+    </pre>
+  </section>
+</div>
+
+<script>
+(() => {
+  const countInput = document.getElementById('countInput');
+  const generateBtn = document.getElementById('generateBtn');
+  const exportLogBtn = document.getElementById('exportLogBtn');
+  const clearLogBtn = document.getElementById('clearLogBtn');
+  const resultsArea = document.getElementById('resultsArea');
+  const logArea = document.getElementById('logArea');
+  const searchInput = document.getElementById('searchInput');
+
+  let logs = [];
+  let results = [];
+  let currentSort = { column: 'timestamp', direction: 'desc' };
+   
+     // Word parts for creative name generation
+const prefixes = [
+  "Bright", "Quick", "Smart", "Blue", "Green", "Fresh", "Bold", "Clear", "True", "Next",
+  "Prime", "Nova", "Ultra", "Hyper", "Mega", "Alpha", "Echo", "Vivid", "Pure", "Swift",
+  "Pixel", "Cloud", "Zen", "Logic", "Fusion", "Vision", "Rocket", "Cyber", "Glide", "Core",
+  "Matrix", "Quantum", "Nimbus", "Signal", "Fire", "Aero", "Stream", "Spark", "Nova", "Bolt",
+  "Orbit", "Sky", "Turbo", "Shadow", "Binary", "Element", "Nexa", "Delta", "Pulse", "Atomic",
+  "Zip", "Code", "Byte", "Bit", "Click", "Dash", "Form", "Trust", "Mode", "Data",
+  "Grid", "Zenith", "Peak", "Drone", "Drift", "Neon", "Steel", "Jet", "Cloudy", "Loop",
+  "Crux", "Hero", "Path", "Node", "Axis", "Trek", "Origin", "Halo", "Link", "Stack",
+  "Node", "Seed", "Nest", "Ping", "Scale", "Up", "Down", "Brightly", "Trustly", "Base",
+  "Dock", "Spot", "Zone", "Lite", "Ride", "Hive", "Unit", "Flow", "Shine", "Clean",
+  "Gear", "Lift", "Rise", "Form", "Tag", "Think", "Trail", "Blaze", "Flash", "Wire",
+  "Meta", "Snap", "Tap", "Wave", "Glow", "Storm", "Lab", "Net", "Ring", "Zoom",
+  "Mint", "Coin", "Key", "Ice", "Drive", "Vault", "Build", "Box", "Cart", "Fox",
+  "Peak", "Bank", "Trade", "Fund", "Flex", "Alpha", "Beta", "Gamma", "Omni", "Auto",
+  "Zilla", "Fuel", "Drive", "Wheel", "Sound", "Echo", "Tune", "Push", "Click", "Lead",
+  "Mark", "Seek", "Track", "Guide", "Tag", "Sync", "Link", "Grip", "Pack", "Go",
+  "Way", "Maze", "Spin", "Star", "Craft", "Glow", "Forge", "Boost", "Scan", "Vault",
+  "Wire", "Plug", "Zone", "Nest", "Cube", "Shape", "Board", "Fleet", "Flash", "Node",
+  "Beam", "Burst", "Aura", "Lumen", "Pilot", "Sky", "Air", "Drone", "Bot", "Auto",
+  "Clicky", "Feed", "Scope", "Clix", "Stacker", "Flowy", "Pingy", "Riser", "Token", "Crypto",
+  "Banker", "Trader", "Investor", "Lender", "Fin", "Coiner", "Secur", "Trustor", "AI", "AutoBot",
+  "Neuro", "Mind", "Brain", "Smartify", "Cortex", "Neuron", "Logicx", "Bitzen", "Digit", "Codey",
+  "Codegen", "Compu", "Tron", "Elektro", "Wavey", "Sonic", "Synth", "Noir", "Glowr", "Brightz",
+  "Spino", "Zoomr", "FleetX", "Packet", "Cluster", "Stacky", "Cloudr", "Soft", "Hardy", "Techy",
+  "Inno", "Dev", "Pro", "Xpress", "Global", "Cosmo", "Verse", "NovaX", "Space", "Astro",
+  "Comet", "Galaxy", "Lunar", "Solar", "Magnet", "Plasma", "Photon", "Starx", "Void", "Quanta",
+  "Gen", "Genesis", "Morph", "Shift", "Port", "Control", "GridX", "Netra", "Infini", "Cipher",
+  "Crypta", "Lock", "Open", "Access", "Priv", "Safe", "Guard", "Sentri", "Gate", "Shield",
+  "VaultX", "Auth", "Verify", "Trusty", "Secure", "Risk", "Factor", "Logicz", "Zenx", "PulseX",
+  // continue until you reach 1000...
+];
+const middles = [
+  'Tech', 'Net', 'Web', 'Cloud', 'Data', 'Link', 'Flow', 'Pulse', 'Core', 'Grid',
+  'Wave', 'Spark', 'Byte', 'Logic', 'Sync', 'Stream', 'Zone', 'Hive', 'Peak', 'Edge','Code', 'Node', 'Stack', 'Drive', 'Dash', 'Loop', 'Click', 'Map', 'Mode', 'Feed',
+  'Scan', 'Track', 'Path', 'Form', 'Port', 'Chip', 'Volt', 'Signal', 'Vision', 'Click',
+  'Meta', 'App', 'Logic', 'Crypto', 'Token', 'Chain', 'File', 'Key', 'Ping', 'Log',
+  'Secure', 'Lock', 'Trust', 'Byte', 'Bit', 'Hash', 'AI', 'ML', 'Tensor', 'Model',
+  'Agent', 'Router', 'Layer', 'Cache', 'Thread', 'Fork', 'Script', 'Kernel', 'Blob', 'Root',
+  'Queue', 'Branch', 'Segment', 'Packet', 'Domain', 'DNS', 'Proxy', 'Host', 'Shell', 'Vault',
+  'DB', 'Index', 'Field', 'Sort', 'Match', 'API', 'Query', 'Blob', 'Webhook', 'Form',
+  'Input', 'Output', 'Pathway', 'Auth', 'Admin', 'User', 'Render', 'Node', 'Push', 'Pull',
+  'Zoom', 'Grid', 'Tensor', 'Bitstream', 'Beam', 'Object', 'Subject', 'Infer', 'Detect', 'Parse',
+  'Lex', 'Compile', 'Debug', 'Prompt', 'Train', 'Neuron', 'Pulse', 'Frame', 'Encode', 'Decode',
+  'Inference', 'Model', 'Tokenize', 'Route', 'Secure', 'Backup', 'Drive', 'Burst', 'Thread', 'Pingy',
+  'Cipher', 'Sign', 'Trustly', 'Optic', 'Proto', 'Packet', 'Flag', 'Stacky', 'Logicx', 'Trackr'
+];
+
+const suffixes = [
+  'ly', 'ify', 'ster', 'scape', 'base', 'works', 'point', 'matic', 'gen', 'nova',
+  'io', 'hub', 'box', 'zone', 'flow', 'core', 'stack', 'bot', 'net', 'kit',
+  'shift', 'forge', 'drop', 'rise', 'burst', 'zoom', 'click', 'cube', 'mark', 'ware',
+  'stream', 'clicks', 'path', 'sync', 'lab', 'deck', 'link', 'bit', 'logics', 'spot',
+  'metrics', 'drive', 'spark', 'fy', 'feed', 'clicker', 'scope', 'field', 'craft', 'metrics',
+  'move', 'line', 'pulse', 'model', 'syncs', 'dash', 'unit', 'source', 'vault', 'token',
+  'ai', 'cloud', 'bytes', 'pack', 'nexus', 'pilot', 'vision', 'nomic', 'logic', 'fier',
+  'maticx', 'ifyx', 'graph', 'warez', 'blox', 'plug', 'crunch', 'sensor', 'layer', 'board',
+  'queue', 'os', 'stackr', 'meta', 'crypto', 'dex', 'gate', 'trust', 'signal', 'flare',
+  'ops', 'edge', 'zonez', 'mode', 'tech', 'beam', 'ghost', 'cipher', 'loop', 'clicky',
+  'vaults', 'loopr', 'pad', 'pipe', 'tokenz', 'modelz', 'inbox', 'connect', 'linkz', 'markr',
+  'syncer', 'guard', 'sec', 'sentinel', 'intel', 'intelz', 'command', 'commandr', 'lock', 'crypt',
+  'cypher', 'fire', 'crack', 'visionz', 'datums', 'api', 'engine', 'dexx', 'dropz', 'force','gen', 'matic', 'flux', 'loop', 'nova', 'dock', 'grid', 'verse', 'lock', 'go', 'up', 'xr',
+  'base', 'kit', 'lab', 'gate', 'rise', 'dock', 'lane', 'crypt', 'intel', 'box', 'tap', 'iq',
+  'fy', 'er', 'or', 'ist', 'io', 'app', 'ed', 'on', 'ex', 'ics'
+];
+  
+
+  // Generate a creative website name idea (without domain)
+  function generateName() {
+    // Randomly pick 2 or 3 parts to combine
+    const partsCount = Math.random() < 0.7 ? 2 : 3;
+    let name = '';
+    if (partsCount === 2) {
+      // prefix + middle or middle + suffix
+      if (Math.random() < 0.5) {
+        name = randomChoice(prefixes) + randomChoice(middles);
+      } else {
+        name = randomChoice(middles) + randomChoice(suffixes);
+      }
+    } else {
+      // prefix + middle + suffix
+      name = randomChoice(prefixes) + randomChoice(middles) + randomChoice(suffixes);
+    }
+    return name;
+  }
+
+  // Random choice helper
+  function randomChoice(arr) {
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
+
+  // Escape HTML
+  function escapeHtml(text) {
+    return text.replace(/[&<>"']/g, (m) => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    })[m]);
+  }
+
+  // Add log entry
+  function addLog(entry) {
+    logs.push(entry);
+    updateLogArea();
+    exportLogBtn.disabled = false;
+    clearLogBtn.disabled = false;
+  }
+
+  // Update log display
+  function updateLogArea() {
+    if (logs.length === 0) {
+      logArea.textContent = 'Logs will appear here...';
+      exportLogBtn.disabled = true;
+      clearLogBtn.disabled = true;
+      return;
+    }
+    const logText = logs.map(log => `[${log.timestamp}] Name: "${log.name}" - Status: ${log.status}`).join('\n');
+    logArea.textContent = logText;
+    logArea.scrollTop = logArea.scrollHeight;
+  }
+
+  // Render results table with sorting and filtering
+  function renderResults() {
+    let filtered = results;
+    const searchTerm = searchInput.value.trim().toLowerCase();
+    if (searchTerm) {
+      filtered = filtered.filter(r => r.name.toLowerCase().includes(searchTerm));
+    }
+
+    if (filtered.length === 0) {
+      resultsArea.innerHTML = '<em>No matching names found.</em>';
+      return;
+    }
+
+    // Sort
+    filtered.sort((a, b) => {
+      let valA = a[currentSort.column];
+      let valB = b[currentSort.column];
+      if (currentSort.column === 'timestamp') {
+        valA = new Date(valA);
+        valB = new Date(valB);
+      } else {
+        valA = valA.toLowerCase();
+        valB = valB.toLowerCase();
+      }
+      if (valA < valB) return currentSort.direction === 'asc' ? -1 : 1;
+      if (valA > valB) return currentSort.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    const table = document.createElement('table');
+    table.setAttribute('role', 'table');
+    table.setAttribute('aria-label', 'Generated website name ideas');
+
+    table.innerHTML = `
+      <thead>
+        <tr>
+          <th data-column="index" scope="col">#</th>
+          <th data-column="name" scope="col" tabindex="0" role="button" aria-sort="none">Name</th>
+          <th data-column="status" scope="col" tabindex="0" role="button" aria-sort="none">Status</th>
+          <th data-column="timestamp" scope="col" tabindex="0" role="button" aria-sort="none">Timestamp</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${filtered.map((r, i) => `
+          <tr>
+            <td>${i + 1}</td>
+            <td>${escapeHtml(r.name)}</td>
+            <td>${escapeHtml(r.status)}</td>
+            <td class="timestamp">${new Date(r.timestamp).toLocaleString()}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    `;
+
+    // Update aria-sort attributes and add sort classes
+    const headers = table.querySelectorAll('th[data-column]');
+    headers.forEach(th => {
+      const col = th.getAttribute('data-column');
+      th.classList.remove('sort-asc', 'sort-desc');
+      th.setAttribute('aria-sort', 'none');
+      if (col === currentSort.column) {
+        th.classList.add(currentSort.direction === 'asc' ? 'sort-asc' : 'sort-desc');
+        th.setAttribute('aria-sort', currentSort.direction === 'asc' ? 'ascending' : 'descending');
+      }
+    });
+
+    resultsArea.innerHTML = '';
+    resultsArea.appendChild(table);
+
+    // Add click and keyboard event listeners for sorting
+    headers.forEach(th => {
+      if (th.getAttribute('data-column') === 'index') return; // no sort on index
+      th.onclick = () => sortByColumn(th.getAttribute('data-column'));
+      th.onkeydown = (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          sortByColumn(th.getAttribute('data-column'));
+        }
+      };
+    });
+  }
+
+  // Sort by column
+  function sortByColumn(column) {
+    if (currentSort.column === column) {
+      currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+    } else {
+      currentSort.column = column;
+      currentSort.direction = 'asc';
+    }
+    renderResults();
+  }
+
+  // Generate and log website name ideas
+  function generateAndLog() {
+    let count = parseInt(countInput.value, 10);
+    if (isNaN(count) || count < 1 || count > 999999) {
+      alert('Please enter a number between 1 and 999,999,.');
+      return;
+    }
+
+    generateBtn.disabled = true;
+    generateBtn.textContent = 'Generating...';
+
+    setTimeout(() => {
+      for (let i = 0; i < count; i++) {
+        const name = generateName();
+        const timestamp = new Date().toISOString();
+        const status = 'Generated';
+
+        // Avoid duplicates in results
+        if (!results.some(r => r.name.toLowerCase() === name.toLowerCase())) {
+          results.push({ name, status, timestamp });
+          addLog({ name, status, timestamp });
+        } else {
+          // If duplicate, just log it without adding to results
+          addLog({ name, status: 'Duplicate - not added', timestamp });
+        }
+      }
+      renderResults();
+      generateBtn.disabled = false;
+      generateBtn.textContent = 'Generate Name Ideas';
+    }, 100);
+  }
+
+  // Export logs as CSV
+  function exportLogsCSV() {
+    if (logs.length === 0) {
+      alert('No logs to export.');
+      return;
+    }
+    const header = ['Timestamp', 'Name', 'Status'];
+    const rows = logs.map(log => [
+      `"${log.timestamp}"`,
+      `"${log.name.replace(/"/g, '""')}"`,
+      `"${log.status}"`
+    ]);
+    const csvContent = [header, ...rows].map(e => e.join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'website_name_ideas_logs.csv';
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  // Clear logs and results
+  function clearLogs() {
+    if (!confirm('Are you sure you want to clear all logs and results?')) return;
+    logs = [];
+    results = [];
+    updateLogArea();
+    renderResults();
+    searchInput.value = '';
+  }
+
+  // Search input event
+  searchInput.addEventListener('input', renderResults);
+
+  // Event listeners
+  generateBtn.addEventListener('click', generateAndLog);
+  exportLogBtn.addEventListener('click', exportLogsCSV);
+  clearLogBtn.addEventListener('click', clearLogs);
+
+  // Initial state
+  updateLogArea();
+  renderResults();
+})();
+</script>
+
+</body>
+</html>

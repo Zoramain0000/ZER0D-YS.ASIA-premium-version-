@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title> API Testing Tool</title>
+<style>
+  /* Reset & base */
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0; padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+    color: red;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+  header {
+background: rgba(0, 0, 0, 0.5);
+    padding: 20px;
+    font-size: 1.5rem;
+    font-weight: bold;
+    text-align: center;
+    letter-spacing: 1px;
+  }
+  main {
+    flex-grow: 1;
+    padding: 20px;
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  label {
+    font-weight: 600;
+    margin-bottom: 6px;
+    display: block;
+  }
+  input[type=text], input[type=url], select, textarea {
+    width: 100%;
+    padding: 10px;
+    font-size: 1rem;
+    border-radius: 6px;
+    border: none;
+    outline: none;
+background: rgba(0, 0, 0, 0.5);
+    color: red;
+    font-family: monospace;
+  }
+  textarea {
+    resize: vertical;
+    min-height: 100px;
+  }
+  button {
+    background: red;
+    border: none;
+    color: green;
+    padding: 12px 20px;
+    font-size: 1.1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+  }
+  button:hover:not(:disabled) {
+background: rgba(0, 0, 0, 0.5);
+  }
+  button:disabled {
+background: rgba(0, 0, 0, 0.5);
+    cursor: not-allowed;
+  }
+  .flex-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .flex-row > * {
+    flex: 1 1 auto;
+  }
+  .small-input {
+    max-width: 120px;
+  }
+  .headers-container, .saved-requests-container {
+background: rgba(0, 0, 0, 0.5);
+    border-radius: 6px;
+    padding: 10px;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+  .header-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .header-row input {
+    flex: 1 1 45%;
+  }
+  .header-row button {
+    flex: 0 0 30px;
+    background: red;
+    font-weight: bold;
+    font-size: 1.2rem;
+    line-height: 1;
+    padding: 0;
+    border-radius: 4px;
+  }
+  .header-row button:hover {
+background: rgba(0, 0, 0, 0.5);
+  }
+  #addHeaderBtn {
+    margin-top: 8px;
+background: rgba(0, 0, 0, 0.5);
+    width: 100%;
+  }
+  #responseContainer {
+background: rgba(0, 0, 0, 0.5);
+    border-radius: 6px;
+    padding: 15px;
+    font-family: monospace;
+    white-space: pre-wrap;
+    overflow-x: auto;
+    max-height: 400px;
+  }
+  #responseStatus {
+    font-weight: bold;
+    margin-bottom: 10px;
+  }
+  #responseHeaders {
+    font-size: 0.9rem;
+    margin-bottom: 10px;
+    color: red;
+  }
+  #savedRequestsList {
+    max-height: 150px;
+    overflow-y: auto;
+  }
+  #savedRequestsList button {
+    width: 100%;
+    text-align: left;
+    background: red;
+    border: none;
+    color: green;
+    padding: 8px 10px;
+    margin-bottom: 6px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  #savedRequestsList button:hover {
+background: rgba(0, 0, 0, 0.5);
+  }
+  .saved-request-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
+  }
+  .saved-request-actions button {
+    flex: 1;
+background: rgba(0, 0, 0, 0.5);
+    font-size: 0.9rem;
+  }
+  .saved-request-actions button:hover {
+background: rgba(0, 0, 0, 0.5);
+  }
+  @media (max-width: 600px) {
+    .flex-row {
+      flex-direction: column;
+    }
+    .header-row {
+      flex-direction: column;
+    }
+    .header-row input, .header-row button {
+      flex: 1 1 100%;
+    }
+  }
+</style>
+</head>
+<body>
+
+<header> API Testing Tool</header>
+
+<main>
+  <div>
+    <label for="urlInput">API Endpoint URL</label>
+    <input type="url" id="urlInput" placeholder="https://api.example.com/resource" autocomplete="off" />
+  </div>
+
+  <div class="flex-row">
+    <div>
+      <label for="methodSelect">HTTP Method</label>
+      <select id="methodSelect" aria-label="Select HTTP method">
+        <option>GET</option>
+        <option>POST</option>
+        <option>PUT</option>
+        <option>DELETE</option>
+        <option>PATCH</option>
+        <option>OPTIONS</option>
+      </select>
+    </div>
+    <div>
+      <label for="contentTypeSelect">Content-Type (for body)</label>
+      <select id="contentTypeSelect" aria-label="Select Content-Type">
+        <option value="application/json" selected>application/json</option>
+        <option value="text/plain">text/plain</option>
+        <option value="application/x-www-form-urlencoded">application/x-www-form-urlencoded</option>
+        <option value="multipart/form-data">multipart/form-data</option>
+      </select>
+    </div>
+  </div>
+
+  <section>
+    <label>Request Headers</label>
+    <div class="headers-container" id="headersContainer" aria-label="Request headers container">
+      <!-- Header rows inserted here -->
+    </div>
+    <button id="addHeaderBtn" aria-label="Add new header">+ Add Header</button>
+  </section>
+
+  <section>
+    <label for="bodyInput">Request Body</label>
+    <textarea id="bodyInput" placeholder='{"key":"value"}' aria-label="Request body"></textarea>
+  </section>
+
+  <button id="sendBtn" aria-label="Send API request">Send Request</button>
+  <button id="clearBtn" aria-label="Clear all inputs and response" style="background:#555; margin-top:10px;">Clear All</button>
+
+  <section aria-live="polite" aria-atomic="true" aria-label="API response">
+    <div id="responseStatus"></div>
+    <pre id="responseHeaders"></pre>
+    <pre id="responseContainer"></pre>
+  </section>
+
+  <section>
+    <label>Saved Requests</label>
+    <div class="saved-requests-container" id="savedRequestsContainer" aria-label="Saved API requests">
+      <div id="savedRequestsList"></div>
+      <div class="flex-row" style="margin-top:10px;">
+        <input type="text" id="saveRequestName" placeholder="Save current request as..." aria-label="Save request name" />
+        <button id="saveRequestBtn" aria-label="Save current request">Save</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+(() => {
+  const urlInput = document.getElementById('urlInput');
+  const methodSelect = document.getElementById('methodSelect');
+  const contentTypeSelect = document.getElementById('contentTypeSelect');
+  const headersContainer = document.getElementById('headersContainer');
+  const addHeaderBtn = document.getElementById('addHeaderBtn');
+  const bodyInput = document.getElementById('bodyInput');
+  const sendBtn = document.getElementById('sendBtn');
+  const clearBtn = document.getElementById('clearBtn');
+  const responseStatus = document.getElementById('responseStatus');
+  const responseHeaders = document.getElementById('responseHeaders');
+  const responseContainer = document.getElementById('responseContainer');
+  const savedRequestsList = document.getElementById('savedRequestsList');
+  const saveRequestName = document.getElementById('saveRequestName');
+  const saveRequestBtn = document.getElementById('saveRequestBtn');
+
+  // Initialize with one empty header row
+  function createHeaderRow(key = '', value = '') {
+    const div = document.createElement('div');
+    div.className = 'header-row';
+
+    const keyInput = document.createElement('input');
+    keyInput.type = 'text';
+    keyInput.placeholder = 'Header Name';
+    keyInput.value = key;
+    keyInput.autocomplete = 'off';
+    keyInput.setAttribute('aria-label', 'Header name');
+
+    const valueInput = document.createElement('input');
+    valueInput.type = 'text';
+    valueInput.placeholder = 'Header Value';
+    valueInput.value = value;
+    valueInput.autocomplete = 'off';
+    valueInput.setAttribute('aria-label', 'Header value');
+
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.textContent = '×';
+    removeBtn.title = 'Remove header';
+    removeBtn.setAttribute('aria-label', 'Remove header');
+    removeBtn.addEventListener('click', () => {
+      headersContainer.removeChild(div);
+    });
+
+    div.appendChild(keyInput);
+    div.appendChild(valueInput);
+    div.appendChild(removeBtn);
+
+    return div;
+  }
+
+  function addHeaderRow(key = '', value = '') {
+    const row = createHeaderRow(key, value);
+    headersContainer.appendChild(row);
+  }
+
+  addHeaderBtn.addEventListener('click', () => {
+    addHeaderRow();
+  });
+
+  // Add initial header row
+  addHeaderRow();
+
+  // Clear all inputs and response
+  clearBtn.addEventListener('click', () => {
+    urlInput.value = '';
+    methodSelect.value = 'GET';
+    contentTypeSelect.value = 'application/json';
+    bodyInput.value = '';
+    headersContainer.innerHTML = '';
+    addHeaderRow();
+    responseStatus.textContent = '';
+    responseHeaders.textContent = '';
+    responseContainer.textContent = '';
+    saveRequestName.value = '';
+  });
+
+  // Format JSON nicely or fallback to raw text
+  function tryFormatJSON(text) {
+    try {
+      const obj = JSON.parse(text);
+      return JSON.stringify(obj, null, 2);
+    } catch {
+      return text;
+    }
+  }
+
+  // Format headers object to string
+  function formatHeaders(headers) {
+    let result = '';
+    for (const [key, value] of headers.entries()) {
+      result += `${key}: ${value}\n`;
+    }
+    return result.trim();
+  }
+
+  // Send API request
+  sendBtn.addEventListener('click', async () => {
+    responseStatus.textContent = '';
+    responseHeaders.textContent = '';
+    responseContainer.textContent = '';
+
+    const url = urlInput.value.trim();
+    if (!url) {
+      alert('Please enter a valid API endpoint URL.');
+      return;
+    }
+
+    const method = methodSelect.value;
+    const contentType = contentTypeSelect.value;
+
+    // Gather headers
+    const headers = new Headers();
+    // Add Content-Type if body present and method supports body
+    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method.toUpperCase()) && contentType !== 'multipart/form-data') {
+      headers.set('Content-Type', contentType);
+    }
+
+    // Add user headers
+    [...headersContainer.children].forEach(row => {
+      const key = row.children[0].value.trim();
+      const value = row.children[1].value.trim();
+      if (key) {
+        headers.set(key, value);
+      }
+    });
+
+    // Prepare body
+    let body = null;
+    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method.toUpperCase())) {
+      if (contentType === 'application/json') {
+        try {
+          body = JSON.stringify(JSON.parse(bodyInput.value));
+        } catch (e) {
+          alert('Invalid JSON body.');
+          return;
+        }
+      } else if (contentType === 'application/x-www-form-urlencoded') {
+        body = bodyInput.value;
+      } else if (contentType === 'text/plain') {
+        body = bodyInput.value;
+      } else if (contentType === 'multipart/form-data') {
+        // For multipart/form-data, we must build FormData and remove Content-Type header
+        headers.delete('Content-Type');
+        const formData = new FormData();
+        try {
+          // Expect bodyInput to be JSON object with key-value pairs
+          const obj = JSON.parse(bodyInput.value);
+          if (typeof obj === 'object' && obj !== null) {
+            for (const key in obj) {
+              formData.append(key, obj[key]);
+            }
+            body = formData;
+          } else {
+            alert('For multipart/form-data, body must be a JSON object with key-value pairs.');
+            return;
+          }
+        } catch {
+          alert('For multipart/form-data, body must be a valid JSON object.');
+          return;
+        }
+      }
+    }
+
+    sendBtn.disabled = true;
+    sendBtn.textContent = 'Sending...';
+
+    const startTime = performance.now();
+
+    try {
+      const response = await fetch(url, {
+        method,
+        headers,
+        body
+      });
+
+      const endTime = performance.now();
+      const duration = (endTime - startTime).toFixed(2);
+
+      responseStatus.textContent = `Status: ${response.status} ${response.statusText} (Time: ${duration} ms)`;
+
+      // Show response headers
+      responseHeaders.textContent = formatHeaders(response.headers);
+
+      // Try to parse response as JSON, fallback to text
+      let text;
+      try {
+        text = await response.text();
+        const contentTypeResp = response.headers.get('content-type') || '';
+        if (contentTypeResp.includes('application/json')) {
+          responseContainer.textContent = tryFormatJSON(text);
+        } else {
+          responseContainer.textContent = text;
+        }
+      } catch (e) {
+        responseContainer.textContent = 'Failed to read response body.';
+      }
+
+    } catch (error) {
+      responseStatus.textContent = 'Request failed: ' + error.message;
+      responseHeaders.textContent = '';
+      responseContainer.textContent = '';
+    } finally {
+      sendBtn.disabled = false;
+      sendBtn.textContent = 'Send Request';
+    }
+  });
+
+  // Saved requests management
+  function loadSavedRequests() {
+    const saved = localStorage.getItem('apiTesterSavedRequests');
+    if (!saved) return [];
+    try {
+      return JSON.parse(saved);
+    } catch {
+      return [];
+    }
+  }
+
+  function saveRequestsToStorage(requests) {
+    localStorage.setItem('apiTesterSavedRequests', JSON.stringify(requests));
+  }
+
+  function renderSavedRequests() {
+    const requests = loadSavedRequests();
+    savedRequestsList.innerHTML = '';
+    if (requests.length === 0) {
+      savedRequestsList.textContent = 'No saved requests.';
+      return;
+    }
+    requests.forEach((req, idx) => {
+      const btn = document.createElement('button');
+      btn.textContent = req.name || `Request ${idx + 1}`;
+      btn.title = 'Load this saved request';
+      btn.addEventListener('click', () => {
+        loadRequest(req);
+      });
+
+      // Add delete button
+      const container = document.createElement('div');
+      container.style.position = 'relative';
+
+      const delBtn = document.createElement('button');
+      delBtn.textContent = '🗑';
+      delBtn.title = 'Delete this saved request';
+      delBtn.style.position = 'absolute';
+      delBtn.style.right = '5px';
+      delBtn.style.top = '5px';
+      delBtn.style.background = 'transparent';
+      delBtn.style.color = '#ff5555';
+      delBtn.style.border = 'none';
+      delBtn.style.cursor = 'pointer';
+      delBtn.style.fontSize = '1rem';
+      delBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (confirm(`Delete saved request "${req.name}"?`)) {
+          requests.splice(idx, 1);
+          saveRequestsToStorage(requests);
+          renderSavedRequests();
+        }
+      });
+
+      container.appendChild(btn);
+      container.appendChild(delBtn);
+      savedRequestsList.appendChild(container);
+    });
+  }
+
+  function loadRequest(req) {
+    urlInput.value = req.url || '';
+    methodSelect.value = req.method || 'GET';
+    contentTypeSelect.value = req.contentType || 'application/json';
+    bodyInput.value = req.body || '';
+    headersContainer.innerHTML = '';
+    if (req.headers && typeof req.headers === 'object') {
+      for (const [k, v] of Object.entries(req.headers)) {
+        addHeaderRow(k, v);
+      }
+    } else {
+      addHeaderRow();
+    }
+    saveRequestName.value = req.name || '';
+  }
+
+  saveRequestBtn.addEventListener('click', () => {
+    const name = saveRequestName.value.trim();
+    if (!name) {
+      alert('Please enter a name to save this request.');
+      return;
+    }
+    const url = urlInput.value.trim();
+    if (!url) {
+      alert('Please enter a valid URL before saving.');
+      return;
+    }
+    const method = methodSelect.value;
+    const contentType = contentTypeSelect.value;
+    const body = bodyInput.value;
+
+    const headers = {};
+    [...headersContainer.children].forEach(row => {
+      const key = row.children[0].value.trim();
+      const value = row.children[1].value.trim();
+      if (key) {
+        headers[key] = value;
+      }
+    });
+
+    const requests = loadSavedRequests();
+    // Check if name exists, update or add
+    const existingIndex = requests.findIndex(r => r.name === name);
+    const newReq = { name, url, method, contentType,body, headers };
+    if (existingIndex >= 0) {
+      requests[existingIndex] = newReq;
+    } else {
+      requests.push(newReq);
+    }
+    saveRequestsToStorage(requests);
+    renderSavedRequests();
+    alert(`Request "${name}" saved.`);
+  });
+
+  // Initial render of saved requests
+  renderSavedRequests();
+})();
+</script>
+
+</body>
+</html>

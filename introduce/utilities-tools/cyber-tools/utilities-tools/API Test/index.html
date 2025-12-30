@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>API Service Explorer</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #000;
+      color: #c58b00;
+      overflow-x: hidden;
+    }
+    video#bg-video {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      min-width: 100vw;
+      min-height: 100vh;
+      object-fit: cover;
+      opacity: 0.2;
+      z-index: -2;
+    }
+    audio#bg-music {
+      position: fixed;
+      z-index: -1;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .container {
+      max-width: 900px;
+      margin: 50px auto;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 0 25px rgba(0, 0, 0, 0.7);
+    }
+    h1, label { color: #c58b00; }
+    input, select, textarea, button, pre {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      background: rgba(0,0,0,0.5);
+      color: red;
+      border: 1px solid #c58b00;
+      border-radius: 5px;
+      font-size: 1rem;
+    }
+    button {
+      width: auto;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    button:hover {
+      background: #111;
+      color: red;
+    }
+    .history-item {
+      border-bottom: 1px solid red;
+      padding: 5px;
+      font-size: 0.9rem;
+      color: #ff8800;
+    }
+    pre {
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    @media (max-width: 768px) {
+      .container { margin: 20px 10px; padding: 15px; }
+      button { width: 100%; margin: 8px 0; }
+    }
+  </style>
+</head>
+<body>
+
+<video id="bg-video" autoplay muted loop playsinline>
+  <source src="background/1761817527453041720p.mp4" type="video/mp4" />
+</video>
+
+<audio id="bg-music" loop>
+  <source src="background/Programming___Coding___Hacking_music_vol.18__ANONYMOUS_HEADQUARTERS_(48k).mp3" type="audio/mpeg" />
+</audio>
+
+<div class="container">
+  <h1>API Service Explorer</h1>
+
+  <label>API Endpoint URL:</label>
+  <input id="api-url" placeholder="https://api.example.com/data" />
+
+  <label>Method:</label>
+  <select id="api-method">
+    <option>GET</option>
+    <option>POST</option>
+  </select>
+
+  <label>Request Body (JSON, for POST):</label>
+  <textarea id="api-body" rows="4" placeholder='{ "key": "value" }'></textarea>
+
+  <button onclick="callAPI()">Call API</button>
+  <button onclick="clearAll()">Clear</button>
+
+  <div class="section">
+    <h3>Response</h3>
+    <pre id="api-response">{}</pre>
+    <button onclick="copyResponse()">📋 Copy</button>
+    <button onclick="downloadResponse()">⬇️ Download</button>
+  </div>
+
+  <div class="section">
+    <h3>History</h3>
+    <div id="history-box"></div>
+  </div>
+</div>
+
+<script>
+  const music = document.getElementById("bg-music");
+  window.addEventListener("click", () => music.play().catch(() => {}), { once: true });
+
+  const apiUrl = document.getElementById("api-url");
+  const apiMethod = document.getElementById("api-method");
+  const apiBody = document.getElementById("api-body");
+  const apiResponse = document.getElementById("api-response");
+  const historyBox = document.getElementById("history-box");
+  const history = [];
+
+  function callAPI() {
+    const url = apiUrl.value.trim();
+    const method = apiMethod.value;
+    let body = apiBody.value.trim();
+
+    if (!url) return alert("Enter a valid API URL.");
+
+    let options = { method };
+
+    if (method === "POST") {
+      try {
+        JSON.parse(body);
+        options.headers = { "Content-Type": "application/json" };
+        options.body = body;
+      } catch {
+        return alert("Invalid JSON body.");
+      }
+    }
+
+    fetch(url, options)
+      .then(res => res.json())
+      .then(data => {
+        const formatted = JSON.stringify(data, null, 2);
+        apiResponse.textContent = formatted;
+        logHistory(url);
+      })
+      .catch(err => {
+        apiResponse.textContent = "❌ Error: " + err;
+      });
+  }
+
+  function clearAll() {
+    apiUrl.value = "";
+    apiBody.value = "";
+    apiResponse.textContent = "{}";
+  }
+
+  function copyResponse() {
+    navigator.clipboard.writeText(apiResponse.textContent)
+      .then(() => alert("Response copied!"));
+  }
+
+  function downloadResponse() {
+    const blob = new Blob([apiResponse.textContent], { type: "application/json" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "api_response.json";
+    link.click();
+  }
+
+  function logHistory(url) {
+    const time = new Date().toLocaleTimeString();
+    history.unshift(`${time} - ${url}`);
+    updateHistory();
+  }
+
+  function updateHistory() {
+    historyBox.innerHTML = "";
+    history.slice(0, 8).forEach(entry => {
+      const div = document.createElement("div");
+      div.className = "history-item";
+      div.textContent = entry;
+      historyBox.appendChild(div);
+    });
+  }
+</script>
+
+</body>
+</html>

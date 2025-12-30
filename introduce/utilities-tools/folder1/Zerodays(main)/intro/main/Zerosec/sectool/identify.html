@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Fake Identity Generator</title>
+  <script src="https://cdn.jsdelivr.net/npm/faker@5.5.3/dist/faker.min.js"></script>
+  <style>
+    body {
+      background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: rgb(255, 0, 0);
+      font-family: 'Courier New', Courier, monospace;
+      padding: 20px;
+    }
+    .container {
+      max-width: 800px;
+      margin: auto;
+    }
+    h1 {
+      color: rgb(255, 0, 0);
+      text-align: center;
+      text-shadow: 0 0 10px rgb(255, 0, 0);
+    }
+    button {
+      background-color: #111111;
+      color: #0f0;
+      border: 1px solid rgb(255, 0, 0);
+      padding: 10px 20px;
+      margin: 5px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.3s ease;
+    }
+    button:hover {
+      background-color: rgba(0, 0, 0, 0.219);
+      color: #ff0000;
+    }
+    .output {
+      background-color: #00000033;
+      border: 1px dashed rgb(255, 0, 0);
+      padding: 15px;
+      margin-top: 20px;
+      white-space: pre-wrap;
+    }
+    .banner {
+      text-align: center;
+      color: #f00;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="banner">
+    <h1>🕵️‍♂️ FAKE IDENTITY GENERATOR</h1>
+    <p>❤️ by Zora </p>
+  </div>
+
+  <div class="controls">
+    <button onclick="showAddress()">Fake Address</button>
+    <button onclick="showEmail()">Fake Email</button>
+    <button onclick="showJob()">Fake Job</button>
+    <button onclick="showName()">Fake Name</button>
+    <button onclick="showCountry()">Fake Country</button>
+    <button onclick="generateRandom()">Random Generator</button>
+    <button onclick="showProfile()">Full Profile</button>
+  </div>
+
+  <div id="output" class="output"></div>
+</div>
+
+<script>
+  const output = document.getElementById('output');
+
+  function printResult(label, value) {
+    output.textContent = `${label}: ${value}`;
+  }
+
+  function showAddress() {
+    printResult("Fake Address", faker.address.streetAddress() + ", " + faker.address.city() + ", " + faker.address.country());
+  }
+
+  function showEmail() {
+    printResult("Fake Email", faker.internet.email());
+  }
+
+  function showJob() {
+    printResult("Fake Job", faker.name.jobTitle());
+  }
+
+  function showName() {
+    printResult("Fake Name", faker.name.findName());
+  }
+
+  function showCountry() {
+    printResult("Fake Country", faker.address.country());
+  }
+
+  function generateRandom() {
+    const data = `
+Email   : ${faker.internet.email()}
+Job     : ${faker.name.jobTitle()}
+Country : ${faker.address.country()}
+Name    : ${faker.name.findName()}
+Address : ${faker.address.streetAddress()}, ${faker.address.city()}, ${faker.address.country()}
+    `.trim();
+    output.textContent = data;
+  }
+
+  function showProfile() {
+    const profile = {
+      Name: faker.name.findName(),
+      Email: faker.internet.email(),
+      Username: faker.internet.userName(),
+      Job: faker.name.jobTitle(),
+      Website: faker.internet.url(),
+      Address: faker.address.streetAddress() + ", " + faker.address.city(),
+      Country: faker.address.country(),
+      Bio: faker.lorem.sentence()
+    };
+
+    let result = '';
+    for (let key in profile) {
+      result += `${key}: ${profile[key]}\n`;
+    }
+    output.textContent = result.trim();
+  }
+</script>
+
+</body>
+</html>

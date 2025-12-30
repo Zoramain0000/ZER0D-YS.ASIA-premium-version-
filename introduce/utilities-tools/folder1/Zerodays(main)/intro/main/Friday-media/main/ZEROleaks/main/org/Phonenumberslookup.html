@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Advanced Phone Number Lookup Tool</title>
+<style>
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #121212;
+    color: #e0e0e0;
+    margin: 0;
+    padding: 2rem;
+    display: flex;
+    justify-content: center;
+  }
+  .container {
+    background: #1f1f1f;
+    padding: 2rem;
+    border-radius: 12px;
+    max-width: 400px;
+    width: 100%;
+    box-shadow: 0 0 15px #0af;
+  }
+  h1 {
+    margin-bottom: 1rem;
+    text-align: center;
+    color: #0af;
+  }
+  label {
+    display: block;
+    margin: 1rem 0 0.5rem;
+  }
+  input[type="text"] {
+    width: 100%;
+    padding: 0.6rem;
+    font-size: 1rem;
+    border-radius: 6px;
+    border: none;
+    outline: none;
+  }
+  button {
+    margin-top: 1.5rem;
+    width: 100%;
+    padding: 0.75rem;
+    font-size: 1.1rem;
+    border-radius: 6px;
+    border: none;
+    background: #0af;
+    color: #121212;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  button:hover {
+    background: #08c;
+  }
+  .results {
+    margin-top: 2rem;
+    background: #272727;
+    padding: 1rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+  .result-label {
+    font-weight: 700;
+    color: #0af;
+  }
+  .error {
+    color: #ff5555;
+    margin-top: 1rem;
+    font-weight: bold;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Phone Number Lookup</h1>
+  <label for="phoneInput">Enter phone number (with or without country code):</label>
+  <input id="phoneInput" type="text" placeholder="+1 650-555-1234 or 06505551234" />
+  <button id="lookupBtn">Lookup</button>
+
+  <div id="error" class="error"></div>
+  <div id="results" class="results" style="display:none;">
+    <p><span class="result-label">Formatted Number:</span> <span id="formatted"></span></p>
+    <p><span class="result-label">Valid:</span> <span id="valid"></span></p>
+    <p><span class="result-label">Country:</span> <span id="country"></span></p>
+    <p><span class="result-label">Country Calling Code:</span> <span id="callingCode"></span></p>
+    <p><span class="result-label">Possible Carrier:</span> <span id="carrier">Unknown</span></p>
+    <p><span class="result-label">Time Zone(s):</span> <span id="timezones">Unknown</span></p>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/libphonenumber-js@1.10.24/bundle/libphonenumber-js.min.js"></script>
+<script>
+  // Helper: Simple carrier lookup approximation based on country code and prefix (VERY limited)
+const carrierPrefixes = {
+   
+    "AF": { "70": "Afghan Wireless", "79": "Roshan" },
+    "AL": { "66": "Vodafone Albania", "68": "ALBtelecom" },
+    "DZ": { "55": "Mobilis", "66": "Djezzy" },
+    "AS": { "684": "American Samoa" },
+    "AD": { "376": "Andorra Telecom" },
+    "AO": { "92": "Unitel", "93": "Movicel" },
+    "AG": { "268": "Digicel" },
+    "AR": { "11": "Movistar", "15": "Claro" },
+    "AM": { "93": "VivaCell", "91": "Beeline" },
+    "AU": { "04": "Telstra", "45": "Optus" },
+    "AT": { "66": "A1", "67": "Drei" },
+    "AZ": { "50": "Azercell", "55": "Bakcell" },
+    "BS": { "242": "BTC" },
+    "BH": { "33": "Batelco", "36": "Zain" },
+    "BD": { "17": "Grameenphone", "18": "Robi" },
+    "BB": { "246": "Digicel" },
+    "BY": { "29": "A1", "33": "MTS" },
+    "BE": { "47": "Proximus", "48": "Orange" },
+    "BZ": { "60": "Smart" },
+    "BJ": { "97": "MTN" },
+    "BT": { "77": "Bhutan Telecom" },
+    "BO": { "76": "Entel", "74": "Tigo" },
+    "BA": { "60": "BH Telecom", "62": "m:tel" },
+    "BW": { "71": "Mascom", "73": "Orange" },
+    "BR": { "11": "Vivo", "21": "Claro" },
+    "BN": { "88": "DST" },
+    "BG": { "88": "A1", "87": "Telenor" },
+    "BF": { "76": "Moov" },
+    "BI": { "79": "Lumitel" },
+    "KH": { "97": "Cellcard", "96": "Smart" },
+    "CM": { "69": "MTN", "78": "Orange" },
+    "CA": { "416": "Rogers", "647": "Bell" },
+    "CV": { "93": "CV Telecom" },
+    "CF": { "70": "Orange" },
+    "TD": { "66": "Tigo" },
+    "CL": { "9": "Entel", "8": "Movistar" },
+    "CN": { "13": "China Mobile", "15": "China Unicom" },
+    "CO": { "300": "Claro", "310": "Movistar" },
+    "KM": { "79": "Comores Telecom" },
+    "CD": { "81": "Vodacom", "89": "Orange" },
+    "CG": { "80": "MTN" },
+    "CR": { "6": "Kolbi", "7": "Claro" },
+    "HR": { "91": "T-Mobile", "92": "A1" },
+    "CU": { "5": "ETECSA" },
+    "CY": { "99": "Cyta" },
+    "CZ": { "77": "Vodafone", "73": "T-Mobile" },
+    "DK": { "40": "TDC", "41": "Telia" },
+    "DJ": { "77": "Djibouti Telecom" },
+    "DM": { "767": "Digicel" },
+    "DO": { "809": "Claro", "829": "Altice" },
+    "EC": { "9": "Movistar", "8": "Claro" },
+    "EG": { "10": "Vodafone", "11": "Orange" },
+    "SV": { "7": "Tigo", "6": "Claro" },
+    "GQ": { "22": "GSM" },
+    "ER": { "79": "Eritel" },
+    "EE": { "56": "Telia", "58": "Elisa" },
+    "SZ": { "76": "MTN" },
+    "ET": { "91": "Ethio Telecom" },
+    "FJ": { "7": "Vodafone" },
+    "FI": { "40": "Elisa", "41": "DNA" },
+    "FR": { "6": "Orange", "7": "SFR" },
+    "GA": { "77": "Gabon Telecom" },
+    "GM": { "77": "Africell" },
+    "GE": { "99": "Geocell", "91": "Magti" },
+    "DE": { "15": "Vodafone", "16": "Telekom" },
+    "GH": { "20": "MTN", "24": "Vodafone" },
+    "GR": { "69": "Cosmote", "69": "Vodafone" },
+    "GT": { "5": "Claro", "6": "Tigo" },
+    "GN": { "95": "Orange" },
+    "GW": { "20": "GSM" },
+    "HT": { "37": "Digicel" },
+    "HN": { "9": "Claro", "8": "Tigo" },
+    "HK": { "5": "3 Hong Kong", "6": "Smartone" },
+    "HU": { "20": "Vodafone", "30": "Telenor" },
+    "IS": { "86": "Vodafone" },
+    "IN": { "98": "Airtel", "99": "Jio" },
+    "ID": { "81": "Telkomsel", "82": "XL" },
+    "IE": { "83": "Vodafone", "87": "Three" },
+    "IL": { "50": "Cellcom", "52": "Partner" },
+    "IT": { "39": "TIM", "33": "Vodafone" },
+    "JM": { "876": "Digicel" },
+    "JP": { "90": "NTT Docomo", "80": "SoftBank" },
+    "JO": { "79": "Zain" },
+    "KZ": { "70": "Kcell", "77": "Tele2" },
+    "KE": { "7": "Safaricom", "10": "Airtel" },
+    "KI": { "7": "Telecom Kiribati" },
+    "KP": { "19": "Koryolink" },
+    "KR": { "10": "SK Telecom", "11": "KT" },
+    "KW": { "9": "Zain" },
+    "KG": { "55": "Beeline", "77": "O!" },
+    "LA": { "20": "Lao Telecom" },
+    "LV": { "20": "LMT", "21": "Tele2" },
+    "LB": { "70": "MTV", "71": "Touch" },
+    "LS": { "58": "Vodacom" },
+    "LR": { "77": "Lonestar" },
+    "LY": { "92": "Libyana", "93": "Almadar" },
+    "LT": { "6": "Telia", "7": "Bitė" },
+    "LU": { "6": "Post" },
+    "MG": { "32": "Telma" },
+    "MW": { "88": "Airtel" },
+    "MY": { "12": "Maxis", "14": "Celcom" },
+    "MV": { "77": "Dhiraagu" },
+    "ML": { "76": "Orange" },
+    "MT": { "79": "Vodafone" },
+    "MH": { "7": "Marshall Islands" },
+    "MR": { "22": "Mauritel" },
+    "MU": { "5": "MTML", "7": "Econet" },
+    "MX": { "55": "Telcel", "33": "Movistar" },
+    "FM": { "7": "FSM Telecom" },
+    "MD": { "60": "Moldcell", "79": "Orange" },
+    "MC": { "6": "Monaco Telecom" },
+    "MN": { "88": "MobiCom" },
+    "ME": { "67": "Telenor" },
+    "MA": { "6": "Maroc Telecom" },
+    "MZ": { "84": "Vodacom" },
+    "NA": { "81": "MTC" },
+    "NP": { "98": "Ncell", "97": "Nepal Telecom" },
+    "NL": { "6": "KPN", "5": "Vodafone" },
+    "NZ": { "21": "Vodafone", "20": "Spark" },
+    "NI": { "5": "Claro", "8": "Movistar" },
+    "NE": { "92": "Orange" },
+    "NG": { "70": "MTN", "80": "Airtel" },
+    "NO": { "40": "Telenor", "41": "Telia" },
+    "OM": { "9": "Oman Mobile" },
+    "PK": { "30": "Jazz", "31": "Telenor" },
+    "PA": { "6": "Claro", "7": "Movistar" },
+    "PG": { "7": "Digicel" },
+    "PY": { "9": "Claro", "7": "Tigo" },
+    "PH": { "9": "Globe", "8": "Smart" },
+    "PL": { "6": "Orange", "5": "Play" },
+    "PT": { "91": "Vodafone", "96": "NOS" },
+    "QA": { "33": "Ooredoo" },
+    "RE": { "262": "Orange" },
+    "RO": { "74": "Vodafone", "73": "Orange" },
+    "RU": { "90": "MTS", "91": "Beeline" },
+    "RW": { "78": "MTN" },
+    "WS": { "7": "Digicel" },
+    "SM": { "54": "TIM" },
+    "ST": { "99": "Unitel" },
+    "SA": { "5": "STC", "6": "Mobily" },
+    "SN": { "77": "Orange" },
+    "RS": { "60": "Telenor" },
+    "SC": { "7": "Cable & Wireless" },
+    "SL": { "76": "Africell" },
+    "SG": { "8": "Singtel", "9": "StarHub" },
+    "SK": { "90": "Orange", "91": "Telekom" },
+    "SI": { "30": "Telekom" },
+    "SB": { "7": "Solomon Telekom" },
+    "SO": { "7": "Somtel" },
+    "ZA": { "82": "Vodacom", "83": "MTN" },
+    "SS": { "91": "Zain" },
+    "ES": { "6": "Movistar", "7": "Vodafone" },
+    "LK": { "77": "Dialog", "76": "Mobitel" },
+    "SD": { "9": "Zain" },
+    "SR": { "88": "Digicel" },
+    "SZ": { "76": "MTN" },
+    "SE": { "70": "Telia", "73": "Telenor" },
+    "CH": { "79": "Swisscom", "78": "Sunrise" },
+    "SY": { "9": "MTN" },
+    "TJ": { "93": "Tcell" },
+    "TZ": { "65": "Vodacom" },
+    "TH": { "8": "AIS", "9": "True" },
+    "TG": { "90": "Togo Telecom" },
+    "TK": { "7": "Toke Telecom" },
+    "TO": { "7": "Digicel" },
+    "TT": { "868": "Digicel" },
+    "TN": { "98": "Tunisie Telecom" },
+    "TR": { "5": "Turkcell", "6": "Vodafone" },
+    "TM": { "9": "TurkmenTelecom" },
+    "UG": { "7": "MTN" },
+    "UA": { "50": "Kyivstar", "63": "Vodafone" },
+    "AE": { "50": "Etisalat", "55": "du" },
+    "GB": { "7400": "Vodafone UK", "7700": "O2 UK" },
+    "US": { "650": "AT&T", "415": "Verizon", "310": "T-Mobile" },
+    "UY": { "9": "Antel", "8": "Movistar" },
+    "UZ": { "90": "Ucell", "91": "Beeline" },
+    "VU": { "7": "Digicel" },
+    "VE": { "4": "Movistar", "2": "Digitel" },
+    "VN": { "9": "Viettel", "8": "Mobifone" },
+    "YE": { "71": "Yemen Mobile" },
+    "ZM": { "96": "MTN" },
+    "ZW": { "77": "Econet" }
+};
+
+    // Add more prefixes as needed or use API for real data
+  };
+
+  // Helper: Timezone lookup based on country code (approximate, can be improved with APIs)
+const countryTimezones = {
+  "AD": ["Europe/Andorra"],
+  "AE": ["Asia/Dubai"],
+  "AF": ["Asia/Kabul"],
+  "AG": ["America/Antigua"],
+  "AI": ["America/Anguilla"],
+  "AL": ["Europe/Tirane"],
+  "AM": ["Asia/Yerevan"],
+  "AO": ["Africa/Luanda"],
+  "AQ": ["Antarctica/McMurdo", "Antarctica/Casey", "Antarctica/Davis", "Antarctica/DumontDUrville", "Antarctica/Mawson", "Antarctica/Palmer", "Antarctica/Rothera", "Antarctica/Syowa", "Antarctica/Troll", "Antarctica/Vostok"],
+  "AR": ["America/Argentina/Buenos_Aires", "America/Argentina/Cordoba", "America/Argentina/Salta", "America/Argentina/Jujuy", "America/Argentina/Tucuman", "America/Argentina/Catamarca", "America/Argentina/La_Rioja", "America/Argentina/San_Juan", "America/Argentina/Mendoza", "America/Argentina/San_Luis", "America/Argentina/Rio_Gallegos", "America/Argentina/Ushuaia"],
+  "AS": ["Pacific/Pago_Pago"],
+  "AT": ["Europe/Vienna"],
+  "AU": ["Australia/Lord_Howe", "Antarctica/Macquarie", "Australia/Hobart", "Australia/Melbourne", "Australia/Sydney", "Australia/Broken_Hill", "Australia/Brisbane", "Australia/Lindeman", "Australia/Adelaide", "Australia/Darwin", "Australia/Perth", "Australia/Eucla"],
+  "AW": ["America/Aruba"],
+  "AX": ["Europe/Mariehamn"],
+  "AZ": ["Asia/Baku"],
+  "BA": ["Europe/Sarajevo"],
+  "BB": ["America/Barbados"],
+  "BD": ["Asia/Dhaka"],
+  "BE": ["Europe/Brussels"],
+  "BF": ["Africa/Ouagadougou"],
+  "BG": ["Europe/Sofia"],
+  "BH": ["Asia/Bahrain"],
+  "BI": ["Africa/Bujumbura"],
+  "BJ": ["Africa/Porto-Novo"],
+  "BM": ["Atlantic/Bermuda"],
+  "BN": ["Asia/Brunei"],
+  "BO": ["America/La_Paz"],
+  "BR": ["America/Noronha", "America/Belem", "America/Fortaleza", "America/Recife", "America/Araguaina", "America/Maceio", "America/Bahia", "America/Sao_Paulo", "America/Campo_Grande", "America/Cuiaba", "America/Santarem", "America/Porto_Velho", "America/Boa_Vista", "America/Manaus", "America/Eirunepe", "America/Rio_Branco"],
+  "BS": ["America/Nassau"],
+  "BT": ["Asia/Thimphu"],
+  "BW": ["Africa/Gaborone"],
+  "BY": ["Europe/Minsk"],
+  "BZ": ["America/Belize"],
+  "CA": ["America/Toronto", "America/Vancouver", "America/Halifax", "America/St_Johns", "America/Edmonton", "America/Winnipeg", "America/Regina", "America/Whitehorse", "America/Iqaluit", "America/Yellowknife"],
+  "CD": ["Africa/Kinshasa", "Africa/Lubumbashi"],
+  "CF": ["Africa/Bangui"],
+  "CG": ["Africa/Brazzaville"],
+  "CH": ["Europe/Zurich"],
+  "CI": ["Africa/Abidjan"],
+  "CL": ["America/Santiago", "Pacific/Easter", "America/Punta_Arenas"],
+  "CM": ["Africa/Douala"],
+  "CN": ["Asia/Shanghai", "Asia/Urumqi"],
+  "CO": ["America/Bogota"],
+  "CR": ["America/Costa_Rica"],
+  "CU": ["America/Havana"],
+  "CV": ["Atlantic/Cape_Verde"],
+  "CY": ["Asia/Nicosia", "Asia/Famagusta"],
+  "CZ": ["Europe/Prague"],
+  "DE": ["Europe/Berlin"],
+  "DJ": ["Africa/Djibouti"],
+  "DK": ["Europe/Copenhagen"],
+  "DM": ["America/Dominica"],
+  "DO": ["America/Santo_Domingo"],
+  "DZ": ["Africa/Algiers"],
+  "EC": ["America/Guayaquil", "Pacific/Galapagos"],
+  "EE": ["Europe/Tallinn"],
+  "EG": ["Africa/Cairo"],
+  "ER": ["Africa/Asmara"],
+  "ES": ["Europe/Madrid", "Atlantic/Canary", "Africa/Ceuta"],
+  "ET": ["Africa/Addis_Ababa"],
+  "FI": ["Europe/Helsinki"],
+  "FJ": ["Pacific/Fiji"],
+  "FM": ["Pacific/Chuuk", "Pacific/Pohnpei", "Pacific/Kosrae"],
+  "FR": ["Europe/Paris"],
+  "GA": ["Africa/Libreville"],
+  "GB": ["Europe/London"],
+  "GD": ["America/Grenada"],
+  "GE": ["Asia/Tbilisi"],
+  "GF": ["America/Cayenne"],
+  "GH": ["Africa/Accra"],
+  "GI": ["Europe/Gibraltar"],
+  "GL": ["America/Nuuk", "America/Thule"],
+  "GM": ["Africa/Banjul"],
+  "GN": ["Africa/Conakry"],
+  "GQ": ["Africa/Malabo"],
+  "GR": ["Europe/Athens"],
+  "GT": ["America/Guatemala"],
+  "GU": ["Pacific/Guam"],
+  "GW": ["Africa/Bissau"],
+  "GY": ["America/Guyana"],
+  "HK": ["Asia/Hong_Kong"],
+  "HN": ["America/Tegucigalpa"],
+  "HR": ["Europe/Zagreb"],
+  "HT": ["America/Port-au-Prince"],
+  "HU": ["Europe/Budapest"],
+  "ID": ["Asia/Jakarta", "Asia/Makassar", "Asia/Pontianak", "Asia/Jayapura"],
+  "IE": ["Europe/Dublin"],
+  "IL": ["Asia/Jerusalem"],
+  "IN": ["Asia/Kolkata"],
+  "IQ": ["Asia/Baghdad"],
+  "IR": ["Asia/Tehran"],
+  "IS": ["Atlantic/Reykjavik"],
+  "IT": ["Europe/Rome"],
+  "JM": ["America/Jamaica"],
+  "JO": ["Asia/Amman"],
+  "JP": ["Asia/Tokyo"],
+  "KE": ["Africa/Nairobi"],
+  "KG": ["Asia/Bishkek"],
+  "KH": ["Asia/Phnom_Penh"],
+  "KI": ["Pacific/Tarawa", "Pacific/Kiritimati", "Pacific/Kanton"],
+  "KM": ["Indian/Comoro"],
+  "KN": ["America/St_Kitts"],
+  "KP": ["Asia/Pyongyang"],
+  "KR": ["Asia/Seoul"],
+  "KW": ["Asia/Kuwait"],
+  "KZ": ["Asia/Almaty", "Asia/Aqtobe", "Asia/Aqtau", "Asia/Oral"],
+  "LA": ["Asia/Vientiane"],
+  "LB": ["Asia/Beirut"],
+  "LC": ["America/St_Lucia"],
+  "LI": ["Europe/Vaduz"],
+  "LK": ["Asia/Colombo"],
+  "LR": ["Africa/Monrovia"],
+  "LS": ["Africa/Maseru"],
+  "LT": ["Europe/Vilnius"],
+  "LU": ["Europe/Luxembourg"],
+  "LV": ["Europe/Riga"],
+  "LY": ["Africa/Tripoli"],
+  "MA": ["Africa/Casablanca"],
+  "MC": ["Europe/Monaco"],
+  "MD": ["Europe/Chisinau"],
+  "ME": ["Europe/Podgorica"],
+  "MG": ["Indian/Antananarivo"],
+  "MH": ["Pacific/Majuro", "Pacific/Kwajalein"],
+  "MK": ["Europe/Skopje"],
+  "ML": ["Africa/Bamako"],
+  "MM": ["Asia/Yangon"],
+  "MN": ["Asia/Ulaanbaatar", "Asia/Hovd"],
+  "MO": ["Asia/Macau"],
+  "MR": ["Africa/Nouakchott"],
+  "MT": ["Europe/Malta"],
+  "MU": ["Indian/Mauritius"],
+  "MV": ["Indian/Maldives"],
+  "MW": ["Africa/Blantyre"],
+  "MX": ["America/Mexico_City", "America/Cancun", "America/Monterrey", "America/Tijuana", "America/Hermosillo"],
+  "MY": ["Asia/Kuala_Lumpur", "Asia/Kuching"],
+  "MZ": ["Africa/Maputo"],
+  "NA": ["Africa/Windhoek"],
+  "NE": ["Africa/Niamey"],
+  "NG": ["Africa/Lagos"],
+  "NI": ["America/Managua"],
+  "NL": ["Europe/Amsterdam"],
+  "NO": ["Europe/Oslo"],
+  "NP": ["Asia/Kathmandu"],
+  "NR": ["Pacific/Nauru"],
+  "NZ": ["Pacific/Auckland", "Pacific/Chatham"],
+  "OM": ["Asia/Muscat"],
+  "PA": ["America/Panama"],
+  "PE": ["America/Lima"],
+  "PF": ["Pacific/Tahiti", "Pacific/Marquesas", "Pacific/Gambier"],
+  "PG": ["Pacific/Port_Moresby", "Pacific/Bougainville"],
+  "PH": ["Asia/Manila"],
+  "PK": ["Asia/Karachi"],
+  "PL": ["Europe/Warsaw"],
+  "PT": ["Europe/Lisbon", "Atlantic/Madeira", "Atlantic/Azores"],
+  "PY": ["America/Asuncion"],
+  "QA": ["Asia/Qatar"],
+  "RO": ["Europe/Bucharest"],
+  "RS": ["Europe/Belgrade"],
+  "RU": ["Europe/Moscow", "Asia/Yekaterinburg", "Asia/Omsk", "Asia/Krasnoyarsk", "Asia/Vladivostok", "Asia/Magadan", "Asia/Kamchatka"],
+  "RW": ["Africa/Kigali"],
+  "SA": ["Asia/Riyadh"],
+  "SB": ["Pacific/Guadalcanal"],
+  "SC": ["Indian/Mahe"],
+  "SD": ["Africa/Khartoum"],
+  "SE": ["Europe/Stockholm"],
+  "SG": ["Asia/Singapore"],
+  "SI": ["Europe/Ljubljana"],
+  "SK": ["Europe/Bratislava"],
+  "SL": ["Africa/Freetown"],
+  "SM": ["Europe/San_Marino"],
+  "SN": ["Africa/Dakar"],
+  "SO": ["Africa/Mogadishu"],
+  "SR": ["America/Paramaribo"],
+  "SS": ["Africa/Juba"],
+  "ST": ["Africa/Sao_Tome"],
+  "SV": ["America/El_Salvador"],
+  "SY": ["Asia/Damascus"],
+  "SZ": ["Africa/Mbabane"],
+  "TC": ["America/Grand_Turk"],
+  "TD": ["Africa/Ndjamena"],
+  "TG": ["Africa/Lome"],
+  "TH": ["Asia/Bangkok"],
+  "TJ": ["Asia/Dushanbe"],
+  "TL": ["Asia/Dili"],
+  "TM": ["Asia/Ashgabat"],
+  "TN": ["Africa/Tunis"],
+  "TO": ["Pacific/Tongatapu"],
+  "TR": ["Europe/Istanbul"],
+  "TT": ["America/Port_of_Spain"],
+  "TV": ["Pacific/Funafuti"],
+  "TW": ["Asia/Taipei"],
+  "TZ": ["Africa/Dar_es_Salaam"],
+  "UA": ["Europe/Kyiv"],
+  "UG": ["Africa/Kampala"],
+  "US": ["America/New_York", "America/Chicago", "America/Denver", "America/Los_Angeles", "America/Anchorage", "Pacific/Honolulu"],
+  "UY": ["America/Montevideo"],
+  "UZ": ["Asia/Tashkent"],
+  "VA": ["Europe/Vatican"],
+  "VC": ["America/St_Vincent"],
+  "VE": ["America/Caracas"],
+  "VN": ["Asia/Ho_Chi_Minh"],
+  "VU": ["Pacific/Efate"],
+  "WS": ["Pacific/Apia"],
+  "YE": ["Asia/Aden"],
+  "ZA": ["Africa/Johannesburg"],
+  "ZM": ["Africa/Lusaka"],
+  "ZW": ["Africa/Harare"]
+};
+
+
+  const phoneInput = document.getElementById('phoneInput');
+  const lookupBtn = document.getElementById('lookupBtn');
+  const errorDiv = document.getElementById('error');
+  const resultsDiv = document.getElementById('results');
+  const formattedSpan = document.getElementById('formatted');
+  const validSpan = document.getElementById('valid');
+  const countrySpan = document.getElementById('country');
+  const callingCodeSpan = document.getElementById('callingCode');
+  const carrierSpan = document.getElementById('carrier');
+  const timezonesSpan = document.getElementById('timezones');
+
+  lookupBtn.addEventListener('click', () => {
+    errorDiv.textContent = "";
+    resultsDiv.style.display = "none";
+
+    const input = phoneInput.value.trim();
+    if (!input) {
+      errorDiv.textContent = "Please enter a phone number.";
+      return;
+    }
+
+    try {
+      // Parse number, default region null tries to guess country from + code
+      const phoneNumber = libphonenumber.parsePhoneNumber(input);
+
+      if (!phoneNumber) {
+        errorDiv.textContent = "Could not parse phone number.";
+        return;
+      }
+
+      const isValid = phoneNumber.isValid();
+      formattedSpan.textContent = phoneNumber.formatInternational();
+      validSpan.textContent = isValid ? "Yes" : "No";
+
+      // Country info
+      const country = phoneNumber.country || "Unknown";
+      countrySpan.textContent = country;
+
+      // Country Calling Code
+      const callingCode = phoneNumber.countryCallingCode || "Unknown";
+      callingCodeSpan.textContent = "+" + callingCode;
+
+      // Carrier guess (basic prefix match, very limited)
+      let detectedCarrier = "Unknown";
+      if (carrierPrefixes[country]) {
+        // Remove country code from number and check prefix
+        const nationalNumber = phoneNumber.nationalNumber.toString();
+        const prefixes = Object.keys(carrierPrefixes[country]);
+        for (const prefix of prefixes) {
+          if (nationalNumber.startsWith(prefix)) {
+            detectedCarrier = carrierPrefixes[country][prefix];
+            break;
+          }
+        }
+      }
+      carrierSpan.textContent = detectedCarrier;
+
+      // Timezone guess (based on country only)
+      const timezones = countryTimezones[country] || ["Unknown"];
+      timezonesSpan.textContent = timezones.join(", ");
+
+      resultsDiv.style.display = "block";
+
+    } catch (err) {
+      errorDiv.textContent = "Error: " + err.message;
+    }
+  });
+
+</script>
+
+</body>
+</html>

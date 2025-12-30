@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>🔐 Vulnerability Scanner v1</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      background: #0f172a;
+      color: #f1f5f9;
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      color: #38bdf8;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: auto;
+      background: #1e293b;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px #0005;
+    }
+
+    input, button, textarea {
+      width: 100%;
+      margin: 10px 0;
+      padding: 10px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 8px;
+    }
+
+    input {
+      background: #334155;
+      color: #f1f5f9;
+    }
+
+    button {
+      background: #38bdf8;
+      color: #000;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #0ea5e9;
+    }
+
+    textarea {
+      background: #0f172a;
+      color: #f1f5f9;
+      font-family: monospace;
+      height: 250px;
+      resize: vertical;
+    }
+
+    .status {
+      text-align: center;
+      color: #facc15;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔐 Vulnerability Scanner v1</h1>
+  <div class="container">
+    <div class="status" id="statusMsg">Enter a target URL (e.g. https://example.com)</div>
+
+    <input type="text" id="targetUrl" placeholder="https://example.com" />
+    <button onclick="startScan()">🚨 Start Scan</button>
+    <button onclick="exportResults()">📁 Export TXT</button>
+
+    <textarea id="outputArea" placeholder="Results will appear here..."></textarea>
+  </div>
+
+  <script>
+const paths = [
+  "/.env", "/.git", "/admin", "/admin.php", "/phpinfo.php", "/backup", "/config.php",
+  "/config.bak", "/wp-config.php", "/.htaccess", "/login", "/test", "/staging",
+  "/shell.php", "/cmd.php", "/console", "/server-status", "/webdav", "/debug",
+  "/database.sql", "/db.sql", "/old", "/dev", "/vulnerable", "/dump.sql",
+  "/.DS_Store", "/uploads", "/tmp", "/log", "/error_log", "/cgi-bin/", "/private",
+  "/core", "/adminer.php", "/install.php", "/setup.php", "/phpmyadmin", "/pma",
+  "/x.php", "/y.php", "/z.php", "/backup.zip", "/db_backup", "/reset", "/dashboard",
+  "/api", "/node_modules", "/vendor", "/composer.json",
+  "/config.php", "/config.bak", "/config.txt", "/config.json", "/config.log", "/config.sql", "/config.conf", "/config.ini", "/config.old", "/config.zip",
+  "/config1", "/config2", "/config3",
+  "/settings.php", "/settings.bak", "/settings.txt", "/settings.json", "/settings.log", "/settings.sql", "/settings.conf", "/settings.ini", "/settings.old", "/settings.zip",
+  "/settings1", "/settings2", "/settings3",
+  "/secrets.php", "/secrets.bak", "/secrets.txt", "/secrets.json", "/secrets.log", "/secrets.sql", "/secrets.conf", "/secrets.ini", "/secrets.old", "/secrets.zip",
+  "/secrets1", "/secrets2", "/secrets3",
+  "/creds.php", "/creds.bak", "/creds.txt", "/creds.json", "/creds.log", "/creds.sql", "/creds.conf", "/creds.ini", "/creds.old", "/creds.zip",
+  "/creds1", "/creds2", "/creds3",
+  "/env.php", "/env.bak", "/env.txt", "/env.json", "/env.log", "/env.sql", "/env.conf", "/env.ini", "/env.old", "/env.zip",
+  "/env1", "/env2", "/env3",
+  "/logs.php", "/logs.bak", "/logs.txt", "/logs.json", "/logs.log", "/logs.sql", "/logs.conf", "/logs.ini", "/logs.old", "/logs.zip",
+  "/logs1", "/logs2", "/logs3",
+  "/admin1", "/admin2", "/admin3", "/admin4", "/admin5", "/admin6", "/admin7", "/admin8", "/admin9", "/admin10", "/admin11", "/admin12", "/admin13", "/admin14", "/admin15", "/admin16", "/admin17", "/admin18", "/admin19", "/admin20",
+  "/test1", "/test2", "/test3", "/test4", "/test5", "/test6", "/test7", "/test8", "/test9", "/test10", "/test11", "/test12", "/test13", "/test14", "/test15", "/test16", "/test17", "/test18", "/test19", "/test20",
+  "/dev1", "/dev2", "/dev3", "/dev4", "/dev5", "/dev6", "/dev7", "/dev8", "/dev9", "/dev10", "/dev11", "/dev12", "/dev13", "/dev14", "/dev15", "/dev16", "/dev17", "/dev18", "/dev19", "/dev20",
+  "/token.php", "/token.bak", "/token.txt", "/token.json", "/token.log", "/token.sql", "/token.conf", "/token.ini", "/token.old", "/token.zip",
+  "/token1", "/token2", "/token3",
+  "/backup.php", "/backup.bak", "/backup.txt", "/backup.json", "/backup.log", "/backup.sql"
+];
+
+
+    async function startScan() {
+      const baseUrl = document.getElementById("targetUrl").value.trim().replace(/\/$/, "");
+      const output = document.getElementById("outputArea");
+      const status = document.getElementById("statusMsg");
+
+      if (!baseUrl.startsWith("http")) {
+        status.textContent = "⚠️ Please enter a full URL with http or https.";
+        return;
+      }
+
+      output.value = "";
+      status.textContent = `⏳ Scanning ${paths.length} paths...`;
+
+      for (const path of paths) {
+        const fullUrl = baseUrl + path;
+        try {
+          const res = await fetch(fullUrl, { method: "GET", mode: "no-cors" });
+          output.value += `🔍 ${fullUrl} => Attempted (no-cors mode)\n`;
+        } catch (err) {
+          output.value += `❌ ${fullUrl} => Error\n`;
+        }
+      }
+
+      status.textContent = "✅ Scan complete.";
+    }
+
+    function exportResults() {
+      const text = document.getElementById("outputArea").value;
+      const blob = new Blob([text], { type: "text/plain" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "vulnerability_scan_results.txt";
+      a.click();
+    }
+  </script>
+</body>
+</html>

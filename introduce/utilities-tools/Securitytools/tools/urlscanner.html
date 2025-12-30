@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Cyber Tools Toolkit - URL Scanner</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<style>
+:root {
+  --gold:#c58b00;
+  --gold-soft:#ffc107;
+  --bg-dark:#0a0a0a;
+  --border:rgba(197,139,0,0.5);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:"Segoe UI",system-ui,sans-serif;background:var(--bg-dark);color:var(--gold);overflow-x:hidden;}
+video.bg-video{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2;filter:brightness(0.4);}
+nav{position:fixed;top:0;width:100%;height:64px;padding:0 24px;display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,0.7);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);z-index:20;}
+.brand{font-size:1.4rem;font-weight:700;color:var(--gold);}
+.start-btn{background:transparent;border:1px solid var(--gold);color:var(--gold);padding:8px 18px;border-radius:10px;cursor:pointer;transition:.25s;}
+.start-btn:hover{background:var(--gold);color:black;}
+.main-content{margin-left:0;padding:100px 30px 40px;max-width:1200px;margin-inline:auto;}
+.section{background:linear-gradient(180deg,rgba(25,25,25,.8),rgba(10,10,10,.85));border:1px solid var(--border);border-radius:16px;padding:24px;margin-bottom:30px;box-shadow:0 0 25px rgba(0,0,0,.6);transition:.25s;}
+.section:hover{transform:translateY(-3px);box-shadow:0 0 35px rgba(197,139,0,.15);}
+.section h2{color:var(--gold-soft);margin-bottom:16px;font-size:1.4rem;}
+input{width:100%;padding:12px;border-radius:10px;border:1px solid var(--border);background:#111;color:white;margin-bottom:12px;font-size:15px;}
+button.tool-btn{padding:10px 16px;border-radius:10px;border:1px solid var(--gold);background:transparent;color:var(--gold);cursor:pointer;transition:.25s;margin-bottom:12px;}
+button.tool-btn:hover{background:var(--gold);color:black;}
+pre#output{background:#000;border-radius:12px;padding:16px;color:#7CFF9E;max-height:300px;overflow:auto;border:1px solid var(--border);}
+#map{height:460px;border-radius:14px;border:1px solid var(--border);overflow:hidden;}
+footer{text-align:center;padding:30px;color:var(--gold);opacity:.8;}
+</style>
+</head>
+<body>
+<video class="bg-video" autoplay muted loop playsinline>
+  <source src="background/1761817527453041720p.mp4" type="video/mp4">
+</video>
+
+<audio id="bg-music" loop>
+  <source src="background/Programming___Coding___Hacking_music_vol.18__ANONYMOUS_HEADQUARTERS_(48k).mp3" type="audio/mpeg">
+</audio>
+
+<nav>
+  <div class="brand">Cyber Tools Toolkit</div>
+  <button class="start-btn" onclick="location.reload()">Reload</button>
+</nav>
+
+<div class="main-content">
+
+  <div class="section">
+    <h2>🔗 URL / Domain Safety Checker</h2>
+    <p>Check if a URL or domain is safe using VirusTotal API.</p>
+    <input type="url" id="urlInput" placeholder="Enter URL (https://example.com)">
+    <button class="tool-btn" onclick="checkURLSafety()">Scan URL</button>
+    <pre id="output">Waiting for input...</pre>
+  </div>
+
+  <div class="section">
+    <h2>🛰️ Global Map Intelligence</h2>
+    <p>Visualize geographic intelligence using OpenStreetMap.</p>
+    <div id="map"></div>
+  </div>
+
+</div>
+
+<footer>
+© 2025 Cyber Tools Toolkit — Frontend Only · API Powered
+</footer>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+window.addEventListener("click", ()=>document.getElementById("bg-music").play().catch(()=>{}), {once:true});
+
+// Leaflet Map
+const map = L.map("map").setView([20,0],3);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{
+  attribution:"© OpenStreetMap contributors"
+}).addTo(map);
+
+// URL Scanner using VirusTotal API
+async function checkURLSafety(){
+  const url = document.getElementById("urlInput").value.trim();
+  const output = document.getElementById("output");
+  if(!url){output.textContent="Please enter a valid URL."; return;}
+  output.textContent="Scanning URL...\nPlease wait...";
+
+  // Replace YOUR_API_KEY with your VirusTotal API key
+  const apiKey = "878cb7023c209d11f6a03ee8ef813e3ec3b80c23e9507af9aa59572bfcbf0800";
+
+  try{
+    const res = await fetch(`https://www.virustotal.com/api/v3/urls`,{
+      method:"POST",
+      headers:{
+        "x-apikey": apiKey,
+        "Content-Type": "application/x-www-form-urlencoded"
+      },
+      body:`url=${encodeURIComponent(url)}`
+    });
+
+    if(!res.ok) throw new Error("API Error: "+res.status);
+    const data = await res.json();
+    const analysisId = data.data.id;
+
+    // Fetch analysis result
+    const resultRes = await fetch(`https://www.virustotal.com/api/v3/analyses/${analysisId}`,{
+      headers:{ "x-apikey": apiKey }
+    });
+
+    if(!resultRes.ok) throw new Error("API Error: "+resultRes.status);
+    const result = await resultRes.json();
+
+    const stats = result.data.attributes.stats;
+    output.textContent=`Scan Results for ${url}:\nMalicious: ${stats.malicious}\nSuspicious: ${stats.suspicious}\nHarmless: ${stats.harmless}\nUndetected: ${stats.undetected}`;
+  } catch(err){
+    output.textContent="Error scanning URL: "+err.message;
+  }
+}
+</script>
+</body>
+</html>

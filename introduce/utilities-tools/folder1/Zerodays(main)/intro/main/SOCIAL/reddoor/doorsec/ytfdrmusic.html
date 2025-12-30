@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>🎵 YouTube Music Finder</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+    }
+    header {
+      padding: 1rem 2rem;
+background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+    }
+    h1 {
+      margin: 0.5rem 0;
+      font-size: 1.5rem;
+      color: red;
+    }
+    #searchContainer {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    input, select {
+      padding: 0.5rem;
+      font-size: 1rem;
+      border-radius: 5px;
+      border: none;
+      width: 180px;
+      background: red;
+      color: green;
+    }
+    button {
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 5px;
+      background: red;
+      color: green;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover {
+background: rgba(0, 0, 0, 0.5);
+    }
+    main {
+      padding: 1rem;
+      max-width: 900px;
+      margin: auto;
+    }
+    .video {
+      display: flex;
+      align-items: center;
+      margin-bottom: 1rem;
+      background: red;
+      padding: 1rem;
+      border-radius: 10px;
+    }
+    .video:hover {
+background: rgba(0, 0, 0, 0.5);
+    }
+    .thumb {
+      width: 120px;
+      height: 90px;
+      flex-shrink: 0;
+      margin-right: 1rem;
+      border-radius: 5px;
+    }
+    .info h3 {
+      margin: 0 0 0.3rem;
+      font-size: 1.1rem;
+    }
+    .info p {
+      margin: 0.2rem 0;
+      font-size: 0.9rem;
+    }
+    #loading {
+      text-align: center;
+      padding: 1rem;
+      font-size: 1rem;
+      color: #aaa;
+    }
+    .light {
+background: rgba(0, 0, 0, 0.5);
+      color: #000;
+    }
+    .light header {
+background: rgba(0, 0, 0, 0.5);
+    }
+    .light input, .light select {
+background: rgba(0, 0, 0, 0.5);
+      color: red;
+    }
+    .light button {
+background: rgba(0, 0, 0, 0.5);
+      color: red;
+    }
+    .light button:hover {
+background: rgba(0, 0, 0, 0.5);
+    }
+    .light .video {
+background: rgba(0, 0, 0, 0.5);
+    }
+    .light .video:hover {
+background: rgba(0, 0, 0, 0.5);
+    }
+    .light #loading {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🎵 YouTube Music Finder</h1>
+    <div id="searchContainer">
+      <input type="text" id="searchInput" placeholder="Search for music..." />
+      <select id="sortOrder">
+        <option value="relevance">Relevance</option>
+        <option value="date">Date</option>
+        <option value="viewCount">View Count</option>
+        <option value="rating">Rating</option>
+      </select>
+      <input type="number" id="minDuration" placeholder="Min min" min="0" />
+      <input type="number" id="maxDuration" placeholder="Max min" min="0" />
+<select id="languageFilter">
+  <option value="">Any Country</option>
+  <option value="AF">Afghanistan</option>
+  <option value="AL">Albania</option>
+  <option value="DZ">Algeria</option>
+  <option value="AD">Andorra</option>
+  <option value="AO">Angola</option>
+  <option value="AG">Antigua and Barbuda</option>
+  <option value="AR">Argentina</option>
+  <option value="AM">Armenia</option>
+  <option value="AU">Australia</option>
+  <option value="AT">Austria</option>
+  <option value="AZ">Azerbaijan</option>
+  <option value="BS">Bahamas</option>
+  <option value="BH">Bahrain</option>
+  <option value="BD">Bangladesh</option>
+  <option value="BB">Barbados</option>
+  <option value="BY">Belarus</option>
+  <option value="BE">Belgium</option>
+  <option value="BZ">Belize</option>
+  <option value="BJ">Benin</option>
+  <option value="BT">Bhutan</option>
+  <option value="BO">Bolivia</option>
+  <option value="BA">Bosnia and Herzegovina</option>
+  <option value="BW">Botswana</option>
+  <option value="BR">Brazil</option>
+  <option value="BN">Brunei</option>
+  <option value="BG">Bulgaria</option>
+  <option value="BF">Burkina Faso</option>
+  <option value="BI">Burundi</option>
+  <option value="CV">Cabo Verde</option>
+  <option value="KH">Cambodia</option>
+  <option value="CM">Cameroon</option>
+  <option value="CA">Canada</option>
+  <option value="CF">Central African Republic</option>
+  <option value="TD">Chad</option>
+  <option value="CL">Chile</option>
+  <option value="CN">China</option>
+  <option value="CO">Colombia</option>
+  <option value="KM">Comoros</option>
+  <option value="CD">Congo (DRC)</option>
+  <option value="CG">Congo (Republic)</option>
+  <option value="CR">Costa Rica</option>
+  <option value="CI">Côte d'Ivoire</option>
+  <option value="HR">Croatia</option>
+  <option value="CU">Cuba</option>
+  <option value="CY">Cyprus</option>
+  <option value="CZ">Czech Republic</option>
+  <option value="DK">Denmark</option>
+  <option value="DJ">Djibouti</option>
+  <option value="DM">Dominica</option>
+  <option value="DO">Dominican Republic</option>
+  <option value="EC">Ecuador</option>
+  <option value="EG">Egypt</option>
+  <option value="SV">El Salvador</option>
+  <option value="GQ">Equatorial Guinea</option>
+  <option value="ER">Eritrea</option>
+  <option value="EE">Estonia</option>
+  <option value="SZ">Eswatini</option>
+  <option value="ET">Ethiopia</option>
+  <option value="FJ">Fiji</option>
+  <option value="FI">Finland</option>
+  <option value="FR">France</option>
+  <option value="GA">Gabon</option>
+  <option value="GM">Gambia</option>
+  <option value="GE">Georgia</option>
+  <option value="DE">Germany</option>
+  <option value="GH">Ghana</option>
+  <option value="GR">Greece</option>
+  <option value="GD">Grenada</option>
+  <option value="GT">Guatemala</option>
+  <option value="GN">Guinea</option>
+  <option value="GW">Guinea-Bissau</option>
+  <option value="GY">Guyana</option>
+  <option value="HT">Haiti</option>
+  <option value="HN">Honduras</option>
+  <option value="HU">Hungary</option>
+  <option value="IS">Iceland</option>
+  <option value="IN">India</option>
+  <option value="ID">Indonesia</option>
+  <option value="IR">Iran</option>
+  <option value="IQ">Iraq</option>
+  <option value="IE">Ireland</option>
+  <option value="IL">Israel</option>
+  <option value="IT">Italy</option>
+  <option value="JM">Jamaica</option>
+  <option value="JP">Japan</option>
+  <option value="JO">Jordan</option>
+  <option value="KZ">Kazakhstan</option>
+  <option value="KE">Kenya</option>
+  <option value="KI">Kiribati</option>
+  <option value="KP">Korea, North</option>
+  <option value="KR">Korea, South</option>
+  <option value="KW">Kuwait</option>
+  <option value="KG">Kyrgyzstan</option>
+  <option value="LA">Laos</option>
+  <option value="LV">Latvia</option>
+  <option value="LB">Lebanon</option>
+  <option value="LS">Lesotho</option>
+  <option value="LR">Liberia</option>
+  <option value="LY">Libya</option>
+  <option value="LI">Liechtenstein</option>
+  <option value="LT">Lithuania</option>
+  <option value="LU">Luxembourg</option>
+  <option value="MG">Madagascar</option>
+  <option value="MW">Malawi</option>
+  <option value="MY">Malaysia</option>
+  <option value="MV">Maldives</option>
+  <option value="ML">Mali</option>
+  <option value="MT">Malta</option>
+  <option value="MH">Marshall Islands</option>
+  <option value="MR">Mauritania</option>
+  <option value="MU">Mauritius</option>
+  <option value="MX">Mexico</option>
+  <option value="FM">Micronesia</option>
+  <option value="MD">Moldova</option>
+  <option value="MC">Monaco</option>
+  <option value="MN">Mongolia</option>
+  <option value="ME">Montenegro</option>
+  <option value="MA">Morocco</option>
+  <option value="MZ">Mozambique</option>
+  <option value="MM">Myanmar</option>
+  <option value="NA">Namibia</option>
+  <option value="NR">Nauru</option>
+  <option value="NP">Nepal</option>
+  <option value="NL">Netherlands</option>
+  <option value="NZ">New Zealand</option>
+  <option value="NI">Nicaragua</option>
+  <option value="NE">Niger</option>
+  <option value="NG">Nigeria</option>
+  <option value="MK">North Macedonia</option>
+  <option value="NO">Norway</option>
+  <option value="OM">Oman</option>
+  <option value="PK">Pakistan</option>
+  <option value="PW">Palau</option>
+  <option value="PA">Panama</option>
+  <option value="PG">Papua New Guinea</option>
+  <option value="PY">Paraguay</option>
+  <option value="PE">Peru</option>
+  <option value="PH">Philippines</option>
+  <option value="PL">Poland</option>
+  <option value="PT">Portugal</option>
+  <option value="QA">Qatar</option>
+  <option value="RO">Romania</option>
+  <option value="RU">Russia</option>
+  <option value="RW">Rwanda</option>
+  <option value="KN">Saint Kitts and Nevis</option>
+  <option value="LC">Saint Lucia</option>
+  <option value="VC">Saint Vincent and the Grenadines</option>
+  <option value="WS">Samoa</option>
+  <option value="SM">San Marino</option>
+  <option value="ST">Sao Tome and Principe</option>
+  <option value="SA">Saudi Arabia</option>
+  <option value="SN">Senegal</option>
+  <option value="RS">Serbia</option>
+  <option value="SC">Seychelles</option>
+  <option value="SL">Sierra Leone</option>
+  <option value="SG">Singapore</option>
+  <option value="SK">Slovakia</option>
+  <option value="SI">Slovenia</option>
+  <option value="SB">Solomon Islands</option>
+  <option value="SO">Somalia</option>
+  <option value="ZA">South Africa</option>
+  <option value="SS">South Sudan</option>
+  <option value="ES">Spain</option>
+  <option value="LK">Sri Lanka</option>
+  <option value="SD">Sudan</option>
+  <option value="SR">Suriname</option>
+  <option value="SE">Sweden</option>
+  <option value="CH">Switzerland</option>
+  <option value="SY">Syria</option>
+  <option value="TJ">Tajikistan</option>
+  <option value="TZ">Tanzania</option>
+  <option value="TH">Thailand</option>
+  <option value="TL">Timor-Leste</option>
+  <option value="TG">Togo</option>
+  <option value="TO">Tonga</option>
+  <option value="TT">Trinidad and Tobago</option>
+  <option value="TN">Tunisia</option>
+  <option value="TR">Turkey</option>
+  <option value="TM">Turkmenistan</option>
+  <option value="TV">Tuvalu</option>
+  <option value="UG">Uganda</option>
+  <option value="UA">Ukraine</option>
+  <option value="AE">United Arab Emirates</option>
+  <option value="GB">United Kingdom</option>
+  <option value="US">United States</option>
+  <option value="UY">Uruguay</option>
+  <option value="UZ">Uzbekistan</option>
+  <option value="VU">Vanuatu</option>
+  <option value="VA">Vatican City</option>
+  <option value="VE">Venezuela</option>
+  <option value="VN">Vietnam</option>
+  <option value="YE">Yemen</option>
+  <option value="ZM">Zambia</option>
+  <option value="ZW">Zimbabwe</option>
+</select>
+<select id="genreFilter">
+  <option value="">Any Genre</option>
+  <option value="pop">Pop</option>
+  <option value="rock">Rock</option>
+  <option value="hiphop">Hip-Hop</option>
+  <option value="rap">Rap</option>
+  <option value="jazz">Jazz</option>
+  <option value="blues">Blues</option>
+  <option value="classical">Classical</option>
+  <option value="edm">EDM</option>
+  <option value="house">House</option>
+  <option value="techno">Techno</option>
+  <option value="trance">Trance</option>
+  <option value="dubstep">Dubstep</option>
+  <option value="drum_and_bass">Drum and Bass</option>
+  <option value="reggae">Reggae</option>
+  <option value="dancehall">Dancehall</option>
+  <option value="soca">Soca</option>
+  <option value="afrobeats">Afrobeats</option>
+  <option value="highlife">Highlife</option>
+  <option value="kpop">K-Pop</option>
+  <option value="jpop">J-Pop</option>
+  <option value="anime">Anime</option>
+  <option value="cpop">C-Pop</option>
+  <option value="mandopop">Mandopop</option>
+  <option value="latin">Latin</option>
+  <option value="reggaeton">Reggaeton</option>
+  <option value="bachata">Bachata</option>
+  <option value="salsa">Salsa</option>
+  <option value="merengue">Merengue</option>
+  <option value="flamenco">Flamenco</option>
+  <option value="tango">Tango</option>
+  <option value="folk">Folk</option>
+  <option value="country">Country</option>
+  <option value="americana">Americana</option>
+  <option value="bluegrass">Bluegrass</option>
+  <option value="metal">Metal</option>
+  <option value="heavy_metal">Heavy Metal</option>
+  <option value="punk">Punk</option>
+  <option value="emo">Emo</option>
+  <option value="grunge">Grunge</option>
+  <option value="funk">Funk</option>
+  <option value="disco">Disco</option>
+  <option value="soul">Soul</option>
+  <option value="rnb">R&B</option>
+  <option value="gospel">Gospel</option>
+  <option value="newage">New Age</option>
+  <option value="ambient">Ambient</option>
+  <option value="lofi">Lo-fi</option>
+  <option value="instrumental">Instrumental</option>
+  <option value="opera">Opera</option>
+  <option value="soundtrack">Soundtrack</option>
+  <option value="bollywood">Bollywood</option>
+  <option value="bhangra">Bhangra</option>
+  <option value="qawwali">Qawwali</option>
+  <option value="ghazal">Ghazal</option>
+  <option value="carnatic">Carnatic</option>
+  <option value="hindustani">Hindustani</option>
+  <option value="arabic">Arabic</option>
+  <option value="turkish">Turkish</option>
+  <option value="persian">Persian</option>
+  <option value="fado">Fado</option>
+  <option value="klezmer">Klezmer</option>
+  <option value="bossa_nova">Bossa Nova</option>
+  <option value="samba">Samba</option>
+  <option value="chillout">Chillout</option>
+  <option value="trip_hop">Trip Hop</option>
+  <option value="psytrance">Psytrance</option>
+  <option value="ska">Ska</option>
+  <option value="industrial">Industrial</option>
+  <option value="experimental">Experimental</option>
+  <option value="world">World</option>
+  <option value="ethnic">Ethnic</option>
+  <option value="traditional">Traditional</option>
+  <option value="chant">Chant</option>
+  <option value="spoken_word">Spoken Word</option>
+  <option value="children">Children's Music</option>
+  <option value="holiday">Holiday</option>
+  <option value="christian">Christian</option>
+  <option value="islamic">Islamic</option>
+  <option value="jewish">Jewish</option>
+  <option value="celtic">Celtic</option>
+  <option value="native_american">Native American</option>
+  <option value="african_traditional">African Traditional</option>
+  <option value="mongolian_throat_singing">Mongolian Throat Singing</option>
+</select>
+      <select id="channelType">
+        <option value="">Any Channel</option>
+        <option value="user">User</option>
+        <option value="show">Show</option>
+      </select>
+      <select id="liveFilter">
+        <option value="">All Videos</option>
+        <option value="true">Live Only</option>
+        <option value="false">Non-Live Only</option>
+      </select>
+      <button onclick="startSearch()">🔍 Search</button>
+      <button onclick="toggleTheme()">🌗 Theme</button>
+      <button onclick="exportCSV()">⬇️ Export CSV</button>
+    </div>
+  </header>
+  <main id="results"></main>
+  <div id="loading" style="display:none;">Loading more...</div>
+
+  <script>
+    const apiKey = 'AIzaSyAtLgFyHTcT6eMS_4UYtiYs8ltRmE_qRgk'; // Replace with real YouTube API key
+    const resultsDiv = document.getElementById('results');
+    const loadingDiv = document.getElementById('loading');
+
+    const input = document.getElementById('searchInput');
+    const sortOrderSelect = document.getElementById('sortOrder');
+    const minDuration = document.getElementById('minDuration');
+    const maxDuration = document.getElementById('maxDuration');
+    const langFilter = document.getElementById('languageFilter');
+    const genreFilter = document.getElementById('genreFilter');
+    const channelType = document.getElementById('channelType');
+    const liveFilter = document.getElementById('liveFilter');
+
+    let nextPageToken = '';
+    let currentQuery = '';
+    let isLoading = false;
+    let allResults = [];
+
+    function startSearch() {
+      currentQuery = input.value.trim();
+      if (!currentQuery) return alert('Please enter a search term.');
+      resultsDiv.innerHTML = '';
+      nextPageToken = '';
+      allResults = [];
+      loadMoreResults();
+    }
+
+    async function loadMoreResults() {
+      if (isLoading || !currentQuery) return;
+      isLoading = true;
+      loadingDiv.style.display = 'block';
+
+      const sort = sortOrderSelect.value;
+      const lang = langFilter.value;
+      const genre = genreFilter.value;
+      const channel = channelType.value;
+      const live = liveFilter.value;
+
+      let query = currentQuery + (genre ? ` ${genre}` : '');
+      let url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoCategoryId=10&q=${encodeURIComponent(query)}&maxResults=10&order=${sort}&key=${apiKey}`;
+      if (nextPageToken) url += `&pageToken=${nextPageToken}`;
+      if (lang) url += `&relevanceLanguage=${lang}`;
+      if (channel) url += `&channelType=${channel}`;
+      if (live === 'true') url += `&eventType=live`;
+      if (live === 'false') url += `&eventType=completed`;
+
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+        loadingDiv.style.display = 'none';
+        isLoading = false;
+
+        if (!data.items || data.items.length === 0) {
+          if (!nextPageToken) resultsDiv.innerHTML = '<p>No results found.</p>';
+          return;
+        }
+
+        nextPageToken = data.nextPageToken || '';
+
+        for (const item of data.items) {
+          const { videoId } = item.id;
+          const { title, channelTitle, thumbnails, publishedAt, liveBroadcastContent } = item.snippet;
+
+          const vidRes = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=contentDetails,liveStreamingDetails&id=${videoId}&key=${apiKey}`);
+          const vidData = await vidRes.json();
+          const durationISO = vidData.items[0]?.contentDetails?.duration || '';
+          const durationMin = ISO8601ToMinutes(durationISO);
+
+          const min = parseInt(minDuration.value) || 0;
+          const max = parseInt(maxDuration.value) || Infinity;
+
+          if (durationMin < min || durationMin > max) continue;
+
+          allResults.push({
+            Title: title,
+            Channel: channelTitle,
+            URL: `https://youtu.be/${videoId}`,
+            Published: publishedAt,
+            Duration: durationMin + ' min'
+          });
+
+          const video = document.createElement('div');
+          video.className = 'video';
+          video.innerHTML = `
+            <a href="https://www.youtube.com/watch?v=${videoId}" target="_blank">
+              <img class="thumb" src="${thumbnails.medium.url}" alt="${title}" />
+            </a>
+            <div class="info">
+              <h3><a href="https://www.youtube.com/watch?v=${videoId}" target="_blank" style="color:inherit;text-decoration:none;">${title}</a></h3>
+              <p>Channel: ${channelTitle}</p>
+              <p>Watch: <a href="https://youtu.be/${videoId}" target="_blank">https://youtu.be/${videoId}</a></p>
+              <p>Published: ${new Date(publishedAt).toLocaleDateString()}</p>
+              <p>Duration: ${durationMin} min</p>
+              <p>${liveBroadcastContent === 'live' ? '🔴 Live Now' : ''}</p>
+            </div>
+          `;
+          resultsDiv.appendChild(video);
+        }
+
+      } catch (err) {
+        console.error(err);
+        alert('API error. Please check key or network.');
+        loadingDiv.style.display = 'none';
+        isLoading = false;
+      }
+    }
+
+    function ISO8601ToMinutes(iso) {
+      const match = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+      const h = parseInt(match[1]) || 0;
+      const m = parseInt(match[2]) || 0;
+      const s = parseInt(match[3]) || 0;
+      return Math.round(h * 60 + m + s / 60);
+    }
+
+    function toggleTheme() {
+      document.body.classList.toggle('light');
+    }
+
+    function exportCSV() {
+      if (allResults.length === 0) {
+        alert("No data to export.");
+        return;
+      }
+
+      const headers = Object.keys(allResults[0]);
+      const rows = allResults.map(obj => headers.map(key => `"${(obj[key] || '').replace(/"/g, '""')}"`).join(','));
+      const csvContent = [headers.join(','), ...rows].join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'youtube_music_results.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    input.addEventListener('keypress', e => {
+      if (e.key === 'Enter') startSearch();
+    });
+
+    window.addEventListener('scroll', () => {
+      if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 100) {
+        loadMoreResults();
+      }
+    });
+  </script>
+</body>
+</html>
+ 

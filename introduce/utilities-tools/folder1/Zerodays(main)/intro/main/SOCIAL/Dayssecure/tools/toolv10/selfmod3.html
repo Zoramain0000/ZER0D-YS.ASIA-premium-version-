@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Super Advanced Identity Generator (60+ Details)</title>
+<style>
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+    margin: 0;
+    padding: 20px;
+    color: red;
+  }
+  .container {
+    max-width: 720px;
+background: rgba(0, 0, 0, 0.5);
+    margin: 0 auto;
+    border-radius: 12px;
+    padding: 30px 40px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+    text-align: center;
+  }
+  img.profile-pic {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid red;
+    margin-bottom: 20px;
+  }
+  h1 {
+    color: red;
+    margin-bottom: 15px;
+    font-weight: 700;
+  }
+  .info {
+    text-align: left;
+    margin-top: 15px;
+    line-height: 1.5;
+    font-size: 15px;
+    max-height: 600px;
+    overflow-y: auto;
+    padding-right: 10px;
+  }
+  .info p {
+    margin: 6px 0;
+  }
+  .info strong {
+    color: red;
+  }
+  button {
+    margin-top: 30px;
+    padding: 14px 28px;
+    background-color: red;
+    color: green;
+    border: none;
+    border-radius: 6px;
+    font-size: 17px;
+    cursor: pointer;
+    transition: background-color 0.25s ease;
+    font-weight: 600;
+  }
+  button:hover {
+background: rgba(0, 0, 0, 0.5);
+  }
+  a {
+    color: #red;
+    text-decoration: none;
+  }
+  a:hover {
+    text-decoration: underline;
+  }
+  hr {
+    margin: 20px 0;
+    border: 0;
+    border-top: 1px solid red;
+  }
+  @media (max-width: 720px) {
+    .container {
+      padding: 20px;
+      max-width: 100%;
+    }
+  }
+</style>
+</head>
+<body>
+  <div class="container" aria-live="polite" aria-atomic="true">
+    <img src="" alt="User profile picture" class="profile-pic" id="profile-pic" />
+    <h1 id="name">Loading...</h1>
+    <div class="info" id="user-info"></div>
+    <button id="generate-btn" aria-label="Generate new random user">Generate New User</button>
+  </div>
+
+<script>
+  async function fetchRandomUser() {
+    try {
+      const res = await fetch('https://randomuser.me/api/');
+      if (!res.ok) throw new Error('Failed to fetch');
+      const data = await res.json();
+      return data.results[0];
+    } catch (e) {
+      console.error(e);
+      return null;
+    }
+  }
+
+  function capitalize(str) {
+    return str ? str.charAt(0).toUpperCase() + str.slice(1) : '';
+  }
+
+  function formatDate(dateStr, options = {}) {
+    const d = new Date(dateStr);
+    if (isNaN(d)) return 'Invalid date';
+    return d.toLocaleDateString(undefined, options);
+  }
+
+  function formatDateTime(dateStr) {
+    return formatDate(dateStr, {
+      year: 'numeric', month: 'long', day: 'numeric',
+      hour: '2-digit', minute: '2-digit', second: '2-digit'
+    });
+  }
+
+  function daysBetween(date1, date2) {
+    const msPerDay = 1000 * 60 * 60 * 24;
+    const diff = Math.abs(date1 - date2);
+    return Math.floor(diff / msPerDay);
+  }
+
+  function maskString(str, visible = 4) {
+    if (!str) return '';
+    if (str.length <= visible) return '*'.repeat(str.length);
+    return '*'.repeat(str.length - visible) + str.slice(-visible);
+  }
+
+  function getZodiacSign(dateStr) {
+    const d = new Date(dateStr);
+    const day = d.getDate();
+    const month = d.getMonth() + 1;
+    if ((month == 1 && day >= 20) || (month == 2 && day <= 18)) return "Aquarius";
+    if ((month == 2 && day >= 19) || (month == 3 && day <= 20)) return "Pisces";
+    if ((month == 3 && day >= 21) || (month == 4 && day <= 19)) return "Aries";
+    if ((month == 4 && day >= 20) || (month == 5 && day <= 20)) return "Taurus";
+    if ((month == 5 && day >= 21) || (month == 6 && day <= 20)) return "Gemini";
+    if ((month == 6 && day >= 21) || (month == 7 && day <= 22)) return "Cancer";
+    if ((month == 7 && day >= 23) || (month == 8 && day <= 22)) return "Leo";
+    if ((month == 8 && day >= 23) || (month == 9 && day <= 22)) return "Virgo";
+    if ((month == 9 && day >= 23) || (month == 10 && day <= 22)) return "Libra";
+    if ((month == 10 && day >= 23) || (month == 11 && day <= 21)) return "Scorpio";
+    if ((month == 11 && day >= 22) || (month == 12 && day <= 21)) return "Sagittarius";
+    return "Capricorn";
+  }
+
+  function getChineseZodiac(year) {
+    const animals = [
+      "Rat", "Ox", "Tiger", "Rabbit", "Dragon", "Snake",
+      "Horse", "Goat", "Monkey", "Rooster", "Dog", "Pig"
+    ];
+    return animals[year % 12];
+  }
+
+  function estimatePasswordStrength(pw) {
+    if (!pw) return 'N/A';
+    let score = 0;
+    if (pw.length >= 8) score++;
+    if (/[a-z]/.test(pw)) score++;
+    if (/[A-Z]/.test(pw)) score++;
+    if (/\d/.test(pw)) score++;
+    if (/[\W_]/.test(pw)) score++;
+    if (score <= 2) return 'Weak';
+    if (score <= 4) return 'Moderate';
+    return 'Strong';
+  }
+
+  function formatPhoneInternational(phone) {
+    if (!phone) return 'N/A';
+    return phone.replace(/[^+\d]/g, '');
+  }
+
+  function formatPhoneLocal(phone) {
+    if (!phone) return 'N/A';
+    return phone.replace(/\D/g, '');
+  }
+
+  function formatFullAddress(loc) {
+    if (!loc) return '';
+    const street = `${loc.street.number} ${loc.street.name}`;
+    return `${street}, ${loc.city}, ${loc.state}, ${loc.country}, ${loc.postcode}`;
+  }
+
+  function getBirthdayWeekday(dateStr) {
+    const d = new Date(dateStr);
+    if (isNaN(d)) return 'Invalid date';
+    return d.toLocaleDateString(undefined, { weekday: 'long' });
+  }
+
+  // New helpers
+
+  // Initials (e.g., J.D.S.)
+  function getInitials(name) {
+    if (!name) return '';
+    return [name.title, name.first, name.last]
+      .filter(Boolean)
+      .map(n => n.charAt(0).toUpperCase())
+      .join('.') + '.';
+  }
+
+  // Age in weeks
+  function ageWeeks(birthDate, now) {
+    const msPerWeek = 1000 * 60 * 60 * 24 * 7;
+    return Math.floor((now - new Date(birthDate)) / msPerWeek);
+  }
+
+  // Age in hours
+  function ageHours(birthDate, now) {
+    const msPerHour = 1000 * 60 * 60;
+    return Math.floor((now - new Date(birthDate)) / msPerHour);
+  }
+
+  // Age in minutes
+  function ageMinutes(birthDate, now) {
+    const msPerMinute = 1000 * 60;
+    return Math.floor((now - new Date(birthDate)) / msPerMinute);
+  }
+
+  // Next birthday countdown in days
+  function daysToNextBirthday(birthDate, now) {
+    const dob = new Date(birthDate);
+    let nextBDay = new Date(now.getFullYear(), dob.getMonth(), dob.getDate());
+    if (nextBDay < now) nextBDay.setFullYear(now.getFullYear() + 1);
+    return daysBetween(now, nextBDay);
+  }
+
+  // Birth season
+  function birthSeason(dateStr) {
+    const d = new Date(dateStr);
+    if (isNaN(d)) return 'Unknown';
+    const month = d.getMonth() + 1;
+    if ([12,1,2].includes(month)) return 'Winter';
+    if ([3,4,5].includes(month)) return 'Spring';
+    if ([6,7,8].includes(month)) return 'Summer';
+    if ([9,10,11].includes(month)) return 'Fall';
+    return 'Unknown';
+  }
+
+  // Is today birthday?
+  function isTodayBirthday(birthDate, now) {
+    const b = new Date(birthDate);
+    return (b.getDate() === now.getDate() && b.getMonth() === now.getMonth());
+  }
+
+  // Is birthday weekend?
+  function isBirthdayWeekend(birthDate) {
+    const b = new Date(birthDate);
+    const day = b.getDay();
+    return day === 0 || day === 6;
+  }
+
+  // Adult check
+  function isAdult(age) {
+    return age >= 18;
+  }
+
+  // Email domain
+  function getEmailDomain(email) {
+    return email ? email.split('@')[1] : '';
+  }
+
+  // Email username
+  function getEmailUsername(email) {
+    return email ? email.split('@')[0] : '';
+  }
+
+  // Count digits in phone
+  function countDigits(phone) {
+    return phone ? (phone.match(/\d/g) || []).length : 0;
+  }
+
+  // Hardcoded currency by country (simple)
+  function getCurrency(country) {
+const map = {
+  "Afghanistan": "AFN",
+  "Albania": "ALL",
+  "Algeria": "DZD",
+  "Andorra": "EUR",
+  "Angola": "AOA",
+  "Antigua and Barbuda": "XCD",
+  "Argentina": "ARS",
+  "Armenia": "AMD",
+  "Australia": "AUD",
+  "Austria": "EUR",
+  "Azerbaijan": "AZN",
+  "Bahamas": "BSD",
+  "Bahrain": "BHD",
+  "Bangladesh": "BDT",
+  "Barbados": "BBD",
+  "Belarus": "BYN",
+  "Belgium": "EUR",
+  "Belize": "BZD",
+  "Benin": "XOF",
+  "Bhutan": "BTN",
+  "Bolivia": "BOB",
+  "Bosnia and Herzegovina": "BAM",
+  "Botswana": "BWP",
+  "Brazil": "BRL",
+  "Brunei": "BND",
+  "Bulgaria": "BGN",
+  "Burkina Faso": "XOF",
+  "Burundi": "BIF",
+  "Cabo Verde": "CVE",
+  "Cambodia": "KHR",
+  "Cameroon": "XAF",
+  "Canada": "CAD",
+  "Central African Republic": "XAF",
+  "Chad": "XAF",
+  "Chile": "CLP",
+  "China": "CNY",
+  "Colombia": "COP",
+  "Comoros": "KMF",
+  "Congo (Brazzaville)": "XAF",
+  "Congo (Kinshasa)": "CDF",
+  "Costa Rica": "CRC",
+  "Croatia": "HRK",
+  "Cuba": "CUP",
+  "Cyprus": "EUR",
+  "Czech Republic": "CZK",
+  "Denmark": "DKK",
+  "Djibouti": "DJF",
+  "Dominica": "XCD",
+  "Dominican Republic": "DOP",
+  "Ecuador": "USD",
+  "Egypt": "EGP",
+  "El Salvador": "USD",
+  "Equatorial Guinea": "XAF",
+  "Eritrea": "ERN",
+  "Estonia": "EUR",
+  "Eswatini": "SZL",
+  "Ethiopia": "ETB",
+  "Fiji": "FJD",
+  "Finland": "EUR",
+  "France": "EUR",
+  "Gabon": "XAF",
+  "Gambia": "GMD",
+  "Georgia": "GEL",
+  "Germany": "EUR",
+  "Ghana": "GHS",
+  "Greece": "EUR",
+  "Grenada": "XCD",
+  "Guatemala": "GTQ",
+  "Guinea": "GNF",
+  "Guinea-Bissau": "XOF",
+  "Guyana": "GYD",
+  "Haiti": "HTG",
+  "Honduras": "HNL",
+  "Hungary": "HUF",
+  "Iceland": "ISK",
+  "India": "INR",
+  "Indonesia": "IDR",
+  "Iran": "IRR",
+  "Iraq": "IQD",
+  "Ireland": "EUR",
+  "Israel": "ILS",
+  "Italy": "EUR",
+  "Jamaica": "JMD",
+  "Japan": "JPY",
+  "Jordan": "JOD",
+  "Kazakhstan": "KZT",
+  "Kenya": "KES",
+  "Kiribati": "AUD",
+  "Korea, North": "KPW",
+  "Korea, South": "KRW",
+  "Kuwait": "KWD",
+  "Kyrgyzstan": "KGS",
+  "Laos": "LAK",
+  "Latvia": "EUR",
+  "Lebanon": "LBP",
+  "Lesotho": "LSL",
+  "Liberia": "LRD",
+  "Libya": "LYD",
+  "Liechtenstein": "CHF",
+  "Lithuania": "EUR",
+  "Luxembourg": "EUR",
+  "Madagascar": "MGA",
+  "Malawi": "MWK",
+  "Malaysia": "MYR",
+  "Maldives": "MVR",
+  "Mali": "XOF",
+  "Malta": "EUR",
+  "Marshall Islands": "USD",
+  "Mauritania": "MRU",
+  "Mauritius": "MUR",
+  "Mexico": "MXN",
+  "Micronesia": "USD",
+  "Moldova": "MDL",
+  "Monaco": "EUR",
+  "Mongolia": "MNT",
+  "Montenegro": "EUR",
+  "Morocco": "MAD",
+  "Mozambique": "MZN",
+  "Myanmar": "MMK",
+  "Namibia": "NAD",
+  "Nauru": "AUD",
+  "Nepal": "NPR",
+  "Netherlands": "EUR",
+  "New Zealand": "NZD",
+  "Nicaragua": "NIO",
+  "Niger": "XOF",
+  "Nigeria": "NGN",
+  "North Macedonia": "MKD",
+  "Norway": "NOK",
+  "Oman": "OMR",
+  "Pakistan": "PKR",
+  "Palau": "USD",
+  "Palestine": "ILS",
+  "Panama": "PAB",
+  "Papua New Guinea": "PGK",
+  "Paraguay": "PYG",
+  "Peru": "PEN",
+  "Philippines": "PHP",
+  "Poland": "PLN",
+  "Portugal": "EUR",
+  "Qatar": "QAR",
+  "Romania": "RON",
+  "Russia": "RUB",
+  "Rwanda": "RWF",
+  "Saint Kitts and Nevis": "XCD",
+  "Saint Lucia": "XCD",
+  "Saint Vincent and the Grenadines": "XCD",
+  "Samoa": "WST",
+  "San Marino": "EUR",
+  "Sao Tome and Principe": "STN",
+  "Saudi Arabia": "SAR",
+  "Senegal": "XOF",
+  "Serbia": "RSD",
+  "Seychelles": "SCR",
+  "Sierra Leone": "SLL",
+  "Singapore": "SGD",
+  "Slovakia": "EUR",
+  "Slovenia": "EUR",
+  "Solomon Islands": "SBD",
+  "Somalia": "SOS",
+  "South Africa": "ZAR",
+  "South Sudan": "SSP",
+  "Spain": "EUR",
+  "Sri Lanka": "LKR",
+  "Sudan": "SDG",
+  "Suriname": "SRD",
+  "Sweden": "SEK",
+  "Switzerland": "CHF",
+  "Syria": "SYP",
+  "Taiwan": "TWD",
+  "Tajikistan": "TJS",
+  "Tanzania": "TZS",
+  "Thailand": "THB",
+  "Timor-Leste": "USD",
+  "Togo": "XOF",
+  "Tonga": "TOP",
+  "Trinidad and Tobago": "TTD",
+  "Tunisia": "TND",
+  "Turkey": "TRY",
+  "Turkmenistan": "TMT",
+  "Tuvalu": "AUD",
+  "Uganda": "UGX",
+  "Ukraine": "UAH",
+  "United Arab Emirates": "AED",
+  "United Kingdom": "GBP",
+  "United States": "USD",
+  "Uruguay": "UYU",
+  "Uzbekistan": "UZS",
+  "Vanuatu": "VUV",
+  "Vatican City": "EUR",
+  "Venezuela": "VES",
+  "Vietnam": "VND",
+  "Yemen": "YER",
+  "Zambia": "ZMW",
+  "Zimbabwe": "ZWL"
+};
+    return map[country] || 'Unknown';
+  }
+
+  // Hardcoded dialing code by country (simple)
+  function getDialingCode(country) {
+const map = {
+  "Afghanistan": "+93",
+  "Albania": "+355",
+  "Algeria": "+213",
+  "Andorra": "+376",
+  "Angola": "+244",
+  "Argentina": "+54",
+  "Armenia": "+374",
+  "Australia": "+61",
+  "Austria": "+43",
+  "Azerbaijan": "+994",
+  "Bahamas": "+1",
+  "Bahrain": "+973",
+  "Bangladesh": "+880",
+  "Barbados": "+1",
+  "Belarus": "+375",
+  "Belgium": "+32",
+  "Belize": "+501",
+  "Benin": "+229",
+  "Bhutan": "+975",
+  "Bolivia": "+591",
+  "Bosnia and Herzegovina": "+387",
+  "Botswana": "+267",
+  "Brazil": "+55",
+  "Brunei": "+673",
+  "Bulgaria": "+359",
+  "Burkina Faso": "+226",
+  "Burundi": "+257",
+  "Cambodia": "+855",
+  "Cameroon": "+237",
+  "Canada": "+1",
+  "Cape Verde": "+238",
+  "Central African Republic": "+236",
+  "Chad": "+235",
+  "Chile": "+56",
+  "China": "+86",
+  "Colombia": "+57",
+  "Comoros": "+269",
+  "Congo (Brazzaville)": "+242",
+  "Congo (Kinshasa)": "+243",
+  "Costa Rica": "+506",
+  "Croatia": "+385",
+  "Cuba": "+53",
+  "Cyprus": "+357",
+  "Czech Republic": "+420",
+  "Denmark": "+45",
+  "Djibouti": "+253",
+  "Dominica": "+1",
+  "Dominican Republic": "+1",
+  "Ecuador": "+593",
+  "Egypt": "+20",
+  "El Salvador": "+503",
+  "Equatorial Guinea": "+240",
+  "Eritrea": "+291",
+  "Estonia": "+372",
+  "Eswatini": "+268",
+  "Ethiopia": "+251",
+  "Fiji": "+679",
+  "Finland": "+358",
+  "France": "+33",
+  "Gabon": "+241",
+  "Gambia": "+220",
+  "Georgia": "+995",
+  "Germany": "+49",
+  "Ghana": "+233",
+  "Greece": "+30",
+  "Grenada": "+1",
+  "Guatemala": "+502",
+  "Guinea": "+224",
+  "Guinea-Bissau": "+245",
+  "Guyana": "+592",
+  "Haiti": "+509",
+  "Honduras": "+504",
+  "Hungary": "+36",
+  "Iceland": "+354",
+  "India": "+91",
+  "Indonesia": "+62",
+  "Iran": "+98",
+  "Iraq": "+964",
+  "Ireland": "+353",
+  "Israel": "+972",
+  "Italy": "+39",
+  "Jamaica": "+1",
+  "Japan": "+81",
+  "Jordan": "+962",
+  "Kazakhstan": "+7",
+  "Kenya": "+254",
+  "Kiribati": "+686",
+  "Kuwait": "+965",
+  "Kyrgyzstan": "+996",
+  "Laos": "+856",
+  "Latvia": "+371",
+  "Lebanon": "+961",
+  "Lesotho": "+266",
+  "Liberia": "+231",
+  "Libya": "+218",
+  "Liechtenstein": "+423",
+  "Lithuania": "+370",
+  "Luxembourg": "+352",
+  "Madagascar": "+261",
+  "Malawi": "+265",
+  "Malaysia": "+60",
+  "Maldives": "+960",
+  "Mali": "+223",
+  "Malta": "+356",
+  "Marshall Islands": "+692",
+  "Mauritania": "+222",
+  "Mauritius": "+230",
+  "Mexico": "+52",
+  "Micronesia": "+691",
+  "Moldova": "+373",
+  "Monaco": "+377",
+  "Mongolia": "+976",
+  "Montenegro": "+382",
+  "Morocco": "+212",
+  "Mozambique": "+258",
+  "Myanmar": "+95",
+  "Namibia": "+264",
+  "Nauru": "+674",
+  "Nepal": "+977",
+  "Netherlands": "+31",
+  "New Zealand": "+64",
+  "Nicaragua": "+505",
+  "Niger": "+227",
+  "Nigeria": "+234",
+  "North Korea": "+850",
+  "North Macedonia": "+389",
+  "Norway": "+47",
+  "Oman": "+968",
+  "Pakistan": "+92",
+  "Palau": "+680",
+  "Palestine": "+970",
+  "Panama": "+507",
+  "Papua New Guinea": "+675",
+  "Paraguay": "+595",
+  "Peru": "+51",
+  "Philippines": "+63",
+  "Poland": "+48",
+  "Portugal": "+351",
+  "Qatar": "+974",
+  "Romania": "+40",
+  "Russia": "+7",
+  "Rwanda": "+250",
+  "Saint Kitts and Nevis": "+1",
+  "Saint Lucia": "+1",
+  "Saint Vincent and the Grenadines": "+1",
+  "Samoa": "+685",
+  "San Marino": "+378",
+  "Sao Tome and Principe": "+239",
+  "Saudi Arabia": "+966",
+  "Senegal": "+221",
+  "Serbia": "+381",
+  "Seychelles": "+248",
+  "Sierra Leone": "+232",
+  "Singapore": "+65",
+  "Slovakia": "+421",
+  "Slovenia": "+386",
+  "Solomon Islands": "+677",
+  "Somalia": "+252",
+  "South Africa": "+27",
+  "South Korea": "+82",
+  "South Sudan": "+211",
+  "Spain": "+34",
+  "Sri Lanka": "+94",
+  "Sudan": "+249",
+  "Suriname": "+597",
+  "Sweden": "+46",
+  "Switzerland": "+41",
+  "Syria": "+963",
+  "Taiwan": "+886",
+  "Tajikistan": "+992",
+  "Tanzania": "+255",
+  "Thailand": "+66",
+  "Timor-Leste": "+670",
+  "Togo": "+228",
+  "Tonga": "+676",
+  "Trinidad and Tobago": "+1",
+  "Tunisia": "+216",
+  "Turkey": "+90",
+  "Turkmenistan": "+993",
+  "Tuvalu": "+688",
+  "Uganda": "+256",
+  "Ukraine": "+380",
+  "United Arab Emirates": "+971",
+  "United Kingdom": "+44",
+  "United States": "+1",
+  "Uruguay": "+598",
+  "Uzbekistan": "+998",
+  "Vanuatu": "+678",
+  "Vatican City": "+379",
+  "Venezuela": "+58",
+  "Vietnam": "+84",
+  "Yemen": "+967",
+  "Zambia": "+260",
+  "Zimbabwe": "+263"
+};
+    return map[country] || 'Unknown';
+  }
+
+  // Random user ID
+  function randomUserId() {
+    return Math.random().toString(36).substring(2, 10).toUpperCase();
+  }
+
+  // Gender pronouns
+  function getPronouns(gender) {
+    if (gender === 'male') return 'He/Him';
+    if (gender === 'female') return 'She/Her';
+    return 'They/Them';
+  }
+
+  async function generateUser() {
+    const user = await fetchRandomUser();
+    if (!user) {
+      document.getElementById('name').textContent = 'Error loading user.';
+      document.getElementById('user-info').textContent = '';
+      document.getElementById('profile-pic').src = '';
+      return;
+    }
+
+    const fullName = `${capitalize(user.name.first)} ${capitalize(user.name.last)}`;
+    const title = capitalize(user.name.title);
+    const gender = user.gender;
+    const dob = user.dob.date;
+    const age = user.dob.age;
+    const now = new Date();
+    const email = user.email;
+    const phone = user.phone;
+    const cell = user.cell;
+    const nat = user.nat;
+    const country = user.location.country;
+    const username = user.login.username;
+    const password = user.login.password;
+    const picture = user.picture.large;
+    const address = formatFullAddress(user.location);
+
+    const initials = getInitials(user.name);
+    const fullNameLengthWithSpaces = fullName.length;
+    const fullNameLengthNoSpaces = fullName.replace(/\s/g, '').length;
+    const ageInWeeks = ageWeeks(dob, now);
+    const ageInHours = ageHours(dob, now);
+    const ageInMinutes = ageMinutes(dob, now);
+    const nextBirthdayDays = daysToNextBirthday(dob, now);
+    const birthSeasonVal = birthSeason(dob);
+    const todayIsBirthday = isTodayBirthday(dob, now);
+    const birthdayWeekend = isBirthdayWeekend(dob);
+    const adultStatus = isAdult(age);
+    const emailDomain = getEmailDomain(email);
+    const emailUsername = getEmailUsername(email);
+    const phoneDigits = countDigits(phone);
+    const cellDigits = countDigits(cell);
+    const currency = getCurrency(country);
+    const dialingCode = getDialingCode(country);
+    const userId = randomUserId();
+    const pronouns = getPronouns(gender);
+    const zodiacSign = getZodiacSign(dob);
+    const chineseZodiac = getChineseZodiac(new Date(dob).getFullYear());
+    const passwordStrength = estimatePasswordStrength(password);
+
+    // Compose info text
+    const infoHTML = `
+      <p><strong>Title:</strong> ${title}</p>
+      <p><strong>Full Name:</strong> ${fullName}</p>
+      <p><strong>Initials:</strong> ${initials}</p>
+      <p><strong>Full Name Length (with spaces):</strong> ${fullNameLengthWithSpaces}</p>
+      <p><strong>Full Name Length (no spaces):</strong> ${fullNameLengthNoSpaces}</p>
+      <p><strong>Gender:</strong> ${capitalize(gender)} (${pronouns})</p>
+      <p><strong>Age:</strong> ${age} years</p>
+      <p><strong>Age in weeks:</strong> ${ageInWeeks}</p>
+      <p><strong>Age in hours:</strong> ${ageInHours}</p>
+      <p><strong>Age in minutes:</strong> ${ageInMinutes}</p>
+      <p><strong>Adult:</strong> ${adultStatus ? 'Yes' : 'No'}</p>
+      <p><strong>Date of Birth:</strong> ${formatDate(dob)}</p>
+      <p><strong>Birth Season:</strong> ${birthSeasonVal}</p>
+      <p><strong>Birth Weekday:</strong> ${getBirthdayWeekday(dob)}</p>
+      <p><strong>Birthday on Weekend:</strong> ${birthdayWeekend ? 'Yes' : 'No'}</p>
+      <p><strong>Is Today Birthday:</strong> ${todayIsBirthday ? 'Yes' : 'No'}</p>
+      <p><strong>Next Birthday In:</strong> ${nextBirthdayDays} days</p>
+      <p><strong>Zodiac Sign:</strong> ${zodiacSign}</p>
+      <p><strong>Chinese Zodiac:</strong> ${chineseZodiac}</p>
+      <hr />
+      <p><strong>Email:</strong> ${email}</p>
+      <p><strong>Email Username:</strong> ${emailUsername}</p>
+      <p><strong>Email Domain:</strong> ${emailDomain}</p>
+      <p><strong>Username:</strong> ${username} (length: ${username.length})</p>
+      <p><strong>Password:</strong> ${maskString(password, 4)} (length: ${password.length}, strength: ${passwordStrength})</p>
+      <hr />
+      <p><strong>Phone:</strong> ${phone} (digits: ${phoneDigits}, intl format: ${formatPhoneInternational(phone)})</p>
+      <p><strong>Cell:</strong> ${cell} (digits: ${cellDigits}, intl format: ${formatPhoneInternational(cell)})</p>
+      <p><strong>Country:</strong> ${country}</p>
+      <p><strong>Nationality Code:</strong> ${nat}</p>
+      <p><strong>Currency:</strong> ${currency}</p>
+      <p><strong>Dialing Code:</strong> ${dialingCode}</p>
+      <p><strong>Random User ID:</strong> ${userId}</p>
+      <p><strong>Address:</strong> ${address}</p>
+    `;
+
+    document.getElementById('name').textContent = fullName;
+    document.getElementById('profile-pic').src = picture;
+    document.getElementById('profile-pic').alt = `Profile picture of ${fullName}`;
+    document.getElementById('user-info').innerHTML = infoHTML;
+  }
+
+  document.getElementById('generate-btn').addEventListener('click', generateUser);
+
+  // Generate on load
+  generateUser();
+</script>
+</body>
+</html>

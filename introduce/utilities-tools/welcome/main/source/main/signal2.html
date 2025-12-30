@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title> Signal Processing Lab v2.0</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+:root{
+  --bg:#0b1220;
+  --panel:#111827;
+  --border:#1f2937;
+  --accent:#22c55e;
+  --text:#e5e7eb;
+  --muted:#9ca3af;
+  --warn:#f59e0b;
+  --error:#ef4444;
+  --phase:#8b5cf6;
+}
+*{box-sizing:border-box;font-family:system-ui}
+body{
+  margin:0;
+  background:radial-gradient(circle at top,#1a2550,#050814);
+  color:var(--text);
+  padding:16px;
+}
+.container{max-width:1400px;margin:auto}
+h1{color:var(--accent);font-size:1.8rem;margin-bottom:8px}
+h3{font-size:1.1rem;color:var(--accent);margin-bottom:12px}
+small{color:var(--muted);font-size:0.85rem}
+.section{
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:20px;
+  margin-top:16px;
+}
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+  gap:12px;
+}
+label{font-size:.8rem;color:var(--muted);display:block;margin-bottom:4px}
+select,input,button{
+  background:#020617;
+  border:1px solid var(--border);
+  color:var(--text);
+  padding:8px 12px;
+  border-radius:8px;
+  width:100%;
+  font-size:14px;
+}
+button{cursor:pointer;transition:all 0.2s}
+button:hover{background:#374151}
+canvas{
+  width:100%;
+  height:240px;
+  background:#020617;
+  border:1px solid var(--border);
+  border-radius:12px;
+}
+.stat{
+  padding:12px;
+  background:#020617;
+  border:1px solid var(--border);
+  border-radius:10px;
+  text-align:center;
+  font-family:monospace;
+}
+.stat-label{font-size:.75rem;color:var(--muted);margin-bottom:4px}
+.stat-value{font-size:1.1rem;font-weight:600}
+.controls-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.audio-controls{display:flex;gap:12px;align-items:center;margin:12px 0}
+.file-input{display:none}
+.toggle{display:flex;align-items:center;gap:8px}
+.toggle input{width:auto}
+.small-grid{grid-template-columns:repeat(auto-fit,minmax(120px,1fr))}
+@media(max-width:768px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+
+<body>
+<div class="container">
+<h1>Advanced Signal Processing Lab v2.0</h1>
+<small>Real mic · Log FFT · Multi-band EQ · Windowing · Stereo · Phase · WAV/CSV · Network Telemetry</small>
+
+<div class="section">
+  <div class="grid">
+    <div>
+      <label>Microphone</label>
+      <select id="micSelect"></select>
+    </div>
+    <div>
+      <label>Input Source</label>
+      <select id="inputSource">
+        <option value="mic">Microphone</option>
+        <option value="file">Audio File</option>
+      </select>
+    </div>
+    <div>
+      <label>File Input</label>
+      <input type="file" id="audioFile" class="file-input" accept="audio/*">
+      <button onclick="document.getElementById('audioFile').click()">📁 Load File</button>
+    </div>
+    <div class="toggle">
+      <label>Stereo</label>
+      <input type="checkbox" id="stereoToggle">
+    </div>
+  </div>
+  <div class="grid small-grid">
+    <div>
+      <label>Window Type</label>
+      <select id="windowType">
+        <option value="hann">Hann</option>
+        <option value="hamming">Hamming</option>
+        <option value="blackman">Blackman</option>
+        <option value="rect">Rectangular</option>
+      </select>
+    </div>
+    <div>
+      <label>FFT Overlap (%)</label>
+      <input id="fftOverlap" type="number" value="75" min="0" max="95" step="5">
+    </div>
+    <div>
+      <label>Sample Rate</label>
+      <span id="sampleRate">48000</span> Hz
+    </div>
+  </div>
+  <div class="controls-row">
+    <button onclick="start()">▶️ Start</button>
+    <button onclick="stop()">⏹️ Stop</button>
+    <button onclick="exportCSV()">📊 Export CSV</button>
+    <button onclick="startRecording()">🎙️ Record WAV</button>
+    <button onclick="stopRecording()">⏹️ Stop Rec</button>
+    <button onclick="clearHistory()">🗑️ Clear</button>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Multi-band EQ</h3>
+  <div class="grid small-grid">
+    <div>
+      <label>Low (60Hz)</label>
+      <input id="eqLow" type="range" min="-12" max="12" value="0" step="0.1">
+      <span id="eqLowVal">0.0</span> dB
+    </div>
+    <div>
+      <label>Mid (1kHz)</label>
+      <input id="eqMid" type="range" min="-12" max="12" value="0" step="0.1">
+      <span id="eqMidVal">0.0</span> dB
+    </div>
+    <div>
+      <label>High (8kHz)</label>
+      <input id="eqHigh" type="range" min="-12" max="12" value="0" step="0.1">
+      <span id="eqHighVal">0.0</span> dB
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Waveform (Left/Right)</h3>
+  <canvas id="waveCanvas"></canvas>
+</div>
+
+<div class="section">
+  <h3>Log-Scale FFT Spectrum</h3>
+  <canvas id="fftCanvas"></canvas>
+</div>
+
+<div class="section">
+  <h3>Frequency Response</h3>
+  <canvas id="freqResponse"></canvas>
+</div>
+
+<div class="section">
+  <h3>Phase Spectrogram</h3>
+  <canvas id="phaseCanvas"></canvas>
+</div>
+
+<div class="section">
+  <h3>Real-time Metrics</h3>
+  <div class="grid">
+    <div class="stat">
+      <div class="stat-label">RMS (L/R)</div>
+      <div class="stat-value" id="rms">0.000 / 0.000</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Peak Freq</div>
+      <div class="stat-value" id="peakFreq">0 Hz</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">SNR</div>
+      <div class="stat-value" id="snr">-- dB</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">THD</div>
+      <div class="stat-value" id="thd">0.0%</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">CPU Load</div>
+      <div class="stat-value" id="cpuLoad">0 ms</div>
+    </div>
+  </div>
+</div>
+
+<div class="section" id="networkPanel" style="display:none">
+  <h3>🌐 Network Telemetry (Browser-Safe)</h3>
+  <div class="grid">
+    <div class="stat">
+      <div class="stat-label">RTT</div>
+      <div class="stat-value" id="rtt">-- ms</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Jitter</div>
+      <div class="stat-value" id="jitter">0 ms</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Packets</div>
+      <div class="stat-value" id="packets">0</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Loss</div>
+      <div class="stat-value" id="loss">0%</div>
+    </div>
+  </div>
+  <button onclick="toggleNetwork()">Toggle Network Test</button>
+</div>
+
+</div>
+
+<script>
+let ctx, analyser, source, eqLow, eqMid, eqHigh, processor;
+let rawBufL, rawBufR, freqBufL, freqBufR, phaseBuf;
+let raf, startTime;
+let history = [], frameCount = 0;
+let recorder, recordedChunks = [];
+let audioFile = null, isPlayingFile = false;
+let networkActive = false, networkStats = {rtt:[], jitter:[], packets:0, loss:0};
+let lastProcessTime = 0;
+
+// Initialize
+async function loadMics(){
+  try {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const sel = document.getElementById("micSelect");
+    sel.innerHTML = '<option value="">Default Mic</option>';
+    devices.filter(d=>d.kind==="audioinput").forEach(d=>{
+      const o = document.createElement("option");
+      o.value = d.deviceId;
+      o.text = d.label || `Mic ${sel.options.length}`;
+      sel.appendChild(o);
+    });
+  } catch(e) { console.warn('Mic enum failed:', e); }
+}
+loadMics();
+
+// Controls
+document.querySelectorAll('input[type="range"]').forEach(el=>{
+  el.oninput = () => {
+    const val = +el.value;
+    el.nextElementSibling.textContent = val.toFixed(1);
+  };
+});
+
+async function start() {
+  if(ctx) return;
+  
+  ctx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 48000 });
+  document.getElementById("sampleRate").textContent = ctx.sampleRate;
+  
+  const stereo = document.getElementById("stereoToggle").checked;
+  const constraints = {
+    audio: {
+      deviceId: document.getElementById("micSelect").value || undefined,
+      channelCount: stereo ? 2 : 1,
+      sampleRate: ctx.sampleRate
+    }
+  };
+  
+  let stream;
+  if(document.getElementById("inputSource").value === "file" && audioFile) {
+    const fileReader = new FileReader();
+    fileReader.onload = async (e) => {
+      const audioBuffer = await ctx.decodeAudioData(e.target.result);
+      playAudioBuffer(audioBuffer);
+    };
+    fileReader.readAsArrayBuffer(audioFile);
+    return;
+  } else {
+    stream = await navigator.mediaDevices.getUserMedia(constraints);
+    source = ctx.createMediaStreamSource(stream);
+  }
+  
+  // Analyzers
+  analyser = ctx.createAnalyser();
+  analyser.fftSize = 4096;
+  analyser.smoothingTimeConstant = 0.6;
+  
+  rawBufL = new Float32Array(analyser.fftSize);
+  rawBufR = new Float32Array(analyser.fftSize);
+  freqBufL = new Uint8Array(analyser.frequencyBinCount);
+  freqBufR = new Uint8Array(analyser.frequencyBinCount);
+  phaseBuf = new Float32Array(analyser.frequencyBinCount);
+  
+  // Multi-band EQ
+  eqLow = ctx.createBiquadFilter(); eqLow.type = 'lowshelf'; eqLow.frequency.value = 60;
+  eqMid = ctx.createBiquadFilter(); eqMid.type = 'peaking'; eqMid.frequency.value = 1000;
+  eqHigh = ctx.createBiquadFilter(); eqHigh.type = 'highshelf'; eqHigh.frequency.value = 8000;
+  
+  source.connect(eqLow);
+  eqLow.connect(eqMid);
+  eqMid.connect(eqHigh);
+  eqHigh.connect(analyser);
+  analyser.connect(ctx.destination);
+  
+  // Script processor for advanced processing
+  processor = ctx.createScriptProcessor(2048, 2, 2);
+  analyser.connect(processor);
+  processor.connect(ctx.destination);
+  
+  processor.onaudioprocess = processAudio;
+  
+  // Recorder
+  recorder = new MediaRecorder(stream);
+  recorder.ondataavailable = e => recordedChunks.push(e.data);
+  recorder.onstop = saveWav;
+  
+  startTime = performance.now();
+  animate();
+}
+
+function processAudio(e) {
+  const inputL = e.inputBuffer.getChannelData(0);
+  const inputR = e.inputBuffer.numberOfChannels > 1 ? e.inputBuffer.getChannelData(1) : inputL;
+  const outputL = e.outputBuffer.getChannelData(0);
+  const outputR = e.outputBuffer.getChannelData(1);
+  
+  // Apply EQ gains
+  const gainL = dbToGain(+document.getElementById("eqLow").value);
+  const gainM = dbToGain(+document.getElementById("eqMid").value);
+  const gainH = dbToGain(+document.getElementById("eqHigh").value);
+  
+  eqLow.gain.value = gainL;
+  eqMid.gain.value = gainM;
+  eqHigh.gain.value = gainH;
+  
+  // Copy to output with windowing
+  const windowType = document.getElementById("windowType").value;
+  const window = getWindow(inputL.length, windowType);
+  
+  for(let i = 0; i < inputL.length; i++) {
+    outputL[i] = inputL[i] * window[i];
+    outputR[i] = inputR[i] * window[i];
+  }
+}
+
+function dbToGain(db) { return Math.pow(10, db / 20); }
+function getWindow(length, type) {
+  const win = new Float32Array(length);
+  for(let i = 0; i < length; i++) {
+    const x = 2 * Math.PI * i / (length - 1);
+    switch(type) {
+      case 'hann': win[i] = 0.5 * (1 - Math.cos(x)); break;
+      case 'hamming': win[i] = 0.54 - 0.46 * Math.cos(x); break;
+      case 'blackman': win[i] = (0.42 - 0.5 * Math.cos(x) + 0.08 * Math.cos(2 * x)); break;
+      default: win[i] = 1;
+    }
+  }
+  return win;
+}
+
+function stop() {
+  cancelAnimationFrame(raf);
+  if(recorder && recorder.state === 'recording') recorder.stop();
+  if(ctx) ctx.close();
+  ctx = null;
+  frameCount = 0;
+  history = [];
+}
+
+function animate() {
+  raf = requestAnimationFrame(animate);
+  const now = performance.now();
+  frameCount++;
+  
+  if(analyser) {
+    analyser.getFloatTimeDomainData(rawBufL);
+    if(rawBufR) analyser.getFloatTimeDomainData(rawBufR);
+    analyser.getByteFrequencyData(freqBufL);
+    if(freqBufR) analyser.getByteFrequencyData(freqBufR);
+    
+    drawAll();
+    computeMetrics(now);
+  }
+  
+  // Network telemetry
+  if(networkActive) updateNetwork();
+}
+
+function drawAll() {
+  drawWaveform();
+  drawLogFFT();
+  drawFreqResponse();
+  drawPhaseSpec();
+}
+
+function drawWaveform() {
+  const c = document.getElementById("waveCanvas");
+  const g = c.getContext("2d");
+  resizeCanvas(c);
+  
+  g.clearRect(0, 0, c.width, c.height);
+  g.strokeStyle = "#22c55e";
+  g.lineWidth = 1.5;
+  
+  // Left channel
+  g.beginPath();
+  for(let i = 0; i < rawBufL.length; i += 2) {
+    const x = i / rawBufL.length * c.width;
+    const y = (0.5 + rawBufL[i] * 0.9) * c.height / 2;
+    i ? g.lineTo(x, y) : g.moveTo(x, y);
+  }
+  g.stroke();
+  
+  // Right channel
+  g.strokeStyle = "#3b82f6";
+  g.beginPath();
+  for(let i = 1; i < rawBufR.length; i += 2) {
+    const x = i / rawBufR.length * c.width;
+    const y = (0.5 + rawBufR[i] * 0.9) * c.height / 2 + c.height / 2;
+    i ? g.lineTo(x, y) : g.moveTo(x, y);
+  }
+  g.stroke();
+}
+
+function drawLogFFT() {
+  const c = document.getElementById("fftCanvas");
+  const g = c.getContext("2d");
+  resizeCanvas(c);
+  
+  g.clearRect(0, 0, c.width, c.height);
+  
+  const freqs = getLogFreqs(c.width);
+  let peakFreq = 0, peakVal = 0;
+  
+  for(let i = 0; i < freqs.length; i++) {
+    const bin = Math.floor(freqs[i] / ctx.sampleRate * analyser.frequencyBinCount);
+    const val = freqBufL[bin] / 255;
+    
+    if(val > peakVal) {
+      peakVal = val;
+      peakFreq = freqs[i];
+    }
+    
+    const barHeight = val * c.height;
+    const hue = 240 - (Math.log(freqs[i] + 1) / Math.log(ctx.sampleRate/2) * 240);
+    g.fillStyle = `hsl(${hue}, 70%, ${val * 50 + 10}%)`;
+    g.fillRect(i, c.height - barHeight, 1, barHeight);
+  }
+  
+  document.getElementById("peakFreq").textContent = Math.round(peakFreq) + " Hz";
+}
+
+function drawFreqResponse() {
+  const c = document.getElementById("freqResponse");
+  const g = c.getContext("2d");
+  resizeCanvas(c);
+  
+  g.clearRect(0, 0, c.width, c.height);
+  
+  // EQ curve visualization
+  const freqs = getLogFreqs(512);
+  g.strokeStyle = "#22c55e";
+  g.lineWidth = 3;
+  g.beginPath();
+  
+  for(let i = 0; i < freqs.length; i++) {
+    const f = freqs[i];
+    let gain = 1;
+    
+    // Low shelf
+    if(f < 60) gain *= dbToGain(+document.getElementById("eqLow").value);
+    else gain *= shelfResponse(f, 60, +document.getElementById("eqLow").value);
+    
+    // Mid peak
+    gain *= peakingResponse(f, 1000, 1.0, +document.getElementById("eqMid").value);
+    
+    // High shelf
+    if(f > 8000) gain *= dbToGain(+document.getElementById("eqHigh").value);
+    else gain *= shelfResponse(f, 8000, +document.getElementById("eqHigh").value);
+    
+    const y = (1 - (gain > 2 ? 2 : gain < 0.25 ? 0.25 : gain) / 2) * c.height;
+    const x = i / freqs.length * c.width;
+    
+    i ? g.lineTo(x, y) : g.moveTo(x, y);
+  }
+  g.stroke();
+}
+
+function drawPhaseSpec() {
+  const c = document.getElementById("phaseCanvas");
+  const g = c.getContext("2d");
+  const w = c.width = c.clientWidth;
+  const h = c.height = c.clientHeight;
+  
+  const img = g.getImageData(1, 0, w - 1, h);
+  g.putImageData(img, 0, 0);
+  
+  for(let y = 0; y < h; y++) {
+    const bin = Math.floor(y / h * analyser.frequencyBinCount);
+    const phase = (freqBufL[bin] / 255) * 2 - 1; // Simplified phase
+    const r = Math.floor(128 + phase * 128);
+    g.fillStyle = `rgb(${r}, ${128}, ${255 - r})`;
+    g.fillRect(w - 1, h - y, 1, 1);
+  }
+}
+
+function computeMetrics(now) {
+  const rmsL = calcRMS(rawBufL);
+  const rmsR = calcRMS(rawBufR || rawBufL);
+  
+  document.getElementById("rms").textContent = 
+    rmsL.toFixed(3) + (rawBufR ? ` / ${rmsR.toFixed(3)}` : '');
+  
+  const processTime = now - lastProcessTime;
+  document.getElementById("cpuLoad").textContent = 
+    (processTime).toFixed(1) + " ms";
+  lastProcessTime = now;
+  
+  // THD calculation (simplified)
+  const fund = peakFundamental();
+  const harmonics = calcHarmonics(fund);
+  const thd = Math.sqrt(harmonics.reduce((a,b)=>a+b*b,0)) / Math.abs(fund) * 100;
+  document.getElementById("thd").textContent = thd.toFixed(1) + "%";
+}
+
+function resizeCanvas(c) {
+  const rect = c.getBoundingClientRect();
+  c.width = rect.width * window.devicePixelRatio;
+  c.height = rect.height * window.devicePixelRatio;
+  c.getContext("2d").scale(window.devicePixelRatio, window.devicePixelRatio);
+}
+
+function getLogFreqs(bins) {
+  const freqs = [];
+  const minF = 20, maxF = ctx.sampleRate / 2;
+  for(let i = 0; i < bins; i++) {
+    freqs[i] = minF * Math.pow(maxF / minF, i / (bins - 1));
+  }
+  return freqs;
+}
+
+function shelfResponse(f, fc, gainDb) {
+  const A = dbToGain(gainDb);
+  const w = Math.tan(Math.PI * fc / ctx.sampleRate);
+  return (A + 1 + (A - 1) * ((w * Math.sqrt(f/fc) - 1) / (w * Math.sqrt(f/fc) + 1))) / 2;
+}
+
+function peakingResponse(f, fc, Q, gainDb) {
+  const A = dbToGain(gainDb);
+  return 1 + (A - 1) * ((f < fc ? f/fc : fc/f) - 1) / (1 + ((f < fc ? f/fc : fc/f) - 1) * Q);
+}
+
+function calcRMS(buf) {
+  let sum = 0;
+  for(let v of buf) sum += v * v;
+  return Math.sqrt(sum / buf.length);
+}
+
+function peakFundamental() {
+  let maxIdx = 0, maxVal = 0;
+  for(let i = 10; i < 200; i++) {
+    if(freqBufL[i] > maxVal) {
+      maxVal = freqBufL[i];
+      maxIdx = i;
+    }
+  }
+  return maxIdx * ctx.sampleRate / analyser.fftSize;
+}
+
+function calcHarmonics(fundBin) {
+  const harmonics = [];
+  for(let h = 2; h <= 5; h++) {
+    const bin = Math.round(fundBin * h);
+    if(bin < analyser.frequencyBinCount) {
+      harmonics.push(freqBufL[bin] / 255);
+    }
+  }
+  return harmonics;
+}
+
+// File handling
+document.getElementById("audioFile").onchange = (e) => {
+  audioFile = e.target.files[0];
+  document.getElementById("inputSource").value = "file";
+};
+
+async function playAudioBuffer(buffer) {
+  const source = ctx.createBufferSource();
+  source.buffer = buffer;
+  source.loop = true;
+  source.connect(ctx.destination);
+  source.start();
+  isPlayingFile = true;
+}
+
+// Recording
+function startRecording() { 
+  if(recorder && recorder.state !== 'recording') {
+    recordedChunks = [];
+    recorder.start(100);
+  }
+}
+function stopRecording() { 
+  if(recorder && recorder.state === 'recording') recorder.stop(); 
+}
+function saveWav() {
+  const blob = new Blob(recordedChunks, {type: 'audio/wav'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `recording_${Date.now()}.wav`;
+  a.click();
+}
+
+// Export
+function exportCSV() {
+  let csv = "time,rms_left,rms_right,peak_freq,thd\n";
+  history.forEach((h, i) => {
+    csv += `${i},${h.rmsL},${h.rmsR},${h.peak},${h.thd}\n`;
+  });
+  downloadCSV(csv, "signal_analysis.csv");
+}
+
+function downloadCSV(csv, filename) {
+  const blob = new Blob([csv], {type: "text/csv"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+}
+
+function clearHistory() {
+  history = [];
+  document.getElementById("phaseCanvas").getContext("2d").clearRect(0, 0, 9999, 9999);
+}
+
+// Network telemetry (browser-safe WebRTC stats)
+async function toggleNetwork() {
+  networkActive = !networkActive;
+  document.getElementById("networkPanel").style.display = networkActive ? 'block' : 'none';
+  if(networkActive) {
+    // Simple ping test (no peer connection needed)
+    networkStats = {rtt:[], jitter:[], packets:0, loss:0};
+    pingTest();
+  }
+}
+
+async function pingTest() {
+  if(!networkActive) return;
+  
+  const start = performance.now();
+  try {
+    await fetch('https://www.google.com/favicon.ico', {method: 'HEAD', cache: 'no-cache'});
+    const rtt = performance.now() - start;
+    networkStats.rtt.push(rtt);
+    if(networkStats.rtt.length > 10) networkStats.rtt.shift();
+    
+    const avgRtt = networkStats.rtt.reduce((a,b)=>a+b,0) / networkStats.rtt.length;
+    const jitter = Math.sqrt(networkStats.rtt.map(r => (r - avgRtt)**2).reduce((a,b)=>a+b,0) / networkStats.rtt.length);
+    
+    document.getElementById("rtt").textContent = avgRtt.toFixed(0) + " ms";
+    document.getElementById("jitter").textContent = jitter.toFixed(1) + " ms";
+  } catch(e) {}
+  
+  networkStats.packets++;
+  setTimeout(pingTest, 1000);
+}
+
+function updateNetwork() {
+  document.getElementById("packets").textContent = networkStats.packets;
+}
+</script>
+</body>
+</html>

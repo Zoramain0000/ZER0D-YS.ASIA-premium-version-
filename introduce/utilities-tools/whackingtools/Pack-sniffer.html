@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Live Packet Sniffer</title>
+  <style>
+    :root {
+      --primary-color: #00c896;
+      --secondary-color: #00a8cc;
+      --dark-bg: #0a0a0f;
+      --card-bg: rgba(10, 20, 30, 0.7);
+      --border-color: rgba(0, 200, 150, 0.2);
+      --text-primary: #e0f0ff;
+      --text-secondary: #a0c0e0;
+      --highlight: #ffcc00;
+      --danger: #ff5555;
+      --warning: #ffaa00;
+      --success: #4caf50;
+    }
+
+    * { 
+      box-sizing: border-box; 
+      margin: 0;
+      padding: 0;
+    }
+    
+    html, body { 
+      height: 100%; 
+      font-family: 'Segoe UI', system-ui, Arial, sans-serif; 
+      background: #000; 
+      color: var(--text-primary);
+      overflow-x: hidden;
+    }
+    
+    .bg-video {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: -3;
+      filter: brightness(0.3);
+    }
+    
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at center, rgba(10,20,30,0.2) 0%, rgba(5,10,15,0.8) 100%);
+      z-index: -2;
+    }
+    
+    .wrap {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 1rem;
+      position: relative;
+      z-index: 1;
+    }
+    
+    .panel {
+      width: 100%;
+      max-width: 1400px;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      padding: 1.5rem;
+      border-radius: 12px;
+      backdrop-filter: blur(8px);
+      position: relative;
+      z-index: 1;
+      margin: 0 auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    header {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+    
+    .title {
+      display: flex;
+      flex-direction: column;
+    }
+    
+    h1 { 
+      margin: 0; 
+      font-size: 1.6rem; 
+      color: var(--primary-color);
+      text-shadow: 0 0 8px rgba(0, 200, 150, 0.5);
+    }
+    
+    p.lead { 
+      margin: 6px 0 0; 
+      color: var(--text-secondary); 
+      font-size: 0.95rem; 
+    }
+    
+    .controls { 
+      margin: 1rem 0; 
+      display: flex; 
+      gap: 0.75rem; 
+      flex-wrap: wrap;
+      align-items: flex-end;
+    }
+    
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-width: 250px;
+    }
+    
+    label {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      margin-bottom: 0.4rem;
+    }
+    
+    input, select {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      background: rgba(0, 0, 0, 0.3);
+      color: var(--text-primary);
+      font-family: monospace;
+      font-size: 0.95rem;
+    }
+    
+    .row { 
+      display: flex; 
+      gap: 0.75rem; 
+      align-items: center; 
+      flex-wrap: wrap; 
+      margin-top: 0.75rem; 
+    }
+    
+    .btn {
+      background: transparent;
+      border: 1px solid var(--primary-color);
+      color: var(--primary-color);
+      padding: 10px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .btn:hover {
+      background: rgba(0, 200, 150, 0.15);
+    }
+    
+    .btn.primary { 
+      background: var(--primary-color); 
+      color: #070707; 
+      border: none;
+    }
+    
+    .btn.danger {
+      border-color: var(--danger);
+      color: var(--danger);
+    }
+    
+    .btn.warning {
+      border-color: var(--warning);
+      color: var(--warning);
+    }
+    
+    .btn.danger:hover {
+      background: rgba(255, 85, 85, 0.15);
+    }
+    
+    .btn.warning:hover {
+      background: rgba(255, 170, 0, 0.15);
+    }
+    
+    .grid { 
+      display: grid; 
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem; 
+      margin: 1.5rem 0;
+      flex: 1;
+    }
+    
+    @media (max-width: 980px) {
+      .grid { 
+        grid-template-columns: 1fr; 
+      }
+    }
+    
+    .card {
+      padding: 16px;
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(0, 200, 150, 0.1);
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(0, 200, 150, 0.1);
+    }
+    
+    .card-header h3 {
+      margin: 0;
+      color: var(--primary-color);
+      font-size: 1.2rem;
+    }
+    
+    .card-content {
+      flex: 1;
+      overflow: auto;
+    }
+    
+    pre { 
+      background: rgba(0, 10, 20, 0.7);
+      padding: 14px;
+      border-radius: 8px;
+      color: var(--text-secondary);
+      overflow: auto;
+      font-size: 0.9rem;
+      white-space: pre-wrap;
+      word-break: break-word;
+      margin: 0;
+      height: 100%;
+    }
+    
+    .badge { 
+      display: inline-block; 
+      padding: 6px 10px; 
+      border-radius: 6px; 
+      background: rgba(0, 200, 150, 0.15);
+      color: var(--primary-color);
+      font-weight: 600;
+      font-size: 0.85rem;
+    }
+    
+    .badge.danger {
+      background: rgba(255, 85, 85, 0.15);
+      color: var(--danger);
+    }
+    
+    .badge.warning {
+      background: rgba(255, 170, 0, 0.15);
+      color: var(--warning);
+    }
+    
+    .badge.success {
+      background: rgba(76, 175, 80, 0.15);
+      color: var(--success);
+    }
+    
+    .packet-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    
+    .packet-item {
+      padding: 12px;
+      border-radius: 6px;
+      background: rgba(0, 30, 50, 0.4);
+      border: 1px solid rgba(0, 200, 150, 0.1);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .packet-item:hover {
+      background: rgba(0, 50, 80, 0.5);
+      border-color: rgba(0, 200, 150, 0.3);
+    }
+    
+    .packet-item.selected {
+      background: rgba(0, 100, 150, 0.3);
+      border-color: var(--primary-color);
+    }
+    
+    .packet-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+    
+    .packet-title {
+      font-weight: 600;
+      color: var(--primary-color);
+    }
+    
+    .packet-time {
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+    }
+    
+    .packet-summary {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      margin-bottom: 4px;
+    }
+    
+    .packet-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+    
+    .filters {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid rgba(0, 200, 150, 0.1);
+    }
+    
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      min-width: 150px;
+    }
+    
+    footer { 
+      margin-top: 12px; 
+      color: var(--text-secondary); 
+      font-size: 0.9rem; 
+      text-align: center;
+      padding-top: 12px;
+      border-top: 1px solid rgba(0, 200, 150, 0.1);
+    }
+    
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+    }
+    
+    .status-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(0, 200, 150, 0.3);
+      border-top: 2px solid var(--primary-color);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      display: inline-block;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .hidden {
+      display: none;
+    }
+    
+    .protocol-layer {
+      margin: 10px 0;
+      padding: 10px;
+      border-left: 3px solid var(--primary-color);
+      background: rgba(0, 30, 50, 0.3);
+    }
+    
+    .layer-title {
+      font-weight: 600;
+      color: var(--primary-color);
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .layer-content {
+      font-family: monospace;
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+    }
+    
+    .notification-badge {
+      background: var(--danger);
+      color: white;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      margin-left: 8px;
+    }
+    
+    .vulnerability-tag {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-left: 6px;
+    }
+    
+    .vuln-high { background: rgba(255, 85, 85, 0.2); color: var(--danger); }
+    .vuln-medium { background: rgba(255, 170, 0, 0.2); color: var(--warning); }
+    .vuln-low { background: rgba(0, 200, 150, 0.2); color: var(--primary-color); }
+    
+    .port-tag {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: rgba(0, 168, 204, 0.2);
+      color: var(--secondary-color);
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin: 0 2px;
+    }
+    
+    .ip-tag {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: rgba(100, 100, 200, 0.2);
+      color: #a0a0ff;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin: 0 2px;
+    }
+    
+    .progress-bar {
+      height: 4px;
+      background: rgba(0, 200, 150, 0.1);
+      border-radius: 2px;
+      margin-top: 8px;
+      overflow: hidden;
+    }
+    
+    .progress-fill {
+      height: 100%;
+      background: var(--primary-color);
+      border-radius: 2px;
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+    
+    .detail-section {
+      margin: 10px 0;
+      padding: 10px;
+      border: 1px solid rgba(0, 200, 150, 0.1);
+      border-radius: 6px;
+    }
+    
+    .detail-title {
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: var(--primary-color);
+    }
+    
+    .detail-content {
+      font-size: 0.9rem;
+      font-family: monospace;
+      background: rgba(0, 10, 20, 0.7);
+      padding: 8px;
+      border-radius: 4px;
+      color: var(--text-secondary);
+    }
+    
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+    
+    .detail-item {
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .detail-label {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+    
+    .detail-value {
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      margin: 6px 0;
+    }
+  </style>
+</head>
+<body>
+  <video class="bg-video" autoplay loop muted playsinline>
+    <source src="background/1761817527453041720p.mp4" type="video/mp4">
+    Your browser does not support the background video.
+  </video>
+
+  <div class="overlay"></div>
+
+  <div class="wrap">
+    <div class="panel">
+      <header>
+        <div class="title">
+          <h1>Live Packet Sniffer</h1>
+          <p class="lead">start network traffic analysis for penetration testing</p>
+        </div>
+        <div style="text-align:right;">
+          <span class="badge">Live DATA</span>
+          <div style="font-size:0.85rem;color:var(--text-secondary);margin-top:6px;">
+             real-time(random) network capture
+          </div>
+        </div>
+      </header>
+
+      <div class="controls">
+        <div class="input-group">
+          <label for="target-url">Target URL/IP</label>
+          <input type="text" id="target-url" placeholder="example.com" value="example.com">
+        </div>
+        
+        <div class="input-group">
+          <label for="attack-type">Scan Type</label>
+          <select id="attack-type">
+            <option value="vulnerability">Vulnerability Scan</option>
+            <option value="port">Port Scan</option>
+            <option value="recon">Reconnaissance</option>
+            <option value="dos">DoS Live</option>
+          </select>
+        </div>
+        
+        <div class="row">
+          <button class="btn primary" id="generate-btn">
+            <span class="btn-text">start Traffic</span>
+            <span class="spinner hidden" id="generate-spinner"></span>
+          </button>
+          <button class="btn danger" id="stop-generate-btn">Stop</button>
+          <button class="btn" id="clear-btn">Clear</button>
+          <button class="btn" id="export-btn">Export JSON</button>
+        </div>
+      </div>
+
+      <div class="status-bar">
+        <div class="status-item">
+          <span>Status:</span>
+          <span id="status-text">Ready to generate traffic</span>
+        </div>
+        <div class="status-item">
+          <span>Packets:</span>
+          <span id="packet-count-display">0</span>
+          <span id="new-packet-badge" class="notification-badge hidden">0</span>
+        </div>
+        <div class="status-item">
+          <span>Filter:</span>
+          <span id="filter-display">All</span>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <div class="card-header">
+            <h3>Live Packets</h3>
+            <div>
+              <button class="btn" id="refresh-list">Refresh</button>
+            </div>
+          </div>
+          <div class="card-content">
+            <div class="packet-list" id="packet-list">
+              <p style="color:var(--text-secondary)">No packets generated yet. Enter a target and click "Generate Traffic".</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3>Packet Analysis</h3>
+            <div>
+              <button class="btn" id="prev-packet">&lt; Prev</button>
+              <button class="btn" id="next-packet">Next &gt;</button>
+            </div>
+          </div>
+          <div class="card-content">
+            <div id="packet-detail">
+              <p style="color:var(--text-secondary)">Select a packet to view detailed analysis.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="filters">
+        <div class="filter-group">
+          <label>Protocol</label>
+          <select id="protocol-filter">
+            <option value="all">All Protocols</option>
+            <option value="http">HTTP</option>
+            <option value="https">HTTPS</option>
+            <option value="tcp">TCP</option>
+            <option value="udp">UDP</option>
+          </select>
+        </div>
+        
+        <div class="filter-group">
+          <label>Vulnerability</label>
+          <select id="vuln-filter">
+            <option value="all">All Sev.</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+        </div>
+        
+        <div class="filter-group">
+          <label>Status</label>
+          <select id="status-filter">
+            <option value="all">All Statuses</option>
+            <option value="2xx">Success (2xx)</option>
+            <option value="3xx">Redirect (3xx)</option>
+            <option value="4xx">Client Error (4xx)</option>
+            <option value="5xx">Server Error (5xx)</option>
+          </select>
+        </div>
+        
+        <div class="filter-group">
+          <label>&nbsp;</label>
+          <button class="btn" id="apply-filters">Apply Filters</button>
+        </div>
+      </div>
+
+      <footer>
+        Live Network Packet Analysis Tool • Penetration Testing Environment • UI: cyber-green theme
+      </footer>
+    </div>
+  </div>
+
+  <script>
+    // State management
+    let capturedPackets = [];
+    let currentPacketIndex = -1;
+    let filteredPackets = [];
+    let isGenerating = false;
+    let generationInterval = null;
+    let newPacketCount = 0;
+    
+    // Vulnerability database
+    const vulnerabilities = [
+      { id: "CVE-2023-12345", name: "SQL Injection", severity: "high", description: "Potential SQL injection vulnerability in user authentication" },
+      { id: "CVE-2022-98765", name: "XSS", severity: "medium", description: "Cross-site scripting vulnerability in search parameters" },
+      { id: "CVE-2023-54321", name: "CSRF", severity: "medium", description: "Cross-site request forgery protection missing" },
+      { id: "CVE-2021-11111", name: "Directory Traversal", severity: "high", description: "Arbitrary file access through path manipulation" },
+      { id: "CVE-2023-99999", name: "Weak Encryption", severity: "low", description: "Deprecated encryption algorithm used for session tokens" },
+      { id: "CVE-2022-45678", name: "Open Redirect", severity: "low", description: "Improper URL validation allows open redirects" },
+      { id: "CVE-2023-77777", name: "Buffer Overflow", severity: "high", description: "Stack-based buffer overflow in image processing module" }
+    ];
+    
+    // DOM Elements
+    const generateBtn = document.getElementById('generate-btn');
+    const stopGenerateBtn = document.getElementById('stop-generate-btn');
+    const clearBtn = document.getElementById('clear-btn');
+    const exportBtn = document.getElementById('export-btn');
+    const refreshListBtn = document.getElementById('refresh-list');
+    const prevPacketBtn = document.getElementById('prev-packet');
+    const nextPacketBtn = document.getElementById('next-packet');
+    
+    const applyFiltersBtn = document.getElementById('apply-filters');
+    const protocolFilter = document.getElementById('protocol-filter');
+    const vulnFilter = document.getElementById('vuln-filter');
+    const statusFilter = document.getElementById('status-filter');
+    
+    const packetList = document.getElementById('packet-list');
+    const packetDetail = document.getElementById('packet-detail');
+    const statusText = document.getElementById('status-text');
+    const packetCountDisplay = document.getElementById('packet-count-display');
+    const filterDisplay = document.getElementById('filter-display');
+    const generateSpinner = document.getElementById('generate-spinner');
+    const btnText = document.querySelector('#generate-btn .btn-text');
+    const newPacketBadge = document.getElementById('new-packet-badge');
+    const targetUrl = document.getElementById('target-url');
+    
+    // Generate packets
+    generateBtn.addEventListener('click', () => {
+      const target = targetUrl.value.trim();
+      if (!target) {
+        updateStatus('Please enter a target URL or IP', 'danger');
+        return;
+      }
+      
+      // Show loading state
+      btnText.textContent = 'Generating...';
+      generateSpinner.classList.remove('hidden');
+      generateBtn.disabled = true;
+      updateStatus('Generating Live network traffic...');
+      
+      // Start packet generation
+      generatePackets(target);
+    });
+    
+    // Stop generation
+    stopGenerateBtn.addEventListener('click', () => {
+      stopPacketGeneration();
+      updateStatus('Packet generation stopped');
+    });
+    
+    // Clear all data
+    clearBtn.addEventListener('click', () => {
+      capturedPackets = [];
+      filteredPackets = [];
+      currentPacketIndex = -1;
+      newPacketCount = 0;
+      newPacketBadge.classList.add('hidden');
+      renderPacketList();
+      packetDetail.innerHTML = '<p style="color:var(--text-secondary)">Select a packet to view detailed analysis.</p>';
+      packetCountDisplay.textContent = '0';
+      updateStatus('All data cleared');
+    });
+    
+    // Export to JSON
+    exportBtn.addEventListener('click', () => {
+      if (capturedPackets.length === 0) {
+        updateStatus('No packets to export', 'danger');
+        return;
+      }
+      
+      const dataStr = JSON.stringify(capturedPackets, null, 2);
+      const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+      
+      const exportFileDefaultName = 'Live_packets_' + new Date().toISOString().slice(0, 19).replace(/:/g, '-') + '.json';
+      
+      const linkElement = document.createElement('a');
+      linkElement.setAttribute('href', dataUri);
+      linkElement.setAttribute('download', exportFileDefaultName);
+      linkElement.click();
+      
+      updateStatus('Packets exported to JSON');
+    });
+    
+    // Refresh packet list
+    refreshListBtn.addEventListener('click', renderPacketList);
+    
+    // Navigation buttons
+    prevPacketBtn.addEventListener('click', () => {
+      if (currentPacketIndex > 0) {
+        showPacketDetail(currentPacketIndex - 1);
+      }
+    });
+    
+    nextPacketBtn.addEventListener('click', () => {
+      if (currentPacketIndex < filteredPackets.length - 1) {
+        showPacketDetail(currentPacketIndex + 1);
+      }
+    });
+    
+    // Apply filters
+    applyFiltersBtn.addEventListener('click', () => {
+      const protocol = protocolFilter.value;
+      const vuln = vulnFilter.value;
+      const status = statusFilter.value;
+      
+      let displayText = 'All';
+      if (protocol !== 'all') displayText = protocol.toUpperCase();
+      if (vuln !== 'all') displayText += `, ${vuln.charAt(0).toUpperCase() + vuln.slice(1)}`;
+      if (status !== 'all') displayText += `, ${status}`;
+      
+      filterDisplay.textContent = displayText;
+      
+      filteredPackets = capturedPackets.filter(packet => {
+        if (protocol !== 'all' && packet.protocol !== protocol) {
+          return false;
+        }
+        
+        if (vuln !== 'all' && (!packet.vulnerability || packet.vulnerability.severity !== vuln)) {
+          return false;
+        }
+        
+        if (status !== 'all') {
+          const statusCode = packet.response?.status || 0;
+          switch(status) {
+            case '2xx': if (statusCode < 200 || statusCode >= 300) return false; break;
+            case '3xx': if (statusCode < 300 || statusCode >= 400) return false; break;
+            case '4xx': if (statusCode < 400 || statusCode >= 500) return false; break;
+            case '5xx': if (statusCode < 500 || statusCode >= 600) return false; break;
+          }
+        }
+        
+        return true;
+      });
+      
+      renderPacketList();
+      updateStatus(`Applied filters: ${displayText}`);
+    });
+    
+    // Generate Live packets
+    function generatePackets(target) {
+      if (isGenerating) return;
+      
+      isGenerating = true;
+      capturedPackets = [];
+      filteredPackets = [];
+      currentPacketIndex = -1;
+      newPacketCount = 0;
+      newPacketBadge.classList.add('hidden');
+      
+      // Create a progress bar for Live
+      const progressBar = document.createElement('div');
+      progressBar.className = 'progress-bar';
+      progressBar.innerHTML = '<div class="progress-fill"></div>';
+      const panel = document.querySelector('.panel');
+      panel.appendChild(progressBar);
+      
+      const progressFill = progressBar.querySelector('.progress-fill');
+      
+      let progress = 0;
+      const step = 1; // Increase every 50ms
+      
+      generationInterval = setInterval(() => {
+        progress += step;
+        progressFill.style.width = progress + '%';
+        
+        // Generate a random packet
+        generateSinglePacket(target);
+        
+        // Update display
+        filteredPackets = [...capturedPackets];
+        renderPacketList();
+        packetCountDisplay.textContent = capturedPackets.length;
+        
+        // Randomly add vulnerabilities
+        if (Math.random() > 0.7 && capturedPackets.length > 0) {
+          const randomIndex = Math.floor(Math.random() * capturedPackets.length);
+          const packet = capturedPackets[randomIndex];
+          
+          if (!packet.vulnerability) {
+            packet.vulnerability = vulnerabilities[Math.floor(Math.random() * vulnerabilities.length)];
+            newPacketCount++;
+            newPacketBadge.textContent = newPacketCount;
+            newPacketBadge.classList.remove('hidden');
+          }
+        }
+        
+        // Stop when we reach 999999999999999999999999999999999999%
+        if (progress >= 999999999999999999999999999999999999) {
+          clearInterval(generationInterval);
+          stopPacketGeneration();
+          panel.removeChild(progressBar);
+          updateStatus(`Generated ${capturedPackets.length} packets`);
+        }
+      }, 50);
+    }
+    
+    // Generate a single Live packet
+    function generateSinglePacket(target) {
+      // Generate random properties
+      const protocols = ['http', 'https', 'tcp', 'udp'];
+      const methods = ['GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'PATCH'];
+      const extensions = ['html', 'js', 'css', 'png', 'jpg', 'json'];
+      const types = ['script', 'stylesheet', 'image', 'document', 'xhr', 'fetch'];
+      
+      const protocol = protocols[Math.floor(Math.random() * protocols.length)];
+      const method = methods[Math.floor(Math.random() * methods.length)];
+      const ext = extensions[Math.floor(Math.random() * extensions.length)];
+      const type = types[Math.floor(Math.random() * types.length)];
+      
+      // Generate realistic URLs
+      const paths = [
+        '/', '/api/users', '/login', '/register', '/admin', '/dashboard',
+        '/products/list', '/cart', '/search', '/profile', '/settings',
+        '/api/products', '/upload', '/download', '/reset-password',
+    '/', '/home', '/index', '/about', '/contact', '/terms', '/privacy',
+    '/login', '/logout', '/register', '/reset-password', '/confirm-email',
+    '/profile', '/profile/edit', '/profile/avatar', '/settings', '/settings/security',
+    '/settings/notifications', '/dashboard', '/dashboard/overview', '/dashboard/stats',
+    '/admin', '/admin/login', '/admin/users', '/admin/roles', '/admin/settings',
+    '/admin/audit', '/admin/metrics', '/admin/logs', '/admin/backup', '/admin/restore',
+    '/api', '/api/v1', '/api/v1/status', '/api/v1/health', '/api/v1/info',
+    '/api/users', '/api/users/{id}', '/api/users/{id}/sessions', '/api/users/me',
+    '/api/auth/login', '/api/auth/logout', '/api/auth/refresh', '/api/auth/register',
+    '/api/products', '/api/products/{id}', '/api/products/{id}/reviews',
+    '/api/categories', '/api/search', '/api/search/suggest', '/api/search/advanced',
+    '/products', '/products/list', '/products/{slug}', '/products/{slug}/reviews',
+    '/cart', '/cart/add', '/cart/remove', '/checkout', '/checkout/summary',
+    '/checkout/payment', '/checkout/success', '/checkout/fail',
+    '/orders', '/orders/{id}', '/orders/{id}/track', '/orders/history', '/order/guest',
+    '/payments', '/payments/stripe', '/payments/paypal', '/payments/webhook',
+    '/billing', '/billing/invoices', '/billing/invoices/{id}', '/subscription',
+    '/subscription/start', '/subscription/cancel', '/subscription/upgrade',
+    '/docs', '/docs/api', '/docs/guide', '/docs/changelog',
+    '/blog', '/blog/{slug}', '/blog/archive', '/news', '/press',
+    '/media', '/media/images', '/media/videos', '/upload', '/upload/image',
+    '/download', '/download/{fileId}', '/sitemap.xml', '/robots.txt',
+    '/assets/app.js', '/assets/app.css', '/assets/vendor.js',
+    '/search', '/search/results', '/search/advanced', '/support', '/support/ticket',
+    '/support/contact', '/support/faq', '/support/agent-chat', '/chat', '/chat/connect',
+    '/notifications', '/notifications/settings', '/notifications/read',
+    '/messages', '/messages/inbox', '/messages/{id}', '/messages/send',
+    '/reports', '/reports/generate', '/reports/export', '/analytics',
+    '/analytics/events', '/analytics/sessions', '/metrics', '/metrics/cpu',
+    '/health', '/health/live', '/health/ready', '/status', '/status/system',
+    '/ws', '/ws/updates', '/ws/notifications',
+    '/oauth/authorize', '/oauth/token', '/oauth/revoke', '/sso/login',
+    '/sso/callback', '/two-factor', '/two-factor/verify',
+    '/api/v2', '/api/v2/users', '/api/v2/auth', '/api/v2/products',
+    '/api/v2/search', '/api/v2/metrics', '/api/v2/reports',
+    '/files', '/files/{id}', '/files/upload', '/files/thumbnail/{id}',
+    '/images', '/images/{id}', '/images/optimize', '/avatars/{id}',
+    '/map', '/map/tiles', '/map/geojson', '/location/search',
+    '/feedback', '/feedback/submit', '/feedback/list',
+    '/invite', '/invite/accept', '/invite/revoke',
+    '/api/admin/roles', '/api/admin/permissions', '/api/admin/users',
+    '/cron/run', '/jobs', '/jobs/{id}', '/jobs/queue', '/jobs/retry',
+    '/webhooks', '/webhooks/list', '/webhooks/test',
+    '/email/send', '/email/preview', '/email/templates', '/email/unsubscribe',
+    '/security', '/security/incidents', '/security/pentest', '/security/report'
+      ];
+      
+      const path = paths[Math.floor(Math.random() * paths.length)];
+      const url = `${protocol}://${target}${path}${ext === 'html' ? '' : '.' + ext}`;
+      
+      // Generate random IP and port
+      const ip = `${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}`;
+      const port = Math.floor(Math.random() * 65536);
+      
+      // Generate timing data
+      const duration = Math.random() * 1000;
+      const startTime = performance.now() - Math.random() * 5000;
+      const responseEnd = startTime + duration;
+      
+      // Create packet object
+      const packet = {
+        id: Math.random().toString(36).substring(2, 15),
+        timestamp: Date.now() - Math.random() * 60000,
+        protocol: protocol,
+        method: method,
+        url: url,
+        hostname: target,
+        pathname: path,
+        type: type,
+        summary: `${method} ${type} request to ${target}`,
+        duration: duration,
+        encodedBodySize: Math.floor(Math.random() * 1000000),
+        decodedBodySize: Math.floor(Math.random() * 1000000),
+        ip: ip,
+        port: port,
+        response: {
+          status: [200, 201, 204, 301, 302, 400, 401, 403, 404, 500][Math.floor(Math.random() * 10)],
+          headers: {
+            "Content-Type": "text/html",
+            "Server": "Apache/2.4.52 (Ubuntu)",
+            "X-Powered-By": "PHP/8.1.5"
+          },
+          content: {}
+        },
+        timings: {
+          startTime: startTime,
+          fetchStart: startTime + Math.random() * 50,
+          domainLookupStart: startTime + Math.random() * 50,
+          domainLookupEnd: startTime + Math.random() * 100,
+          connectStart: startTime + Math.random() * 100,
+          connectEnd: startTime + Math.random() * 150,
+          secureConnectionStart: protocol === 'https' ? startTime + Math.random() * 120 : 0,
+          requestStart: startTime + Math.random() * 200,
+          responseStart: startTime + Math.random() * 300,
+          responseEnd: responseEnd
+        }
+      };
+      
+      // Add vulnerability with 20% chance
+      if (Math.random() > 0.8) {
+        packet.vulnerability = vulnerabilities[Math.floor(Math.random() * vulnerabilities.length)];
+      }
+      
+      capturedPackets.push(packet);
+    }
+    
+    // Stop packet generation
+    function stopPacketGeneration() {
+      if (!isGenerating) return;
+      
+      isGenerating = false;
+      
+      if (generationInterval) {
+        clearInterval(generationInterval);
+        generationInterval = null;
+      }
+      
+      // Process any pending updates
+      if (newPacketCount > 0) {
+        filteredPackets = [...capturedPackets];
+        renderPacketList();
+        newPacketCount = 0;
+        newPacketBadge.classList.add('hidden');
+      }
+      
+      btnText.textContent = 'Generate Traffic';
+      generateSpinner.classList.add('hidden');
+      generateBtn.disabled = false;
+    }
+    
+    // Render packet list
+    function renderPacketList(highlightNew = false) {
+      if (filteredPackets.length === 0) {
+        packetList.innerHTML = '<p style="color:var(--text-secondary)">No packets match current filters.</p>';
+        return;
+      }
+      
+      packetList.innerHTML = '';
+      filteredPackets.forEach((packet, index) => {
+        const packetEl = document.createElement('div');
+        packetEl.className = 'packet-item';
+        if (index === currentPacketIndex) {
+          packetEl.classList.add('selected');
+        }
+        
+        const status = packet.response?.status || 200;
+        const statusClass = status >= 400 ? 'danger' : (status >= 300 ? 'warning' : 'success');
+        const statusText = status || 'Pending';
+        
+        packetEl.innerHTML = `
+          <div class="packet-header">
+            <div class="packet-title">
+              ${packet.method || 'GET'} 
+              <span class="port-tag">${packet.port}</span>
+              <span class="ip-tag">${packet.ip}</span>
+              ${packet.vulnerability ? `<span class="vulnerability-tag vuln-${packet.vulnerability.severity}">${packet.vulnerability.severity}</span>` : ''}
+            </div>
+            <div class="packet-time">${formatTime(packet.timestamp)}</div>
+          </div>
+          <div class="packet-summary ${statusClass}">
+            ${truncateString(packet.url, 80)}
+          </div>
+          <div class="packet-meta">
+            <div>${packet.protocol.toUpperCase()} | ${formatDuration(packet.duration)}</div>
+            <div>${(packet.encodedBodySize / 1024).toFixed(1)} KB | ${statusText}</div>
+          </div>
+        `;
+        
+        packetEl.addEventListener('click', () => {
+          showPacketDetail(index);
+        });
+        
+        packetList.appendChild(packetEl);
+      });
+    }
+    
+    // Show packet detail
+    function showPacketDetail(index) {
+      if (index < 0 || index >= filteredPackets.length) return;
+      
+      currentPacketIndex = index;
+      const packet = filteredPackets[index];
+      
+      // Update selection UI
+      document.querySelectorAll('.packet-item').forEach((el, i) => {
+        if (i === index) {
+          el.classList.add('selected');
+        } else {
+          el.classList.remove('selected');
+        }
+      });
+      
+      // Render packet details
+      const vulnInfo = packet.vulnerability ? 
+        `<div class="detail-section">
+          <div class="layer-title">Security Vulnerability</div>
+          <div class="layer-content">
+            <div class="detail-row">
+              <div><strong>ID:</strong> ${packet.vulnerability.id}</div>
+              <div><span class="vulnerability-tag vuln-${packet.vulnerability.severity}">${packet.vulnerability.severity.toUpperCase()}</span></div>
+            </div>
+            <div class="detail-row"><strong>Name:</strong> ${packet.vulnerability.name}</div>
+            <div class="detail-row"><strong>Description:</strong> ${packet.vulnerability.description}</div>
+          </div>
+        </div>` : '';
+      
+      packetDetail.innerHTML = `
+        <div class="detail-section">
+          <div class="layer-title">Request Details</div>
+          <div class="layer-content">
+            <div class="detail-grid">
+              <div class="detail-item">
+                <div class="detail-label">Method</div>
+                <div class="detail-value">${packet.method}</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Protocol</div>
+                <div class="detail-value">${packet.protocol.toUpperCase()}</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Host</div>
+                <div class="detail-value">${packet.hostname}</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Port</div>
+                <div class="detail-value">${packet.port}</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Path</div>
+                <div class="detail-value">${packet.pathname}</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Type</div>
+                <div class="detail-value">${packet.type}</div>
+              </div>
+            </div>
+            <div class="detail-row"><strong>Full URL:</strong> ${packet.url}</div>
+            <div class="detail-row"><strong>Source IP:</strong> <span class="ip-tag">${packet.ip}</span></div>
+          </div>
+        </div>
+        
+        <div class="detail-section">
+          <div class="layer-title">Response</div>
+          <div class="layer-content">
+            <div class="detail-grid">
+              <div class="detail-item">
+                <div class="detail-label">Status Code</div>
+                <div class="detail-value">${packet.response.status}</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Size</div>
+                <div class="detail-value">${(packet.encodedBodySize / 1024).toFixed(1)} KB</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Duration</div>
+                <div class="detail-value">${formatDuration(packet.duration)}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="detail-section">
+          <div class="layer-title">Timing Analysis</div>
+          <div class="layer-content">
+            <div class="detail-grid">
+              <div class="detail-item">
+                <div class="detail-label">DNS Lookup</div>
+                <div class="detail-value">${formatDuration(packet.timings.domainLookupEnd - packet.timings.domainLookupStart)}</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Connection</div>
+                <div class="detail-value">${formatDuration(packet.timings.connectEnd - packet.timings.connectStart)}</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Request</div>
+                <div class="detail-value">${formatDuration(packet.timings.responseStart - packet.timings.requestStart)}</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Response</div>
+                <div class="detail-value">${formatDuration(packet.timings.responseEnd - packet.timings.responseStart)}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        ${vulnInfo}
+        
+        <div class="detail-section">
+          <div class="layer-title">Live Headers</div>
+          <pre class="detail-content">{
+  "Host": "${packet.hostname}",
+  "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36",
+  "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+  "Accept-Language": "en-US,en;q=0.5",
+  "Accept-Encoding": "gzip, deflate",
+  "Connection": "keep-alive",
+  "Referer": "${window.location.origin}"
+}</pre>
+        </div>
+      `;
+    }
+    
+    // Update status message
+    function updateStatus(message, type = 'info') {
+      statusText.textContent = message;
+      statusText.className = type;
+    }
+    
+    // Format timestamp
+    function formatTime(timestamp) {
+      const date = new Date(timestamp);
+      return date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+    }
+    
+    // Format duration
+    function formatDuration(ms) {
+      if (ms < 1) return `${Math.round(ms * 1000)}μs`;
+      if (ms < 1000) return `${Math.round(ms)}ms`;
+      return `${(ms / 1000).toFixed(2)}s`;
+    }
+    
+    // Truncate string with ellipsis
+    function truncateString(str, maxLength) {
+      return str.length > maxLength ? str.substring(0, maxLength - 3) + '...' : str;
+    }
+    
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        if (!isGenerating) {
+          generateBtn.click();
+        }
+      }
+      
+      if (e.key === 'Escape' && isGenerating) {
+        stopGenerateBtn.click();
+      }
+    });
+  </script>
+</body>
+</html>

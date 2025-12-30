@@ -1,0 +1,1491 @@
+  
+  
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>📜 Advanced Quote Generator</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem;
+    }
+
+    h1 {
+      margin-bottom: 1rem;
+      color: red;
+    }
+
+    .quote-box {
+background: rgba(0, 0, 0, 0.5);
+      padding: 2rem;
+      border-radius: 12px;
+      max-width: 700px;
+      width: 100%;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+      text-align: center;
+      position: relative;
+      margin-top: 1rem;
+    }
+
+    .quote-text {
+      font-size: 1.5rem;
+      font-style: italic;
+      margin-bottom: 1rem;
+      transition: opacity 0.3s ease;
+    }
+
+    .quote-author {
+      font-size: 1rem;
+      color:red;
+      margin-bottom: 2rem;
+      transition: opacity 0.3s ease;
+    }
+
+    .buttons {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    button, select, input {
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    button {
+      background: red;
+      color: green;
+    }
+
+    button:hover {
+background: rgba(0, 0, 0, 0.5);
+    }
+
+    select, input {
+background: rgba(0, 0, 0, 0.5);
+      color: red;
+    }
+
+    .copied {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      font-size: 0.8rem;
+      color: red;
+      display: none;
+background: rgba(0, 0, 0, 0.5);
+    }
+
+    .copied.show {
+      display: block;
+background: rgba(0, 0, 0, 0.5);
+    }
+
+    .favorites-list {
+      margin-top: 2rem;
+      max-width: 700px;
+      width: 100%;
+      background: #1e293b;
+      padding: 1rem;
+      border-radius: 8px;
+background: rgba(0, 0, 0, 0.5);
+    }
+
+    .favorites-list h3 {
+      margin-top: 0;
+background: rgba(0, 0, 0, 0.5);
+    }
+
+    .favorite-quote {
+      margin-bottom: 0.8rem;
+      border-bottom: 1px solid #334155;
+      padding-bottom: 0.5rem;
+background: rgba(0, 0, 0, 0.5);
+    }
+  </style>
+</head>
+<body>
+
+  <h1>📜 AI Quote Generator</h1>
+
+  <div class="buttons">
+    <input type="text" id="searchInput" placeholder="Search quotes..." oninput="filterQuotes()" />
+    <select id="categorySelect" onchange="filterQuotes()">
+      <option value="All">All Categories</option>
+      <option value="Motivation">Motivation</option>
+      <option value="Life">Life</option>
+      <option value="Wisdom">Wisdom</option>
+      <option value="Humor">Humor</option>
+      <option value="Discipline">Discipline</option>
+      <option value="Self">Self</option>
+      <option value="Innovation">Innovation</option>
+      <option value="Creativity">Creativity</option>
+      <option value="Perseverance">Perseverance</option>
+      <option value="Education">Education</option>
+      <option value="Mindset">Mindset</option>
+      <option value="Compassion">Compassion</option>
+      <option value="Adventure">Adventure</option>
+      <option value="Philosophy">Philosophy</option>
+      <option value="Work">Work</option>
+      <option value="Time">Time</option>
+      <option value="Courage">Courage</option>
+      <option value="Success">Success</option>
+      <option value="Teamwork">Teamwork</option>
+      <option value="Belief">Belief</option>
+      <option value="Impact">Impact</option>
+      <option value="Learning">Learning</option>
+      <option value="Planning">Planning</option>
+      <option value="Justice">Justice</option>
+      <option value="Change">Change</option>
+      <option value="Inspiration">Inspiration</option>
+      <option value="Peace">Peace</option>
+      <option value="Risk">Risk</option>
+      <option value="Reflection">Reflection</option>
+      <option value="Challenge">Challenge</option>
+      <option value="Perspective">Perspective</option>
+      <option value="Kindness">Kindness</option>
+      <option value="Dreams">Dreams</option>
+      <option value="Practicality">Practicality</option>
+      <option value="Happiness">Happiness</option>
+      <option value="Growth">Growth</option>
+      <option value="Opportunity">Opportunity</option>
+      <option value="Influence">Influence</option>
+      <option value="Positivity">Positivity</option>
+      <option value="Hard Work">Hard Work</option>
+      <option value="Curiosity">Curiosity</option>
+      <option value="Freedom">Freedom</option>
+      <option value="Self‑Respect">Self‑Respect</option>
+      <option value="Alignment">Alignment</option>
+      <option value="Generosity">Generosity</option>
+      <option value="Wellness">Wellness</option>
+      <option value="Possibility">Possibility</option>
+      <option value="Empathy">Empathy</option>
+      <option value="Clarity">Clarity</option>
+      <option value="Momentum">Momentum</option>
+      <option value="Stability">Stability</option>
+      <option value="Mindfulness">Mindfulness</option>
+      <option value="Self‑Love">Self‑Love</option>
+      <option value="Calm">Calm</option>
+      <option value="Connection">Connection</option>
+      <option value="Composure">Composure</option>
+      <option value="Work">Work</option>
+      <option value="Routine">Routine</option>
+      <option value="Execution">Execution</option>
+      <option value="Mindfulness">Mindfulness</option>
+      <option value="Joy">Joy</option>
+      <option  value="Vision">Vision</option>
+       <option value="Self‑Value">Self‑Value</option>
+    </select>
+    <button onclick="newQuote()">🔄 New Quote</button>
+    <button onclick="copyQuote()">📋 Copy</button>
+    <button onclick="addToFavorites()">❤️ Favorite</button>
+  </div>
+
+  <div class="quote-box">
+    <div class="quote-text" id="quoteText">Loading quote...</div>
+    <div class="quote-author" id="quoteAuthor">...</div>
+    <div class="copied" id="copiedMsg">✅ Copied!</div>
+  </div>
+
+  <div class="favorites-list" id="favoritesList">
+    <h3>⭐ Favorites</h3>
+    <div id="favoriteQuotesContainer"></div>
+  </div>
+
+  <script>
+const quotes = [
+  { text: "The best way to predict the future is to invent it.", author: "Alan Kay", category: "Motivation" },
+  { text: "Stay hungry, stay foolish.", author: "Steve Jobs", category: "Motivation" },
+  { text: "Life is really simple, but we insist on making it complicated.", author: "Confucius", category: "Life" },
+  { text: "Simplicity is the ultimate sophistication.", author: "Leonardo da Vinci", category: "Wisdom" },
+  { text: "Do one thing every day that scares you.", author: "Eleanor Roosevelt", category: "Motivation" },
+  { text: "Whether you think you can or you think you can’t, you’re right.", author: "Henry Ford", category: "Wisdom" },
+  { text: "You miss 100% of the shots you don’t take.", author: "Wayne Gretzky", category: "Motivation" },
+  { text: "What we think, we become.", author: "Buddha", category: "Life" },
+  { text: "It always seems impossible until it's done.", author: "Nelson Mandela", category: "Motivation" },
+  { text: "Be yourself; everyone else is already taken.", author: "Oscar Wilde", category: "Humor" },
+  { text: "In the middle of difficulty lies opportunity.", author: "Albert Einstein", category: "Wisdom" },
+  { text: "Happiness depends upon ourselves.", author: "Aristotle", category: "Life" },
+  { text: "Turn your wounds into wisdom.", author: "Oprah Winfrey", category: "Wisdom" },
+  { text: "Success is not final, failure is not fatal: it is the courage to continue that counts.", author: "Winston Churchill", category: "Motivation" },
+  { text: "We are what we repeatedly do. Excellence, then, is not an act, but a habit.", author: "Aristotle", category: "Discipline" },
+  { text: "Knowing yourself is the beginning of all wisdom.", author: "Aristotle", category: "Self" },
+  { text: "A person who never made a mistake never tried anything new.", author: "Albert Einstein", category: "Innovation" },
+  { text: "You only live once, but if you do it right, once is enough.", author: "Mae West", category: "Life" },
+  { text: "The only true wisdom is in knowing you know nothing.", author: "Socrates", category: "Wisdom" },
+  { text: "Logic will get you from A to B. Imagination will take you everywhere.", author: "Albert Einstein", category: "Creativity" },
+  { text: "Don’t watch the clock; do what it does. Keep going.", author: "Sam Levenson", category: "Perseverance" },
+  { text: "He who opens a school door, closes a prison.", author: "Victor Hugo", category: "Education" },
+  { text: "A journey of a thousand miles begins with a single step.", author: "Lao Tzu", category: "Wisdom" },
+  { text: "The mind is everything. What you think you become.", author: "Buddha", category: "Mindset" },
+  { text: "Be kind whenever possible. It is always possible.", author: "Dalai Lama", category: "Compassion" },
+  { text: "The only limit to our realization of tomorrow is our doubts of today.", author: "Franklin D. Roosevelt", category: "Motivation" },
+  { text: "Not all those who wander are lost.", author: "J.R.R. Tolkien", category: "Adventure" },
+  { text: "Everything you can imagine is real.", author: "Pablo Picasso", category: "Creativity" },
+  { text: "The unexamined life is not worth living.", author: "Socrates", category: "Philosophy" },
+  { text: "The only way to do great work is to love what you do.", author: "Steve Jobs", category: "Work" },
+  { text: "A man who dares to waste one hour of time has not discovered the value of life.", author: "Charles Darwin", category: "Time" },
+  { text: "The most courageous act is still to think for yourself. Aloud.", author: "Coco Chanel", category: "Courage" },
+  { text: "I have not failed. I've just found 10,000 ways that won't work.", author: "Thomas Edison", category: "Persistence" },
+  { text: "You must be the change you wish to see in the world.", author: "Mahatma Gandhi", category: "Change" },
+  { text: "Success usually comes to those who are too busy to be looking for it.", author: "Henry David Thoreau", category: "Success" },
+  { text: "If you want to go fast, go alone. If you want to go far, go together.", author: "African Proverb", category: "Teamwork" },
+  { text: "The secret of getting ahead is getting started.", author: "Mark Twain", category: "Motivation" },
+  { text: "Don't count the days, make the days count.", author: "Muhammad Ali", category: "Motivation" },
+  { text: "Dream big and dare to fail.", author: "Norman Vaughan", category: "Ambition" },
+  { text: "Believe you can and you're halfway there.", author: "Theodore Roosevelt", category: "Belief" },
+  { text: "Act as if what you do makes a difference. It does.", author: "William James", category: "Impact" },
+  { text: "Learn as if you will live forever, live like you will die tomorrow.", author: "Mahatma Gandhi", category: "Learning" },
+  { text: "A goal without a plan is just a wish.", author: "Antoine de Saint-Exupéry", category: "Planning" },
+  { text: "Injustice anywhere is a threat to justice everywhere.", author: "Martin Luther King Jr.", category: "Justice" },
+  { text: "The best revenge is massive success.", author: "Frank Sinatra", category: "Success" },
+  { text: "Be the change that you wish to see in the world.", author: "Mahatma Gandhi", category: "Inspiration" },
+  { text: "An eye for an eye only ends up making the whole world blind.", author: "Mahatma Gandhi", category: "Peace" },
+  { text: "To live is the rarest thing in the world. Most people exist, that is all.", author: "Oscar Wilde", category: "Life" },
+  { text: "The biggest risk is not taking any risk.", author: "Mark Zuckerberg", category: "Risk" },
+  { text: "The more I see, the less I know for sure.", author: "John Lennon", category: "Reflection" },
+  { text: "A smooth sea never made a skilled sailor.", author: "Franklin D. Roosevelt", category: "Challenge" },
+  { text: "We can complain because rose bushes have thorns, or rejoice because thorns have roses.", author: "Alphonse Karr", category: "Perspective" },
+  { text: "You can’t use up creativity. The more you use, the more you have.", author: "Maya Angelou", category: "Creativity" },
+  { text: "To avoid criticism, do nothing, say nothing, be nothing.", author: "Elbert Hubbard", category: "Courage" },
+  { text: "If you judge people, you have no time to love them.", author: "Mother Teresa", category: "Kindness" },
+  { text: "It is never too late to be what you might have been.", author: "George Eliot", category: "Motivation" },
+  { text: "Life is either a daring adventure or nothing at all.", author: "Helen Keller", category: "Adventure" },
+  { text: "We are all in the gutter, but some of us are looking at the stars.", author: "Oscar Wilde", category: "Hope" },
+  { text: "You become what you believe.", author: "Oprah Winfrey", category: "Belief" },
+  { text: "What lies behind us and what lies before us are tiny matters compared to what lies within us.", author: "Ralph Waldo Emerson", category: "Self" },
+  { text: "You can’t depend on your eyes when your imagination is out of focus.", author: "Mark Twain", category: "Imagination" },
+  { text: "Do not wait for leaders; do it alone, person to person.", author: "Mother Teresa", category: "Action" },
+  { text: "Imagination is more important than knowledge.", author: "Albert Einstein", category: "Creativity" },
+  { text: "It’s not whether you get knocked down, it’s whether you get up.", author: "Vince Lombardi", category: "Resilience" },
+  { text: "Courage is resistance to fear, mastery of fear – not absence of fear.", author: "Mark Twain", category: "Courage" },
+  { text: "Go confidently in the direction of your dreams. Live the life you have imagined.", author: "Henry David Thoreau", category: "Dreams" },
+  { text: "You are never too old to set another goal or to dream a new dream.", author: "C.S. Lewis", category: "Inspiration" },
+  { text: "Do what you can, with what you have, where you are.", author: "Theodore Roosevelt", category: "Practicality" },
+  { text: "The best preparation for tomorrow is doing your best today.", author: "H. Jackson Brown Jr.", category: "Discipline" },
+  { text: "Kindness is a language which the deaf can hear and the blind can see.", author: "Mark Twain", category: "Kindness" },
+  { text: "Success is getting what you want. Happiness is wanting what you get.", author: "Dale Carnegie", category: "Happiness" },
+  { text: "It does not matter how slowly you go as long as you do not stop.", author: "Confucius", category: "Persistence" },
+  { text: "All progress takes place outside the comfort zone.", author: "Michael John Bobak", category: "Growth" },
+  { text: "Discipline is the bridge between goals and accomplishment.", author: "Jim Rohn", category: "Discipline" },
+  { text: "Don’t be pushed around by the fears in your mind. Be led by the dreams in your heart.", author: "Roy T. Bennett", category: "Courage" },
+  { text: "Don’t limit your challenges. Challenge your limits.", author: "Jerry Dunn", category: "Challenge" },
+  { text: "If opportunity doesn’t knock, build a door.", author: "Milton Berle", category: "Opportunity" },
+  { text: "You don’t find the happy life. You make it.", author: "Camilla Eyring Kimball", category: "Happiness" },
+  { text: "In a gentle way, you can shake the world.", author: "Mahatma Gandhi", category: "Influence" },
+  { text: "Try to be a rainbow in someone’s cloud.", author: "Maya Angelou", category: "Positivity" },
+  { text: "The harder you work for something, the greater you’ll feel when you achieve it.", author: "Unknown", category: "Hard Work" },
+  { text: "The secret of success is to do the common thing uncommonly well.", author: "John D. Rockefeller", category: "Success" },
+  { text: "I find that the harder I work, the more luck I seem to have.", author: "Thomas Jefferson", category: "Hard Work" },
+  { text: "The way to get started is to quit talking and begin doing.", author: "Walt Disney", category: "Action" },
+  { text: "Success seems to be connected with action. Successful people keep moving.", author: "Conrad Hilton", category: "Success" },
+  { text: "The only place where success comes before work is in the dictionary.", author: "Vidal Sassoon", category: "Success" },
+  { text: "There are no secrets to success. It is the result of preparation, hard work and learning from failure.", author: "Colin Powell", category: "Success" },
+  { text: "The real test is whether you let failure harden you or shame you into inaction.", author: "Barack Obama", category: "Resilience" },
+  { text: "It is better to fail in originality than to succeed in imitation.", author: "Herman Melville", category: "Originality" },
+  { text: "Successful people do what unsuccessful people are not willing to do.", author: "Jim Rohn", category: "Discipline" },
+  { text: "Before anything else, preparation is the key to success.", author: "Alexander Graham Bell", category: "Preparation" },
+  { text: "Things work out best for those who make the best of how things work out.", author: "John Wooden", category: "Positivity" },
+  { text: "Don't be afraid to give up the good to go for the great.", author: "John D. Rockefeller", category: "Ambition" },
+  { text: "Always bear in mind that your own resolution to succeed is more important than any one thing.", author: "Abraham Lincoln", category: "Motivation" },
+  { text: "Success is walking from failure to failure with no loss of enthusiasm.", author: "Winston Churchill", category: "Persistence" },
+  { text: "You know you're on the road to success if you'd do your job without pay.", author: "Oprah Winfrey", category: "Passion" },
+  { text: "The two most important days in your life are the day you're born and the day you find out why.", author: "Mark Twain", category: "Purpose" },
+  { text: "Nothing ever goes away until it teaches us what we need to know.", author: "Pema Chödrön", category: "Reflection" },
+  { text: "We can see through others only when we can see through ourselves.", author: "Bruce Lee", category: "Self-awareness" },
+  { text: "The best way out is always through.", author: "Robert Frost", category: "Resilience" },
+  { text: "If there is no struggle, there is no progress.", author: "Frederick Douglass", category: "Growth" },
+  { text: "Courage is like a muscle. The more you use it, the stronger it gets.", author: "Ruth Gordo", category: "Courage" },
+  { text: "Make sure your worst enemy doesn’t live between your own two ears.", author: "Laird Hamilton", category: "Mindset" },
+  { text: "It is a rough road that leads to the heights of greatness.", author: "Seneca", category: "Wisdom" },
+  { text: "For the great doesn’t happen through impulse alone, and is a succession of little things.", author: "Vincent Van Gogh", category: "Creativity" },
+  { text: "If we take care of the moments, the years will take care of themselves.", author: "Maria Edgeworth", category: "Time" },
+  { text: "Resilience is when you address uncertainty with flexibility.", author: "Unknown", category: "Resilience" },
+  { text: "Sometimes magic is just someone spending more time on something.", author: "Raymond Teller", category: "Dedication" },
+  { text: "It’s not the will to win that matters—it’s the will to prepare.", author: "Paul “Bear” Bryant", category: "Preparation" },
+  { text: "Never give up on a dream just because of the time it will take.", author: "Earl Nightingale", category: "Patience" },
+  { text: "True humility is not thinking less of yourself; it is thinking of yourself less.", author: "C. S. Lewis", category: "Humility" },
+  { text: "Never regret a day in your life. Good days bring you happiness and bad days give you experience.", author: "Unknown", category: "Positivity" },
+  { text: "Either you run the day, or the day runs you.", author: "Jim Rohn", category: "Discipline" },
+  { text: "Only I can change my life. No one can do it for me.", author: "Carol Burnett", category: "Empowerment" },
+  { text: "Life is 10% what happens to you and 90% how you react.", author: "Charles R. Swindoll", category: "Mindset" },
+  { text: "When the pain of an obstacle is too great, challenge yourself to be stronger.", author: "Unknown", category: "Strength" },
+  { text: "Even if you’re on the right track, you’ll get run over if you just sit there.", author: "Will Rogers", category: "Action" },
+  { text: "Very little is needed to make a happy life; it is all within yourself.", author: "Marcus Aurelius", category: "Contentment" },
+  { text: "Life is either a daring adventure or nothing at all.", author: "Helen Keller", category: "Adventure" },
+  { text: "You were born to win, but to be a winner you must plan to win.", author: "Zig Ziglar", category: "Winning" },
+  { text: "Winning means you’re willing to go longer, work harder, give more.", author: "Vince Lombardi", category: "Winning" },
+  { text: "A winner is a dreamer who never gives up.", author: "Nelson Mandela", category: "Perseverance" },
+  { text: "Talent wins games, but teamwork wins championships.", author: "Michael Jordan", category: "Teamwork" },
+  { text: "When I win and when I lose, I take ownership.", author: "Nicki Minaj", category: "Responsibility" },
+  { text: "A champion is afraid of losing. Everyone else is afraid of winning.", author: "Billie Jean King", category: "Courage" },
+  { text: "Words can inspire, thought can provoke, but only action brings you closer to dreams.", author: "Brad Sugars", category: "Action" },
+  { text: "Don’t stop when you are tired. Stop when you are done.", author: "Unknown", category: "Endurance" },
+  { text: "Don’t tell people your dreams. Show them.", author: "Unknown", category: "Ambition" },
+  { text: "Motivation starts you off; habit keeps you going.", author: "Miya Yamanouchi", category: "Discipline" },
+  { text: "Build your own dreams, or someone else will hire you to build theirs.", author: "Farrah Gray", category: "Vision" },
+  { text: "No one has ever achieved greatness without a sense of purpose.", author: "William James", category: "Purpose" },
+  { text: "Always do right. This will gratify some people and astonish the rest.", author: "Mark Twain", category: "Integrity" },
+  { text: "The price of greatness is responsibility.", author: "Winston Churchill", category: "Responsibility" },
+  { text: "If you want to fly, give up everything that weighs you down.", author: "Buddha", category: "Freedom" },
+  { text: "Imperfection is beauty, madness is genius.", author: "Marilyn Monroe", category: "Self-Love" },
+  { text: "There are only two ways to live your life: Miracles exist or they don’t.", author: "Albert Einstein", category: "Perspective" },
+  { text: "Without music, life would be a mistake.", author: "Friedrich Nietzsche", category: "Art" },
+  { text: "Be yourself; everyone else is taken.", author: "Oscar Wilde", category: "Authenticity" },
+  { text: "Darkness cannot drive out darkness: only light can do that.", author: "Martin Luther King Jr.", category: "Peace" },
+  { text: "We accept the love we think we deserve.", author: "Stephen Chbosky", category: "Love" },
+  { text: "Be the change that you wish to see in the world.", author: "Mahatma Gandhi", category: "Change" },
+  { text: "Live as if you were to die tomorrow.", author: "Mahatma Gandhi", category: "Life" },
+  { text: "We are all in the gutter, but some of us are looking at the stars.", author: "Oscar Wilde", category: "Hope" },
+  { text: "You don't need to see the whole staircase, just take the first step.", author: "MLK Jr.", category: "Action" },
+  { text: "Magic is believing in yourself. If you can make that happen, you can make anything happen.", author: "Goethe", category: "Self-belief" },
+  { text: "You see things and think, 'Why?' I dream things that never were—why not?", author: "George Bernard Shaw", category: "Imagination" },
+  { text: "Your attitude, not your aptitude, will determine your altitude.", author: "Zig Ziglar", category: "Mindset" },
+  { text: "Believe you can and you're halfway there.", author: "Theodore Roosevelt", category: "Belief" },
+  { text: "It is never too late to be what you might have been.", author: "George Eliot", category: "inspiration" },
+  { text: "Make each day your masterpiece.", author: "John Wooden", category: "Mastery" },
+  { text: "The greatest weapon against stress is the ability to choose one thought over another.", author: "William James", category: "Mindset" },
+  { text: "Enter these portals all ye who dare to discover... thirst for truth.", author: "William A. Ward", category: "Inspiration" },
+  { text: "What is coming is better than what is gone.", author: "Unknown", category: "Hope" },
+  { text: "Attitude is a choice. Kindness, respect—they’re all choices. Choose wisely.", author: "Roy Bennett", category: "Choice" },
+  { text: "We delight in the beauty of the butterfly...", author: "Maya Angelou", category: "Change" },
+  { text: "Dreams are the seeds of change...", author: "Debby Boone", category: "Growth" },
+  { text: "If something is important enough, even if the odds are stacked against you, you should still do it.", author: "Elon Musk", category: "Courage" },
+  { text: "We tend to get what we expect.", author: "Norman Vincent Peale", category: "Mindset" },
+  { text: "Keep your face to the sunshine and you can never see the shadow.", author: "Helen Keller", category: "Optimism" },
+  { text: "No one is useless who lightens the burden of another.", author: "Charles Dickens", category: "Compassion" },
+  { text: "To reach a port, we must sail—not tie at anchor—not drift.", author: "FDR", category: "Purpose" },
+  { text: "Your brain is the most important organ in your body...", author: "Rick Hanson", category: "Mindset" },
+  { text: "History is shaped by those who show up.", author: "Michelle Obama", category: "Leadership" },
+  { text: "No pressure, no diamonds.", author: "Thomas Carlyle", category: "Courage" },
+  { text: "The only thing worse than being blind is having sight but no vision.", author: "Helen Keller", category: "Vision" },
+  { text: "If you hear a voice that says you cannot paint, then paint.", author: "Van Gogh", category: "Courage" },
+  { text: "I hated every minute of training, but don’t quit. Suffer now and live the rest of your life as a champion.", author: "Muhammad Ali", category: "Endurance" },
+  { text: "I'm continually trying to make choices that put me against your comfort zone.", author: "Ashton Kutcher", category: "Growth" },
+  { text: "People with goals succeed because they know where they're going.", author: "Earl Nightingale", category: "Goals" },
+  { text: "If you have built castles in the air, now put foundations under them.", author: "Henry David Thoreau", category: "Vision" },
+  { text: "The best revenge is to improve yourself.", author: "Unknown", category: "Self-Improvement" },
+  { text: "Dreams don’t work unless you do.", author: "John C. Maxwell", category: "Motivation" },
+  { text: "Your limitation—it’s only your imagination.", author: "Unknown", category: "Imagination" },
+  { text: "Push yourself, because no one else is going to do it for you.", author: "Unknown", category: "Motivation" },
+  { text: "Great things never come from comfort zones.", author: "Unknown", category: "Growth" },
+  { text: "Dream it. Wish it. Do it.", author: "Unknown", category: "Ambition" },
+  { text: "Success doesn’t just find you. You have to go out and get it.", author: "Unknown", category: "Success" },
+  { text: "The harder you work for something, the greater you’ll feel when you achieve it.", author: "Unknown", category: "Hard Work" },
+  { text: "Dream bigger. Do bigger.", author: "Unknown", category: "Ambition" },
+  { text: "Don’t stop when you’re tired. Stop when you’re done.", author: "Marilyn Monroe", category: "Endurance" },
+  { text: "Wake up with determination. Go to bed with satisfaction.", author: "Unknown", category: "Motivation" },
+  { text: "Do something today that your future self will thank you for.", author: "Sean Patrick Flanery", category: "Motivation" },
+  { text: "Little things make big days.", author: "Unknown", category: "Mindset" },
+  { text: "It’s going to be hard, but hard does not mean impossible.", author: "Unknown", category: "Perseverance" },
+  { text: "Don’t wait for opportunity. Create it.", author: "George Bernard Shaw", category: "Opportunity" },
+  { text: "Sometimes we’re tested not to show our weaknesses, but to discover our strengths.", author: "Unknown", category: "Strength" },
+  { text: "The key to success is to focus on goals, not obstacles.", author: "Unknown", category: "Focus" },
+  { text: "Dream it. Believe it. Build it.", author: "Unknown", category: "Inspiration" },
+  { text: "Be so good they can’t ignore you.", author: "Steve Martin", category: "Excellence" },
+  { text: "If not now, then when?", author: "Unknown", category: "Motivation" },
+  { text: "Don’t watch the clock; Do what it does. Keep going.", author: "Sam Levenson", category: "Perseverance" },
+  { text: "Keep your eyes on the stars, and your feet on the ground.", author: "Theodore Roosevelt", category: "Balance" },
+  { text: "The only way to achieve the impossible is to believe it’s possible.", author: "Charles Kingsleigh", category: "Belief" },
+  { text: "Act motivated, even when uninspired.", author: "Unknown", category: "Motivation" },
+  { text: "You are stronger than your excuses.", author: "Unknown", category: "Discipline" },
+  { text: "What seems to us as bitter trials are often blessings in disguise.", author: "Oscar Wilde", category: "Perspective" },
+  { text: "Just when the caterpillar thought its life was over, it became a butterfly.", author: "Proverb", category: "Transformation" },
+  { text: "To be the best, you must be able to handle the worst.", author: "Wilson Kanadi", category: "Resilience" },
+  { text: "The pain you feel today will be the strength you feel tomorrow.", author: "Unknown", category: "Strength" },
+  { text: "You don’t have to be great to start, but you have to start to be great.", author: "Zig Ziglar", category: "Motivation" },
+  { text: "Hard work beats talent when talent doesn’t work hard.", author: "Tim Notke", category: "Effort" },
+  { text: "Believe in yourself even when no one else does.", author: "Unknown", category: "Self-Belief" },
+  { text: "Don’t wish for it. Work for it.", author: "Unknown", category: "Action" },
+  { text: "Keep going. Everything you need will come to you at the perfect time.", author: "Unknown", category: "Timing" },
+  { text: "The distance between dreams and reality is called action.", author: "Unknown", category: "Action" },
+  { text: "Sometimes later becomes never. Do it now.", author: "Unknown", category: "Urgency" },
+  { text: "Your only limit is you.", author: "Unknown", category: "Self" },
+  { text: "Don’t count the days. Make the days count.", author: "Muhammad Ali", category: "Motivation" },
+  { text: "Little by little, day by day, what is meant for you will find its way.", author: "Unknown", category: "Patience" },
+  { text: "Make your life a masterpiece; imagine no limitations on what you can be.", author: "Brian Tracy", category: "Vision" },
+  { text: "The future depends on what you do today.", author: "Mahatma Gandhi", category: "Action" },
+  { text: "Start where you are. Use what you have. Do what you can.", author: "Arthur Ashe", category: "Practicality" },
+  { text: "You don’t need to see the whole staircase, just take the first step.", author: "Martin Luther King Jr.", category: "Action" },
+  { text: "Don’t limit your challenges. Challenge your limits.", author: "Jerry Dunn", category: "Challenge" },
+  { text: "Someone is sitting in the shade today because someone planted a tree a long time ago.", author: "Warren Buffett", category: "Legacy" },
+  { text: "Success is what happens after you have survived all your mistakes.", author: "Unknown", category: "Wisdom" },
+  { text: "Your life does not get better by chance; it gets better by change.", author: "Jim Rohn", category: "Change" },
+  { text: "If you’re going through hell, keep going.", author: "Winston Churchill", category: "Resilience" },
+  { text: "Strive for progress, not perfection.", author: "Unknown", category: "Growth" },
+  { text: "What you get by achieving your goals is not as important as what you become by achieving your goals.", author: "Zig Ziglar", category: "Growth" },
+  { text: "It always seems impossible until it’s done.", author: "Nelson Mandela", category: "Motivation" },
+  { text: "A negative mind will never give you a positive life.", author: "Unknown", category: "Mindset" },
+  { text: "The real opportunity for success lies within the person and not in the job.", author: "Zig Ziglar", category: "Opportunity" },
+  { text: "Impossible is just an opinion.", author: "Paulo Coelho", category: "Belief" },
+  { text: "Success is not for the lazy.", author: "Unknown", category: "Hard Work" },
+  { text: "Don’t let yesterday take up too much of today.", author: "Will Rogers", category: "Focus" },
+  { text: "You are capable of more than you know.", author: "E. O. Wilson", category: "Confidence" },
+  { text: "Action is the foundational key to all success.", author: "Pablo Picasso", category: "Action" },
+  { text: "The expert in anything was once a beginner.", author: "Helen Hayes", category: "Humility" },
+  { text: "Motivation gets you going. Habit keeps you going.", author: "Jim Ryun", category: "Dedication" },
+  { text: "Get comfortable with being uncomfortable.", author: "Jillian Michaels", category: "Growth" },
+  { text: "You don't have to see the big picture to take that one step.", author: "Unknown", category: "Courage" },
+  { text: "Your passion is waiting for your courage to catch up.", author: "Isabelle Lafleche", category: "Passion" },
+  { text: "If you stumble, make it part of the dance.", author: "Unknown", category: "Resilience" },
+  { text: "Opportunities don't happen. You create them.", author: "Chris Grosser", category: "Opportunity" },
+  { text: "Don't limit yourself. Many people limit themselves to what they think they can do.", author: "Mary Kay Ash", category: "Self-Confidence" },
+  { text: "Try again. Fail again. Fail better.", author: "Samuel Beckett", category: "Perseverance" },
+  { text: "What you do today can improve all your tomorrows.", author: "Ralph Marston", category: "Motivation" },
+  { text: "Be proud, but never satisfied.", author: "Unknown", category: "Ambition" },
+  { text: "Stay foolish to stay sane.", author: "Maxime Lagacé", category: "Humor" },
+  { text: "I am not a product of my circumstances. I am a product of my decisions.", author: "Stephen Covey", category: "Empowerment" },
+  { text: "Sometimes we’re tested not to show our weaknesses, but to discover our strengths.", author: "Unknown", category: "Strength" },
+  { text: "The distance between who I am and who I want to be is only separated by what I do.", author: "Charles Barkley", category: "Action" },
+  { text: "If you don’t like how things are, change it!", author: "Jim Rohn", category: "Change" },
+  { text: "You get what you give.", author: "Jennifer Lopez", category: "Karma" },
+  { text: "Do what scares you until you’re not scared anymore.", author: "Unknown", category: "Courage" },
+  { text: "The secret ingredient is always love.", author: "Unknown", category: "Love" },
+  { text: "Turn your can'ts into cans and your dreams into plans.", author: "Unknown", category: "Motivation" },
+  { text: "Be stronger than your strongest excuse.", author: "Unknown", category: "Strength" },
+  { text: "Greatness begins beyond your comfort zone.", author: "Robin Sharma", category: "Growth" },
+  { text: "Strive not to be a success, but rather to be of value.", author: "Albert Einstein", category: "Wisdom" },
+  { text: "Don’t break down. Build up.", author: "Unknown", category: "Motivation" },
+  { text: "Every moment is a fresh beginning.", author: "T.S. Eliot", category: "Life" },
+  { text: "What you seek is seeking you.", author: "Rumi", category: "Inspiration" },
+  { text: "Your vibe attracts your tribe.", author: "Unknown", category: "Mindset" },
+  { text: "Rise up and attack the day with enthusiasm.", author: "Unknown", category: "Energy" },
+  { text: "Your only limit is your mind.", author: "Unknown", category: "Mindset" },
+  { text: "Success is the sum of small efforts repeated day in and day out.", author: "Robert Collier", category: "Discipline" },
+  { text: "Be the CEO of your own life.", author: "Unknown", category: "Leadership" },
+  { text: "Progress, not perfection.", author: "Unknown", category: "Growth" },
+  { text: "Self‑belief is the first step to success.", author: "Unknown", category: "Self‑Belief" },
+  { text: "Doubt kills more dreams than failure ever will.", author: "Suzy Kassem", category: "Belief" },
+  { text: "Do what’s right, not what’s easy.", author: "Unknown", category: "Integrity" },
+  { text: "Stick to your vision, even when everything’s blurry.", author: "Unknown", category: "Focus" },
+  { text: "Find joy in the journey.", author: "Unknown", category: "Joy" },
+  { text: "Everything you’ve ever wanted is one decision away.", author: "Unknown", category: "Decision" },
+  { text: "Turn obstacles into opportunities.", author: "Unknown", category: "Mindset" },
+  { text: "Make it happen.", author: "Unknown", category: "Action" },
+  { text: "You are worth every step ahead.", author: "Unknown", category: "Self‑Worth" },
+  { text: "Keep dreaming, keep doing.", author: "Unknown", category: "Dreams" },
+  { text: "How you do anything is how you do everything.", author: "Unknown", category: "Mindset" },
+  { text: "Attitude determines altitude.", author: "Zig Ziglar", category: "Attitude" },
+  { text: "Work silently, let success shout.", author: "Frank Ocean", category: "Success" },
+  { text: "You can. End of story.", author: "Unknown", category: "Belief" },
+  { text: "Success is a journey, not a destination.", author: "Arthur Ashe", category: "Perspective" },
+  { text: "Excuses don’t get results.", author: "Unknown", category: "Motivation" },
+  { text: "Be so good they can’t ignore you.", author: "Steve Martin", category: "Excellence" },
+  { text: "Stay humble. Work hard. Be kind.", author: "Unknown", category: "Character" },
+  { text: "Consistency creates results.", author: "Unknown", category: "Discipline" },
+  { text: "Start where you are.", author: "Unknown", category: "Action" },
+  { text: "Make today count.", author: "Unknown", category: "Mindset" },
+  { text: "Trust the process.", author: "Unknown", category: "Patience" },
+  { text: "Create your own sunshine.", author: "Unknown", category: "Positivity" },
+  { text: "The dream is free. The hustle is sold separately.", author: "Unknown", category: "Hustle" },
+  { text: "Fall seven times, stand up eight.", author: "Japanese Proverb", category: "Resilience" },
+  { text: "Better an oops than a what if.", author: "Unknown", category: "Courage" },
+  { text: "Your energy introduces you before you speak.", author: "Unknown", category: "Presence" },
+  { text: "Act with purpose.", author: "Unknown", category: "Purpose" },
+  { text: "The comeback is always stronger than the setback.", author: "Unknown", category: "Resilience" },
+  { text: "Trust yourself. You know more than you think you do.", author: "Benjamin Spock", category: "Self‑Belief" },
+  { text: "Own your power.", author: "Unknown", category: "Empowerment" },
+  { text: "Say yes to new adventures.", author: "Unknown", category: "Adventure" },
+  { text: "You didn’t come this far to only come this far.", author: "Unknown", category: "Motivation" },
+  { text: "Make yourself a priority.", author: "Unknown", category: "Self‑Care" },
+  { text: "Don’t downgrade your dream.", author: "Unknown", category: "Dreams" },
+  { text: "Live less out of habit and more out of intent.", author: "Unknown", category: "Mindfulness" },
+  { text: "Let your light shine.", author: "Unknown", category: "Inspiration" },
+  { text: "Inhale confidence. Exhale doubt.", author: "Unknown", category: "Mindset" },
+  { text: "Live your truth.", author: "Unknown", category: "Authenticity" },
+  { text: "Embrace uncertainty.", author: "Unknown", category: "Growth" },
+  { text: "Don’t compare your chapter 1 to someone else’s chapter 20.", author: "Unknown", category: "Perspective" },
+  { text: "Sometimes the smallest step in the right direction ends up being the biggest step of your life.", author: "Naeem Callaway", category: "Perseverance" },
+  { text: "You are your best asset.", author: "Unknown", category: "Self‑Value" },
+  { text: "Choose joy every day.", author: "Unknown", category: "Joy" },
+  { text: "Start unknown, finish unforgettable.", author: "Tony Gaskins", category: "Ambition" },
+  { text: "Life begins at the end of your comfort zone.", author: "Neale Donald Walsch", category: "Growth" },
+  { text: "Be fearless in the pursuit of what sets your soul on fire.", author: "Jennifer Lee", category: "Passion" },
+  { text: "Your dream doesn’t have an expiration date.", author: "Unknown", category: "Dreams" },
+  { text: "Every day is a second chance.", author: "Unknown", category: "Hope" },
+  { text: "Wake, pray, slay.", author: "Lisa Nichols", category: "Motivation" },
+  { text: "Stay present, stay grateful.", author: "Unknown", category: "Mindfulness" },
+  { text: "Choose progress over perfection.", author: "Unknown", category: "Growth" },
+  { text: "The struggle is part of the story.", author: "Unknown", category: "Resilience" },
+  { text: "Make peace with how things are.", author: "Unknown", category: "Acceptance" },
+  { text: "Rise above the storm.", author: "Unknown", category: "Strength" },
+  { text: "Peace begins with a smile.", author: "Mother Teresa", category: "Peace" },
+  { text: "Speak with integrity. Think with sincerity.", author: "Unknown", category: "Integrity" },
+  { text: "Beauty begins the moment you decide to be yourself.", author: "Coco Chanel", category: "Authenticity" },
+  { text: "Take the risk or lose the chance.", author: "Unknown", category: "Courage" },
+  { text: "The best project you’ll ever work on is you.", author: "Unknown", category: "Self‑Improvement" },
+  { text: "You can't change what's going on around you until you start changing what's going on within you.", author: "Zig Ziglar", category: "Self‑Growth" },
+  { text: "Stars can’t shine without darkness.", author: "D.H. Sidebottom", category: "Hope" },
+  { text: "Keep your dreams alive.", author: "Les Brown", category: "Motivation" },
+  { text: "Stay patient and trust your journey.", author: "Unknown", category: "Patience" },
+  { text: "Dreams don't work unless you do.", author: "John C. Maxwell", category: "Motivation" },
+  { text: "Create the life you can't wait to wake up to.", author: "Unknown", category: "Vision" },
+  { text: "Invest in your dreams. Grind now. Shine later.", author: "Unknown", category: "Effort" },
+  { text: "You are capable of amazing things.", author: "Unknown", category: "Confidence" },
+  { text: "Choose to be unstoppable.", author: "Unknown", category: "Motivation" },
+  { text: "Never look back unless it's a good view.", author: "Unknown", category: "Perspective" },
+  { text: "Your future self will thank you.", author: "Unknown", category: "Gratitude" },
+  { text: "Let go of what no longer serves you.", author: "Unknown", category: "Liberation" },
+  { text: "The best time for new beginnings is now.", author: "Unknown", category: "NewStart" },
+  { text: "You were made for more.", author: "Unknown", category: "Inspiration" } ,
+  { text: "Own your morning, elevate your life.", author: "Unknown", category: "Routine" },
+  { text: "The journey is the reward.", author: "Steve Jobs", category: "Journey" },
+  { text: "You are stronger than you think.", author: "Unknown", category: "Strength" },
+  { text: "Life is short. Smile while you still have teeth.", author: "Unknown", category: "Humor" },
+  { text: "Be a voice, not an echo.", author: "Albert Einstein", category: "Individuality" },
+  { text: "Progress starts with a decision to try.", author: "Unknown", category: "Action" },
+  { text: "Boldness has genius, magic, power in it.", author: "Johann Wolfgang von Goethe", category: "Courage" },
+  { text: "Small steps each day lead to big results.", author: "Unknown", category: "Perseverance" },
+  { text: "Don't wait for the perfect moment. Take the moment and make it perfect.", author: "Unknown", category: "Action" },
+  { text: "Your mindset determines your outcome.", author: "Unknown", category: "Mindset" },
+  { text: "Nothing changes if nothing changes.", author: "Unknown", category: "Growth" },
+  { text: "Dreams demand hustle.", author: "Unknown", category: "Hustle" },
+  { text: "Be an encourager. The world has enough critics already.", author: "Unknown", category: "Kindness" },
+  { text: "Mistakes are proof that you’re trying.", author: "Jennifer Lim", category: "Resilience" },
+  { text: "Great things take time.", author: "Unknown", category: "Patience" },
+  { text: "Your best teacher is your last mistake.", author: "Unknown", category: "Learning" },
+  { text: "Make your own luck.", author: "Unknown", category: "Opportunity" },
+  { text: "Simplicity is the ultimate form of sophistication.", author: "Leonardo da Vinci", category: "Wisdom" },
+  { text: "You do you.", author: "Unknown", category: "Authenticity" },
+  { text: "Build, refine, repeat.", author: "Unknown", category: "Growth" },
+  { text: "Decide. Commit. Succeed.", author: "Unknown", category: "Action" },
+  { text: "Take the risk—you never know how far it can take you.", author: "Unknown", category: "Courage" },
+  { text: "Life rewards the brave.", author: "Unknown", category: "Bravery" },
+  { text: "Let your passion lead the way.", author: "Unknown", category: "Passion" },
+  { text: "Be love in action.", author: "Mother Teresa", category: "Compassion" },
+  { text: "Still waters run deep.", author: "Unknown", category: "Depth" },
+  { text: "Create something today that your future self will thank you for.", author: "Unknown", category: "Vision" },
+  { text: "Live less out of habit and more out of intent.", author: "Unknown", category: "Mindfulness" },
+  { text: "Today's struggles develop tomorrow's strengths.", author: "Unknown", category: "Resilience" },
+  { text: "Invest in yourself. You’re worth it.", author: "Unknown", category: "Self‑Care" },
+  { text: "The best foundation you can build is self‑belief.", author: "Unknown", category: "Self‑Belief" },
+  { text: "Go the extra mile—it’s never crowded.", author: "Dr. Wayne Dyer", category: "Effort" },
+  { text: "Embrace the glorious mess that you are.", author: "Elizabeth Gilbert", category: "Self‑Compassion" },
+  { text: "Don't quit your daydream.", author: "Unknown", category: "Dreams" },
+  { text: "Life shrinks or expands in proportion to one’s courage.", author: "Anaïs Nin", category: "Courage" },
+  { text: "Better to do something imperfectly than to do nothing flawlessly.", author: "Robert H. Schuller", category: "Perseverance" },
+  { text: "Happiness is an inside job.", author: "William Arthur Ward", category: "Happiness" },
+  { text: "Your vibe speaks before you do.", author: "Unknown", category: "Presence" },
+  { text: "Let your heart lead the way.", author: "Unknown", category: "Guidance" },
+  { text: "Keep your goals high and your standards higher.", author: "Unknown", category: "Standards" },
+  { text: "Attitude is contagious. Make yours worth catching.", author: "Unknown", category: "Attitude" },
+  { text: "Stop doubting yourself. Start doing.", author: "Unknown", category: "Conf​idence" },
+  { text: "Every expert was once a beginner.", author: "Robin Sharma", category: "Humility" },
+  { text: "Turn restlessness into readiness.", author: "Unknown", category: "Motivation" },
+  { text: "Seek what sets your soul on fire.", author: "Unknown", category: "Passion" },
+  { text: "Sometimes courage is the quiet voice at day’s end saying, 'I'll try again tomorrow.'", author: "Mary Anne Radmacher", category: "Resilience" },
+  { text: "Become a blessing to someone else.", author: "Unknown", category: "Kindness" },
+  { text: "Joy is strength.", author: "Mother Teresa", category: "Joy" },
+  { text: "Keep moving forward.", author: "Walt Disney", category: "Persistence" },
+  { text: "Live intentionally.", author: "Unknown", category: "Intentionality" },
+  { text: "Growth begins at the end of your comfort zone.", author: "Robert Tew", category: "Growth" },
+  { text: "Nurture your mind like a garden.", author: "Unknown", category: "Mindset" },
+  { text: "Chase dreams, not people.", author: "Unknown", category: "Focus" },
+  { text: "Fortune favors the bold.", author: "Virgil", category: "Courage" },
+  { text: "Be brave in the face of uncertainty.", author: "Unknown", category: "Bravery" },
+  { text: "The struggle you're in today is developing the strength you need for tomorrow.", author: "Robert Tew", category: "Growth" },
+  { text: "Live your story.", author: "Unknown", category: "Authenticity" },
+  { text: "Progress is better than perfection.", author: "Unknown", category: "Growth" },
+  { text: "Believe in the magic within you.", author: "Unknown", category: "Self‑Belief" },
+  { text: "Let today be the start of something new.", author: "Unknown", category: "NewStart" },
+  { text: "Dare to live the life you've dreamed for yourself.", author: "Ralph Waldo Emerson", category: "Dreams" },
+  { text: "Do less, but better.", author: "Greg McKeown", category: "Focus" },
+  { text: "Energy flows where attention goes.", author: "James Redfield", category: "Focus" },
+  { text: "Sunsets are proof that endings can be beautiful too.", author: "Unknown", category: "Perspective" },
+  { text: "Create a life you don't need a vacation from.", author: "Unknown", category: "Lifestyle" },
+  { text: "In the middle of every difficulty lies opportunity.", author: "Albert Einstein", category: "Opportunity" },
+  { text: "Small acts, when multiplied by millions, can transform the world.", author: "Howard Zinn", category: "Impact" },
+  { text: "Make your life be a masterpiece.", author: "Unknown", category: "Mastery" },
+  { text: "Never let your fear decide your future.", author: "Unknown", category: "Courage" },
+  { text: "Aim for progress, not perfection.", author: "Unknown", category: "Growth" },
+  { text: "Thrive in uncertainty.", author: "Unknown", category: "Resilience" },
+  { text: "Define success on your own terms.", author: "Unknown", category: "Success" },
+  { text: "You are exactly where you need to be.", author: "Unknown", category: "Peace" },
+  { text: "The comeback is greater than the setback.", author: "Unknown", category: "Resilience" },
+  { text: "Your story matters.", author: "Unknown", category: "Hope" },
+  { text: "Hustle in silence. Let your success make the noise.", author: "Frank Ocean", category: "Hustle" },
+  { text: "Face your fears and doubts. Wear them as armor, and they’ll become your strength.", author: "Unknown", category: "Courage" },
+  { text: "One day or day one. You decide.", author: "Unknown", category: "Motivation" },
+  { text: "Stay curious.", author: "Unknown", category: "Curiosity" },
+  { text: "Keep your heart open and your mind curious.", author: "Unknown", category: "Mindset" },
+  { text: "Your focus creates your reality.", author: "Unknown", category: "Mindset" },
+  { text: "Light tomorrow with today.", author: "Elizabeth Barrett Browning", category: "Hope" },
+  { text: "You matter more than you know.", author: "Unknown", category: "Self‑Worth" },
+  { text: "Fall in love with taking care of yourself.", author: "Unknown", category: "Self‑Care" },
+  { text: "Keep going, no matter what.", author: "Unknown", category: "Perseverance" },
+  { text: "A year from now you’ll wish you had started today.", author: "Karen Lamb", category: "Motivation" },
+  { text: "Your potential is endless.", author: "Unknown", category: "Potential" },
+  { text: "Be a light in someone’s darkness.", author: "Unknown", category: "Kindness" },
+  { text: "What defines you is how well you rise after falling.", author: "Unknown", category: "Resilience" },
+  { text: "Be present in all things.", author: "Unknown", category: "Mindfulness" } ,
+  { text: "Start unseen, finish unforgettable.", author: "Tony Gaskins", category: "Ambition" },
+  { text: "Turn big dreams into small steps.", author: "Unknown", category: "Growth" },
+  { text: "Let your hustle be louder than your mouth.", author: "Unknown", category: "Hustle" },
+  { text: "Find the courage to start again.", author: "Unknown", category: "Resilience" },
+  { text: "Fuel your goals with action.", author: "Unknown", category: "Motivation" },
+  { text: "Vision without execution is hallucination.", author: "Thomas Edison", category: "Execution" },
+  { text: "Be the exception.", author: "Unknown", category: "Uniqueness" },
+  { text: "Stay sober, stay focused.", author: "Unknown", category: "Determination" },
+  { text: "Progress > perfection.", author: "Unknown", category: "Growth" },
+  { text: "Build habits, not hopes.", author: "Unknown", category: "Discipline" },
+  { text: "Silence your doubts with results.", author: "Unknown", category: "Confidence" },
+  { text: "Gratitude turns what we have into enough.", author: "Melody Beattie", category: "Gratitude" },
+  { text: "Your comfort zone is your danger zone.", author: "Greg Plitt", category: "Growth" },
+  { text: "When you can’t find the sunshine, be the sunshine.", author: "Unknown", category: "Positivity" },
+  { text: "Be so busy improving yourself that you have no time to criticize others.", author: "Unknown", category: "Self‑Improvement" },
+  { text: "Make failure your teacher.", author: "Unknown", category: "Learning" },
+  { text: "Success is a series of small wins.", author: "Unknown", category: "Success" },
+  { text: "The mind is a garden—watch what you plant.", author: "Unknown", category: "Mindset" },
+  { text: "Courage is fear that has said its prayers.", author: "Karl Barth", category: "Courage" },
+  { text: "Your habits will define your future.", author: "Unknown", category: "Discipline" },
+  { text: "Chase purpose, not perfection.", author: "Unknown", category: "Purpose" },
+  { text: "Let your dreams shape your days.", author: "Unknown", category: "Vision" },
+  { text: "Doubt is a liar.", author: "Unknown", category: "Belief" },
+  { text: "Keep planting seeds of greatness.", author: "Unknown", category: "Growth" },
+  { text: "Turn your wounds into wisdom.", author: "Oprah Winfrey", category: "Resilience" },
+  { text: "The best project you’ll ever work on is you.", author: "Unknown", category: "Self‑Improvement" },
+  { text: "Don’t stop halfway up the mountain.", author: "Unknown", category: "Perseverance" },
+  { text: "Your future begins today.", author: "Unknown", category: "Motivation" },
+  { text: "Make your next move count.", author: "Unknown", category: "Action" },
+  { text: "Don’t settle for good when you can be great.", author: "Unknown", category: "Excellence" },
+  { text: "Be relentless in pursuit of your goals.", author: "Unknown", category: "Drive" },
+  { text: "Your story isn’t over yet.", author: "Unknown", category: "Hope" },
+  { text: "Consistency turns average into excellence.", author: "Unknown", category: "Discipline" },
+  { text: "Recover, don’t restart.", author: "Unknown", category: "Resilience" },
+  { text: "Be the hardest worker in the room.", author: "Unknown", category: "Effort" },
+  { text: "Purpose fuels passion.", author: "Unknown", category: "Purpose" },
+  { text: "Progress begins with patience.", author: "Unknown", category: "Patience" },
+  { text: "Be brave enough to be bad at something new.", author: "Unknown", category: "Courage" },
+  { text: "Victory goes to the most persevering.", author: "Unknown", category: "Perseverance" },
+  { text: "Turn pressure into power.", author: "Unknown", category: "Strength" },
+  { text: "Create more than you consume.", author: "Unknown", category: "Creativity" },
+  { text: "Find freedom in focus.", author: "Unknown", category: "Focus" },
+  { text: "Live with intent every day.", author: "Unknown", category: "Intentionality" },
+  { text: "Rise before sunrise.", author: "Unknown", category: "Routine" },
+  { text: "Success is earned in silence.", author: "Unknown", category: "Humility" },
+  { text: "Fall down seven times, get up eight.", author: "Japanese Proverb", category: "Resilience" },
+  { text: "Let your work speak for you.", author: "Unknown", category: "Actions" },
+  { text: "Dream big. Start small.", author: "Unknown", category: "Vision" },
+  { text: "Lead with kindness.", author: "Unknown", category: "Leadership" },
+  { text: "Embrace your authentic self.", author: "Unknown", category: "Authenticity" },
+  { text: "Master the little things.", author: "Unknown", category: "Excellence" },
+  { text: "Grow through what you go through.", author: "Unknown", category: "Growth" },
+  { text: "Let gratitude guide your day.", author: "Unknown", category: "Gratitude" },
+  { text: "Take inspired action.", author: "Unknown", category: "Action" },
+  { text: "Be your own hero.", author: "Unknown", category: "Empowerment" },
+  { text: "Build resilience through repetition.", author: "Unknown", category: "Resilience" },
+  { text: "Your attitude is your altar.", author: "Unknown", category: "Mindset" },
+  { text: "Refuse to be average.", author: "Unknown", category: "Drive" },
+  { text: "Release what weighs you.", author: "Unknown", category: "Liberation" },
+  { text: "Elevate your standards.", author: "Unknown", category: "Standards" },
+  { text: "Be unstoppable in pursuit of your purpose.", author: "Unknown", category: "Purpose" },
+  { text: "Surround yourself with believers.", author: "Unknown", category: "Environment" },
+  { text: "Honor your journey.", author: "Unknown", category: "Reflection" },
+  { text: "Turn doubts into determination.", author: "Unknown", category: "Belief" },
+  { text: "Let faith be bigger than your fear.", author: "Unknown", category: "Faith" },
+  { text: "Actions define identity.", author: "Unknown", category: "Character" },
+  { text: "Stay humble, think big.", author: "Unknown", category: "Vision" },
+  { text: "Love what you do.", author: "Unknown", category: "Passion" },
+  { text: "Push limits, change results.", author: "Unknown", category: "Performance" },
+  { text: "Choose courage over comfort.", author: "Unknown", category: "Courage" },
+  { text: "Rise to the opportunity.", author: "Unknown", category: "Opportunity" },
+  { text: "Learn like you’ll live forever.", author: "Unknown", category: "Learning" },
+  { text: "Treat your body like the temple it is.", author: "Unknown", category: "Wellness" },
+  { text: "Speak truth, even if your voice shakes.", author: "Unknown", category: "Integrity" },
+  { text: "Let your impact echo beyond you.", author: "Unknown", category: "Legacy" },
+  { text: "Do better when nobody’s watching.", author: "Unknown", category: "Character" },
+  { text: "Today is the tomorrow you worried about yesterday.", author: "Unknown", category: "Perspective" },
+  { text: "Your dreams deserve your dedication.", author: "Unknown", category: "Dedication" },
+  { text: "Become the person you needed growing up.", author: "Unknown", category: "Growth" },
+  { text: "Resilience is forged in adversity.", author: "Unknown", category: "Resilience" },
+  { text: "Stand tall in the face of challenge.", author: "Unknown", category: "Courage" },
+  { text: "Your future is in your habits.", author: "Unknown", category: "Discipline" },
+  { text: "Be the change you seek.", author: "Unknown", category: "Action" },
+  { text: "Unlock potential through persistence.", author: "Unknown", category: "Persistence" },
+  { text: "The magic lies in the moment.", author: "Unknown", category: "Mindfulness" },
+  { text: "Aim to inspire.", author: "Unknown", category: "Leadership" },
+  { text: "The next chapter is yours to write.", author: "Unknown", category: "Hope" },
+  { text: "Rise with purpose, sleep with pride.", author: "Unknown", category: "Purpose" },
+  { text: "Make your passion your paycheck.", author: "Unknown", category: "Work" },
+  { text: "Clarity comes from action, not thought.", author: "Unknown", category: "Action" },
+  { text: "Progress is imperfect, but progress wins.", author: "Unknown", category: "Growth" },
+  { text: "Let go of fears, embrace your future.", author: "Unknown", category: "Courage" },
+  { text: "Success is the result of consistency.", author: "Unknown", category: "Discipline" },
+  { text: "Courage grows in the doing.", author: "Unknown", category: "Courage" },
+  { text: "Lead with vision, live with purpose.", author: "Unknown", category: "Leadership" },
+  { text: "Hustle until your haters ask if you’re hiring.", author: "Unknown", category: "Hustle" },
+  { text: "You are your own competition.", author: "Unknown", category: "Self‑Discipline" },
+  { text: "Dream louder than your fears.", author: "Unknown", category: "Belief" },
+  { text: "Find the lesson in every loss.", author: "Unknown", category: "Resilience" },
+  { text: "Let intention guide your actions.", author: "Unknown", category: "Mindfulness" },
+  { text: "Create the future you crave.", author: "Unknown", category: "Vision" },
+  { text: "Let your habits build your legacy.", author: "Unknown", category: "Legacy" },
+  { text: "Finish strong, not just start strong.", author: "Unknown", category: "Perseverance" },
+  { text: "Be relentless in your efforts.", author: "Unknown", category: "Drive" },
+  { text: "Your belief lights the way.", author: "Unknown", category: "Belief" },
+  { text: "Momentum outperforms motivation.", author: "Unknown", category: "Momentum" },
+  { text: "You define your horizon.", author: "Unknown", category: "Vision" },
+  { text: "Gratitude turns chaos into clarity.", author: "Unknown", category: "Gratitude" },
+  { text: "Speak less, deliver more.", author: "Unknown", category: "Actions" },
+  { text: "Show up with confidence.", author: "Unknown", category: "Confidence" },
+  { text: "An empowered mind changes everything.", author: "Unknown", category: "Mindset" },
+  { text: "Invest effort as if your life depends on it—it does.", author: "Unknown", category: "Work" },
+  { text: "Progress begins outside comfort.", author: "Unknown", category: "Growth" },
+  { text: "No vision, no victory.", author: "Unknown", category: "Vision" },
+  { text: "Stay fierce, be fearless.", author: "Unknown", category: "Courage" },
+  { text: "Amplify your impact daily.", author: "Unknown", category: "Leadership" },
+  { text: "Purpose fuels your power.", author: "Unknown", category: "Purpose" },
+  { text: "Master your mornings, elevate your days.", author: "Unknown", category: "Routine" },
+  { text: "Let your work leave an echo.", author: "Unknown", category: "Legacy" },
+  { text: "Become someone who inspires.", author: "Unknown", category: "Inspiration" },
+  { text: "Struggle today, strength tomorrow.", author: "Unknown", category: "Resilience" },
+  { text: "Ready, set, grow.", author: "Unknown", category: "Growth" },
+  { text: "Awaken your greatness.", author: "Unknown", category: "Potential" },
+  { text: "Start small, achieve big.", author: "Unknown", category: "Growth" },
+  { text: "Lead with courage and care.", author: "Unknown", category: "Leadership" },
+  { text: "Be bold in your brilliance.", author: "Unknown", category: "Confidence" },
+  { text: "Push boundaries to find purpose.", author: "Unknown", category: "Purpose" },
+  { text: "Let hope be your anchor.", author: "Unknown", category: "Hope" },
+  { text: "Your journey matters more than the destination.", author: "Unknown", category: "Journey" },
+  { text: "Rise above doubt.", author: "Unknown", category: "Belief" },
+  { text: "Every step counts.", author: "Unknown", category: "Progress" },
+  { text: "Own your mistakes, learn fast.", author: "Unknown", category: "Learning" },
+  { text: "Make your grit legendary.", author: "Unknown", category: "Resilience" },
+  { text: "Stay curious, stay inspired.", author: "Unknown", category: "Curiosity" },
+  { text: "Passion fuels purpose.", author: "Unknown", category: "Passion" },
+  { text: "Flow with faith.", author: "Unknown", category: "Faith" },
+  { text: "Let kindness shape your legacy.", author: "Unknown", category: "Kindness" },
+  { text: "Fuel dreams with action.", author: "Unknown", category: "Motivation" },
+  { text: "Harness your inner hero.", author: "Unknown", category: "Empowerment" },
+  { text: "Let your vision be louder than fear.", author: "Unknown", category: "Belief" },
+  { text: "Fortune favors the fearless.", author: "Unknown", category: "Courage" },
+  { text: "Joy is found in the journey.", author: "Unknown", category: "Joy" },
+  { text: "Lead with empathy.", author: "Unknown", category: "Compassion" },
+  { text: "Own your greatness.", author: "Unknown", category: "Confidence" },
+  { text: "Let your light spark a fire.", author: "Unknown", category: "Inspiration" },
+  { text: "Celebrate every small win.", author: "Unknown", category: "Gratitude" },
+  { text: "Let your legacy inspire others.", author: "Unknown", category: "Legacy" },
+  { text: "Choose optimism daily.", author: "Unknown", category: "Mindset" },
+  { text: "Thriving is a choice.", author: "Unknown", category: "Resilience" },
+  { text: "Life is crafted by choices.", author: "Unknown", category: "Choice" },
+  { text: "Make progress your pattern.", author: "Unknown", category: "Growth" },
+  { text: "Faith conquers fear.", author: "Unknown", category: "Faith" },
+  { text: "Be the standard of excellence.", author: "Unknown", category: "Excellence" },
+  { text: "Lead your life with intention.", author: "Unknown", category: "Intentionality" },
+  { text: "Let your purpose shine through action.", author: "Unknown", category: "Purpose" },
+  { text: "Your consistency is your signature.", author: "Unknown", category: "Discipline" },
+  { text: "Grow your gratitude daily.", author: "Unknown", category: "Gratitude" },
+  { text: "Choose courage over convenience.", author: "Unknown", category: "Courage" },
+  { text: "Lead with your heart and mind equally.", author: "Unknown", category: "Leadership" },
+  { text: "Let energy guide your efficiency.", author: "Unknown", category: "Focus" },
+  { text: "Be the voice of reason in chaos.", author: "Unknown", category: "Composure" },
+  { text: "Your purpose is your power.", author: "Unknown", category: "Purpose" },
+  { text: "Carry hope in every step.", author: "Unknown", category: "Hope" },
+  { text: "Champion others, champion yourself.", author: "Unknown", category: "Leadership" },
+  { text: "Let obstacles be opportunities.", author: "Unknown", category: "Mindset" },
+  { text: "Put passion into practice.", author: "Unknown", category: "Action" },
+  { text: "Be fierce, be focused.", author: "Unknown", category: "Drive" },
+  { text: "Your dreams deserve dedication.", author: "Unknown", category: "Dedication" },
+  { text: "Refuse to dim your light.", author: "Unknown", category: "Confidence" },
+  { text: "Your journey, your story.", author: "Unknown", category: "Authenticity" },
+  { text: "Step up when others step down.", author: "Unknown", category: "Leadership" },
+  { text: "Stay committed, stay curious.", author: "Unknown", category: "Learning" },
+  { text: "Make bold goals and bigger moves.", author: "Unknown", category: "Ambition" },
+  { text: "Let commitment outlast motivation.", author: "Unknown", category: "Discipline" },
+  { text: "Find power in your pause.", author: "Unknown", category: "Mindfulness" },
+  { text: "Let ambition be your compass.", author: "Unknown", category: "Ambition" },
+  { text: "Success starts with self‑respect.", author: "Unknown", category: "Self‑Respect" },
+  { text: "A calm mind achieves more.", author: "Unknown", category: "Calm" },
+  { text: "Lead with your values.", author: "Unknown", category: "Leadership" },
+  { text: "Be present over perfect.", author: "Unknown", category: "Mindfulness" },
+  { text: "Start small, dream large.", author: "Unknown", category: "Vision" },
+  { text: "Courage blooms through action.", author: "Unknown", category: "Courage" },
+  { text: "Nourish your soul with gratitude.", author: "Unknown", category: "Gratitude" },
+  { text: "Creativity is your superpower.", author: "Unknown", category: "Creativity" },
+  { text: "Progress is better than procrastination.", author: "Unknown", category: "Action" },
+  { text: "Your voice matters.", author: "Unknown", category: "Empowerment" },
+  { text: "Shine from the inside out.", author: "Unknown", category: "Self‑Love" },
+  { text: "Let passion be your guide.", author: "Unknown", category: "Passion" },
+  { text: "Speak your truth with courage.", author: "Unknown", category: "Integrity" },
+  { text: "Celebrate the small wins.", author: "Unknown", category: "Gratitude" },
+  { text: "Consistency trumps talent.", author: "Unknown", category: "Discipline" },
+  { text: "Find strength in vulnerability.", author: "Unknown", category: "Courage" },
+  { text: "Invest in moments, not things.", author: "Unknown", category: "Mindfulness" },
+  { text: "Be a beginner every now and then.", author: "Unknown", category: "Learning" },
+  { text: "Craft life by your design.", author: "Unknown", category: "Creativity" },
+  { text: "Leave footprints of kindness.", author: "Unknown", category: "Kindness" },
+  { text: "Rest is productive too.", author: "Unknown", category: "Self‑Care" },
+  { text: "Raise your standards, not your expectations.", author: "Unknown", category: "Standards" },
+  { text: "Lead with your heart and mind.", author: "Unknown", category: "Leadership" },
+  { text: "Action cures doubt.", author: "Unknown", category: "Action" },
+  { text: "Be your own biggest fan.", author: "Unknown", category: "Self‑Belief" },
+  { text: "Heal, then help.", author: "Unknown", category: "Healing" },
+  { text: "Let your failures fuel you.", author: "Unknown", category: "Resilience" },
+  { text: "Shed fear, embrace growth.", author: "Unknown", category: "Growth" },
+  { text: "Lead by example, not opinion.", author: "Unknown", category: "Leadership" },
+  { text: "Be intentional with your energy.", author: "Unknown", category: "Mindfulness" },
+  { text: "Vision without action stays imagination.", author: "Unknown", category: "Vision" },
+  { text: "Rise by lifting others.", author: "Unknown", category: "Service" },
+  { text: "Turn mistakes into milestones.", author: "Unknown", category: "Growth" },
+  { text: "Radiate confidence silently.", author: "Unknown", category: "Confidence" },
+  { text: "Lead with empathy before ego.", author: "Unknown", category: "Leadership" },
+  { text: "Be curious, not critical.", author: "Unknown", category: "Curiosity" },
+  { text: "Find beauty in the struggle.", author: "Unknown", category: "Perspective" },
+  { text: "Nurture your dreams daily.", author: "Unknown", category: "Dreams" },
+  { text: "Let love be your legacy.", author: "Unknown", category: "Love" },
+  { text: "Stay humble and hungry.", author: "Unknown", category: "Attitude" },
+  { text: "Your thoughts shape your reality.", author: "Unknown", category: "Mindset" },
+  { text: "Master the moment you’re in.", author: "Unknown", category: "Mindfulness" },
+  { text: "Build courage through consistent acts.", author: "Unknown", category: "Courage" },
+  { text: "Let gratitude grow your heart.", author: "Unknown", category: "Gratitude" },
+  { text: "Your authenticity is your compass.", author: "Unknown", category: "Authenticity" },
+  { text: "Rest without guilt.", author: "Unknown", category: "Self‑Care" },
+  { text: "Breathe. Believe. Receive.", author: "Unknown", category: "Mindfulness" },
+  { text: "Lead with what you know and learn the rest.", author: "Unknown", category: "Leadership" },
+  { text: "Let self‑love be your foundation.", author: "Unknown", category: "Self‑Love" },
+  { text: "Listen more than you speak.", author: "Unknown", category: "Communication" },
+  { text: "Life’s magic happens outside comfort.", author: "Unknown", category: "Growth" },
+  { text: "Aim to be better, not perfect.", author: "Unknown", category: "Growth" },
+  { text: "Take the path with the most potential.", author: "Unknown", category: "Ambition" },
+  { text: "Let time refine your journey.", author: "Unknown", category: "Patience" },
+  { text: "Be mindful of your influence.", author: "Unknown", category: "Leadership" },
+  { text: "Speak less, connect more.", author: "Unknown", category: "Connection" },
+  { text: "Use your voice to uplift, not tear down.", author: "Unknown", category: "Kindness" },
+  { text: "Bask in your own light.", author: "Unknown", category: "Confidence" },
+  { text: "Your vision deserves your sweat.", author: "Unknown", category: "Effort" },
+  { text: "Lead with service first.", author: "Unknown", category: "Leadership" },
+  { text: "Let confidence be your crown.", author: "Unknown", category: "Confidence" },
+  { text: "Gratitude transforms perspective.", author: "Unknown", category: "Gratitude" },
+  { text: "Create the change you want to see.", author: "Unknown", category: "Change" },
+  { text: "Lead your values daily.", author: "Unknown", category: "Integrity" },
+  { text: "Pause to realign." , author: "Unknown", category: "Mindfulness" },
+  { text: "Keep your eyes on your own paper.", author: "Unknown", category: "Focus" },
+  { text: "Your self‑worth is not up for debate.", author: "Unknown", category: "Self‑Worth" },
+  { text: "Build your life brick by brick.", author: "Unknown", category: "Patience" },
+  { text: "Chase life with full open arms.", author: "Unknown", category: "Living" },
+  { text: "Let your habits propel you.", author: "Unknown", category: "Habits" },
+  { text: "Lead with curiosity over criticism.", author: "Unknown", category: "Leadership" },
+  { text: "Protect your peace fiercely.", author: "Unknown", category: "Peace" },
+  { text: "Choose courage daily.", author: "Unknown", category: "Courage" },
+  { text: "Build character through challenges.", author: "Unknown", category: "Growth" },
+  { text: "Gratitude is the gateway to joy.", author: "Unknown", category: "Gratitude" },
+  { text: "Empower yourself by showing up.", author: "Unknown", category: "Empowerment" },
+  { text: "Live deliberately, not by default.", author: "Unknown", category: "Intentionality" },
+  { text: "Let your journey shape your wisdom.", author: "Unknown", category: "Wisdom" },
+  { text: "Find peace in the pause.", author: "Unknown", category: "Calm" },
+  { text: "Your presence is your power.", author: "Unknown", category: "Mindfulness" },
+  { text: "Dreams demand action, not desire.", author: "Unknown", category: "Action" },
+  { text: "Quiet the mind to hear the soul.", author: "Unknown", category: "Mindfulness" },
+  { text: "Bold intentions bring bold results.", author: "Unknown", category: "Ambition" },
+  { text: "Create impact through consistency.", author: "Unknown", category: "Discipline" },
+  { text: "Peace begins within you.", author: "Unknown", category: "Peace" },
+  { text: "Let your mind be your ally.", author: "Unknown", category: "Mindset" },
+  { text: "Your legacy is your daily decisions.", author: "Unknown", category: "Legacy" },
+  { text: "Rise with purpose. Rest with gratitude.", author: "Unknown", category: "Routine" },
+  { text: "Say yes to your own greatness.", author: "Unknown", category: "Empowerment" },
+
+  { text: "Clear focus breeds clear results.", author: "Unknown", category: "Focus" },
+  { text: "Be the energy you wish to attract.", author: "Unknown", category: "Energy" },
+  { text: "Let go of what dims your light.", author: "Unknown", category: "Clarity" },
+  { text: "Your belief can move mountains.", author: "Unknown", category: "Belief" },
+  { text: "Mastery comes through mindful repetition.", author: "Unknown", category: "Mastery" },
+  { text: "Live beyond fear, not in spite of it.", author: "Unknown", category: "Courage" },
+  { text: "Serve others from a place of abundance.", author: "Unknown", category: "Service" },
+  { text: "The calm mind is a creative mind.", author: "Unknown", category: "Creativity" },
+  { text: "Chase meaning, not money.", author: "Unknown", category: "Purpose" },
+  { text: "Be kind. For everyone is fighting a hard battle.", author: "Plato", category: "Kindness" },
+
+  { text: "Choose depth over distraction.", author: "Unknown", category: "Focus" },
+  { text: "Solutions come from open hearts.", author: "Unknown", category: "Compassion" },
+  { text: "Where attention flows, energy grows.", author: "Unknown", category: "Energy" },
+  { text: "Your vibe determines your direction.", author: "Unknown", category: "Mindset" },
+  { text: "Grow through the cracks of failure.", author: "Unknown", category: "Growth" },
+  { text: "Stillness reveals your next step.", author: "Unknown", category: "Mindfulness" },
+  { text: "Intentions define destinations.", author: "Unknown", category: "Intentionality" },
+  { text: "Choose what elevates, not just what entertains.", author: "Unknown", category: "Values" },
+  { text: "Your path is unique—walk it boldly.", author: "Unknown", category: "Authenticity" },
+  { text: "Success favors the persistent.", author: "Unknown", category: "Persistence" },
+
+  { text: "Be the voice of your own support system.", author: "Unknown", category: "Self‑Compassion" },
+  { text: "Leadership begins with self‑leadership.", author: "Unknown", category: "Leadership" },
+  { text: "Courage blooms under pressure.", author: "Unknown", category: "Courage" },
+  { text: "Challenge limits, don’t settle.", author: "Unknown", category: "Growth" },
+  { text: "Your mindset is your innermost world.", author: "Unknown", category: "Mindset" },
+  { text: "Push through walls, see what's next.", author: "Unknown", category: "Resilience" },
+  { text: "Turn intention into action.", author: "Unknown", category: "Action" },
+  { text: "Clarity comes from doing.", author: "Unknown", category: "Clarity" },
+  { text: "Lead from your strengths.", author: "Unknown", category: "Leadership" },
+  { text: "Live loud in your own rhythm.", author: "Unknown", category: "Authenticity" },
+
+  { text: "Trust your journey—even detours count.", author: "Unknown", category: "Trust" },
+  { text: "Comfort is the enemy of impact.", author: "Unknown", category: "Impact" },
+  { text: "Your resilience rewrites your story.", author: "Unknown", category: "Resilience" },
+  { text: "Be the calm in your own storm.", author: "Unknown", category: "Mindfulness" },
+  { text: "Small progress beats misplaced perfection.", author: "Unknown", category: "Progress" },
+  { text: "Intentions + consistency = transformation.", author: "Unknown", category: "Discipline" },
+  { text: "Your story begins the moment you decide.", author: "Unknown", category: "Empowerment" },
+  { text: "Craft courage through everyday acts.", author: "Unknown", category: "Courage" },
+  { text: "Lead with truth, not trends.", author: "Unknown", category: "Integrity" },
+  { text: "Your future self is watching. Act accordingly.", author: "Unknown", category: "Accountability" },
+
+  { text: "Pause to create before reacting.", author: "Unknown", category: "Mindfulness" },
+  { text: "Let gratitude be your north star.", author: "Unknown", category: "Gratitude" },
+  { text: "Choose the direction of your mind.", author: "Unknown", category: "Mindset" },
+  { text: "Purpose is the fire that warms your journey.", author: "Unknown", category: "Purpose" },
+  { text: "Bravery is faithful action toward what matters.", author: "Unknown", category: "Courage" },
+  { text: "Leave distractions behind. Find depth.", author: "Unknown", category: "Focus" },
+  { text: "Create value first. Rewards follow.", author: "Unknown", category: "Value" },
+  { text: "Let calm decision-making prevail.", author: "Unknown", category: "Clarity" },
+  { text: "Master your craft one day at a time.", author: "Unknown", category: "Mastery" },
+  { text: "Live from purpose, not pressure.", author: "Unknown", category: "Purpose" },
+
+  { text: "Trust growth more than comfort.", author: "Unknown", category: "Growth" },
+  { text: "Lead through listening first.", author: "Unknown", category: "Leadership" },
+  { text: "Challenges unveil your capabilities.", author: "Unknown", category: "Resilience" },
+  { text: "Choose bold progress over timid comfort.", author: "Unknown", category: "Growth" },
+  { text: "Clarity emerges through simplicity.", author: "Unknown", category: "Clarity" },
+  { text: "Be the influence you appreciate.", author: "Unknown", category: "Influence" },
+  { text: "Your best ideas come from quiet minds.", author: "Unknown", category: "Creativity" },
+  { text: "Goals fuel effort. Action realizes them.", author: "Unknown", category: "Action" },
+  { text: "Your integrity is non-negotiable.", author: "Unknown", category: "Integrity" },
+  { text: "Build resilience by facing fear.", author: "Unknown", category: "Courage" },
+
+  { text: "Unfollow expectations. Follow purpose.", author: "Unknown", category: "Authenticity" },
+  { text: "Invest love in who you are becoming.", author: "Unknown", category: "Self‑Love" },
+  { text: "Let stillness deepen creativity.", author: "Unknown", category: "Creativity" },
+  { text: "Leadership isn’t position—it's influence.", author: "Unknown", category: "Leadership" },
+  { text: "Find power in your pause.", author: "Unknown", category: "Mindfulness" },
+  { text: "Your vision demands your action.", author: "Unknown", category: "Vision" },
+  { text: "Trust the process—even unseen progress counts.", author: "Unknown", category: "Trust" },
+  { text: "Kindness doesn’t cost but changes everything.", author: "Unknown", category: "Kindness" },
+  { text: "Let passion pierce days of monotony.", author: "Unknown", category: "Passion" },
+  { text: "Resilience is built moment by moment.", author: "Unknown", category: "Resilience" },
+
+  { text: "Be your own anchor. Stay grounded.", author: "Unknown", category: "Stability" },
+  { text: "Lead with vision over volume.", author: "Unknown", category: "Leadership" },
+  { text: "Your habits write your tomorrow.", author: "Unknown", category: "Habits" },
+  { text: "Bloom where you are planted.", author: "Unknown", category: "Growth" },
+  { text: "Stillness reveals what action clears.", author: "Unknown", category: "Mindfulness" },
+  { text: "Choose progress, not pieces.", author: "Unknown", category: "Progress" },
+  { text: "You define your own value.", author: "Unknown", category: "Self‑Worth" },
+  { text: "Practice patience. Craft excellence.", author: "Unknown", category: "Patience" },
+  { text: "Lead through value, not vanity.", author: "Unknown", category: "Leadership" },
+  { text: "Let your purpose outlast your fears.", author: "Unknown", category: "Purpose" },
+
+  { text: "Create impact silently but deeply.", author: "Unknown", category: "Influence" },
+  { text: "Own your story. Teach through it.", author: "Unknown", category: "Legacy" },
+  { text: "Lead with humility, act with confidence.", author: "Unknown", category: "Leadership" },
+  { text: "Lead yourself before leading others.", author: "Unknown", category: "Leadership" },
+  { text: "Be the peace in your inner world.", author: "Unknown", category: "Peace" },
+  { text: "Momentum is made through movement.", author: "Unknown", category: "Momentum" },
+  { text: "Cultivate courage over comfort.", author: "Unknown", category: "Courage" },
+  { text: "Your value is in your being, not just doing.", author: "Unknown", category: "Self‑Worth" },
+  { text: "Clarity empowers calm action.", author: "Unknown", category: "Clarity" },
+  { text: "Lead with listening. Follow with action.", author: "Unknown", category: "Leadership" },
+  { text: "Let curiosity guide your life.", author: "Unknown", category: "Curiosity" },
+  { text: "Be the calm in someone else’s storm.", author: "Unknown", category: "Kindness" },
+  { text: "Build a life that feels like freedom.", author: "Unknown", category: "Freedom" },
+  { text: "Trust your inner compass.", author: "Unknown", category: "Trust" },
+  { text: "Create beauty in every day.", author: "Unknown", category: "Creativity" },
+  { text: "Lead with compassion always.", author: "Unknown", category: "Compassion" },
+  { text: "Discover strength in starting.", author: "Unknown", category: "Courage" },
+  { text: "Your presence is a present.", author: "Unknown", category: "Gratitude" },
+  { text: "Make your values visible.", author: "Unknown", category: "Integrity" },
+  { text: "Live with radical generosity.", author: "Unknown", category: "Generosity" },
+
+  { text: "Turn vision into action every day.", author: "Unknown", category: "Vision" },
+  { text: "Choose hope over fear.", author: "Unknown", category: "Hope" },
+  { text: "Cultivate calm amid chaos.", author: "Unknown", category: "Mindfulness" },
+  { text: "Lead yourself, then lead others.", author: "Unknown", category: "Leadership" },
+  { text: "Let simplicity sharpen your focus.", author: "Unknown", category: "Clarity" },
+  { text: "Nourish your dreams with perseverance.", author: "Unknown", category: "Persistence" },
+  { text: "Bravery compounds in small steps.", author: "Unknown", category: "Courage" },
+  { text: "Show up for your own story.", author: "Unknown", category: "Self‑Worth" },
+  { text: "Live with wholehearted intention.", author: "Unknown", category: "Intentionality" },
+  { text: "Fuel growth with feedback.", author: "Unknown", category: "Learning" },
+
+  { text: "Find freedom in authenticity.", author: "Unknown", category: "Authenticity" },
+  { text: "Resilience rises with resilience.", author: "Unknown", category: "Resilience" },
+  { text: "Lead by serving first.", author: "Unknown", category: "Leadership" },
+  { text: "Be the energy you wish to feel.", author: "Unknown", category: "Energy" },
+  { text: "Your best self deserves attention.", author: "Unknown", category: "Self‑Care" },
+  { text: "Silence noise, amplify values.", author: "Unknown", category: "Integrity" },
+  { text: "Let purpose be your constant north.", author: "Unknown", category: "Purpose" },
+  { text: "Courage emerges on the other side of fear.", author: "Unknown", category: "Courage" },
+  { text: "Presence transforms interactions.", author: "Unknown", category: "Mindfulness" },
+  { text: "Your heart already knows.", author: "Unknown", category: "Intuition" },
+
+  { text: "Small steps shape significant change.", author: "Unknown", category: "Progress" },
+  { text: "Harvest lessons, not regrets.", author: "Unknown", category: "Growth" },
+  { text: "Be steady when storms come.", author: "Unknown", category: "Resilience" },
+  { text: "Grow from what challenges you.", author: "Unknown", category: "Growth" },
+  { text: "Lead with listening and learn.", author: "Unknown", category: "Leadership" },
+  { text: "Live rich in purpose, not just possessions.", author: "Unknown", category: "Purpose" },
+  { text: "Cultivate inner peace daily.", author: "Unknown", category: "Mindfulness" },
+  { text: "Dreams require dedication.", author: "Unknown", category: "Dreams" },
+  { text: "Let your story inspire others.", author: "Unknown", category: "Inspiration" },
+  { text: "Bravery is a muscle—train it.", author: "Unknown", category: "Courage" },
+
+  { text: "You are your most important project.", author: "Unknown", category: "Self‑Improvement" },
+  { text: "Gratitude plants seeds of joy.", author: "Unknown", category: "Gratitude" },
+  { text: "Live aligned with what matters.", author: "Unknown", category: "Alignment" },
+  { text: "Be authentically imperfect.", author: "Unknown", category: "Authenticity" },
+  { text: "Clarity clears the path ahead.", author: "Unknown", category: "Clarity" },
+  { text: "Let confidence radiate inward.", author: "Unknown", category: "Confidence" },
+  { text: "Serve beyond your expectations.", author: "Unknown", category: "Service" },
+  { text: "Be still so solutions can arise.", author: "Unknown", category: "Mindfulness" },
+  { text: "Listen to your silent wisdom.", author: "Unknown", category: "Intuition" },
+  { text: "Progress persists through repetition.", author: "Unknown", category: "Discipline" },
+
+  { text: "Lead others by lifting spirits.", author: "Unknown", category: "Leadership" },
+  { text: "Resilience is forged by action.", author: "Unknown", category: "Resilience" },
+  { text: "Live like purpose matters.", author: "Unknown", category: "Purpose" },
+  { text: "Choose love in every response.", author: "Unknown", category: "Love" },
+  { text: "Kindness shapes collective spirit.", author: "Unknown", category: "Community" },
+  { text: "Authenticity builds trust.", author: "Unknown", category: "Integrity" },
+  { text: "Embrace discomfort to evolve.", author: "Unknown", category: "Growth" },
+  { text: "Leaders listen more than speak.", author: "Unknown", category: "Leadership" },
+  { text: "Find purpose in everyday acts.", author: "Unknown", category: "Purpose" },
+  { text: "Your calm is your strength.", author: "Unknown", category: "Mindfulness" },
+
+  { text: "Wellness grows from boundaries.", author: "Unknown", category: "Wellness" },
+  { text: "Invest time in self‑knowledge.", author: "Unknown", category: "Learning" },
+  { text: "Confidence starts with kindness to yourself.", author: "Unknown", category: "Confidence" },
+  { text: "Lead with the good you see.", author: "Unknown", category: "Leadership" },
+  { text: "Cultivate hope in your heart.", author: "Unknown", category: "Hope" },
+  { text: "Progress honors consistent action.", author: "Unknown", category: "Discipline" },
+  { text: "Be grateful, even for growth pains.", author: "Unknown", category: "Gratitude" },
+  { text: "Trust that better days are coming.", author: "Unknown", category: "Hope" },
+  { text: "Your impact echoes beyond you.", author: "Unknown", category: "Impact" },
+  { text: "Create value—then live it.", author: "Unknown", category: "Values" },
+
+  { text: "Rest builds resilience.", author: "Unknown", category: "Self‑Care" },
+  { text: "Speak courage into your challenges.", author: "Unknown", category: "Courage" },
+  { text: "Lead from heart-centered strength.", author: "Unknown", category: "Leadership" },
+  { text: "Be guided by compassion always.", author: "Unknown", category: "Compassion" },
+  { text: "Grow your roots before you branch out.", author: "Unknown", category: "Growth" },
+  { text: "Let purpose fuel your hustle.", author: "Unknown", category: "Purpose" },
+  { text: "Honor your light during dark days.", author: "Unknown", category: "Resilience" },
+  { text: "Trust quiet growth.", author: "Unknown", category: "Growth" },
+  { text: "Create, then contribute.", author: "Unknown", category: "Creativity" },
+  { text: "Live today with gratitude.", author: "Unknown", category: "Gratitude" },
+
+  { text: "Find courage in the stillness.", author: "Unknown", category: "Courage" },
+  { text: "Lead with humility and vision.", author: "Unknown", category: "Leadership" },
+  { text: "Your authenticity is magnetic.", author: "Unknown", category: "Authenticity" },
+  { text: "Create space for possibility.", author: "Unknown", category: "Possibility" },
+  { text: "Trust the timing of your journey.", author: "Unknown", category: "Trust" },
+  { text: "Let values shape your actions.", author: "Unknown", category: "Integrity" },
+  { text: "Rest without guilt; recover with grace.", author: "Unknown", category: "Self‑Care" },
+  { text: "Courage is grounded in why.", author: "Unknown", category: "Courage" },
+  { text: "Lead by lifting others up.", author: "Unknown", category: "Leadership" },
+  { text: "Let curiosity light your way.", author: "Unknown", category: "Curiosity" },
+
+  { text: "Create peace in your choices.", author: "Unknown", category: "Peace" },
+  { text: "Your worth isn't earned—it's inherent.", author: "Unknown", category: "Self‑Worth" },
+  { text: "Grow your heart daily.", author: "Unknown", category: "Compassion" },
+  { text: "Live out loud with purpose.", author: "Unknown", category: "Purpose" },
+  { text: "Let discipline frame your freedom.", author: "Unknown", category: "Discipline" },
+  { text: "Lead with courage over comfort.", author: "Unknown", category: "Leadership" },
+  { text: "Push gently through fear.", author: "Unknown", category: "Courage" },
+  { text: "Be the presence others need.", author: "Unknown", category: "Empathy" },
+  { text: "Trust your inner worth.", author: "Unknown", category: "Self‑Worth" },
+  { text: "Create with heart.", author: "Unknown", category: "Creativity" },
+  { text: "Plant seeds of positivity daily.", author: "Unknown", category: "Positivity" },
+  { text: "Your calm is your greatest weapon.", author: "Unknown", category: "Calm" },
+  { text: "Choose progress over perfection every time.", author: "Unknown", category: "Growth" },
+  { text: "Lead with curiosity, not assumptions.", author: "Unknown", category: "Leadership" },
+  { text: "Rest builds the foundation for victory.", author: "Unknown", category: "Self‑Care" },
+  { text: "Speak compassion into your conversations.", author: "Unknown", category: "Compassion" },
+  { text: "Confidence grows through action.", author: "Unknown", category: "Confidence" },
+  { text: "Let your creativity break the mold.", author: "Unknown", category: "Creativity" },
+  { text: "Find joy in the journey, not just the finish.", author: "Unknown", category: "Joy" },
+  { text: "Your purpose fuels your perseverance.", author: "Unknown", category: "Purpose" },
+
+  { text: "Curiosity opens doors imagination can't.", author: "Unknown", category: "Curiosity" },
+  { text: "Lead with a listening ear and open mind.", author: "Unknown", category: "Leadership" },
+  { text: "Gratitude transforms days into blessings.", author: "Unknown", category: "Gratitude" },
+  { text: "Resilience is forged when hope is tested.", author: "Unknown", category: "Resilience" },
+  { text: "Let authenticity lead your legacy.", author: "Unknown", category: "Authenticity" },
+  { text: "Trust begins with listening to your truth.", author: "Unknown", category: "Trust" },
+  { text: "Create moments that matter.", author: "Unknown", category: "Mindfulness" },
+  { text: "Actions rooted in purpose stand the test of time.", author: "Unknown", category: "Purpose" },
+  { text: "Find strength in silent resilience.", author: "Unknown", category: "Strength" },
+  { text: "Live in alignment with what sets your soul on fire.", author: "Unknown", category: "Purpose" },
+
+  { text: "Clarity comes when you quiet the noise.", author: "Unknown", category: "Clarity" },
+  { text: "Progress thrives on persistence.", author: "Unknown", category: "Discipline" },
+  { text: "Let empathy guide your leadership.", author: "Unknown", category: "Leadership" },
+  { text: "Build courage by opening your heart.", author: "Unknown", category: "Courage" },
+  { text: "Let your gratitude be contagious.", author: "Unknown", category: "Gratitude" },
+  { text: "Celebrate every tiny triumph.", author: "Unknown", category: "Celebration" },
+  { text: "Create with curiosity and care.", author: "Unknown", category: "Creativity" },
+  { text: "Lead others gently toward greatness.", author: "Unknown", category: "Leadership" },
+  { text: "Resilience grows from facing discomfort.", author: "Unknown", category: "Resilience" },
+  { text: "Your presence brings peace.", author: "Unknown", category: "Peace" },
+
+  { text: "Choose kindness, it's always the right answer.", author: "Unknown", category: "Kindness" },
+  { text: "Let self‑care be your act of resistance.", author: "Unknown", category: "Self‑Care" },
+  { text: "Your thoughts are seeds; plant wisely.", author: "Unknown", category: "Mindset" },
+  { text: "Lead with integrity, even when unseen.", author: "Unknown", category: "Integrity" },
+  { text: "Let forgiveness free your soul.", author: "Unknown", category: "Healing" },
+  { text: "Your dreams deserve daily devotion.", author: "Unknown", category: "Dreams" },
+  { text: "Create ripples of positivity.", author: "Unknown", category: "Positivity" },
+  { text: "Grow roots before you grow wings.", author: "Unknown", category: "Growth" },
+  { text: "Resilience thrives in adversity.", author: "Unknown", category: "Resilience" },
+  { text: "Live with purpose painted in every act.", author: "Unknown", category: "Purpose" },
+
+  { text: "Breathe deeply, live fully.", author: "Unknown", category: "Mindfulness" },
+  { text: "Be brave enough to be kind.", author: "Unknown", category: "Courage" },
+  { text: "Let your values be louder than your fears.", author: "Unknown", category: "Integrity" },
+  { text: "Celebrate progress no matter how small.", author: "Unknown", category: "Growth" },
+  { text: "Your compassion is your strength.", author: "Unknown", category: "Compassion" },
+  { text: "Find peace in imperfect moments.", author: "Unknown", category: "Peace" },
+  { text: "Courage shines in everyday choices.", author: "Unknown", category: "Courage" },
+  { text: "Lead by example, not by ego.", author: "Unknown", category: "Leadership" },
+  { text: "Let your vision guide your steps.", author: "Unknown", category: "Vision" },
+  { text: "Joy multiplies when shared.", author: "Unknown", category: "Joy" },
+
+  { text: "Let gratitude soften hard days.", author: "Unknown", category: "Gratitude" },
+  { text: "Act with love, not obligation.", author: "Unknown", category: "Love" },
+  { text: "Creative breakthroughs begin in stillness.", author: "Unknown", category: "Creativity" },
+  { text: "Your words shape your world.", author: "Unknown", category: "Communication" },
+  { text: "Align your choices with your worth.", author: "Unknown", category: "Self‑Worth" },
+  { text: "Let kindness define your legacy.", author: "Unknown", category: "Kindness" },
+  { text: "Resilience whispers 'try again tomorrow.'", author: "Unknown", category: "Resilience" },
+  { text: "Build bridges, not walls.", author: "Unknown", category: "Connection" },
+  { text: "Own your story. It's powerful.", author: "Unknown", category: "Self‑Worth" },
+  { text: "Your presence can light pathways.", author: "Unknown", category: "Leadership" },
+
+  { text: "Kind hearts ignite change.", author: "Unknown", category: "Kindness" },
+  { text: "Resilience grows in adversity’s soil.", author: "Unknown", category: "Resilience" },
+  { text: "Choose clarity before action.", author: "Unknown", category: "Clarity" },
+  { text: "Let purpose guide your hustle.", author: "Unknown", category: "Purpose" },
+  { text: "Create more than you consume.", author: "Unknown", category: "Creativity" },
+  { text: "Lead with service, not status.", author: "Unknown", category: "Leadership" },
+  { text: "Let confidence be your quiet roar.", author: "Unknown", category: "Confidence" },
+  { text: "Grow through sacred discomfort.", author: "Unknown", category: "Growth" },
+  { text: "Breathe into peace, exhale tension.", author: "Unknown", category: "Mindfulness" },
+  { text: "Celebrate the light in others.", author: "Unknown", category: "Kindness" },
+
+  { text: "Resilience is the victory after the fall.", author: "Unknown", category: "Resilience" },
+  { text: "Purpose outweighs popularity.", author: "Unknown", category: "Purpose" },
+  { text: "Lead from love over fear.", author: "Unknown", category: "Leadership" },
+  { text: "Let authenticity be your signature.", author: "Unknown", category: "Authenticity" },
+  { text: "Kindness counts most in chaos.", author: "Unknown", category: "Kindness" },
+  { text: "Stillness sharpens focus.", author: "Unknown", category: "Mindfulness" },
+  { text: "Grow by connecting with others.", author: "Unknown", category: "Connection" },
+  { text: "Find peace in simply being.", author: "Unknown", category: "Peace" },
+  { text: "Lead through empowerment, not control.", author: "Unknown", category: "Leadership" },
+  { text: "Choose courage, choose growth.", author: "Unknown", category: "Courage" },
+
+  { text: "Let gratitude water your roots.", author: "Unknown", category: "Gratitude" },
+  { text: "Resilience shows up in the next sunrise.", author: "Unknown", category: "Resilience" },
+  { text: "Lead with presence, not pressure.", author: "Unknown", category: "Leadership" },
+  { text: "Create space for your voice.", author: "Unknown", category: "Authenticity" },
+  { text: "Root your worth in who you are, not what you do.", author: "Unknown", category: "Self‑Worth" },
+  { text: "Kindness reverberates far beyond moments.", author: "Unknown", category: "Kindness" },
+  { text: "Let stillness bring insight.", author: "Unknown", category: "Mindfulness" },
+  { text: "Grow courageously, bloom authentically.", author: "Unknown", category: "Growth" },
+  { text: "Purpose fuels the brave.", author: "Unknown", category: "Purpose" },
+  { text: "Lead with humility, love, and clarity.", author: "Unknown", category: "Leadership" },
+  { text: "Let peace be your power.", author: "Unknown", category: "Peace" },
+  { text: "Your reflection is your responsibility.", author: "Unknown", category: "Self‑Awareness" },
+  { text: "Grow roots before you reach for the sky.", author: "Unknown", category: "Growth" },
+  { text: "Create light in every room you enter.", author: "Unknown", category: "Positivity" },
+  { text: "Lead with questions, not answers.", author: "Unknown", category: "Leadership" },
+  { text: "Your inner world shapes your outer world.", author: "Unknown", category: "Mindset" },
+  { text: "Rest to live, not live to rest.", author: "Unknown", category: "Self‑Care" },
+  { text: "Let curiosity shake your soul.", author: "Unknown", category: "Curiosity" },
+  { text: "Find courage in small choices.", author: "Unknown", category: "Courage" },
+  { text: "Gratitude is the door to more blessings.", author: "Unknown", category: "Gratitude" },
+
+  { text: "Create value even when unseen.", author: "Unknown", category: "Integrity" },
+  { text: "Let presence be your gifts to others.", author: "Unknown", category: "Mindfulness" },
+  { text: "Build resilience one heartbeat at a time.", author: "Unknown", category: "Resilience" },
+  { text: "Kindness costs nothing but changes everything.", author: "Unknown", category: "Kindness" },
+  { text: "Live aligned with your essence.", author: "Unknown", category: "Authenticity" },
+  { text: "Lead from service, not status.", author: "Unknown", category: "Leadership" },
+  { text: "Your story matters—tell it boldly.", author: "Unknown", category: "Self‑Worth" },
+  { text: "Let heart guide your hand.", author: "Unknown", category: "Compassion" },
+  { text: "Grow patience through pressure.", author: "Unknown", category: "Patience" },
+  { text: "Clarity is action's compass.", author: "Unknown", category: "Clarity" },
+
+  { text: "Let your values outlast your victories.", author: "Unknown", category: "Integrity" },
+  { text: "Be the energy you need in crowded rooms.", author: "Unknown", category: "Confidence" },
+  { text: "Serve quietly, impact hugely.", author: "Unknown", category: "Service" },
+  { text: "Resilience echoes in every comeback.", author: "Unknown", category: "Resilience" },
+  { text: "Lead with listening, not lecturing.", author: "Unknown", category: "Leadership" },
+  { text: "Let simplicity sharpen your soul.", author: "Unknown", category: "Clarity" },
+  { text: "Create with your whole heart.", author: "Unknown", category: "Creativity" },
+  { text: "Live fully before you leave.", author: "Unknown", category: "Living" },
+  { text: "Quiet minds generate bold ideas.", author: "Unknown", category: "Creativity" },
+  { text: "Your peace is your greatest protest.", author: "Unknown", category: "Peace" },
+
+  { text: "Grow in the soil of compassion.", author: "Unknown", category: "Compassion" },
+  { text: "Trust intention over inertia.", author: "Unknown", category: "Intentionality" },
+  { text: "Be a voice of encouragement.", author: "Unknown", category: "Positivity" },
+  { text: "Let kindness define your legacy.", author: "Unknown", category: "Kindness" },
+  { text: "Resilience blooms under pressure.", author: "Unknown", category: "Resilience" },
+  { text: "Lead through authenticity, not authority.", author: "Unknown", category: "Leadership" },
+  { text: "Create from a place of abundance.", author: "Unknown", category: "Creativity" },
+  { text: "Let joy guide your everyday choices.", author: "Unknown", category: "Joy" },
+  { text: "Live beyond your comfort zone.", author: "Unknown", category: "Growth" },
+  { text: "Speak truth gently but firmly.", author: "Unknown", category: "Integrity" },
+
+  { text: "Your presence is your purpose.", author: "Unknown", category: "Mindfulness" },
+  { text: "Build confidence by showing up.", author: "Unknown", category: "Confidence" },
+  { text: "Clarity grows in silence.", author: "Unknown", category: "Clarity" },
+  { text: "Let curiosity spark compassion.", author: "Unknown", category: "Curiosity" },
+  { text: "Serve others with your gifts.", author: "Unknown", category: "Service" },
+  { text: "Resilience is your silent anthem.", author: "Unknown", category: "Resilience" },
+  { text: "Lead with the questions you don’t have answers to.", author: "Unknown", category: "Leadership" },
+  { text: "Grow bold by being vulnerable.", author: "Unknown", category: "Courage" },
+  { text: "Kind hearts transform communities.", author: "Unknown", category: "Kindness" },
+  { text: "Your life is your message.", author: "Unknown", category: "Authenticity" },
+
+  { text: "Feel gratitude for even the mess.", author: "Unknown", category: "Gratitude" },
+  { text: "Quiet action whispers greatness.", author: "Unknown", category: "Strength" },
+  { text: "Lead with listening before speaking.", author: "Unknown", category: "Leadership" },
+  { text: "Clarity is found in focused pauses.", author: "Unknown", category: "Clarity" },
+  { text: "Serve the dreamers around you.", author: "Unknown", category: "Service" },
+  { text: "Resilience unfolds in each new day.", author: "Unknown", category: "Resilience" },
+  { text: "Grow through love, not fear.", author: "Unknown", category: "Compassion" },
+  { text: "Speak with honesty, listen with empathy.", author: "Unknown", category: "Communication" },
+  { text: "Live your values, don’t just speak them.", author: "Unknown", category: "Integrity" },
+  { text: "Your calm is contagious—share it.", author: "Unknown", category: "Peace" },
+
+  { text: "Be brave enough to ask hard questions.", author: "Unknown", category: "Curiosity" },
+  { text: "Let creativity be your rebellion.", author: "Unknown", category: "Creativity" },
+  { text: "Lead your life with courage and kindness.", author: "Unknown", category: "Leadership" },
+  { text: "Resilience is built over many comebacks.", author: "Unknown", category: "Resilience" },
+  { text: "Serve others by first serving yourself.", author: "Unknown", category: "Self‑Care" },
+  { text: "Clarity is your compass in chaos.", author: "Unknown", category: "Clarity" },
+  { text: "Grow in wisdom through listening.", author: "Unknown", category: "Wisdom" },
+  { text: "Kindness is courage cloaked in compassion.", author: "Unknown", category: "Kindness" },
+  { text: "Create your legacy through daily habits.", author: "Unknown", category: "Self‑Discipline" },
+  { text: "Let gratitude soften your hard edges.", author: "Unknown", category: "Gratitude" },
+
+  { text: "Live with purpose, not panic.", author: "Unknown", category: "Purpose" },
+  { text: "Lead with confidence, backed by humility.", author: "Unknown", category: "Leadership" },
+  { text: "Resilience thrives in relentless hope.", author: "Unknown", category: "Resilience" },
+  { text: "Serve the world with your story.", author: "Unknown", category: "Service" },
+  { text: "Clarity is found in your commitments.", author: "Unknown", category: "Clarity" },
+  { text: "Grow through adversity’s curriculum.", author: "Unknown", category: "Growth" },
+  { text: "Kindness is the truest form of strength.", author: "Unknown", category: "Kindness" },
+  { text: "Create moments that matter forever.", author: "Unknown", category: "Mindfulness" },
+  { text: "Let courage carry you past comfort.", author: "Unknown", category: "Courage" },
+  { text: "Your presence plants seeds of peace.", author: "Unknown", category: "Peace" },
+
+  { text: "Lead with your heart’s quiet wisdom.", author: "Unknown", category: "Leadership" },
+  { text: "Resilience is grounded in self‑belief.", author: "Unknown", category: "Resilience" },
+  { text: "Serve others even when unseen.", author: "Unknown", category: "Service" },
+  { text: "Clarity is found by clearing your mind.", author: "Unknown", category: "Clarity" },
+  { text: "Grow by giving your best, not being the best.", author: "Unknown", category: "Growth" },
+  { text: "Kindness blooms in small gestures.", author: "Unknown", category: "Kindness" },
+  { text: "Create courage through daily choices.", author: "Unknown", category: "Courage" },
+  { text: "Let gratitude be your default laggage.", author: "Unknown", category: "Gratitude" },
+  { text: "Live a life that lights the way for others.", author: "Unknown", category: "Purpose" },
+  { text: "Your calm has a ripple effect.", author: "Unknown", category: "Peace" },
+
+  { text: "Lead quietly; impact loudly.", author: "Unknown", category: "Leadership" },
+  { text: "Resilience is courage’s echo.", author: "Unknown", category: "Resilience" },
+  { text: "Serve from a genuine place of care.", author: "Unknown", category: "Service" },
+  { text: "Clarity results from courageous decisions.", author: "Unknown", category: "Clarity" },
+  { text: "Grow through gentle discipline.", author: "Unknown", category: "Growth" },
+  { text: "Kindness connects hearts.", author: "Unknown", category: "Kindness" },
+  { text: "Create from love, not obligation.", author: "Unknown", category: "Creativity" },
+  { text: "Let gratitude water your soul.", author: "Unknown", category: "Gratitude" },
+  { text: "Live in harmony with your values.", author: "Unknown", category: "Integrity" },
+  { text: "Your presence plants seeds of possibility.", author: "Unknown", category: "Mindfulness" },
+  { text: "Calm minds build strong foundations.", author: "Unknown", category: "Calm" },
+  { text: "Build within what will never fall apart.", author: "Unknown", category: "Strength" },
+  { text: "Your next step may be your masterpiece.", author: "Unknown", category: "Action" },
+  { text: "Peace isn’t passive—it’s powerful.", author: "Unknown", category: "Peace" },
+  { text: "Creativity blooms in quiet moments.", author: "Unknown", category: "Creativity" },
+  { text: "Serve passionately, not politely.", author: "Unknown", category: "Service" },
+  { text: "Gratitude turns struggle into growth.", author: "Unknown", category: "Gratitude" },
+  { text: "Let your values outshine your victories.", author: "Unknown", category: "Integrity" },
+  { text: "Resilience whispers, ‘Try again.’", author: "Unknown", category: "Resilience" },
+  { text: "Kindness is courage in disguise.", author: "Unknown", category: "Kindness" },
+
+  { text: "Your truth is your compass.", author: "Unknown", category: "Authenticity" },
+  { text: "Courage grows one bold choice at a time.", author: "Unknown", category: "Courage" },
+  { text: "Live with intention, not reaction.", author: "Unknown", category: "Mindfulness" },
+  { text: "Confidence comes from showing up.", author: "Unknown", category: "Confidence" },
+  { text: "Create impact quietly but consistently.", author: "Unknown", category: "Impact" },
+  { text: "Let your purpose awaken each day.", author: "Unknown", category: "Purpose" },
+  { text: "Wisdom begins with listening.", author: "Unknown", category: "Wisdom" },
+  { text: "Be the reason someone believes in good.", author: "Unknown", category: "Hope" },
+  { text: "Clarity shines through embracing uncertainty.", author: "Unknown", category: "Clarity" },
+  { text: "Resilience transforms fear into fuel.", author: "Unknown", category: "Resilience" },
+
+  { text: "Grow courageously through vulnerability.", author: "Unknown", category: "Growth" },
+  { text: "Serve others with invisible generosity.", author: "Unknown", category: "Service" },
+  { text: "Let gratitude be your guiding light.", author: "Unknown", category: "Gratitude" },
+  { text: "Lead with conviction and compassion.", author: "Unknown", category: "Leadership" },
+  { text: "Your presence is your greatest gift.", author: "Unknown", category: "Mindfulness" },
+  { text: "Kindliness knows no boundaries.", author: "Unknown", category: "Kindness" },
+  { text: "Build your soul with small kindnesses.", author: "Unknown", category: "Kindness" },
+  { text: "Rise by lifting others up.", author: "Unknown", category: "Leadership" },
+  { text: "Strength is forged in soft moments.", author: "Unknown", category: "Strength" },
+  { text: "Lead with the generosity of your heart.", author: "Unknown", category: "Leadership" },
+
+  { text: "Live with worthy intention.", author: "Unknown", category: "Purpose" },
+  { text: "Resilience breathes life into challenges.", author: "Unknown", category: "Resilience" },
+  { text: "Let your inner peace guide your actions.", author: "Unknown", category: "Peace" },
+  { text: "Creativity begins with bold questions.", author: "Unknown", category: "Creativity" },
+  { text: "Your calm is contagious—share it.", author: "Unknown", category: "Calm" },
+  { text: "Rise patiently, not hastily.", author: "Unknown", category: "Patience" },
+  { text: "Clarity emerges through courageous choice.", author: "Unknown", category: "Clarity" },
+  { text: "Serve with intent, not applause.", author: "Unknown", category: "Service" },
+  { text: "Gratitude deepens the roots of joy.", author: "Unknown", category: "Gratitude" },
+  { text: "Let leadership be less about power, more about purpose.", author: "Unknown", category: "Leadership" },
+
+  { text: "Confidence is silent self-belief.", author: "Unknown", category: "Confidence" },
+  { text: "Kindness is the glue of humanity.", author: "Unknown", category: "Kindness" },
+  { text: "Create moments worth remembering.", author: "Unknown", category: "Mindfulness" },
+  { text: "Lead by sharing your journey.", author: "Unknown", category: "Leadership" },
+  { text: "Serve others like it’s your own mission.", author: "Unknown", category: "Service" },
+  { text: "Resilience builds on broken pieces.", author: "Unknown", category: "Resilience" },
+  { text: "Live with deliberate simplicity.", author: "Unknown", category: "Clarity" },
+  { text: "Grow through genuine connections.", author: "Unknown", category: "Connection" },
+  { text: "Let gratitude soften your sorrows.", author: "Unknown", category: "Gratitude" },
+  { text: "Confidence rises when you act, not wait.", author: "Unknown", category: "Confidence" },
+
+  { text: "Serve quietly, love loudly.", author: "Unknown", category: "Service" },
+  { text: "Lead with listening, not lecturing.", author: "Unknown", category: "Leadership" },
+  { text: "Resilience is hope that never quits.", author: "Unknown", category: "Resilience" },
+  { text: "Let creativity spark your spirit.", author: "Unknown", category: "Creativity" },
+  { text: "Kindness echoes across souls.", author: "Unknown", category: "Kindness" },
+  { text: "Build clarity through structured thought.", author: "Unknown", category: "Clarity" },
+  { text: "Your presence plants seeds of peace.", author: "Unknown", category: "Peace" },
+  { text: "Grow gratitude like a garden.", author: "Unknown", category: "Gratitude" },
+  { text: "Confidence is earned by consistent effort.", author: "Unknown", category: "Self‑Discipline" },
+  { text: "Serve others by giving your time.", author: "Unknown", category: "Service" },
+
+  { text: "Lead through love and reason.", author: "Unknown", category: "Leadership" },
+  { text: "Resilience thrives in mindful moments.", author: "Unknown", category: "Resilience" },
+  { text: "Let creativity lead your legacy.", author: "Unknown", category: "Legacy" },
+  { text: "Kindness is kindness, even small.", author: "Unknown", category: "Kindness" },
+  { text: "Live with clear intention every morning.", author: "Unknown", category: "Mindfulness" },
+  { text: "Grow strength by nurturing stillness.", author: "Unknown", category: "Strength" },
+  { text: "Serve by being fully present.", author: "Unknown", category: "Service" },
+  { text: "Confidence is a voice that starts softly.", author: "Unknown", category: "Confidence" },
+  { text: "Let resilience be your rebellion.", author: "Unknown", category: "Resilience" },
+  { text: "Lead with heart in every heartbeat.", author: "Unknown", category: "Leadership" },
+
+  { text: "Kindness makes room for connection.", author: "Unknown", category: "Connection" },
+  { text: "Grow by trusting your quiet voice.", author: "Unknown", category: "Intuition" },
+  { text: "Serve when no one’s watching.", author: "Unknown", category: "Service" },
+  { text: "Resilience is courage made visible.", author: "Unknown", category: "Resilience" },
+  { text: "Let creativity shape your legacy.", author: "Unknown", category: "Legacy" },
+  { text: "Confidence grows in the soil of action.", author: "Unknown", category: "Growth" },
+  { text: "Lead with curiosity over assumption.", author: "Unknown", category: "Curiosity" },
+  { text: "Kindness is freedom given willingly.", author: "Unknown", category: "Kindness" },
+  { text: "Live from depth, not drama.", author: "Unknown", category: "Depth" },
+  { text: "Grow consistency, not chaos.", author: "Unknown", category: "Discipline" },
+
+  { text: "Serve with open hands and heart.", author: "Unknown", category: "Service" },
+  { text: "Resilience blooms in mindful reflection.", author: "Unknown", category: "Resilience" },
+  { text: "Let creativity be your rebellion.", author: "Unknown", category: "Creativity" },
+  { text: "Lead by example, not expectation.", author: "Unknown", category: "Leadership" },
+  { text: "Confidence whispers, 'You can.'", author: "Unknown", category: "Confidence" },
+  { text: "Grow through guts, not just grit.", author: "Unknown", category: "Growth" },
+  { text: "Kindness softens broken hearts.", author: "Unknown", category: "Kindness" },
+  { text: "Resilience is refined by fire.", author: "Unknown", category: "Resilience" },
+  { text: "Serve as if your life depends on it.", author: "Unknown", category: "Service" },
+  { text: "Lead with compassion as your compass.", author: "Unknown", category: "Compassion" },
+
+  { text: "Live anchored in your own truth.", author: "Unknown", category: "Authenticity" },
+  { text: "Grow roots of certainty slowly.", author: "Unknown", category: "Patience" },
+  { text: "Let kindness be your daily currency.", author: "Unknown", category: "Kindness" },
+  { text: "Resilience is courage’s echo.", author: "Unknown", category: "Resilience" },
+  { text: "Confidence stands firm in adversity.", author: "Unknown", category: "Confidence" },
+  { text: "Serve with humility and grace.", author: "Unknown", category: "Service" },
+  { text: "Creative hearts heal broken worlds.", author: "Unknown", category: "Creativity" },
+  { text: "Lead your life with soulful intention.", author: "Unknown", category: "Mindfulness" },
+  { text: "Grow by receiving as much as giving.", author: "Unknown", category: "Growth" },
+  { text: "Kindness is the bridge to belonging.", author: "Unknown", category: "Connection" },
+  
+];
+
+    let filteredQuotes = [...quotes];
+
+    function newQuote() {
+      const quoteText = document.getElementById("quoteText");
+      const quoteAuthor = document.getElementById("quoteAuthor");
+
+      if (filteredQuotes.length === 0) {
+        quoteText.textContent = "No quotes found.";
+        quoteAuthor.textContent = "";
+        return;
+      }
+
+      const random = filteredQuotes[Math.floor(Math.random() * filteredQuotes.length)];
+      quoteText.textContent = `"${random.text}"`;
+      quoteAuthor.textContent = `— ${random.author}`;
+    }
+
+    function copyQuote() {
+      const text = document.getElementById("quoteText").textContent + " " + document.getElementById("quoteAuthor").textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        const msg = document.getElementById("copiedMsg");
+        msg.classList.add("show");
+        setTimeout(() => msg.classList.remove("show"), 2000);
+      });
+    }
+
+    function addToFavorites() {
+      const text = document.getElementById("quoteText").textContent.replace(/"/g, "").trim();
+      const author = document.getElementById("quoteAuthor").textContent.replace("— ", "").trim();
+      const existing = JSON.parse(localStorage.getItem("favorites") || "[]");
+
+      if (!existing.some(q => q.text === text)) {
+        existing.push({ text, author });
+        localStorage.setItem("favorites", JSON.stringify(existing));
+        renderFavorites();
+      }
+    }
+
+    function renderFavorites() {
+      const container = document.getElementById("favoriteQuotesContainer");
+      const favorites = JSON.parse(localStorage.getItem("favorites") || "[]");
+
+      container.innerHTML = favorites.length === 0
+        ? "<p>No favorites yet.</p>"
+        : favorites.map(q => `<div class="favorite-quote">"${q.text}"<br><small>— ${q.author}</small></div>`).join("");
+    }
+
+    function filterQuotes() {
+      const search = document.getElementById("searchInput").value.toLowerCase();
+      const category = document.getElementById("categorySelect").value;
+
+      filteredQuotes = quotes.filter(q => {
+        const matchCategory = category === "All" || q.category === category;
+        const matchText = q.text.toLowerCase().includes(search) || q.author.toLowerCase().includes(search);
+        return matchCategory && matchText;
+      });
+
+      newQuote();
+    }
+
+    window.onload = () => {
+      renderFavorites();
+      filterQuotes();
+    };
+  </script>
+</body>
+</html>

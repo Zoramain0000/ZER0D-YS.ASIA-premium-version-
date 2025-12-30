@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>🧵 Advanced String Extractor Tool</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <style>
+    body {
+      background: #0f172a;
+      color: #f8fafc;
+      font-family: 'Segoe UI', sans-serif;
+      padding: 2rem;
+      margin: 0;
+    }
+    h1 {
+      color: #38bdf8;
+    }
+    textarea, select, button, input {
+      width: 100%;
+      padding: 0.8rem;
+      margin-bottom: 1rem;
+      font-size: 1rem;
+      border-radius: 6px;
+      border: none;
+    }
+    textarea, input {
+      background: #1e293b;
+      color: #f8fafc;
+      resize: vertical;
+    }
+    select {
+      background: #1e293b;
+      color: #f8fafc;
+    }
+    button {
+      background: #38bdf8;
+      color: #0f172a;
+      cursor: pointer;
+      margin-top: 0.5rem;
+    }
+    pre {
+      background: #1e293b;
+      color: #38fdd8;
+      padding: 1rem;
+      border-radius: 6px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    .highlighted {
+      background: #334155;
+      color: #facc15;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🧵 Advanced String Extractor Tool</h1>
+
+  <input type="file" id="fileInput" accept=".txt" />
+  <textarea id="inputText" rows="6" placeholder="Paste or drop your text here..."></textarea>
+
+  <select id="extractType" onchange="toggleCustom()">
+    <option value="all">🔎 All Strings</option>
+    <option value="words">🅰️ Words Only</option>
+    <option value="numbers">🔢 Numbers</option>
+    <option value="emails">📧 Emails</option>
+    <option value="urls">🔗 URLs</option>
+    <option value="custom">🧪 Custom Regex</option>
+  </select>
+
+  <input id="customRegex" placeholder="Enter custom regex..." style="display:none" />
+
+  <button onclick="extractStrings()">Extract</button>
+  <button onclick="copyOutput()">📋 Copy Output</button>
+  <button onclick="downloadText()">⬇️ Export .txt</button>
+  <button onclick="downloadJSON()">⬇️ Export .json</button>
+
+  <h3>🧾 Extracted Strings:</h3>
+  <pre id="output">No output yet.</pre>
+
+  <script>
+    const inputText = document.getElementById("inputText");
+    const fileInput = document.getElementById("fileInput");
+
+    fileInput.addEventListener("change", () => {
+      const file = fileInput.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = e => inputText.value = e.target.result;
+        reader.readAsText(file);
+      }
+    });
+
+    function toggleCustom() {
+      const type = document.getElementById('extractType').value;
+      document.getElementById('customRegex').style.display = type === 'custom' ? 'block' : 'none';
+    }
+
+    function extractStrings() {
+      const text = inputText.value;
+      const type = document.getElementById('extractType').value;
+      const customPattern = document.getElementById('customRegex').value.trim();
+      let regex;
+
+      switch (type) {
+        case 'words': regex = /\b[a-zA-Z]{2,}\b/g; break;
+        case 'numbers': regex = /\b\d+(\.\d+)?\b/g; break;
+        case 'emails': regex = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi; break;
+        case 'urls': regex = /\bhttps?:\/\/[^\s/$.?#].[^\s]*\b/gi; break;
+        case 'custom':
+          try {
+            regex = new RegExp(customPattern, "g");
+          } catch (e) {
+            document.getElementById("output").textContent = "⚠️ Invalid regex pattern.";
+            return;
+          }
+          break;
+        default: regex = /[^\s]+/g;
+      }
+
+      const matches = [...text.matchAll(regex)] || [];
+      if (!matches.length) {
+        document.getElementById("output").textContent = "⚠️ No matches found.";
+        return;
+      }
+
+      // Highlight matches in original text
+      let highlighted = text;
+      matches.reverse().forEach(match => {
+        const str = match[0];
+        const escaped = str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        highlighted = highlighted.replace(new RegExp(escaped, 'g'), `<span class="highlighted">${str}</span>`);
+      });
+
+      document.getElementById("output").innerHTML = matches.map(m => m[0]).join('\n');
+    }
+
+    function copyOutput() {
+      const text = document.getElementById("output").textContent;
+      navigator.clipboard.writeText(text).then(() => alert("✅ Output copied!"));
+    }
+
+    function downloadText() {
+      const blob = new Blob([document.getElementById("output").textContent], { type: "text/plain" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "strings.txt";
+      a.click();
+    }
+
+    function downloadJSON() {
+      const data = document.getElementById("output").textContent.split('\n');
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "strings.json";
+      a.click();
+    }
+  </script>
+
+</body>
+</html>

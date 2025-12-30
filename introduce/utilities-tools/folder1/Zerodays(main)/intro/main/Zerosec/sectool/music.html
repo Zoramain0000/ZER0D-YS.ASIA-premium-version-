@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>🎧 Freesound Explorer </title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: #ff0000;
+    }
+    .container {
+      max-width: 1100px;
+      margin: auto;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #ff0000;
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+      justify-content: center;
+    }
+    input, button {
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #ff0000;
+      font-size: 16px;
+    }
+    button {
+      background: #ff0000;
+      color: rgb(99, 247, 0);
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background: rgba(0, 0, 0, 0);
+    }
+    .results {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 15px;
+    }
+    .card {
+      background: #13000000;
+      border-left: 5px solid #ff0000;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+      position: relative;
+    }
+    .meta {
+      font-size: 14px;
+      color: #ff0000;
+    }
+    .tag {
+      display: inline-block;
+      background: rgba(0,0,0,0.5);
+      color: rgb(255, 0, 0);
+      padding: 2px 6px;
+      margin: 2px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    audio {
+      width: 100%;
+      margin-top: 10px;
+    }
+    .waveform {
+      height: 40px;
+      background: linear-gradient(to right red blue);
+      margin-top: 10px;
+      border-radius: 4px;
+    }
+    .footer {
+      text-align: center;
+      margin: 30px 0;
+    }
+    .playlist-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: #00000000;
+      border: none;
+      padding: 5px 8px;
+      color: rgb(255, 0, 0);
+      border-radius: 4px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .playlist-section {
+      margin-top: 40px;
+    }
+    .playlist-section h2 {
+      color: #ff0000;
+    }
+    .playlist {
+      background: rgba(0,0,0,0.5);
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎧 Freesound Explorer Pro</h1>
+    <div class="controls">
+      <input type="text" id="query" placeholder="Search Freesound..." />
+      <input type="number" id="minDuration" placeholder="Min duration (s)" min="0" />
+      <button onclick="newSearch()">🔍 Search</button>
+      <button onclick="exportToJson()">⬇️ Export JSON</button>
+      <button onclick="showPlaylist()">🎵 View Playlist</button>
+    </div>
+
+    <div id="results" class="results"></div>
+    <div class="footer" id="loader" style="display:none;">⏳ Loading more sounds...</div>
+
+    <div class="playlist-section">
+      <h2>📃 Saved Playlist</h2>
+      <div id="playlist" class="playlist"></div>
+    </div>
+  </div>
+
+  <script>
+    const API_KEY = "wUTOym4BwVxWXRketFvgecSpIEY1yAfoXkRvwNvg"; // Replace with your own
+    let resultsContainer = document.getElementById('results');
+    let playlistContainer = document.getElementById('playlist');
+    let page = 1;
+    let query = '';
+    let minDuration = 0;
+    let isLoading = false;
+    let currentResults = [];
+    let savedPlaylist = [];
+
+    async function newSearch() {
+      page = 1;
+      currentResults = [];
+      query = document.getElementById('query').value.trim();
+      minDuration = parseFloat(document.getElementById('minDuration').value) || 0;
+      resultsContainer.innerHTML = '';
+      await fetchSounds();
+    }
+
+    async function fetchSounds() {
+      if (isLoading) return;
+      isLoading = true;
+      document.getElementById("loader").style.display = "block";
+
+      const url = `https://freesound.org/apiv2/search/text/?query=${encodeURIComponent(query)}&fields=name,previews,duration,tags,url,username&filter=duration:[${minDuration}%20TO%20*]&page=${page}&token=${API_KEY}`;
+
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+        currentResults.push(...data.results);
+        renderResults(data.results);
+        page++;
+      } catch (err) {
+        alert("Error fetching Freesound data.");
+        console.error(err);
+      } finally {
+        isLoading = false;
+        document.getElementById("loader").style.display = "none";
+      }
+    }
+
+    function renderResults(results) {
+      if (!results.length && page === 1) {
+        resultsContainer.innerHTML = "<p>No results found.</p>";
+        return;
+      }
+
+      results.forEach(sound => {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <button class="playlist-btn" onclick='saveToPlaylist(${JSON.stringify(sound).replace(/'/g, "&apos;")})'>➕ Save</button>
+          <strong>${sound.name}</strong>
+          <div class="meta">By: ${sound.username} | Duration: ${sound.duration.toFixed(1)}s</div>
+          <div class="waveform" style="background-size: ${Math.min(sound.duration * 5, 100)}% 100%;"></div>
+          <audio controls>
+            <source src="${sound.previews['preview-hq-mp3']}" type="audio/mpeg">
+          </audio>
+          <div class="meta">Tags: ${sound.tags.slice(0, 5).map(tag => `<span class="tag">${tag}</span>`).join(' ')}</div>
+          <div class="meta"><a href="${sound.url}" target="_blank">🔗 View on Freesound</a></div>
+        `;
+        resultsContainer.appendChild(card);
+      });
+    }
+
+    function saveToPlaylist(sound) {
+      if (!savedPlaylist.find(s => s.id === sound.id)) {
+        savedPlaylist.push(sound);
+        renderPlaylist();
+      } else {
+        alert("Already in playlist.");
+      }
+    }
+
+    function renderPlaylist() {
+      playlistContainer.innerHTML = "";
+      if (!savedPlaylist.length) {
+        playlistContainer.innerHTML = "<p>No saved sounds yet.</p>";
+        return;
+      }
+      savedPlaylist.forEach(sound => {
+        const div = document.createElement("div");
+        div.className = "card";
+        div.innerHTML = `
+          <strong>${sound.name}</strong>
+          <div class="meta">By: ${sound.username} | Duration: ${sound.duration.toFixed(1)}s</div>
+          <audio controls>
+            <source src="${sound.previews['preview-hq-mp3']}" type="audio/mpeg">
+          </audio>
+          <div class="meta"><a href="${sound.url}" target="_blank">🔗 View on Freesound</a></div>
+        `;
+        playlistContainer.appendChild(div);
+      });
+    }
+
+    function showPlaylist() {
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }
+
+    function exportToJson() {
+      if (!savedPlaylist.length) {
+        alert("No saved items to export.");
+        return;
+      }
+      const dataStr = JSON.stringify(savedPlaylist, null, 2);
+      const blob = new Blob([dataStr], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "freesound_playlist.json";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    window.addEventListener('scroll', () => {
+      if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 300 && !isLoading) {
+        fetchSounds();
+      }
+    });
+  </script>
+</body>
+</html>

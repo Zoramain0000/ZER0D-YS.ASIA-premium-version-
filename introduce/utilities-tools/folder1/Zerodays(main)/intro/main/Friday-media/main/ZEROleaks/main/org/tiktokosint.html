@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>📱 TikTok OSINT Tool</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    body {
+      background-color: #0f172a;
+      color: #f1f5f9;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      background: #1e293b;
+      padding: 30px;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 500px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.3);
+    }
+
+    h1 {
+      text-align: center;
+      color: #3a86ff;
+      margin-bottom: 20px;
+      font-size: 28px;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 12px;
+      margin: 12px 0;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      background-color: #334155;
+      color: #f1f5f9;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      background-color: #3a86ff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #265dbe;
+    }
+
+    #result {
+      margin-top: 20px;
+      display: none;
+      background: #0f172a;
+      padding: 15px;
+      border-radius: 8px;
+      border: 1px solid #334155;
+    }
+
+    #result p {
+      margin: 6px 0;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .label {
+      font-weight: bold;
+      color: #94a3b8;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📱 TikTok OSINT Tool</h1>
+    <input type="text" id="username" placeholder="Enter TikTok Username">
+    <button onclick="lookupTikTok()">🔍 Lookup Profile</button>
+    <div id="result">
+      <p><span class="label">Username:</span> <span id="resUsername"></span></p>
+      <p><span class="label">Nickname:</span> <span id="resNickname"></span></p>
+      <p><span class="label">Followers:</span> <span id="resFollowers"></span></p>
+      <p><span class="label">Following:</span> <span id="resFollowing"></span></p>
+      <p><span class="label">Likes:</span> <span id="resLikes"></span></p>
+      <p><span class="label">Videos:</span> <span id="resVideos"></span></p>
+    </div>
+  </div>
+
+  <script>
+    async function lookupTikTok() {
+      const username = document.getElementById("username").value.trim();
+      if (!username) return alert("Please enter a TikTok username.");
+
+      const apiUrl = `https://tiktok-scraper2.p.rapidapi.com/user/info?username=${username}`;
+
+      try {
+        const response = await fetch(apiUrl, {
+          method: 'GET',
+          headers: {
+            'X-RapidAPI-Host': 'tiktok-scraper2.p.rapidapi.com',
+            'X-RapidAPI-Key': '5b8890ad95mshf0ebc8a6ba4a937p1be967jsn622734b3efa6' // Replace with your actual key
+          }
+        });
+
+        if (!response.ok) throw new Error("User not found or API limit reached.");
+        const data = await response.json();
+        const user = data.user;
+
+        document.getElementById("resUsername").textContent = user.uniqueId || 'N/A';
+        document.getElementById("resNickname").textContent = user.nickname || 'N/A';
+        document.getElementById("resFollowers").textContent = user.stats.followerCount?.toLocaleString() || '0';
+        document.getElementById("resFollowing").textContent = user.stats.followingCount?.toLocaleString() || '0';
+        document.getElementById("resLikes").textContent = user.stats.heartCount?.toLocaleString() || '0';
+        document.getElementById("resVideos").textContent = user.stats.videoCount?.toLocaleString() || '0';
+
+        document.getElementById("result").style.display = "block";
+      } catch (err) {
+        alert("Error: " + err.message);
+      }
+    }
+  </script>
+</body>
+</html>

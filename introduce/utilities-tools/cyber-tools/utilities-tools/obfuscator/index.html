@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>JavaScript Obfuscator | Cyber Tools Toolkit</title>
+  <style>
+    * {margin:0;padding:0;box-sizing:border-box;}
+    body {
+      font-family: 'Segoe UI', monospace;
+      background: #000;
+      color: #ffc107;
+      overflow-x: hidden;
+    }
+    video.bg-video {
+      position: fixed;
+      top:0;left:0;
+      width:100vw;height:100vh;
+      object-fit:cover;
+      z-index:-2;
+      filter:brightness(0.25);
+    }
+    nav {
+      background: rgba(0,0,0,0.7);
+      color: #ffc107;
+      border-bottom: 1px solid #c58b00;
+      padding: 1rem 2rem;
+      display:flex;justify-content:space-between;align-items:center;
+      position:fixed;width:100%;top:0;z-index:10;
+    }
+    nav .brand {font-weight:bold;font-size:1.3rem;}
+    .main {
+      padding:120px 20px 60px;
+      max-width:900px;margin:auto;
+    }
+    .section {
+      background:rgba(0,0,0,0.5);
+      border:1px solid #c58b00;
+      border-radius:12px;
+      padding:1.5rem;
+      box-shadow:0 0 20px rgba(0,0,0,0.7);
+    }
+    h1 {color:#ffc107;text-align:center;margin-bottom:1rem;}
+    p {text-align:center;color:#ffdf91;margin-bottom:1.5rem;}
+    textarea {
+      width:100%;min-height:180px;
+      background:#111;border:1px solid #c58b00;color:#ffc107;
+      padding:10px;border-radius:8px;font-size:0.95rem;
+      resize:vertical;
+    }
+    .btn {
+      background:rgba(0,0,0,0.7);
+      border:1px solid #c58b00;
+      color:#ffc107;
+      padding:10px 18px;
+      border-radius:8px;
+      cursor:pointer;
+      transition:0.25s;
+      margin:0.3rem;
+    }
+    .btn:hover {background:rgba(255,193,7,0.1);}
+    .btn-group {text-align:center;margin-top:1rem;}
+    footer {
+      text-align:center;
+      padding:1.5rem;
+      color:#c58b00;
+      font-size:0.9rem;
+    }
+    .option-group {
+      display:flex;flex-wrap:wrap;gap:1rem;justify-content:center;
+      margin-bottom:1rem;
+    }
+    label {cursor:pointer;}
+  </style>
+</head>
+<body>
+
+  <video class="bg-video" autoplay loop muted playsinline>
+    <source src="background/1761817527453041720p.mp4" type="video/mp4">
+  </video>
+
+  <audio id="bg-music" loop>
+    <source src="background/Programming___Coding___Hacking_music_vol.18__ANONYMOUS_HEADQUARTERS_(48k).mp3" type="audio/mpeg">
+  </audio>
+
+  <nav>
+    <div class="brand">JavaScript Obfuscator</div>
+  </nav>
+
+  <div class="main">
+    <div class="section">
+      <h1>🧩 JavaScript Obfuscator Tool</h1>
+      <p>Protect your code by obfuscating variables, strings, and logic. Everything happens locally — no backend, no data leaves your device.</p>
+
+      <label><strong>Enter JavaScript Code:</strong></label>
+      <textarea id="inputCode" placeholder="// Type or paste your JS code here..."></textarea>
+
+      <div class="option-group">
+        <label><input type="checkbox" id="varRename" checked> Variable Renaming</label>
+        <label><input type="checkbox" id="base64Enc" checked> Base64 Encode Strings</label>
+        <label><input type="checkbox" id="hexEnc"> Hex Encode Strings</label>
+      </div>
+
+      <div class="btn-group">
+        <button class="btn" onclick="obfuscateCode()">Obfuscate</button>
+        <button class="btn" onclick="clearFields()">Clear</button>
+        <button class="btn" onclick="copyOutput()">Copy Output</button>
+      </div>
+
+      <label><strong>Obfuscated Output:</strong></label>
+      <textarea id="outputCode" readonly placeholder="Obfuscated code will appear here..."></textarea>
+    </div>
+  </div>
+
+  <footer>© 2025 Cyber Tools Toolkit — Zorathedevdeveloper00</footer>
+
+  <script>
+    // Music autoplay when user interacts
+    window.addEventListener('click', () => {
+      document.getElementById("bg-music").play().catch(()=>{});
+    }, { once:true });
+
+    function clearFields(){
+      document.getElementById('inputCode').value='';
+      document.getElementById('outputCode').value='';
+    }
+
+    function copyOutput(){
+      const out=document.getElementById('outputCode').value;
+      navigator.clipboard.writeText(out);
+      alert('✅ Obfuscated code copied to clipboard!');
+    }
+
+    function randomVarName(){
+      const chars='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      let name='';
+      for(let i=0;i<6;i++) name+=chars[Math.floor(Math.random()*chars.length)];
+      return name;
+    }
+
+    function base64Encode(str){
+      return btoa(unescape(encodeURIComponent(str)));
+    }
+
+    function hexEncode(str){
+      let hex='';
+      for(let i=0;i<str.length;i++){
+        hex+='\\x'+str.charCodeAt(i).toString(16).padStart(2,'0');
+      }
+      return hex;
+    }
+
+    function obfuscateCode(){
+      let code=document.getElementById('inputCode').value;
+      if(!code.trim()){alert('Please enter JavaScript code!');return;}
+
+      let obfCode=code;
+
+      // 1️⃣ Variable Renaming
+      if(document.getElementById('varRename').checked){
+        const varRegex=/\b(var|let|const)\s+([a-zA-Z_]\w*)/g;
+        const usedNames={};
+        obfCode=obfCode.replace(varRegex,(m,decl,name)=>{
+          const newName=randomVarName();
+          usedNames[name]=newName;
+          return `${decl} ${newName}`;
+        });
+        for(const [oldName,newName] of Object.entries(usedNames)){
+          const reg=new RegExp(`\\b${oldName}\\b`,'g');
+          obfCode=obfCode.replace(reg,newName);
+        }
+      }
+
+      // 2️⃣ String Encoding
+      const stringRegex=/(["'`])((?:\\.|(?!\1).)*)\1/g;
+      obfCode=obfCode.replace(stringRegex,(m,q,content)=>{
+        if(document.getElementById('base64Enc').checked){
+          return `"${'eval(atob("'+base64Encode(content)+'"))"}"`;
+        }else if(document.getElementById('hexEnc').checked){
+          return `"${hexEncode(content)}"`;
+        }else{
+          return m;
+        }
+      });
+
+      // 3️⃣ Wrap in eval (light obfuscation)
+      obfCode=`(()=>{eval(\`${obfCode.replace(/`/g,'\\`')}\`);})();`;
+
+      document.getElementById('outputCode').value=obfCode;
+    }
+  </script>
+</body>
+</html>

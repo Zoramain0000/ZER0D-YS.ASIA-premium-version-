@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>🌍 AI Personality Trainer + MBTI + Chatbot</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Courier New', monospace;
+      background: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s') ;
+      color: red;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    header, footer {
+      background: rgba(0,0,0,0.5);
+      color: red;
+      text-align: center;
+      padding: 10px;
+      border-bottom: 2px solid red;
+    }
+    main {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+    }
+    .slider-group, .region-selector {
+      background: rgba(0,0,0,0.5);
+      padding: 15px;
+      border: 1px solid red;
+      border-radius: 10px;
+      margin-bottom: 15px;
+    }
+    label {
+      color: red;
+      margin-bottom: 5px;
+      display: block;
+    }
+    input[type="range"], select, input[type="text"] {
+      width: 100%;
+      padding: 5px;
+      margin-bottom: 10px;
+    }
+    #avatar {
+      display: block;
+      width: 100px;
+      height: 100px;
+      margin: 0 auto 10px;
+      border-radius: 50%;
+      border: 2px solid red;
+      object-fit: cover;
+    }
+    #mbtiAdvice {
+      background: rgba(0,0,0,0.5);
+      color: #0fc;
+      padding: 10px;
+      border-radius: 10px;
+      text-align: center;
+      margin-bottom: 15px;
+    }
+    button {
+      padding: 10px 15px;
+      background: red;
+      color: green;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+      border-radius: 5px;
+      margin: 5px;
+    }
+    button:hover { background: rgba(0,0,0,0.5); }
+    #chart-container {
+      background: rgba(0,0,0,0.5);
+      padding: 10px;
+      border-radius: 10px;
+      margin-top: 20px;
+    }
+    select { background: #000; color: #0fc; }
+    #chatbox {
+      background: rgba(0,0,0,0.5);
+      padding: 10px;
+      border: 1px solid red;
+      border-radius: 10px;
+      max-height: 200px;
+      overflow-y: auto;
+      margin-top: 20px;
+    }
+    #chatbox div { margin: 5px 0; }
+    #preview {
+      background: rgba(0,0,0,0.5);
+      padding: 20px;
+      border-radius: 10px;
+      margin: 10px 0;
+      min-height: 80px;
+    }
+    #chatInputContainer {
+      display: flex;
+      margin-top: 10px;
+    }
+    #chatMessage {
+      flex: 1;
+      padding: 10px;
+      font-family: inherit;
+    }
+  </style>
+</head>
+<body>
+  <header>🌍 AI Personality Trainer + MBTI + Chatbot</header>
+  <main>
+    <div class="region-selector">
+      <label for="region">🌐 Select Region:</label>
+      <select id="region"></select>
+    </div>
+    <div class="region-selector">
+      <label for="mbti">🎲 Choose MBTI:</label>
+      <select id="mbti"></select>
+    </div>
+
+    <img id="avatar" src="" alt="Avatar" />
+    <div id="mbtiAdvice">🧠 Select an MBTI to see personalized advice.</div>
+
+    <div id="sliders"></div>
+
+    <input type="text" id="profileName" placeholder="📛 Save as profile name..." />
+    <button onclick="saveProfile()">💾 Save JSON</button>
+    <button onclick="exportCSV()">📁 Save CSV</button>
+    <select id="savedProfiles" onchange="loadProfile()">
+      <option value="">📂 Load Profile</option>
+    </select>
+
+    <select id="chatProvider">
+      <option value="openai">🧠 GPT (OpenAI)</option>
+      <option value="gemini">🌟 Gemini (Google)</option>
+    </select>
+
+    <div id="preview">AI says: Ready to chat.</div>
+
+    <div id="chatbox"></div>
+
+    <div id="chatInputContainer">
+      <input type="text" id="chatMessage" placeholder="💬 Type your message..." />
+      <button onclick="sendMessage()">📤 Send</button>
+    </div>
+
+    <div id="chart-container">
+      <canvas id="personalityChart"></canvas>
+    </div>
+  </main>
+  <footer>© 2025 ZeroDayAI</footer>
+
+<script>
+const mbtiTypes = ["ENFJ","ENFP","ENTJ","ENTP","ESFJ","ESFP","ESTJ","ESTP","INFJ","INFP","INTJ","INTP","ISFJ","ISFP","ISTJ","ISTP"];
+const avatarMap = {}, mbtiAdvice = {}, mbtiData = {}, chatHistory = [];
+const OPENAI_API_KEY = "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";
+const GEMINI_API_KEY = "AIzaSyCNGRzewppPMV_Um75zEBAz1B8z0j7BzZU";
+
+mbtiTypes.forEach(t => {
+  avatarMap[t] = `https://api.dicebear.com/6.x/personas/svg?seed=${t}`;
+  mbtiAdvice[t] = `💡 Advice for ${t}: trust yourself yet stay open.`;
+  mbtiData[t] = {
+    humor: 50 + (Math.random()-0.5)*40,
+    formality: 50 + (Math.random()-0.5)*40,
+    empathy: 50 + (Math.random()-0.5)*40,
+    creativity: 50 + (Math.random()-0.5)*40
+  };
+});
+
+const regions = {
+  japan: { humor:30, formality:90, empathy:60, creativity:65 },
+  usa: { humor:70, formality:40, empathy:50, creativity:75 },
+  germany: { humor:40, formality:80, empathy:55, creativity:60 },
+  brazil: { humor:75, formality:30, empathy:80, creativity:85 },
+  philippines: { humor:80, formality:45, empathy:85, creativity:70 },
+  nigeria: { humor:85, formality:50, empathy:75, creativity:65 }
+};
+
+const sliders = ["humor","formality","empathy","creativity"];
+const regionSel = document.getElementById("region");
+const mbtiSel = document.getElementById("mbti");
+Object.keys(regions).forEach(r => regionSel.add(new Option(r, r)));
+mbtiTypes.forEach(t => mbtiSel.add(new Option(t, t)));
+
+const sliderContainer = document.getElementById("sliders");
+sliders.forEach(id => {
+  const grp = document.createElement("div"); grp.className="slider-group";
+  grp.innerHTML = `<label for="${id}">${id[0].toUpperCase()+id.slice(1)}: <span id="${id}Val">50</span>%</label>`+
+                  `<input type="range" id="${id}" min="0" max="100" value="50" />`;
+  sliderContainer.appendChild(grp);
+  document.getElementById(id).addEventListener("input", e => {
+    document.getElementById(id+"Val").innerText = e.target.value;
+    updateChart();
+  });
+});
+
+const chartCtx = document.getElementById("personalityChart").getContext("2d");
+const personalityChart = new Chart(chartCtx, {
+  type: 'radar',
+  data: {
+    labels: sliders.map(s => s.charAt(0).toUpperCase()+s.slice(1)),
+    datasets: [{
+      label: 'AI Personality',
+      data: sliders.map(_=>50),
+      backgroundColor:'rgba(255,0,0,0.2)',
+      borderColor:'red'
+    }]
+  },
+  options:{responsive:true, scales:{r:{ticks:{stepSize:20, color:'#0fc'}}}}
+});
+
+function updateChart(){
+  personalityChart.data.datasets[0].data = sliders.map(id=>+document.getElementById(id).value);
+  personalityChart.update();
+}
+
+function applyProfile(p){
+  if(p.mbti){
+    document.getElementById("avatar").src = avatarMap[p.mbti];
+    document.getElementById("mbtiAdvice").innerText = mbtiAdvice[p.mbti];
+  }
+  sliders.forEach(id => {
+    const val = p[id] ?? 50;
+    document.getElementById(id).value = val;
+    document.getElementById(id+"Val").innerText = val;
+  });
+  updateChart();
+}
+
+function getProfile(){
+  const p = {mbti: mbtiSel.value, region: regionSel.value};
+  sliders.forEach(id => p[id] = +document.getElementById(id).value);
+  return p;
+}
+
+function saveProfile(){
+  const name = document.getElementById("profileName").value.trim();
+  if(!name) return alert("Enter a profile name!");
+  const all = JSON.parse(localStorage.getItem("profiles")||"{}");
+  all[name] = { ...getProfile(), chat: chatHistory };
+  localStorage.setItem("profiles", JSON.stringify(all));
+  refreshProfiles(); alert("✅ Profile saved!");
+}
+
+function refreshProfiles(){
+  const sel = document.getElementById("savedProfiles");
+  sel.innerHTML = '<option value="">📂 Load Profile</option>';
+  const all = JSON.parse(localStorage.getItem("profiles")||"{}");
+  Object.keys(all).forEach(name => sel.add(new Option(name, name)));
+}
+
+function loadProfile(){
+  const all = JSON.parse(localStorage.getItem("profiles")||"{}");
+  const name = document.getElementById("savedProfiles").value;
+  const p = all[name];
+  if(p) {
+    applyProfile(p);
+    chatHistory.length = 0;
+    (p.chat || []).forEach(msg => showMessage(msg, true));
+  }
+}
+
+function exportCSV(){
+  const p = getProfile();
+  const rows = Object.entries(p).map(([k,v])=>`${k},${v}`).join("\n");
+  const blob = new Blob([`key,value\n${rows}`], {type:"text/csv"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "profile.csv";
+  a.click();
+}
+
+async function sendMessage(){
+  const userInput = document.getElementById("chatMessage").value.trim();
+  if (!userInput) return;
+  showMessage("🧍 " + userInput);
+  chatHistory.push("🧍 " + userInput);
+  document.getElementById("chatMessage").value = "";
+
+  const p = getProfile();
+  const prompt = `Traits: Humor=${p.humor}, Formality=${p.formality}, Empathy=${p.empathy}, Creativity=${p.creativity}.
+User: ${userInput}\nAI Personality Coach:`;
+
+  const provider = document.getElementById("chatProvider").value;
+
+  if(provider === "openai"){
+    const key = localStorage.getItem("openaiKey") || OPENAI_API_KEY;
+    try {
+      const res = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${key}`
+        },
+        body: JSON.stringify({
+          model: "gpt-3.5-turbo",
+          messages: [{ role: "user", content: prompt }]
+        })
+      });
+      const data = await res.json();
+      const msg = data.choices?.[0]?.message?.content?.trim() || "✨ No response.";
+      showMessage(msg); chatHistory.push("🤖 " + msg);
+      localStorage.setItem("openaiKey", key);
+    } catch (e) {
+      console.warn(e); fallbackChat();
+    }
+  } else {
+    const key = localStorage.getItem("geminiKey") || GEMINI_API_KEY;
+    try {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${key}`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+          contents: [{parts: [{text: prompt}]}]
+        })
+      });
+      const data = await res.json();
+      const msg = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "✨ No response.";
+      showMessage(msg); chatHistory.push("🤖 " + msg);
+      localStorage.setItem("geminiKey", key);
+    } catch (e) {
+      console.warn(e); fallbackChat();
+    }
+  }
+}
+
+function fallbackChat(){
+  const p = getProfile();
+  let msg = p.formality>70 ? "Greetings." : p.formality<30 ? "Yo!" : "Hello.";
+  if(p.humor>50) msg += " Here's a light joke!";
+  if(p.empathy>60) msg += " I'm here for you.";
+  if(p.creativity>60) msg += " Let's dream big!";
+  showMessage(msg); chatHistory.push("🤖 " + msg);
+}
+
+function showMessage(msg, skipSave){
+  document.getElementById("preview").innerText = msg;
+  const div = document.createElement("div");
+  div.innerText = msg;
+  document.getElementById("chatbox").appendChild(div);
+  document.getElementById("chatbox").scrollTop = document.getElementById("chatbox").scrollHeight;
+  if (!skipSave) chatHistory.push(msg);
+}
+
+regionSel.onchange = () => applyProfile({region: regionSel.value});
+mbtiSel.onchange = () => applyProfile({mbti: mbtiSel.value});
+refreshProfiles(); updateChart();
+
+</script>
+</body>
+</html>

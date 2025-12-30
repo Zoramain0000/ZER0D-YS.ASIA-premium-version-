@@ -1,0 +1,257 @@
+ <!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>🔐 Ultimate Encryptor</title>
+<style>
+    body {
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+      font: 16px/1.4 "Segoe UI", sans-serif;
+      margin: 0 auto;
+      max-width: 960px;
+      padding: 32px;
+    }
+
+    h1 {
+      color: red;
+      margin-top: 0;
+    }
+
+    textarea,
+    input[type="password"],
+    input[type="number"],
+    button,
+    select {
+      font: inherit;
+      border: none;
+      border-radius: 6px;
+      padding: 12px;
+background: rgba(0, 0, 0, 0.5);
+color: red;
+    }
+
+    textarea,
+    input {
+background: rgba(0, 0, 0, 0.5);
+      color: red;
+      width: 100%;
+      resize: vertical;
+    }
+    
+button {
+      cursor: pointer;
+      background: red;
+      color: green;
+      margin: 8px 4px 0 0;
+    }
+
+    button:hover {
+background: rgba(0, 0, 0, 0.5);
+    }
+
+    .row {
+      margin-top: 20px;
+    }
+
+    #dropZone {
+      border: 2px dashed red;
+      text-align: center;
+      padding: 25px;
+      margin-top: 20px;
+    }
+
+    #dropZone.drag {
+      background: red;
+    }
+
+    label {
+      display: block;
+      margin: 6px 0 4px;
+    }
+    
+small {
+      opacity: 0.7;
+    }
+  </style>
+</head>
+<body>
+
+<h1>🔐 Ultimate Encryptor</h1>
+
+<!-- MODE SELECTOR -->
+<div class="row">
+  <label for="mode">Mode:</label>
+  <select id="mode">
+    <option value="text">Text / Code</option>
+    <option value="file">File</option>
+  </select>
+</div>
+
+<!-- PASSWORD + KDF SETTINGS -->
+<div id="pwBlock" class="row">
+  <label>Master Password:</label>
+  <input type="password" id="password" placeholder="Enter a strong password">
+  <label>PBKDF2 Iterations: <small>(higher = slower but stronger)</small></label>
+  <input type="number" id="iterations" min="1000" value="100000">
+</div>
+
+<!-- TEXT AREA -->
+<div id="textArea" class="row">
+  <label>Input (Text to encrypt or JSON payload to decrypt):</label>
+  <textarea id="inputText" rows="8"></textarea>
+</div>
+
+<!-- FILE INPUT -->
+<div id="fileBlock" class="row" style="display:none;">
+  <input type="file" id="fileInput">
+  <div id="dropZone">📂 Drag &amp; Drop file here</div>
+</div>
+
+<!-- ACTIONS -->
+<div class="row">
+  <button onclick="encrypt()">Encrypt</button>
+  <button onclick="decrypt()">Decrypt</button>
+  <button onclick="clearAll()">Clear</button>
+  <button onclick="downloadOutput()">⬇️ Download Output</button>
+</div>
+
+<!-- OUTPUT -->
+<div class="row">
+  <label>Output (encrypted JSON or decrypted text):</label>
+  <textarea id="output" rows="8" readonly></textarea>
+</div>
+
+<script>
+/* ------------------- Helper utils ------------------- */
+const enc = new TextEncoder();    // UTF-8 → Uint8Array
+const dec = new TextDecoder();    // Uint8Array → UTF-8
+
+const b64enc = a => btoa(String.fromCharCode(...new Uint8Array(a)));
+const b64dec = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+
+function genRandom(len){ return crypto.getRandomValues(new Uint8Array(len)); }
+
+/* ------------------- UI switching ------------------- */
+const modeSel = document.getElementById('mode');
+modeSel.addEventListener('change',()=> {
+  const text   = modeSel.value === 'text';
+  document.getElementById('textArea').style.display = text ? 'block':'none';
+  document.getElementById('fileBlock').style.display = text ? 'none':'block';
+});
+
+/* ------------------- Drag & Drop ------------------- */
+const drop = document.getElementById('dropZone');
+['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault(); drop.classList.add('drag');}));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault(); drop.classList.remove('drag');}));
+drop.addEventListener('drop', e=>{
+  const f = e.dataTransfer.files[0];
+  if(f) document.getElementById('fileInput').files = e.dataTransfer.files;
+});
+
+/* ------------------- Core crypto helpers ------------------- */
+async function deriveKey(password, salt, iterations){
+  const keyMaterial = await crypto.subtle.importKey(
+      'raw', enc.encode(password), {name:'PBKDF2'}, false, ['deriveKey']);
+  return crypto.subtle.deriveKey(
+      {name:'PBKDF2', salt, iterations, hash:'SHA-256'},
+      keyMaterial,
+      {name:'AES-GCM', length:256},
+      false, ['encrypt','decrypt']);
+}
+
+async function aesEncrypt(plainBytes, password, iterations){
+  const salt = genRandom(16);
+  const iv   = genRandom(12);
+  const key  = await deriveKey(password, salt, iterations);
+  const cipher = await crypto.subtle.encrypt({name:'AES-GCM', iv}, key, plainBytes);
+  return {alg:'AES-GCM', iter:iterations,
+          salt:b64enc(salt), iv:b64enc(iv), data:b64enc(cipher)};
+}
+
+async function aesDecrypt(payload, password){
+  const {salt, iv, data, iter} = payload;
+  const key  = await deriveKey(password, b64dec(salt), iter);
+  try{
+    const plain = await crypto.subtle.decrypt(
+        {name:'AES-GCM', iv:b64dec(iv)},
+        key,
+        b64dec(data)
+    );
+    return new Uint8Array(plain);
+  }catch(e){ throw '❌ Decryption failed (bad password or corrupted data)'; }
+}
+
+/* ------------------- Text path ------------------- */
+async function encryptText(){
+  const pw = document.getElementById('password').value;
+  if(!pw) return alert('Enter a password!');
+  const it = +document.getElementById('iterations').value || 100000;
+  const txtBytes = enc.encode(document.getElementById('inputText').value);
+  const payload = await aesEncrypt(txtBytes, pw, it);
+  document.getElementById('output').value = JSON.stringify(payload, null, 2);
+}
+
+async function decryptText(){
+  let payload;
+  try{ payload = JSON.parse(document.getElementById('inputText').value.trim()); }
+  catch(e){ return alert('Provide the JSON you received when encrypting.'); }
+  const pw = document.getElementById('password').value;
+  if(!pw) return alert('Password required!');
+  const plainBytes = await aesDecrypt(payload, pw);
+  document.getElementById('output').value = dec.decode(plainBytes);
+}
+
+/* ------------------- File path ------------------- */
+async function encryptFile(){
+  const file = document.getElementById('fileInput').files[0];
+  if(!file) return alert('Choose or drop a file.');
+  const pw   = document.getElementById('password').value;
+  if(!pw) return alert('Password required!');
+  const it   = +document.getElementById('iterations').value || 100000;
+  const ab   = await file.arrayBuffer();
+  const payload = await aesEncrypt(new Uint8Array(ab), pw, it);
+  /* stick some metadata for convenience */
+  payload.filename = file.name;
+  const blob = new Blob([JSON.stringify(payload)], {type:'application/json'});
+  forceDownload(blob, file.name + '.enc.json');
+  document.getElementById('output').value = 'Encrypted & downloaded as '+file.name+'.enc.json';
+}
+
+async function decryptFile(){
+  const file = document.getElementById('fileInput').files[0];
+  if(!file) return alert('Drop the .enc.json file you got from encryption.');
+  const pw   = document.getElementById('password').value;
+  if(!pw) return alert('Password required!');
+  const payload = JSON.parse(await file.text());
+  const plain   = await aesDecrypt(payload, pw);
+  const blob    = new Blob([plain]);
+  forceDownload(blob, payload.filename || 'decrypted.bin');
+  document.getElementById('output').value = 'Decrypted & downloaded.';
+}
+
+function forceDownload(blob, filename){
+  const url = URL.createObjectURL(blob);
+  const a = Object.assign(document.createElement('a'), {href:url, download:filename});
+  document.body.append(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+}
+
+/* ------------------- Glue UI to logic ------------------- */
+async function encrypt(){ modeSel.value==='text' ? encryptText() : encryptFile(); }
+async function decrypt(){ modeSel.value==='text' ? decryptText() : decryptFile(); }
+
+function clearAll(){
+  ['inputText','output','password'].forEach(id=>{const e=document.getElementById(id); if(e)e.value='';});
+  document.getElementById('fileInput').value='';
+}
+
+/* ------------------- Misc ------------------- */
+function downloadOutput(){
+  const data = document.getElementById('output').value;
+  if(!data) return alert('Nothing to download.');
+  forceDownload(new Blob([data],{type:'text/plain'}),'output.txt');
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Advanced Voice Cleaner Tool</title>
+<style>
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+    color: red;
+    margin: 0;
+    padding: 0;
+    display: flex; flex-direction: column; align-items: center; min-height: 100vh;
+  }
+  h1 {
+    margin: 1rem 0 0.5rem;
+    color: red;
+  }
+  #container {
+    max-width: 900px;
+    width: 95vw;
+background: rgba(0, 0, 0, 0.5)
+    border-radius: 8px;
+    padding: 1rem 2rem 2rem;
+    box-shadow: 0 0 15px red;
+  }
+  label {
+    display: block;
+    margin-top: 1rem;
+  }
+  input[type="range"] {
+    width: 100%;
+background: rgba(0, 0, 0, 0.5)
+  }
+  button {
+    margin-top: 1rem;
+    background: red;
+    border: none;
+    padding: 0.6rem 1.2rem;
+    border-radius: 5px;
+    font-weight: bold;
+    cursor: pointer;
+    color: green;
+  }
+  button:disabled {
+background: rgba(0, 0, 0, 0.5)
+    cursor: not-allowed;
+  }
+  audio {
+    margin-top: 1rem;
+    width: 100%;
+  }
+  canvas {
+    margin-top: 1rem;
+    border: 1px solid red;
+    width: 100%;
+    height: 100px;
+background: rgba(0, 0, 0, 0.5)
+    border-radius: 4px;
+  }
+  .control-group {
+    margin-top: 1rem;
+  }
+  .flex-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .flex-row > label {
+    flex: 1;
+    margin-right: 0.5rem;
+  }
+  .flex-row > input[type=range] {
+    flex: 4;
+  }
+  .footer {
+    margin-top: 2rem;
+    font-size: 0.8rem;
+    color: red;
+    text-align: center;
+  }
+  a {
+    color: red;
+  }
+</style>
+</head>
+<body>
+
+<div id="container">
+  <h1>Advanced Voice Cleaner Tool (Browser Only)</h1>
+  <input type="file" id="audioFile" accept="audio/*" />
+  <button id="processBtn" disabled>Process & Clean Voice</button>
+  <button id="downloadBtn" disabled>Download Cleaned Audio</button>
+
+  <div class="control-group">
+    <label for="gateThreshold">Noise Gate Threshold (dB): <span id="gateVal">-60</span></label>
+    <input type="range" id="gateThreshold" min="-100" max="0" value="-60" step="1" />
+  </div>
+
+  <div class="control-group">
+    <label for="highpassFreq">High-Pass Filter Cutoff Frequency (Hz): <span id="highpassVal">80</span></label>
+    <input type="range" id="highpassFreq" min="20" max="1000" value="80" step="1" />
+  </div>
+
+  <div class="control-group">
+    <label for="compressorThreshold">Compressor Threshold (dB): <span id="compThreshVal">-24</span></label>
+    <input type="range" id="compressorThreshold" min="-100" max="0" value="-24" step="1" />
+  </div>
+
+  <div class="control-group">
+    <label for="compressorRatio">Compressor Ratio: <span id="compRatioVal">4</span></label>
+    <input type="range" id="compressorRatio" min="1" max="20" value="4" step="0.1" />
+  </div>
+
+  <audio id="originalAudio" controls></audio>
+  <audio id="cleanedAudio" controls></audio>
+
+  <canvas id="originalWave" height="100"></canvas>
+  <canvas id="cleanedWave" height="100"></canvas>
+</div>
+
+<div class="footer">
+  Made with zora — Inspired by BandLab's voice cleaner.<br />
+  <a href="https://webaudio.github.io/web-audio-api/" target="_blank" rel="noopener">Web Audio API Docs</a>
+</div>
+
+<script>
+(() => {
+  const fileInput = document.getElementById('audioFile');
+  const processBtn = document.getElementById('processBtn');
+  const downloadBtn = document.getElementById('downloadBtn');
+
+  const originalAudio = document.getElementById('originalAudio');
+  const cleanedAudio = document.getElementById('cleanedAudio');
+
+  const gateThresholdSlider = document.getElementById('gateThreshold');
+  const highpassFreqSlider = document.getElementById('highpassFreq');
+  const compThreshSlider = document.getElementById('compressorThreshold');
+  const compRatioSlider = document.getElementById('compressorRatio');
+
+  const gateValDisplay = document.getElementById('gateVal');
+  const highpassValDisplay = document.getElementById('highpassVal');
+  const compThreshValDisplay = document.getElementById('compThreshVal');
+  const compRatioValDisplay = document.getElementById('compRatioVal');
+
+  const originalWave = document.getElementById('originalWave');
+  const cleanedWave = document.getElementById('cleanedWave');
+  const originalCtx = originalWave.getContext('2d');
+  const cleanedCtx = cleanedWave.getContext('2d');
+
+  let audioBuffer = null;
+  let cleanedBuffer = null;
+
+  // Display slider values live
+  gateThresholdSlider.addEventListener('input', () => gateValDisplay.textContent = gateThresholdSlider.value);
+  highpassFreqSlider.addEventListener('input', () => highpassValDisplay.textContent = highpassFreqSlider.value);
+  compThreshSlider.addEventListener('input', () => compThreshValDisplay.textContent = compThreshSlider.value);
+  compRatioSlider.addEventListener('input', () => compRatioValDisplay.textContent = compRatioSlider.value);
+
+  fileInput.addEventListener('change', async (e) => {
+    if (!e.target.files.length) return;
+    processBtn.disabled = true;
+    downloadBtn.disabled = true;
+    cleanedAudio.src = '';
+    originalAudio.src = '';
+
+    const file = e.target.files[0];
+    const arrayBuffer = await file.arrayBuffer();
+
+    const audioCtx = new AudioContext();
+    try {
+      audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+      audioCtx.close();
+
+      // Set original audio for playback
+      const blob = new Blob([arrayBuffer], {type: file.type});
+      originalAudio.src = URL.createObjectURL(blob);
+      originalAudio.load();
+
+      // Draw waveform
+      drawWaveform(originalCtx, audioBuffer, originalWave.width, originalWave.height);
+
+      processBtn.disabled = false;
+    } catch (err) {
+      alert('Error decoding audio: ' + err.message);
+      processBtn.disabled = true;
+    }
+  });
+
+  processBtn.addEventListener('click', async () => {
+    if (!audioBuffer) return;
+    processBtn.disabled = true;
+    downloadBtn.disabled = true;
+    cleanedAudio.src = '';
+    cleanedBuffer = null;
+
+    const gateThresholdDb = parseFloat(gateThresholdSlider.value);
+    const highpassFreq = parseFloat(highpassFreqSlider.value);
+    const compThresholdDb = parseFloat(compThreshSlider.value);
+    const compRatio = parseFloat(compRatioSlider.value);
+
+    const cleaned = await cleanAudio(audioBuffer, {
+      gateThresholdDb,
+      highpassFreq,
+      compThresholdDb,
+      compRatio,
+    });
+
+    cleanedBuffer = cleaned;
+
+    const wavBlob = bufferToWavBlob(cleanedBuffer);
+    const wavURL = URL.createObjectURL(wavBlob);
+    cleanedAudio.src = wavURL;
+    cleanedAudio.load();
+
+    drawWaveform(cleanedCtx, cleanedBuffer, cleanedWave.width, cleanedWave.height);
+
+    downloadBtn.disabled = false;
+    processBtn.disabled = false;
+  });
+
+  downloadBtn.addEventListener('click', () => {
+    if (!cleanedBuffer) return;
+    const wavBlob = bufferToWavBlob(cleanedBuffer);
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(wavBlob);
+    a.download = 'cleaned_voice.wav';
+    a.click();
+  });
+
+  // Clean audio processing function using Web Audio API OfflineContext
+  async function cleanAudio(buffer, options) {
+    const {
+      gateThresholdDb,
+      highpassFreq,
+      compThresholdDb,
+      compRatio,
+    } = options;
+
+    const sampleRate = buffer.sampleRate;
+    const offlineCtx = new OfflineAudioContext(buffer.numberOfChannels, buffer.length, sampleRate);
+
+    // Create source
+    const source = offlineCtx.createBufferSource();
+    source.buffer = buffer;
+
+    // High-pass filter (removes hum/low freq)
+    const hpFilter = offlineCtx.createBiquadFilter();
+    hpFilter.type = 'highpass';
+    hpFilter.frequency.value = highpassFreq;
+
+    // Noise gate (simple gate emulated by a script processor)
+    // We'll approximate noise gate by applying gain reduction if signal is below threshold
+
+    // We implement noise gate with a DynamicsCompressorNode set to extreme ratio + threshold for gating effect
+    const noiseGate = offlineCtx.createDynamicsCompressor();
+    noiseGate.threshold.value = gateThresholdDb; // gate threshold
+    noiseGate.knee.value = 0;
+    noiseGate.ratio.value = 20;
+    noiseGate.attack.value = 0.001;
+    noiseGate.release.value = 0.05;
+
+    // Compressor for dynamic range control
+    const compressor = offlineCtx.createDynamicsCompressor();
+    compressor.threshold.value = compThresholdDb;
+    compressor.knee.value = 30;
+    compressor.ratio.value = compRatio;
+    compressor.attack.value = 0.005;
+    compressor.release.value = 0.2;
+
+    // Connect nodes: source -> hpFilter -> noiseGate -> compressor -> destination
+    source.connect(hpFilter);
+    hpFilter.connect(noiseGate);
+    noiseGate.connect(compressor);
+    compressor.connect(offlineCtx.destination);
+
+    source.start(0);
+
+    const renderedBuffer = await offlineCtx.startRendering();
+    return renderedBuffer;
+  }
+
+  // Utility to draw waveform on canvas from AudioBuffer
+  function drawWaveform(ctx, buffer, width, height) {
+    ctx.clearRect(0, 0, width, height);
+    const channelData = buffer.getChannelData(0);
+    const step = Math.ceil(channelData.length / width);
+    ctx.fillStyle = '#0ff';
+    ctx.beginPath();
+    for(let i=0; i < width; i++) {
+      let min = 1, max = -1;
+      for(let j=0; j < step; j++) {
+        const datum = channelData[(i * step) + j];
+        if(datum < min) min = datum;
+        if(datum > max) max = datum;
+      }
+      const yMin = ((1 + min) / 2) * height;
+      const yMax = ((1 + max) / 2) * height;
+      ctx.moveTo(i, yMin);
+      ctx.lineTo(i, yMax);
+    }
+    ctx.strokeStyle = '#0ff';
+    ctx.stroke();
+  }
+
+  // Convert AudioBuffer to WAV Blob for download
+  function bufferToWavBlob(buffer) {
+    const numChannels = buffer.numberOfChannels;
+    const sampleRate = buffer.sampleRate;
+    const format = 1; // PCM
+    const bitsPerSample = 16;
+
+    const samples = buffer.length * numChannels;
+    const blockAlign = numChannels * bitsPerSample / 8;
+    const byteRate = sampleRate * blockAlign;
+    const dataSize = samples * bitsPerSample / 8;
+
+    const bufferLength = 44 + dataSize;
+    const wavBuffer = new ArrayBuffer(bufferLength);
+    const view = new DataView(wavBuffer);
+
+    // RIFF chunk descriptor
+    writeString(view, 0, 'RIFF');
+    view.setUint32(4, 36 + dataSize, true);
+    writeString(view, 8, 'WAVE');
+
+    // fmt subchunk
+    writeString(view, 12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, format, true);
+    view.setUint16(22, numChannels, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, byteRate, true);
+    view.setUint16(32, blockAlign, true);
+    view.setUint16(34, bitsPerSample, true);
+
+    // data subchunk
+    writeString(view, 36, 'data');
+    view.setUint32(40, dataSize, true);
+
+    // Write PCM samples
+    let offset = 44;
+    for (let i = 0; i < buffer.length; i++) {
+      for (let ch = 0; ch < numChannels; ch++) {
+        let sample = buffer.getChannelData(ch)[i];
+        // Clamp and scale sample to 16-bit signed int
+        sample = Math.max(-1, Math.min(1, sample));
+        sample = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+        view.setInt16(offset, sample, true);
+        offset += 2;
+      }
+    }
+
+    return new Blob([wavBuffer], { type: 'audio/wav' });
+  }
+
+  function writeString(view, offset, str) {
+    for (let i = 0; i < str.length; i++) {
+      view.setUint8(offset + i, str.charCodeAt(i));
+    }
+  }
+})();
+</script>
+
+</body>
+</html>

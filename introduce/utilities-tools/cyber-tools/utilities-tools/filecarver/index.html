@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>File Carver | Cyber Tools Toolkit</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{
+      font-family:'Segoe UI',monospace;
+      background:#000;
+      color:#ffc107;
+      overflow-x:hidden;
+    }
+    video.bg-video{
+      position:fixed;
+      top:0;left:0;
+      width:100vw;height:100vh;
+      object-fit:cover;
+      z-index:-2;
+      filter:brightness(0.25);
+    }
+    nav{
+      background:rgba(0,0,0,0.7);
+      color:#ffc107;
+      border-bottom:1px solid #c58b00;
+      padding:1rem 2rem;
+      display:flex;justify-content:space-between;align-items:center;
+      position:fixed;width:100%;top:0;z-index:10;
+    }
+    nav .brand{font-weight:bold;font-size:1.3rem;}
+    .main{
+      padding:120px 20px 60px;
+      max-width:1000px;margin:auto;
+    }
+    .section{
+      background:rgba(0,0,0,0.5);
+      border:1px solid #c58b00;
+      border-radius:12px;
+      padding:1.5rem;
+      box-shadow:0 0 20px rgba(0,0,0,0.7);
+    }
+    h1{color:#ffc107;text-align:center;margin-bottom:1rem;}
+    p{text-align:center;color:#ffdf91;margin-bottom:1.5rem;}
+    .file-input{
+      width:100%;
+      padding:1rem;
+      background:#111;
+      border:1px dashed #c58b00;
+      border-radius:10px;
+      text-align:center;
+      cursor:pointer;
+      color:#ffc107;
+      margin-bottom:1.2rem;
+      transition:0.3s;
+    }
+    .file-input:hover{background:#1a1a1a;}
+    pre{
+      background:#111;
+      color:#00ffb3;
+      border:1px solid #c58b00;
+      padding:1rem;
+      border-radius:8px;
+      overflow:auto;
+      font-size:0.9rem;
+      max-height:400px;
+    }
+    .btn{
+      background:rgba(0,0,0,0.7);
+      border:1px solid #c58b00;
+      color:#ffc107;
+      padding:10px 18px;
+      border-radius:8px;
+      cursor:pointer;
+      transition:0.25s;
+      margin:0.3rem;
+    }
+    .btn:hover{background:rgba(255,193,7,0.1);}
+    .btn-group{text-align:center;margin-top:1rem;}
+    footer{
+      text-align:center;
+      padding:1.5rem;
+      color:#c58b00;
+      font-size:0.9rem;
+    }
+  </style>
+</head>
+<body>
+
+  <video class="bg-video" autoplay loop muted playsinline>
+    <source src="background/1761817527453041720p.mp4" type="video/mp4">
+  </video>
+
+  <audio id="bg-music" loop>
+    <source src="background/Programming___Coding___Hacking_music_vol.18__ANONYMOUS_HEADQUARTERS_(48k).mp3" type="audio/mpeg">
+  </audio>
+
+  <nav>
+    <div class="brand">File Carver</div>
+  </nav>
+
+  <div class="main">
+    <div class="section">
+      <h1>🧠 File Carver Tool</h1>
+      <p>Scan and extract hidden files from any binary data or disk image (e.g., .bin, .img, .raw). Works locally — no backend, full privacy.</p>
+
+      <label for="fileInput" class="file-input">
+        <strong>Click or Drop a Binary File to Scan</strong>
+        <input type="file" id="fileInput" style="display:none;">
+      </label>
+
+      <pre id="output">Detected embedded files and data will appear here...</pre>
+
+      <div class="btn-group">
+        <button class="btn" onclick="clearAll()">Clear</button>
+        <button class="btn" onclick="copyOutput()">Copy Results</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>© 2025 Cyber Tools Toolkit — Zorathedevdeveloper00</footer>
+
+  <script>
+    // Background music auto start
+    window.addEventListener('click',()=>{
+      document.getElementById('bg-music').play().catch(()=>{});
+    },{once:true});
+
+    const fileInput=document.getElementById('fileInput');
+    const output=document.getElementById('output');
+
+    fileInput.addEventListener('change',handleFile,false);
+
+    const signatures = [
+      { ext:'jpg', magic:[0xFF,0xD8,0xFF], name:'JPEG Image', end:[0xFF,0xD9] },
+      { ext:'png', magic:[0x89,0x50,0x4E,0x47], name:'PNG Image', end:[0x49,0x45,0x4E,0x44,0xAE,0x42,0x60,0x82] },
+      { ext:'gif', magic:[0x47,0x49,0x46,0x38], name:'GIF Image' },
+      { ext:'zip', magic:[0x50,0x4B,0x03,0x04], name:'ZIP Archive' },
+      { ext:'pdf', magic:[0x25,0x50,0x44,0x46], name:'PDF Document' },
+      { ext:'mp3', magic:[0x49,0x44,0x33], name:'MP3 Audio' },
+      { ext:'mp4', magic:[0x66,0x74,0x79,0x70], name:'MP4 Video' },
+      { ext:'docx', magic:[0x50,0x4B,0x03,0x04], name:'DOCX Document (ZIP)' },
+      { ext:'exe', magic:[0x4D,0x5A], name:'Windows Executable' },
+      { ext:'rar', magic:[0x52,0x61,0x72,0x21], name:'RAR Archive' }
+    ];
+
+    function handleFile(e){
+      const file=e.target.files[0];
+      if(!file){return;}
+      output.textContent=`🔍 Scanning "${file.name}" (${(file.size/1024).toFixed(2)} KB)...\n\n`;
+
+      const reader=new FileReader();
+      reader.onload=function(ev){
+        const data=new Uint8Array(ev.target.result);
+        const results = [];
+
+        for(const sig of signatures){
+          for(let i=0;i<data.length;i++){
+            if(matchesMagic(data,i,sig.magic)){
+              let message=`[+] Found ${sig.name} signature (${sig.ext.toUpperCase()}) at offset 0x${i.toString(16).padStart(6,'0')}`;
+              results.push(message);
+            }
+          }
+        }
+
+        if(results.length===0){
+          output.textContent+='❌ No known file signatures detected.\n';
+        }else{
+          output.textContent+=results.join('\n');
+        }
+
+        output.textContent+='\n\n🧩 Scan complete.';
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function matchesMagic(data,offset,magic){
+      for(let j=0;j<magic.length;j++){
+        if(data[offset+j]!==magic[j]) return false;
+      }
+      return true;
+    }
+
+    function clearAll(){
+      fileInput.value='';
+      output.textContent='Detected embedded files and data will appear here...';
+    }
+
+    function copyOutput(){
+      navigator.clipboard.writeText(output.textContent);
+      alert('✅ Results copied to clipboard!');
+    }
+  </script>
+</body>
+</html>

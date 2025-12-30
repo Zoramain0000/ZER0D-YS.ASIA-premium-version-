@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Advanced Remote Port Scanner & HTTP Fingerprinter</title>
+<style>
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+    color: red;
+    margin: 0; padding: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+  header {
+background: rgba(0, 0, 0, 0.5);
+    padding: 1rem 2rem;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: red;
+    text-align: center;
+  }
+  main {
+    flex: 1;
+    padding: 1rem 2rem;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+  label {
+    display: block;
+    margin-top: 1rem;
+    font-weight: 600;
+  }
+  input[type=text], textarea {
+    width: 100%;
+    padding: 0.5rem;
+    margin-top: 0.3rem;
+    border-radius: 6px;
+    border: none;
+    font-size: 1rem;
+background: rgba(0, 0, 0, 0.5);
+color: red;
+  }
+  textarea {
+    resize: vertical;
+    min-height: 80px;
+  }
+  button {
+    margin-top: 1rem;
+    background: red;
+    border: none;
+    color: green;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+  }
+  button:hover:not(:disabled) {
+background: rgba(0, 0, 0, 0.5);
+  }
+  button:disabled {
+background: rgba(0, 0, 0, 0.5);
+    cursor: not-allowed;
+  }
+  #results {
+    margin-top: 1.5rem;
+background: rgba(0, 0, 0, 0.5);
+    border-radius: 8px;
+    padding: 1rem;
+    max-height: 400px;
+    overflow-y: auto;
+    font-family: monospace;
+    white-space: pre-wrap;
+  }
+  .port-open {
+    color: green;
+  }
+  .port-closed {
+    color:red;
+  }
+  .port-unknown {
+    color: gray;
+  }
+  .service-info {
+    margin-left: 1rem;
+    color: red;
+  }
+  footer {
+    text-align: center;
+    padding: 1rem;
+    font-size: 0.9rem;
+    color: red;
+  }
+</style>
+</head>
+<body>
+<header>Advanced Remote Port Scanner & HTTP Fingerprinter</header>
+<main>
+  <label for="targetIp">Target IP or Hostname:</label>
+  <input type="text" id="targetIp" placeholder="e.g. 192.168.1.1 or example.com" autocomplete="off" />
+
+  <label for="ports">Ports to scan (comma-separated or ranges):</label>
+  <input type="text" id="ports" placeholder="e.g. 22,80,443,8000-8100" autocomplete="off" value="22,80,443,8080" />
+
+  <button id="startScanBtn">Start Scan</button>
+
+  <div id="results" aria-live="polite" aria-atomic="true"></div>
+</main>
+<footer>© 2025 zerodays - Authorized Use Only</footer>
+
+<script>
+  const startScanBtn = document.getElementById('startScanBtn');
+  const targetIpInput = document.getElementById('targetIp');
+  const portsInput = document.getElementById('ports');
+  const resultsDiv = document.getElementById('results');
+
+  // Parse ports input into array of numbers
+  function parsePorts(input) {
+    const parts = input.split(',');
+    const ports = new Set();
+    for (let part of parts) {
+      part = part.trim();
+      if (part.includes('-')) {
+        const [start, end] = part.split('-').map(Number);
+        if (start && end && start <= end) {
+          for (let p = start; p <= end; p++) {
+            if (p > 0 && p <= 65535) ports.add(p);
+          }
+        }
+      } else {
+        const p = Number(part);
+        if (p > 0 && p <= 65535) ports.add(p);
+      }
+    }
+    return Array.from(ports).sort((a,b) => a-b);
+  }
+
+  // Attempt to detect open port by loading an image from target:port
+  // Returns Promise<boolean>
+  function checkPortOpen(target, port, timeout = 3000) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      let timer = setTimeout(() => {
+        img.src = ''; // Cancel loading
+        resolve(false);
+      }, timeout);
+
+      img.onload = () => {
+        clearTimeout(timer);
+        resolve(true);
+      };
+      img.onerror = () => {
+        clearTimeout(timer);
+        // Sometimes error means port closed, sometimes open but no image
+        // We'll treat error as closed here
+        resolve(false);
+      };
+
+      // Use a random query param to avoid caching
+      img.src = `http://${target}:${port}/favicon.ico?${Date.now()}`;
+    });
+  }
+
+  // Try to fetch HTTP headers from target:port
+  async function fetchHttpHeaders(target, port, timeout = 4000) {
+    try {
+      const controller = new AbortController();
+      const id = setTimeout(() => controller.abort(), timeout);
+      const response = await fetch(`http://${target}:${port}/`, {
+        method: 'HEAD',
+        mode: 'no-cors',
+        signal: controller.signal
+      });
+      clearTimeout(id);
+      // We can't read headers in no-cors mode, so just return success
+      return { success: true };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  }
+
+  // Main scan function
+  async function scanPorts(target, ports) {
+    resultsDiv.textContent = `Starting scan on ${target}...\n`;
+    for (const port of ports) {
+      resultsDiv.textContent += `Checking port ${port}... `;
+      // Check port open by image load
+      const open = await checkPortOpen(target, port);
+      if (open) {
+        resultsDiv.innerHTML += `<span class="port-open">OPEN</span>`;
+        // Try HTTP headers fetch if port is common HTTP port
+        if ([80, 8080, 8000, 443].includes(port)) {
+          resultsDiv.innerHTML += ` - Fetching HTTP headers... `;
+          const httpInfo = await fetchHttpHeaders(target, port);
+          if (httpInfo.success) {
+            resultsDiv.innerHTML += `<span class="service-info">HTTP service detected</span>`;
+          } else {
+            resultsDiv.innerHTML += `<span class="service-info">No HTTP response</span>`;
+          }
+        }
+      } else {
+        resultsDiv.innerHTML += `<span class="port-closed">CLOSED</span>`;
+      }
+      resultsDiv.innerHTML += '\n';
+      // Scroll to bottom
+      resultsDiv.scrollTop = resultsDiv.scrollHeight;
+    }
+    resultsDiv.innerHTML += `\nScan complete.`;
+  }
+
+  startScanBtn.addEventListener('click', async () => {
+    const target = targetIpInput.value.trim();
+    if (!target) {
+      alert('Please enter a target IP or hostname.');
+      return;
+    }
+    const ports = parsePorts(portsInput.value);
+    if (ports.length === 0) {
+      alert('Please enter valid ports to scan.');
+      return;
+    }
+    startScanBtn.disabled = true;
+    resultsDiv.textContent = '';
+    try {
+      await scanPorts(target, ports);
+    } catch (e) {
+      resultsDiv.textContent += `\nError: ${e.message}`;
+    }
+    startScanBtn.disabled = false;
+  });
+</script>
+</body>
+</html>

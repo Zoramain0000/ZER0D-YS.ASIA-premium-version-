@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Advanced Reverse Audio Tool</title>
+<style>
+  body {
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+    color: red;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 30px;
+    min-height: 100vh;
+  }
+  h1 {
+    color: red;
+    margin-bottom: 25px;
+    text-align: center;
+  }
+  .container {
+background: rgba(0, 0, 0, 0.5);
+    border-radius: 15px;
+    padding: 20px;
+    max-width: 520px;
+    width: 100%;
+    box-shadow: 0 0 15px red;
+  }
+  label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 8px;
+  }
+  input[type="file"] {
+    margin-bottom: 20px;
+    color: red;
+    cursor: pointer;
+  }
+  .buttons {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 15px;
+  }
+  button {
+    background: red;
+    border: none;
+    color: green;
+    font-weight: bold;
+    padding: 10px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    flex: 1;
+    transition: background-color 0.3s ease;
+  }
+  button:hover:not(:disabled) {
+background: rgba(0, 0, 0, 0.5);
+  }
+  button:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+  .time-display {
+    text-align: center;
+    font-size: 14px;
+    color: red;
+  }
+  .download-btn {
+    background: red;
+    color: green;
+    margin-top: 10px;
+  }
+  .download-btn:hover {
+background: rgba(0, 0, 0, 0.5);
+  }
+</style>
+</head>
+<body>
+
+<h1>🎧 Advanced Reverse Audio Tool</h1>
+
+<div class="container">
+  <label for="audioFile">Upload Audio File</label>
+  <input type="file" id="audioFile" accept="audio/*" />
+
+  <div class="buttons">
+    <button id="btnPlay" disabled>▶️ Play</button>
+    <button id="btnPause" disabled>⏸️ Pause</button>
+    <button id="btnStop" disabled>⏹️ Stop</button>
+  </div>
+
+  <div class="time-display" id="timeDisplay">00:00 / 00:00</div>
+
+  <button id="btnDownload" class="download-btn" disabled>⬇️ Download Reversed Audio (WAV)</button>
+</div>
+
+<script>
+  // Utility to format seconds as mm:ss
+  function formatTime(seconds) {
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+  }
+
+  const audioFileInput = document.getElementById('audioFile');
+  const btnPlay = document.getElementById('btnPlay');
+  const btnPause = document.getElementById('btnPause');
+  const btnStop = document.getElementById('btnStop');
+  const btnDownload = document.getElementById('btnDownload');
+  const timeDisplay = document.getElementById('timeDisplay');
+
+  let audioCtx;
+  let sourceNode;
+  let reversedBuffer;
+  let startTime = 0;
+  let pauseTime = 0;
+  let isPlaying = false;
+
+  function resetControls() {
+    btnPlay.disabled = !reversedBuffer;
+    btnPause.disabled = true;
+    btnStop.disabled = true;
+    btnDownload.disabled = !reversedBuffer;
+    timeDisplay.textContent = "00:00 / 00:00";
+  }
+
+  // Create WAV Blob from AudioBuffer
+  function audioBufferToWav(buffer) {
+    const numOfChan = buffer.numberOfChannels,
+          length = buffer.length * numOfChan * 2 + 44,
+          bufferArray = new ArrayBuffer(length),
+          view = new DataView(bufferArray),
+          channels = [],
+          sampleRate = buffer.sampleRate,
+          bitsPerSample = 16;
+    
+    // RIFF chunk descriptor
+    function writeString(view, offset, string) {
+      for (let i = 0; i < string.length; i++) {
+        view.setUint8(offset + i, string.charCodeAt(i));
+      }
+    }
+
+    // Write WAV header
+    writeString(view, 0, 'RIFF');
+    view.setUint32(4, length - 8, true);
+    writeString(view, 8, 'WAVE');
+    writeString(view, 12, 'fmt ');
+    view.setUint32(16, 16, true);             // Subchunk1Size (16 for PCM)
+    view.setUint16(20, 1, true);              // AudioFormat PCM = 1
+    view.setUint16(22, numOfChan, true);      // NumChannels
+    view.setUint32(24, sampleRate, true);     // SampleRate
+    view.setUint32(28, sampleRate * numOfChan * bitsPerSample/8, true); // ByteRate
+    view.setUint16(32, numOfChan * bitsPerSample/8, true);              // BlockAlign
+    view.setUint16(34, bitsPerSample, true);                            // BitsPerSample
+    writeString(view, 36, 'data');
+    view.setUint32(40, length - 44, true);                              // Subchunk2Size
+
+    // Write interleaved data
+    for(let i=0; i<numOfChan; i++) {
+      channels.push(buffer.getChannelData(i));
+    }
+    let offset = 44;
+    for(let i=0; i<buffer.length; i++) {
+      for(let ch=0; ch<numOfChan; ch++) {
+        // Clamp sample
+        let sample = Math.max(-1, Math.min(1, channels[ch][i]));
+        // Scale to 16-bit signed int
+        sample = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+        view.setInt16(offset, sample, true);
+        offset += 2;
+      }
+    }
+    return new Blob([view], {type: "audio/wav"});
+  }
+
+  audioFileInput.addEventListener('change', async () => {
+    const file = audioFileInput.files[0];
+    if (!file) return;
+
+    if (!audioCtx) audioCtx = new AudioContext();
+
+    const arrayBuffer = await file.arrayBuffer();
+    try {
+      const decodedBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+      // Reverse audio buffer
+      reversedBuffer = audioCtx.createBuffer(
+        decodedBuffer.numberOfChannels,
+        decodedBuffer.length,
+        decodedBuffer.sampleRate
+      );
+      for(let i=0; i<decodedBuffer.numberOfChannels; i++) {
+        let channelData = decodedBuffer.getChannelData(i);
+        let reversedData = reversedBuffer.getChannelData(i);
+        for(let j=0; j<channelData.length; j++) {
+          reversedData[j] = channelData[channelData.length - j - 1];
+        }
+      }
+      resetControls();
+    } catch (err) {
+      alert('Error decoding audio file. Please upload a valid audio file.');
+      reversedBuffer = null;
+      resetControls();
+    }
+  });
+
+  function playReversed() {
+    if (!reversedBuffer) return;
+
+    sourceNode = audioCtx.createBufferSource();
+    sourceNode.buffer = reversedBuffer;
+    sourceNode.connect(audioCtx.destination);
+
+    const offset = pauseTime;
+    startTime = audioCtx.currentTime - offset;
+    sourceNode.start(0, offset);
+
+    sourceNode.onended = () => {
+      isPlaying = false;
+      pauseTime = 0;
+      resetControls();
+    };
+
+    btnPlay.disabled = true;
+    btnPause.disabled = false;
+    btnStop.disabled = false;
+    isPlaying = true;
+
+    requestAnimationFrame(updateTime);
+  }
+
+  function updateTime() {
+    if (!isPlaying) return;
+    const currentTime = audioCtx.currentTime - startTime;
+    if (currentTime >= reversedBuffer.duration) return;
+    timeDisplay.textContent = `${formatTime(currentTime)} / ${formatTime(reversedBuffer.duration)}`;
+    requestAnimationFrame(updateTime);
+  }
+
+  btnPlay.addEventListener('click', () => {
+    if (!reversedBuffer) return;
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+    playReversed();
+  });
+
+  btnPause.addEventListener('click', () => {
+    if (!isPlaying) return;
+    sourceNode.stop();
+    pauseTime = audioCtx.currentTime - startTime;
+    isPlaying = false;
+    btnPlay.disabled = false;
+    btnPause.disabled = true;
+    btnStop.disabled = false;
+  });
+
+  btnStop.addEventListener('click', () => {
+    if (sourceNode) {
+      sourceNode.stop();
+    }
+    pauseTime = 0;
+    isPlaying = false;
+    timeDisplay.textContent = `00:00 / ${reversedBuffer ? formatTime(reversedBuffer.duration) : '00:00'}`;
+    resetControls();
+  });
+
+  btnDownload.addEventListener('click', () => {
+    if (!reversedBuffer) return;
+    const wavBlob = audioBufferToWav(reversedBuffer);
+    const url = URL.createObjectURL(wavBlob);
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    a.download = 'reversed-audio.wav';
+    document.body.appendChild(a);
+    a.click();
+    URL.revokeObjectURL(url);
+    a.remove();
+  });
+
+  resetControls();
+</script>
+
+</body>
+</html>

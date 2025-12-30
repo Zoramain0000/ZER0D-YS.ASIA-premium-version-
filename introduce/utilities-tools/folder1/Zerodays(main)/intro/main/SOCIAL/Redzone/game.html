@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Heads or Tails Betting Game</title>
+<style>
+  body {
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+    color: red;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0; padding: 0; min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+  }
+  header {
+    padding: 20px;
+    font-size: 2em;
+    font-weight: 700;
+    text-shadow: 1px 1px 5px red;
+  }
+  main {
+    background: rgba(255 255 255 / 0.1);
+    border-radius: 12px;
+    padding: 20px;
+    max-width: 480px;
+    width: 100%;
+    box-sizing: border-box;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+  }
+  .balance {
+    font-size: 1.4em;
+    margin-bottom: 10px;
+    font-weight: 600;
+  }
+  .bet-input {
+    display: flex;
+    margin-bottom: 15px;
+    gap: 10px;
+    align-items: center;
+  }
+  .bet-input input[type="number"] {
+    width: 100px;
+    padding: 8px 12px;
+    font-size: 1em;
+    border-radius: 6px;
+    border: none;
+    outline: none;
+  }
+  .bet-input label {
+    flex: 1;
+    font-weight: 600;
+  }
+  .buttons {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    margin-bottom: 15px;
+  }
+  button {
+    cursor: pointer;
+    font-size: 1.1em;
+    padding: 12px 22px;
+    border-radius: 10px;
+    border: none;
+    background-color: red;
+    color: green;
+    font-weight: 700;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    transition: background-color 0.3s ease;
+    user-select: none;
+  }
+  button:hover:not(:disabled) {
+background: rgba(0, 0, 0, 0.5);
+  }
+  button:disabled {
+    background-color: red;
+    cursor: not-allowed;
+  }
+  .coin-container {
+    margin: 20px auto;
+    width: 120px;
+    height: 120px;
+    perspective: 1000px;
+  }
+  .coin {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 4s cubic-bezier(0.28, 0.84, 0.42, 1);
+  }
+  .coin-side {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    backface-visibility: hidden;
+    box-shadow: inset 0 0 15px rgba(0,0,0,0.3);
+  }
+  .heads {
+    background: linear-gradient(145deg, brown);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: 900;
+    font-size: 3.5em;
+    color: red;
+    border: 3px solid red;
+  }
+  .tails {
+    background: linear-gradient(145deg, brown);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: 900;
+    font-size: 3.5em;
+    color:red;
+    border: 3px solid red;
+    transform: rotateY(180deg);
+  }
+  .stats {
+    margin-top: 15px;
+    font-size: 0.95em;
+    line-height: 1.4;
+    background: rgba(0,0,0,0.5);
+    border-radius: 10px;
+    padding: 12px 15px;
+  }
+  .history {
+    max-height: 120px;
+    overflow-y: auto;
+    margin-top: 15px;
+    background: rgba(0,0,0,0.5);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 0.9em;
+    font-family: monospace;
+  }
+  .controls {
+    margin-top: 20px;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .toggle-sound {
+    background-color: #27ae60;
+  }
+  .toggle-sound.off {
+    background-color: #c0392b;
+  }
+  footer {
+    margin-top: auto;
+    padding: 20px;
+    font-size: 0.8em;
+    color: #ccc;
+    text-align: center;
+  }
+  @media (max-width: 520px) {
+    main {
+      max-width: 100%;
+      margin: 10px;
+    }
+    .buttons {
+      flex-direction: column;
+      gap: 15px;
+    }
+    .controls {
+      flex-direction: column;
+      gap: 12px;
+    }
+  }
+</style>
+</head>
+<body>
+<header>Heads or Tails Betting Game</header>
+<main>
+  <div class="balance">Balance: $<span id="balance">1000</span></div>
+  <div class="bet-input">
+    <label for="betAmount">Bet Amount ($):</label>
+    <input type="number" id="betAmount" min="1" value="1" />
+  </div>
+  <div class="buttons">
+    <button id="headsBtn">Bet Heads</button>
+    <button id="tailsBtn">Bet Tails</button>
+  </div>
+  <div class="coin-container" aria-label="Coin Flip Animation">
+    <div id="coin" class="coin">
+      <div class="coin-side heads" aria-hidden="true">H</div>
+      <div class="coin-side tails" aria-hidden="true">T</div>
+    </div>
+  </div>
+  <div class="stats" aria-live="polite">
+    <div>Bets Placed: <span id="betsCount">0</span></div>
+    <div>Wins: <span id="winsCount">0</span></div>
+    <div>Losses: <span id="lossesCount">0</span></div>
+    <div>Win Rate: <span id="winRate">0%</span></div>
+  </div>
+  <div class="history" aria-live="polite" aria-label="Betting history" id="history"></div>
+  <div class="controls">
+    <button id="resetBtn">Reset Game</button>
+    <button id="toggleSoundBtn" class="toggle-sound" aria-pressed="true">🔊 Sound On</button>
+  </div>
+</main>
+<footer>
+  Developed by ChatGPT &copy; 2025
+</footer>
+
+<script>
+(() => {
+  const balanceElem = document.getElementById('balance');
+  const betInput = document.getElementById('betAmount');
+  const headsBtn = document.getElementById('headsBtn');
+  const tailsBtn = document.getElementById('tailsBtn');
+  const coin = document.getElementById('coin');
+  const betsCountElem = document.getElementById('betsCount');
+  const winsCountElem = document.getElementById('winsCount');
+  const lossesCountElem = document.getElementById('lossesCount');
+  const winRateElem = document.getElementById('winRate');
+  const historyElem = document.getElementById('history');
+  const resetBtn = document.getElementById('resetBtn');
+  const toggleSoundBtn = document.getElementById('toggleSoundBtn');
+
+  // Game state
+  let balance = 1000;
+  let betsCount = 0;
+  let winsCount = 0;
+  let lossesCount = 0;
+  let isFlipping = false;
+  let soundOn = true;
+
+  // Sounds: coin flip, win, lose (base64-encoded short sounds)
+  const sounds = {
+    flip: new Audio('data:audio/wav;base64,UklGRlIAAABXQVZFZm10IBAAAAABAAEA...'), // placeholder short beep
+    win: new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEA...'),
+    lose: new Audio('data:audio/wav;base64,UklGRhQAAABXQVZFZm10IBAAAAABAAEA...')
+  };
+
+  // Replacing placeholders with small beep sounds to keep the file size small.
+  // For real use, replace with proper base64 WAV or MP3 data.
+  sounds.flip.src = 'data:audio/wav;base64,UklGRjQAAABXQVZFZm10IBAAAAABAAEARKwAABCxAgAEABAAZGF0YVwAAAAA';
+  sounds.win.src = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEA...'; // tiny beep
+  sounds.lose.src = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEA...'; // tiny beep
+
+  // Play sound helper
+  function playSound(name) {
+    if (!soundOn) return;
+    const snd = sounds[name];
+    if (snd) {
+      snd.currentTime = 0;
+      snd.play().catch(() => {}); // ignore play error if any
+    }
+  }
+
+  // Update UI balance and enable/disable buttons based on balance and bet amount
+  function updateUI() {
+    balanceElem.textContent = balance.toFixed(2);
+    betsCountElem.textContent = betsCount;
+    winsCountElem.textContent = winsCount;
+    lossesCountElem.textContent = lossesCount;
+    let rate = betsCount > 0 ? ((winsCount / betsCount) * 100).toFixed(1) : '0';
+    winRateElem.textContent = rate + '%';
+
+    // Clamp bet amount between 1 and balance
+    let betVal = parseInt(betInput.value, 10);
+    if (isNaN(betVal) || betVal < 1) betVal = 1;
+    if (betVal > balance) betVal = Math.floor(balance);
+    betInput.value = betVal;
+
+    // Disable buttons if flipping or balance < 1
+    const canBet = !isFlipping && balance >= 1;
+    headsBtn.disabled = !canBet;
+    tailsBtn.disabled = !canBet;
+    betInput.disabled = !canBet;
+  }
+
+  // Add history entry
+  function addHistoryEntry(entry) {
+    const div = document.createElement('div');
+    div.textContent = entry;
+    historyElem.prepend(div);
+    // Keep only last 20 entries
+    while (historyElem.children.length > 20) {
+      historyElem.removeChild(historyElem.lastChild);
+    }
+  }
+
+  // Animate the coin flip and resolve the bet
+  function flipCoin(betChoice, betAmount) {
+    if (isFlipping) return;
+    if (betAmount < 1 || betAmount > balance) return;
+
+    isFlipping = true;
+    updateUI();
+
+    playSound('flip');
+
+    // Animate coin: spin multiple times (e.g. 6 full spins)
+    // CSS rotateY from 0 to 2160deg (6 * 360)
+    coin.style.transition = 'transform 4s cubic-bezier(0.28, 0.84, 0.42, 1)';
+    coin.style.transform = 'rotateY(2160deg)';
+
+    setTimeout(() => {
+      // Determine coin result randomly (0=heads,1=tails)
+      const result = Math.random() < 0.5 ? 'heads' : 'tails';
+
+      // Show final side (heads = rotateY 0deg, tails = rotateY 180deg)
+      const finalRotation = result === 'heads' ? 0 : 180;
+      coin.style.transition = 'transform 0.6s ease-out';
+      coin.style.transform = `rotateY(${finalRotation}deg)`;
+
+      // Check win or lose
+      const won = (result === betChoice);
+      betsCount++;
+      if (won) {
+        balance += betAmount;
+        winsCount++;
+        playSound('win');
+        addHistoryEntry(`Won $${betAmount} betting ${betChoice.toUpperCase()} (Result: ${result.toUpperCase()})`);
+      } else {
+        balance -= betAmount;
+        lossesCount++;
+        playSound('lose');
+        addHistoryEntry(`Lost $${betAmount} betting ${betChoice.toUpperCase()} (Result: ${result.toUpperCase()})`);
+      }
+
+      isFlipping = false;
+      updateUI();
+    }, 4000);
+  }
+
+  // Event listeners
+  headsBtn.addEventListener('click', () => {
+    const betAmount = parseInt(betInput.value, 10);
+    flipCoin('heads', betAmount);
+  });
+  tailsBtn.addEventListener('click', () => {
+    const betAmount = parseInt(betInput.value, 10);
+    flipCoin('tails', betAmount);
+  });
+
+  betInput.addEventListener('input', () => {
+    let val = parseInt(betInput.value, 10);
+    if (isNaN(val) || val < 1) val = 1;
+    if (val > balance) val = Math.floor(balance);
+    betInput.value = val;
+  });
+
+  resetBtn.addEventListener('click', () => {
+    if (isFlipping) return;
+    balance = 1000;
+    betsCount = 0;
+    winsCount = 0;
+    lossesCount = 0;
+    historyElem.innerHTML = '';
+    coin.style.transition = 'none';
+    coin.style.transform = 'rotateY(0deg)';
+    betInput.value = 1;
+    updateUI();
+  });
+
+  toggleSoundBtn.addEventListener('click', () => {
+    soundOn = !soundOn;
+    toggleSoundBtn.textContent = soundOn ? '🔊 Sound On' : '🔇 Sound Off';
+    toggleSoundBtn.classList.toggle('off', !soundOn);
+    toggleSoundBtn.setAttribute('aria-pressed', soundOn);
+  });
+
+  // Initialize UI on load
+  updateUI();
+})();
+</script>
+</body>
+</html>

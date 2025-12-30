@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>GeoIP Locator (ip-api.com)</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{font-family:'Segoe UI',sans-serif;background:#000;color:#c58b00;overflow-x:hidden;}
+    video#bg-video{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+      min-width:100vw;min-height:100vh;object-fit:cover;opacity:0.15;z-index:-1;}
+    .container{max-width:900px;margin:50px auto;padding:25px;border-radius:12px;
+      box-shadow:0 0 25px rgba(0,0,0,0.2);}
+    h1,label{color:#c58b00;}
+    input,textarea{width:100%;padding:12px;margin:10px 0;
+      background:rgba(0,0,0,0);color:red;border:1px solid #c58b00;border-radius:5px;
+      font-size:1rem;}
+    button{background:rgba(0,0,0,0.6);border:1px solid #c58b00;color:#c58b00;
+      padding:10px 15px;margin:5px 5px 15px 0;border-radius:5px;cursor:pointer;
+      transition:0.2s;}
+    button:hover{background:rgba(0,0,0,0.7);color:red;}
+    .history{margin-top:20px;}
+    .history-item{border-bottom:1px solid red;padding:5px;font-size:0.9rem;color:#ff8800;}
+    @media(max-width:768px){.container{margin:20px 10px;padding:15px;}button{width:100%;margin:8px 0;}}
+  </style>
+</head>
+<body>
+  <video id="bg-video" autoplay muted loop playsinline>
+    <source src="background/1761817527453041720p.mp4" type="video/mp4"/>
+  </video>
+  <audio id="bg-music" autoplay loop>
+    <source src="background/Programming___Coding___Hacking_music_vol.18__ANONYMOUS_HEADQUARTERS_(48k).mp3" type="audio/mpeg"/>
+  </audio>
+
+  <div class="container">
+    <h1>GeoIP Locator Tool</h1>
+    <label>Enter IP or Domain:</label>
+    <input id="query" placeholder="e.g. 8.8.8.8 or example.com"/>
+
+    <div>
+      <button onclick="lookup()">Lookup</button>
+      <button onclick="clearAll()">Clear</button>
+    </div>
+
+    <label>Result:</label>
+    <textarea id="output" rows="15" readonly></textarea>
+    <button onclick="copyOutput()">Copy</button>
+    <button onclick="downloadOutput()">Download</button>
+
+    <div class="history">
+      <h3>History</h3>
+      <div id="history-box"></div>
+    </div>
+  </div>
+
+  <script>
+    const output = document.getElementById('output');
+    const historyBox = document.getElementById('history-box');
+    const historyLog = [];
+
+    async function lookup() {
+      const q = document.getElementById('query').value.trim();
+      if (!q) return alert('Please enter an IP address or domain.');
+      output.value = `Looking up ${q}...`;
+      try {
+        const resp = await fetch(`http://ip-api.com/json/${encodeURIComponent(q)}?fields=status,message,query,continent,country,countryCode,regionName,city,zip,lat,lon,timezone,isp,org,as,asname,proxy,hosting`);
+        const data = await resp.json();
+        if (data.status !== 'success') {
+          throw new Error(data.message || 'Lookup failed');
+        }
+        const lines = [
+          `Query: ${data.query}`,
+          `City: ${data.city || 'N/A'}`,
+          `Region: ${data.regionName || 'N/A'}`,
+          `Country: ${data.country} (${data.countryCode})`,
+          `Latitude/Longitude: ${data.lat}, ${data.lon}`,
+          `Timezone: ${data.timezone}`,
+          `ISP: ${data.isp || 'N/A'}`,
+          `Org: ${data.org || 'N/A'}`,
+          `ASN: ${data.as} (${data.asname})`,
+          `Proxy: ${data.proxy}`,
+          `Hosting: ${data.hosting}`
+        ];
+        output.value = lines.join('\n');
+        logHistory(q, `${data.city}, ${data.country}`);
+      } catch (err) {
+        output.value = 'Error: ' + err.message;
+      }
+    }
+
+    function copyOutput() {
+      if (!output.value) return alert('Nothing to copy');
+      navigator.clipboard.writeText(output.value).then(() => alert('Copied!'));
+    }
+    function downloadOutput() {
+      if (!output.value) return alert('Nothing to download');
+      const blob = new Blob([output.value], { type:'text/plain' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'geoip_info.txt';
+      a.click();
+    }
+    function clearAll() {
+      document.getElementById('query').value = '';
+      output.value = '';
+    }
+    function logHistory(q, info) {
+      const t = new Date().toLocaleTimeString();
+      historyLog.unshift(`${t} – ${q} → ${info}`);
+      updateHistory();
+    }
+    function updateHistory() {
+      historyBox.innerHTML = '';
+      historyLog.slice(0,8).forEach(e => {
+        const d = document.createElement('div');
+        d.className = 'history-item';
+        d.textContent = e;
+        historyBox.appendChild(d);
+      });
+    }
+    document.addEventListener('click', () => {
+      const bg = document.getElementById('bg-music');
+      if (bg && bg.paused) bg.play();
+    }, { once:true });
+  </script>
+</body>
+</html>

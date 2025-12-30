@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Advanced Clock Tool</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      display: flex;
+      height: 100vh;
+    background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: #ff0000;
+    }
+
+    .sidebar {
+      width: 240px;
+      background: #1e1e1e4b;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 2px 0 10px rgba(0,0,0,0.3);
+    }
+
+    .sidebar h2 {
+      color: #ff0000;
+      margin-bottom: 30px;
+    }
+
+    .sidebar a {
+      color: #ff0000;
+      text-decoration: none;
+      padding: 12px 0;
+      transition: 0.2s;
+      cursor: pointer;
+    }
+
+    .sidebar a:hover {
+      color: #ff0000;
+    }
+
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #1818182d;
+      padding: 40px;
+    }
+
+    .section {
+      display: none;
+      text-align: center;
+      background: #2222222c;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.05);
+      min-width: 300px;
+    }
+
+    .section.active {
+      display: block;
+    }
+
+    .clock {
+      font-size: 3rem;
+    }
+
+    .stopwatch-time {
+      font-size: 2.5rem;
+      margin-bottom: 20px;
+    }
+
+    .btn {
+      background: #0000001f;
+      color: #ff0000;
+      border: none;
+      padding: 10px 20px;
+      margin: 5px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+
+    select {
+      padding: 10px;
+      margin-top: 10px;
+      background: #2a2a2a18;
+      color: #ff0202;
+      border: 1px solid #ff0000;
+      border-radius: 5px;
+    }
+
+    .timezone-output {
+      margin-top: 15px;
+      font-size: 1.2rem;
+      color: rgb(255, 0, 0);
+    }
+
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <h2>Clock Tools</h2>
+    <a onclick="showSection('clockSection')">🕓 Digital Clock</a>
+    <a onclick="showSection('stopwatchSection')">⏱️ Stopwatch</a>
+    <a onclick="showSection('timezoneSection')">🌍 Timezone Converter</a>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+    <!-- Digital Clock -->
+    <div id="clockSection" class="section active">
+      <div id="clock" class="clock">Loading...</div>
+    </div>
+
+    <!-- Stopwatch -->
+    <div id="stopwatchSection" class="section">
+      <div id="stopwatch" class="stopwatch-time">00:00:00</div>
+      <button class="btn" onclick="startStopwatch()">Start</button>
+      <button class="btn" onclick="stopStopwatch()">Stop</button>
+      <button class="btn" onclick="resetStopwatch()">Reset</button>
+    </div>
+
+    <!-- Timezone Converter -->
+    <div id="timezoneSection" class="section">
+      <h3>Select Timezone</h3>
+<select id="timezoneSelect">
+    <option value="UTC">UTC</option>
+    <option value="America/New_York">New York</option>
+    <option value="Europe/London">London</option>
+    <option value="Asia/Tokyo">Tokyo</option>
+    <option value="Asia/Kolkata">India (Kolkata)</option>
+    <option value="Africa/Abidjan">Ivory Coast (Abidjan)</option>
+    <option value="Africa/Accra">Ghana (Accra)</option>
+    <option value="Africa/Addis_Ababa">Ethiopia (Addis Ababa)</option>
+    <option value="Africa/Algiers">Algeria (Algiers)</option>
+    <option value="Africa/Bangui">Central African Republic (Bangui)</option>
+    <option value="Africa/Banjul">Gambia (Banjul)</option>
+    <option value="Africa/Brazzaville">Congo (Brazzaville)</option>
+    <option value="Africa/Bujumbura">Burundi (Bujumbura)</option>
+    <option value="Africa/Cairo">Egypt (Cairo)</option>
+    <option value="Africa/Casablanca">Morocco (Casablanca)</option>
+    <option value="Africa/Ceuta">Spain (Ceuta)</option>
+    <option value="Africa/Conakry">Guinea (Conakry)</option>
+    <option value="Africa/Dakar">Senegal (Dakar)</option>
+    <option value="Africa/Dar_es_Salaam">Tanzania (Dar es Salaam)</option>
+    <option value="Africa/Djibouti">Djibouti (Djibouti)</option>
+    <option value="Africa/Douala">Cameroon (Douala)</option>
+    <option value="Africa/El_Aaiun">Western Sahara (El Aaiun)</option>
+    <option value="Africa/Freetown">Sierra Leone (Freetown)</option>
+    <option value="Africa/Gaborone">Botswana (Gaborone)</option>
+    <option value="Africa/Harare">Zimbabwe (Harare)</option>
+    <option value="Africa/Johannesburg">South Africa (Johannesburg)</option>
+    <option value="Africa/Juba">South Sudan (Juba)</option>
+    <option value="Africa/Kampala">Uganda (Kampala)</option>
+    <option value="Africa/Khartoum">Sudan (Khartoum)</option>
+    <option value="Africa/Kigali">Rwanda (Kigali)</option>
+    <option value="Africa/Kinshasa">Congo (Kinshasa)</option>
+    <option value="Africa/Lagos">Nigeria (Lagos)</option>
+    <option value="Africa/Luanda">Angola (Luanda)</option>
+    <option value="Africa/Malabo">Equatorial Guinea (Malabo)</option>
+    <option value="Africa/Nairobi">Kenya (Nairobi)</option>
+    <option value="Africa/Niamey">Niger (Niamey)</option>
+    <option value="Africa/Nouakchott">Mauritania (Nouakchott)</option>
+    <option value="Africa/Ouagadougou">Burkina Faso (Ouagadougou)</option>
+    <option value="Africa/Porto-Novo">Benin (Porto-Novo)</option>
+    <option value="Africa/Sao_Tome">Sao Tome and Principe (Sao Tome)</option>
+    <option value="Africa/Tunis">Tunisia (Tunis)</option>
+    <option value="America/Adak">United States (Adak)</option>
+    <option value="America/Anchorage">United States (Anchorage)</option>
+    <option value="America/Anguilla">Anguilla</option>
+    <option value="America/Antigua">Antigua and Barbuda</option>
+    <option value="America/Araguaina">Brazil (Araguaina)</option>
+    <option value="America/Argentina/Buenos_Aires">Argentina (Buenos Aires)</option>
+    <option value="America/Argentina/Catamarca">Argentina (Catamarca)</option>
+    <option value="America/Argentina/ComodRivadavia">Argentina (ComodRivadavia)</option>
+    <option value="America/Argentina/Cordoba">Argentina (Cordoba)</option>
+    <option value="America/Argentina/Jujuy">Argentina (Jujuy)</option>
+    <option value="America/Argentina/La_Rioja">Argentina (La Rioja)</option>
+    <option value="America/Argentina/Mendoza">Argentina (Mendoza)</option>
+    <option value="America/Argentina/Rosario">Argentina (Rosario)</option>
+    <option value="America/Argentina/Tucuman">Argentina (Tucuman)</option>
+    <option value="America/Aruba">Aruba</option>
+    <option value="America/Asuncion">Paraguay (Asuncion)</option>
+    <option value="America/Atikokan">Canada (Atikokan)</option>
+    <option value="America/Barbados">Barbados</option>
+    <option value="America/Belem">Brazil (Belem)</option>
+    <option value="America/Belize">Belize</option>
+    <option value="America/Blanc-Sablon">Canada (Blanc-Sablon)</option>
+    <option value="America/Boa_Vista">Brazil (Boa Vista)</option>
+    <option value="America/Bogota">Colombia (Bogota)</option>
+    <option value="America/Boise">United States (Boise)</option>
+    <option value="America/Cambridge_Bay">Canada (Cambridge Bay)</option>
+    <option value="America/Campo_Grande">Brazil (Campo Grande)</option>
+    <option value="America/Cancun">Mexico (Cancun)</option>
+    <option value="America/Caracas">Venezuela (Caracas)</option>
+    <option value="America/Catamarca">Argentina (Catamarca)</option>
+    <option value="America/Cayenne">French Guiana (Cayenne)</option>
+    <option value="America/Cayman">Cayman Islands</option>
+    <option value="America/Chicago">United States (Chicago)</option>
+    <option value="America/Chihuahua">Mexico (Chihuahua)</option>
+    <option value="America/Coral_Harbour">Canada (Coral Harbour)</option>
+    <option value="America/Costa_Rica">Costa Rica</option>
+    <option value="America/Creston">Canada (Creston)</option>
+    <option value="America/Cuiaba">Brazil (Cuiaba)</option>
+    <option value="America/Curacao">Curacao</option>
+    <option value="America/Dawson">Canada (Dawson)</option>
+    <option value="America/Dawson_Creek">Canada (Dawson Creek)</option>
+    <option value="America/Denver">United States (Denver)</option>
+    <option value="America/Detroit">United States (Detroit)</option>
+    <option value="America/Dominica">Dominica</option>
+    <option value="America/Edmonton">Canada (Edmonton)</option>
+    <option value="America/Eirunepe">Brazil (Eirunepe)</option>
+    <option value="America/El_Salvador">El Salvador</option>
+    <option value="America/Fortaleza">Brazil (Fortaleza)</option>
+    <option value="America/Fort_Wayne">United States (Fort Wayne)</option>
+    <option value="America/Glace_Bay">Canada (Glace Bay)</option>
+    <option value="America/Godthab">Greenland (Godthab)</option>
+    <option value="America/Goose_Bay">Canada (Goose Bay)</option>
+    <option value="America/Grand_Turk">Turks and Caicos Islands (Grand Turk)</option>
+    <option value="America/Grenada">Grenada</option>
+    <option value="America/Guadeloupe">Guadeloupe</option>
+    <option value="America/Guatemala">Guatemala</option>
+    <option value="America/Guayaquil">Ecuador (Guayaquil)</option>
+    <option value="America/Guyana">Guyana</option>
+    <option value="America/Halifax">Canada (Halifax)</option>
+    <option value="America/Havana">Cuba (Havana)</option>
+    <option value="America/Hermosillo">Mexico (Hermosillo)</option>
+    <option value="America/Indiana/Indianapolis">United States (Indianapolis)</option>
+    <option value="America/Indiana/Knox">United States (Knox)</option>
+    <option value="America/Indiana/Marengo">United States (Marengo)</option>
+    <option value="America/Indiana/Petersburg">United States (Petersburg)</option>
+    <option value="America/Indiana/Tell_City">United States (Tell City)</option>
+    <option value="America/Indiana/Vevay">United States (Vevay)</option>
+    <option value="America/Indianapolis">United States (Indianapolis)</option>
+    <option value="America/Inuvik">Canada (Inuvik)</option>
+    <option value="America/Iqaluit">Canada (Iqaluit)</option>
+    <option value="America/Jamaica">Jamaica</option>
+    <option value="America/Juarez">Mexico (Juarez)</option>
+    <option value="America/Juneau">United States (Juneau)</option>
+    <option value="America/Kentucky/Louisville">United States (Louisville)</option>
+    <option value="America/Kentucky/Monticello">United States (Monticello)</option>
+    <option value="America/Kralendijk">Bonaire, Sint Eustatius and Saba (Kralendijk)</option>
+    <option value="America/La_Paz">Bolivia (La Paz)</option>
+    <option value="America/Lima">Peru (Lima)</option>
+    <option value="America/Los_Angeles">United States (Los Angeles)</option>
+    <option value="America/Louisville">United States (Louisville)</option>
+    <option value="America/Maceio">Brazil (Maceio)</option>
+    <option value="America/Managua">Nicaragua (Managua)</option>
+    <option value="America/Martinique">Martinique</option>
+    <option value="America/Matamoros">Mexico (Matamoros)</option>
+    <option value="America/Mazatlan">Mexico (Mazatlan)</option>
+    <option value="America/Mendoza">Argentina (Mendoza)</option>
+    <option value="America/Mexico_City">Mexico (Mexico City)</option>
+    <option value="America/Miquelon">Saint Pierre and Miquelon (Miquelon)</option>
+    <option value="America/Moncton">Canada (Moncton)</option>
+    <option value="America/Monterrey">Mexico (Monterrey)</option>
+    <option value="America/Montreal">Canada (Montreal)</option>
+    <option value="America/Nassau">Bahamas (Nassau)</option>
+    <option value="America/New_York">United States (New York)</option>
+    <option value="America/Nipigon">Canada (Nipigon)</option>
+    <option value="America/Nome">United States (Nome)</option>
+    <option value="America/Noronha">Brazil (Noronha)</option>
+    <option value="America/North_Dakota/Beulah">United States (Beulah)</option>
+    <option value="America/North_Dakota/Center">United States (Center)</option>
+    <option value="America/North_Dakota/New_Salem">United States (New Salem)</option>
+    <option value="America/Ojinaga">Mexico (Ojinaga)</option>
+    <option value="America/Panama">Panama</option>
+    <option value="America/Phoenix">United States (Phoenix)</option>
+    <option value="America/Port-au-Prince">Haiti (Port-au-Prince)</option>
+    <option value="America/Porto_Velho">Brazil (Porto Velho)</option>
+    <option value="America/Puerto_Rico">Puerto Rico</option>
+    <option value="America/Punta_Arenas">Chile (Punta Arenas)</option>
+    <option value="America/Rainy_River">Canada (Rainy River)</option>
+    <option value="America/Rankin_Inlet">Canada (Rankin Inlet)</option>
+    <option value="America/Recife">Brazil (Recife)</option>
+    <option value="America/Regina">Canada (Regina)</option>
+    <option value="America/Resolute">Canada (Resolute)</option>
+    <option value="America/Rio_Branco">Brazil (Rio Branco)</option>
+    <option value="America/Santa_Isabel">Brazil (Santa Isabel)</option>
+    <option value="America/Santarem">Brazil (Santarem)</option>
+    <option value="America/Santiago">Chile (Santiago)</option>
+    <option value="America/Santo_Domingo">Dominican Republic (Santo Domingo)</option>
+    <option value="America/Sao_Paulo">Brazil (Sao Paulo)</option>
+    <option value="America/Scoresbysund">Greenland (Scoresbysund)</option>
+    <option value="America/Sitka">United States (Sitka)</option>
+    <option value="America/St_Johns">Canada (St Johns)</option>
+    <option value="America/St_Vincent">Saint Vincent and the Grenadines (St Vincent)</option>
+    <option value="America/Tegucigalpa">Honduras (Tegucigalpa)</option>
+    <option value="America/Thule">Greenland (Thule)</option>
+    <option value="America/Thunder_Bay">Canada (Thunder Bay)</option>
+    <option value="America/Toronto">Canada (Toronto)</option>
+    <option value="America/Tortola">British Virgin Islands (Tortola)</option>
+    <option value="America/Vancouver">Canada (Vancouver)</option>
+    <option value="America/Whitehorse">Canada (Whitehorse)</option>
+    <option value="America/Winnipeg">Canada (Winnipeg)</option>
+    <option value="America/Yakutat">United States (Yakutat)</option>
+    <option value="America/Yellowknife">Canada (Yellowknife)</option>
+    <option value="Antarctica/Casey">Antarctica (Casey)</option>
+    <option value="Antarctica/Davis">Antarctica (Davis)</option>
+    <option value="Antarctica/DumontDUrville">Antarctica (DumontDUrville)</option>
+    <option value="Antarctica/Macquarie">Antarctica (Macquarie)</option>
+    <option value="Antarctica/McMurdo">Antarctica (McMurdo)</option>
+    <option value="Antarctica/Palmer">Antarctica (Palmer)</option>
+    <option value="Antarctica/Syowa">Antarctica (Syowa)</option>
+    <option value="Antarctica/Troll">Antarctica (Troll)</option>
+    <option value="Antarctica/Vostok">Antarctica (Vostok)</option>
+    <option value="Asia/Aden">Yemen (Aden)</option>
+    <option value="Asia/Almaty">Kazakhstan (Almaty)</option>
+    <option value="Asia/Amman">Jordan (Amman)</option>
+    <option value="Asia/Anadyr">Russia (Anadyr)</option>
+    <option value="Asia/Aqtau">Kazakhstan (Aqtau)</option>
+    <option value="Asia/Aqtobe">Kazakhstan (Aqtobe)</option>
+    <option value="Asia/Ashgabat">Turkmenistan (Ashgabat)</option>
+    <option value="Asia/Ashgabat">Turkmenistan (Ashgabat)</option>
+    <option value="Asia/Baghdad">Iraq (Baghdad)</option>
+    <option value="Asia/Bahrain">Bahrain</option>
+    <option value="Asia/Baku">Azerbaijan (Baku)</option>
+    <option value="Asia/Bangkok">Thailand (Bangkok)</option>
+    <option value="Asia/Barnaul">Russia (Barnaul)</option>
+    <option value="Asia/Beirut">Lebanon (Beirut)</option>
+    <option value="Asia/Bishkek">Kyrgyzstan (Bishkek)</option>
+    <option value="Asia/Brunei">Brunei</option>
+    <option value="Asia/Chita">Russia (Chita)</option>
+    <option value="Asia/Choibalsan">Mongolia (Choibalsan)</option>
+    <option value="Asia/Colombo">Sri Lanka (Colombo)</option>
+    <option value="Asia/Dhaka">Bangladesh (Dhaka)</option>
+    <option value="Asia/Dili">Timor-Leste (Dili)</option>
+    <option value="Asia/Dubai">United Arab Emirates (Dubai)</option>
+    <option value="Asia/Dushanbe">Tajikistan (Dushanbe)</option>
+    <option value="Asia/Famagusta">Cyprus (Famagusta)</option>
+    <option value="Asia/Gaza">Palestine (Gaza)</option>
+    <option value="Asia/Hebron">Palestine (Hebron)</option>
+    <option value="Asia/Hong_Kong">Hong Kong</option>
+    <option value="Asia/Hovd">Mongolia (Hovd)</option>
+    <option value="Asia/Irkutsk">Russia (Irkutsk)</option>
+    <option value="Asia/Jakarta">Indonesia (Jakarta)</option>
+    <option value="Asia/Jayapura">Indonesia (Jayapura)</option>
+    <option value="Asia/Jerusalem">Israel (Jerusalem)</option>
+    <option value="Asia/Kabul">Afghanistan (Kabul)</option>
+    <option value="Asia/Kamchatka">Russia (Kamchatka)</option>
+    <option value="Asia/Karachi">Pakistan (Karachi)</option>
+    <option value="Asia/Kathmandu">Nepal (Kathmandu)</option>
+    <option value="Asia/Kolkata">India (Kolkata)</option>
+    <option value="Asia/Krasnoyarsk">Russia (Krasnoyarsk)</option>
+    <option value="Asia/Kuala_Lumpur">Malaysia (Kuala Lumpur)</option>
+    <option value="Asia/Kuching">Malaysia (Kuching)</option>
+    <option value="Asia/Magadan">Russia (Magadan)</option>
+    <option value="Asia/Makassar">Indonesia (Makassar)</option>
+    <option value="Asia/Manila">Philippines (Manila)</option>
+    <option value="Asia/Muscat">Oman (Muscat)</option>
+    <option value="Asia/Nicosia">Cyprus (Nicosia)</option>
+    <option value="Asia/Novokuznetsk">Russia (Novokuznetsk)</option>
+    <option value="Asia/Novosibirsk">Russia (Novosibirsk)</option>
+    <option value="Asia/Omsk">Russia (Omsk)</option>
+    <option value="Asia/Oral">Kazakhstan (Oral)</option>
+    <option value="Asia/Phnom_Penh">Cambodia (Phnom Penh)</option>
+    <option value="Asia/Pontianak">Indonesia (Pontianak)</option>
+    <option value="Asia/Qatar">Qatar</option>
+    <option value="Asia/Qyzylorda">Kazakhstan (Qyzylorda)</option>
+    <option value="Asia/Riyadh">Saudi Arabia (Riyadh)</option>
+    <option value="Asia/Sakhalin">Russia (Sakhalin)</option>
+    <option value="Asia/Samarkand">Uzbekistan (Samarkand)</option>
+    <option value="Asia/Seoul">South Korea (Seoul)</option>
+    <option value="Asia/Shanghai">China (Shanghai)</option>
+    <option value="Asia/Singapore">Singapore</option>
+    <option value="Asia/Taipei">Taiwan (Taipei)</option>
+    <option value="Asia/Tashkent">Uzbekistan (Tashkent)</option>
+    <option value="Asia/Tbilisi">Georgia (Tbilisi)</option>
+    <option value="Asia/Tehran">Iran (Tehran)</option>
+    <option value="Asia/Tokyo">Japan (Tokyo)</option>
+    <option value="Asia/Ulaanbaatar">Mongolia (Ulaanbaatar)</option>
+    <option value="Asia/Urumqi">China (Urumqi)</option>
+    <option value="Asia/Vientiane">Laos (Vientiane)</option>
+    <option value="Asia/Vladivostok">Russia (Vladivostok)</option>
+    <option value="Asia/Yakutsk">Russia (Yakutsk)</option>
+    <option value="Asia/Yerevan">Armenia (Yerevan)</option>
+    <option value="Atlantic/Azores">Portugal (Azores)</option>
+    <option value="Atlantic/Bermuda">Bermuda</option>
+    <option value="Atlantic/Canary">Spain (Canary)</option>
+    <option value="Atlantic/Cape_Verde">Cape Verde (Cape Verde)</option>
+    <option value="Atlantic/Faeroe">Faroe Islands (Faeroe)</option>
+    <option value="Atlantic/Faroe">Faroe Islands (Faroe)</option>
+    <option value="Atlantic/Reykjavik">Iceland (Reykjavik)</option>
+    <option value="Atlantic/South_Georgia">South Georgia and the South Sandwich Islands (South Georgia)</option>
+    <option value="Atlantic/Stanley">Falkland Islands (Stanley)</option>
+    <option value="Australia/Adelaide">Australia (Adelaide)</option>
+    <option value="Australia/Brisbane">Australia (Brisbane)</option>
+    <option value="Australia/Broken_Hill">Australia (Broken Hill)</option>
+    <option value="Australia/Currie">Australia (Currie)</option>
+    <option value="Australia/Darwin">Australia (Darwin)</option>
+    <option value="Australia/Eucla">Australia (Eucla)</option>
+    <option value="Australia/Hobart">Australia (Hobart)</option>
+    <option value="Australia/Lindeman">Australia (Lindeman)</option>
+    <option value="Australia/Lord_Howe">Australia (Lord Howe)</option>
+    <option value="Australia/Melbourne">Australia (Melbourne)</option>
+    <option value="Australia/Perth">Australia (Perth)</option>
+    <option value="Australia/Sydney">Australia (Sydney)</option>
+    <option value="Etc/GMT">Etc (GMT)</option>
+    <option value="Etc/GMT+12">Etc (GMT+12)</option>
+    <option value="Etc/GMT+11">Etc (GMT+11)</option>
+    <option value="Etc/GMT+10">Etc (GMT+10)</option>
+    <option value="Etc/GMT+9">Etc (GMT+9)</option>
+    <option value="Etc/GMT+8">Etc (GMT+8)</option>
+    <option value="Etc/GMT+7">Etc (GMT+7)</option>
+    <option value="Etc/GMT+6">Etc (GMT+6)</option>
+    <option value="Etc/GMT+5">Etc (GMT+5)</option>
+    <option value="Etc/GMT+4">Etc (GMT+4)</option>
+    <option value="Etc/GMT+3">Etc (GMT+3)</option>
+    <option value="Etc/GMT+2">Etc (GMT+2)</option>
+    <option value="Etc/GMT+1">Etc (GMT+1)</option>
+    <option value="Etc/GMT-1">Etc (GMT-1)</option>
+    <option value="Etc/GMT-2">Etc (GMT-2)</option>
+    <option value="Etc/GMT-3">Etc (GMT-3)</option>
+    <option value="Etc/GMT-4">Etc (GMT-4)</option>
+    <option value="Etc/GMT-5">Etc (GMT-5)</option>
+    <option value="Etc/GMT-6">Etc (GMT-6)</option>
+    <option value="Etc/GMT-7">Etc (GMT-7)</option>
+    <option value="Etc/GMT-8">Etc (GMT-8)</option>
+    <option value="Etc/GMT-9">Etc (GMT-9)</option>
+    <option value="Etc/GMT-10">Etc (GMT-10)</option>
+    <option value="Etc/GMT-11">Etc (GMT-11)</option>
+    <option value="Etc/GMT-12">Etc (GMT-12)</option>
+    <option value="Pacific/Apia">Samoa (Apia)</option>
+    <option value="Pacific/Auckland">New Zealand (Auckland)</option>
+    <option value="Pacific/Chatham">New Zealand (Chatham)</option>
+    <option value="Pacific/Efate">Vanuatu (Efate)</option>
+    <option value="Pacific/Fakaofo">Tokelau (Fakaofo)</option>
+    <option value="Pacific/Fiji">Fiji</option>
+    <option value="Pacific/Funafuti">Tuvalu (Funafuti)</option>
+    <option value="Pacific/Galapagos">Ecuador (Galapagos)</option>
+    <option value="Pacific/Gambier">French Polynesia (Gambier)</option>
+    <option value="Pacific/Guadalcanal">Solomon Islands (Guadalcanal)</option>
+    <option value="Pacific/Guam">Guam</option>
+    <option value="Pacific/Kiritimati">Kiribati (Kiritimati)</option>
+    <option value="Pacific/Majuro">Marshall Islands (Majuro)</option>
+    <option value="Pacific/Midway">United States (Midway)</option>
+    <option value="Pacific/Noumea">New Caledonia (Noumea)</option>
+    <option value="Pacific/Pago_Pago">American Samoa (Pago Pago)</option>
+    <option value="Pacific/Port_Moresby">Papua New Guinea (Port Moresby)</option>
+    <option value="Pacific/Rarotonga">Cook Islands (Rarotonga)</option>
+    <option value="Pacific/Tahiti">French Polynesia (Tahiti)</option>
+    <option value="Pacific/Tarawa">Kiribati (Tarawa)</option>
+    <option value="Pacific/Tongatapu">Tonga (Tongatapu)</option>
+    <option value="Pacific/Wake">United States (Wake)</option>
+    <option value="Pacific/Wallis">Wallis and Futuna (Wallis)</option>
+</select>
+
+      <div class="timezone-output" id="timezoneOutput">--</div>
+    </div>
+  </div>
+
+  <!-- JS Logic -->
+  <script>
+    // Sidebar navigation
+    function showSection(id) {
+      document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+
+    // Digital Clock
+    function updateClock() {
+      const clock = document.getElementById('clock');
+      const now = new Date();
+      let h = now.getHours();
+      let m = now.getMinutes();
+      let s = now.getSeconds();
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      h = h % 12 || 12;
+      clock.textContent = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')} ${ampm}`;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // Stopwatch
+    let swInterval, swTime = 0;
+    function formatTime(ms) {
+      const totalSeconds = Math.floor(ms / 1000);
+      const h = Math.floor(totalSeconds / 3600);
+      const m = Math.floor((totalSeconds % 3600) / 60);
+      const s = totalSeconds % 60;
+      return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+
+    function updateStopwatch() {
+      document.getElementById('stopwatch').textContent = formatTime(swTime);
+    }
+
+    function startStopwatch() {
+      if (swInterval) return;
+      const start = Date.now() - swTime;
+      swInterval = setInterval(() => {
+        swTime = Date.now() - start;
+        updateStopwatch();
+      }, 500);
+    }
+
+    function stopStopwatch() {
+      clearInterval(swInterval);
+      swInterval = null;
+    }
+
+    function resetStopwatch() {
+      stopStopwatch();
+      swTime = 0;
+      updateStopwatch();
+    }
+
+    // Timezone Converter
+    const timezoneSelect = document.getElementById('timezoneSelect');
+    const timezoneOutput = document.getElementById('timezoneOutput');
+
+    timezoneSelect.addEventListener('change', () => {
+      const tz = timezoneSelect.value;
+      const now = new Date();
+      try {
+        const tzString = now.toLocaleString('en-US', { timeZone: tz });
+        timezoneOutput.textContent = `Time in ${tz}: ${tzString}`;
+      } catch {
+        timezoneOutput.textContent = 'Invalid Timezone';
+      }
+    });
+
+    timezoneSelect.dispatchEvent(new Event('change'));
+  </script>
+
+</body>
+</html>

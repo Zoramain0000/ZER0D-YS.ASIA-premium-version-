@@ -1,0 +1,189 @@
+    
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>WHOIS Lookup</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #000;
+      color: #c58b00;
+      overflow-x: hidden;
+    }
+    video#bg-video {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      min-width: 100vw;
+      min-height: 100vh;
+      object-fit: cover;
+      opacity: 0.15;
+      z-index: -1;
+    }
+    audio#bg-music { display: none; }
+    .container {
+      max-width: 900px;
+      margin: 50px auto;
+      padding: 25px;
+      background: rgba(0, 0, 0, 0);
+      border-radius: 12px;
+      box-shadow: 0 0 25px rgba(0, 0, 0, 0.2);
+    }
+    h1, label { color: #c58b00; }
+    input[type="text"], textarea {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      background: rgba(0, 0, 0, 0);
+      color: red;
+      border: 1px solid #c58b00;
+      border-radius: 5px;
+      font-size: 1rem;
+    }
+    button {
+      background: rgba(0, 0, 0, 0.6);
+      border: 1px solid #c58b00;
+      color: #c58b00;
+      padding: 10px 15px;
+      margin: 5px 5px 15px 0;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+    button:hover {
+      background: rgba(0,0,0,0.7);
+      color: red;
+    }
+    .history {
+      margin-top: 20px;
+    }
+    .history-item {
+      border-bottom: 1px solid red;
+      padding: 5px;
+      font-size: 0.9rem;
+      color: #ff8800;
+    }
+    @media (max-width: 768px) {
+      .container {
+        margin: 20px 10px;
+        padding: 15px;
+      }
+      button {
+        width: 100%;
+        margin: 8px 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <video id="bg-video" autoplay muted loop playsinline>
+    <source src="background/1761817527453041720p.mp4" type="video/mp4">
+    Your browser does not support background video.
+  </video>
+  <audio id="bg-music" autoplay loop>
+    <source src="background/music.mp3" type="audio/mpeg" />
+  </audio>
+
+  <div class="container">
+    <h1>WHOIS Lookup Tool</h1>
+    <label>Enter Domain:</label>
+    <input type="text" id="domain-input" placeholder="example.com" />
+
+    <div>
+      <button onclick="lookupWHOIS()">Lookup</button>
+      <button onclick="clearAll()">Clear</button>
+    </div>
+
+    <label>WHOIS Output:</label>
+    <textarea id="output" rows="15" readonly></textarea>
+    <button onclick="copyOutput()">Copy</button>
+    <button onclick="downloadOutput()">Download</button>
+
+    <div class="history">
+      <h3>History</h3>
+      <div id="history-box"></div>
+    </div>
+  </div>
+
+  <script>
+    const API_KEY = 'mENW1Fex4ZCC071LTQfMig==K9RpxJVOQ0ymKOOS'; // Replace with your Ninja API key
+    const output = document.getElementById("output");
+    const historyBox = document.getElementById("history-box");
+    const history = [];
+
+    function lookupWHOIS() {
+      const domain = document.getElementById("domain-input").value.trim();
+      if (!domain) return alert("Please enter a domain name.");
+
+      output.value = "Looking up WHOIS data for " + domain + "...";
+
+      fetch(`https://api.api-ninjas.com/v1/whois?domain=${domain}`, {
+        headers: { 'X-Api-Key': API_KEY }
+      })
+        .then(res => {
+          if (!res.ok) throw new Error("Failed to fetch WHOIS data.");
+          return res.json();
+        })
+        .then(data => {
+          const display = `
+Domain: ${data.domain_name || 'N/A'}
+Registrar: ${data.registrar || 'N/A'}
+Created: ${data.creation_date || 'N/A'}
+Expires: ${data.expiration_date || 'N/A'}
+Updated: ${data.updated_date || 'N/A'}
+Name Servers: ${(data.name_servers || []).join(', ') || 'N/A'}
+Emails: ${(data.emails || []).join(', ') || 'N/A'}
+Whois Server: ${data.whois_server || 'N/A'}
+Status: ${(data.status || []).join(', ') || 'N/A'}
+          `.trim();
+          output.value = display;
+          logHistory(domain, data.creation_date || 'No Date');
+        })
+        .catch(err => {
+          output.value = "Error: " + err.message;
+        });
+    }
+
+    function copyOutput() {
+      if (!output.value) return alert("Nothing to copy!");
+      navigator.clipboard.writeText(output.value).then(() => {
+        alert("WHOIS copied!");
+      });
+    }
+
+    function downloadOutput() {
+      if (!output.value) return alert("Nothing to download!");
+      const blob = new Blob([output.value], { type: "text/plain" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "whois_output.txt";
+      link.click();
+    }
+
+    function clearAll() {
+      document.getElementById("domain-input").value = "";
+      output.value = "";
+    }
+
+    function logHistory(domain, created) {
+      const time = new Date().toLocaleTimeString();
+      history.unshift(`${time} - ${domain} → ${created}`);
+      updateHistory();
+    }
+
+    function updateHistory() {
+      historyBox.innerHTML = "";
+      history.slice(0, 10).forEach(entry => {
+        const div = document.createElement("div");
+        div.className = "history-item";
+        div.textContent = entry;
+        historyBox.appendChild(div);
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>📡 CCTV IP & Tracker Finder (Simulator)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #0f172a;
+      color: #f8fafc;
+    }
+    header {
+      background: #1e293b;
+      padding: 1rem;
+      text-align: center;
+      font-size: 1.5rem;
+      color: #38bdf8;
+    }
+    .container {
+      display: flex;
+      flex-direction: column;
+      padding: 1rem;
+    }
+    .controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+    button {
+      padding: 0.5rem 1rem;
+      border: none;
+      background: #38bdf8;
+      color: #0f172a;
+      font-weight: bold;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0ea5e9;
+    }
+    .results {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+    .card {
+      background: #1e293b;
+      border-radius: 8px;
+      padding: 1rem;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    }
+    .card h3 {
+      margin-top: 0;
+      color: #facc15;
+    }
+    .map {
+      height: 300px;
+      margin-top: 1rem;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .footer {
+      text-align: center;
+      font-size: 0.9rem;
+      color: #64748b;
+      margin-top: 2rem;
+    }
+  </style>
+</head>
+<body>
+
+<header>📡 CCTV IP & Tracker Finder (Demo / Simulator)</header>
+
+<div class="container">
+  <div class="controls">
+    <button onclick="generateCCTV()">🔍 Generate Random CCTV</button>
+    <button onclick="clearResults()">🧹 Clear</button>
+  </div>
+  
+  <div class="map" id="map"></div>
+  
+  <div class="results" id="results"></div>
+
+  <div class="footer">Simulator Only — No Real CCTV Feeds Used</div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  const results = document.getElementById("results");
+  const map = L.map("map").setView([14.5995, 120.9842], 2);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: "&copy; OpenStreetMap contributors"
+  }).addTo(map);
+
+  const cameraTypes = ["PTZ", "Bullet", "Dome", "Box", "Thermal"];
+  const statuses = ["Online", "Offline", "Unstable"];
+const locations = [
+  { city: "Kabul", lat: 34.5553, lon: 69.2075 },
+  { city: "Tirana", lat: 41.3275, lon: 19.8189 },
+  { city: "Algiers", lat: 36.7538, lon: 3.0588 },
+  { city: "Andorra la Vella", lat: 42.5078, lon: 1.5211 },
+  { city: "Luanda", lat: -8.839, lon: 13.2894 },
+  { city: "Buenos Aires", lat: -34.6037, lon: -58.3816 },
+  { city: "Yerevan", lat: 40.1792, lon: 44.4991 },
+  { city: "Canberra", lat: -35.2809, lon: 149.13 },
+  { city: "Vienna", lat: 48.2082, lon: 16.3738 },
+  { city: "Baku", lat: 40.4093, lon: 49.8671 },
+  { city: "Nassau", lat: 25.0343, lon: -77.3963 },
+  { city: "Manama", lat: 26.2235, lon: 50.5876 },
+  { city: "Dhaka", lat: 23.8103, lon: 90.4125 },
+  { city: "Bridgetown", lat: 13.0975, lon: -59.6167 },
+  { city: "Minsk", lat: 53.9, lon: 27.5667 },
+  { city: "Brussels", lat: 50.8503, lon: 4.3517 },
+  { city: "Belmopan", lat: 17.25, lon: -88.7667 },
+  { city: "Porto-Novo", lat: 6.4969, lon: 2.6289 },
+  { city: "Thimphu", lat: 27.4728, lon: 89.639 },
+  { city: "La Paz", lat: -16.5, lon: -68.15 },
+  { city: "Sarajevo", lat: 43.8563, lon: 18.4131 },
+  { city: "Gaborone", lat: -24.6282, lon: 25.9231 },
+  { city: "Brasília", lat: -15.7939, lon: -47.8828 },
+  { city: "Bandar Seri Begawan", lat: 4.9403, lon: 114.9481 },
+  { city: "Sofia", lat: 42.6977, lon: 23.3219 },
+  { city: "Ouagadougou", lat: 12.3714, lon: -1.5197 },
+  { city: "Gitega", lat: -3.4264, lon: 29.9306 },
+  { city: "Phnom Penh", lat: 11.5564, lon: 104.9282 },
+  { city: "Yaoundé", lat: 3.848, lon: 11.5021 },
+  { city: "Ottawa", lat: 45.4215, lon: -75.6999 },
+  { city: "Praia", lat: 14.933, lon: -23.5133 },
+  { city: "Bangui", lat: 4.3947, lon: 18.5582 },
+  { city: "N'Djamena", lat: 12.1348, lon: 15.0557 },
+  { city: "Santiago", lat: -33.4489, lon: -70.6693 },
+  { city: "Beijing", lat: 39.9042, lon: 116.4074 },
+  { city: "Bogotá", lat: 4.711, lon: -74.0721 },
+  { city: "Moroni", lat: -11.7172, lon: 43.2473 },
+  { city: "Kinshasa", lat: -4.4419, lon: 15.2663 },
+  { city: "Brazzaville", lat: -4.2634, lon: 15.2429 },
+  { city: "San José", lat: 9.9281, lon: -84.0907 },
+  { city: "Zagreb", lat: 45.815, lon: 15.9819 },
+  { city: "Havana", lat: 23.1136, lon: -82.3666 },
+  { city: "Nicosia", lat: 35.1856, lon: 33.3823 },
+  { city: "Prague", lat: 50.0755, lon: 14.4378 },
+  { city: "Copenhagen", lat: 55.6761, lon: 12.5683 },
+  { city: "Djibouti", lat: 11.5721, lon: 43.1456 },
+  { city: "Roseau", lat: 15.3092, lon: -61.3794 },
+  { city: "Santo Domingo", lat: 18.4861, lon: -69.9312 },
+  { city: "Quito", lat: -0.1807, lon: -78.4678 },
+  { city: "Cairo", lat: 30.0444, lon: 31.2357 },
+  { city: "San Salvador", lat: 13.6929, lon: -89.2182 },
+  { city: "Malabo", lat: 3.7504, lon: 8.7832 },
+  { city: "Asmara", lat: 15.3229, lon: 38.9251 },
+  { city: "Tallinn", lat: 59.437, lon: 24.7536 },
+  { city: "Mbabane", lat: -26.3054, lon: 31.1367 },
+  { city: "Addis Ababa", lat: 9.03, lon: 38.74 },
+  { city: "Suva", lat: -18.1248, lon: 178.4501 },
+  { city: "Helsinki", lat: 60.1695, lon: 24.9354 },
+  { city: "Paris", lat: 48.8566, lon: 2.3522 },
+  { city: "Libreville", lat: 0.4162, lon: 9.4673 },
+  { city: "Banjul", lat: 13.4549, lon: -16.579 },
+  { city: "Tbilisi", lat: 41.7151, lon: 44.8271 },
+  { city: "Berlin", lat: 52.52, lon: 13.405 },
+  { city: "Accra", lat: 5.6037, lon: -0.187 },
+  { city: "Athens", lat: 37.9838, lon: 23.7275 },
+  { city: "Saint George's", lat: 12.0561, lon: -61.7486 },
+  { city: "Guatemala City", lat: 14.6349, lon: -90.5069 },
+  { city: "Conakry", lat: 9.6412, lon: -13.5784 },
+  { city: "Bissau", lat: 11.8636, lon: -15.5977 },
+  { city: "Georgetown", lat: 6.8013, lon: -58.1551 },
+  { city: "Port-au-Prince", lat: 18.5944, lon: -72.3074 },
+  { city: "Tegucigalpa", lat: 14.0723, lon: -87.1921 },
+  { city: "Budapest", lat: 47.4979, lon: 19.0402 },
+  { city: "Reykjavik", lat: 64.1355, lon: -21.8954 },
+  { city: "New Delhi", lat: 28.6139, lon: 77.209 },
+  { city: "Jakarta", lat: -6.2088, lon: 106.8456 },
+  { city: "Tehran", lat: 35.6892, lon: 51.389 },
+  { city: "Baghdad", lat: 33.3152, lon: 44.3661 },
+  { city: "Dublin", lat: 53.3498, lon: -6.2603 },
+  { city: "Jerusalem", lat: 31.7683, lon: 35.2137 },
+  { city: "Rome", lat: 41.9028, lon: 12.4964 },
+  { city: "Kingston", lat: 18.0179, lon: -76.8099 },
+  { city: "Tokyo", lat: 35.6895, lon: 139.6917 },
+  { city: "Amman", lat: 31.9454, lon: 35.9284 },
+  { city: "Nairobi", lat: -1.2921, lon: 36.8219 },
+  { city: "Tarawa", lat: 1.4518, lon: 172.9717 },
+  { city: "Pyongyang", lat: 39.0392, lon: 125.7625 },
+  { city: "Seoul", lat: 37.5665, lon: 126.978 },
+  { city: "Pristina", lat: 42.6629, lon: 21.1655 },
+  { city: "Kuwait City", lat: 29.3759, lon: 47.9774 },
+  { city: "Bishkek", lat: 42.8746, lon: 74.5698 },
+  { city: "Vientiane", lat: 17.9757, lon: 102.6331 },
+  { city: "Riga", lat: 56.9496, lon: 24.1052 },
+  { city: "Beirut", lat: 33.8938, lon: 35.5018 },
+  { city: "Maseru", lat: -29.3158, lon: 27.4854 },
+  { city: "Monrovia", lat: 6.3156, lon: -10.8074 },
+  { city: "Tripoli", lat: 32.8872, lon: 13.1913 },
+  { city: "Vaduz", lat: 47.1415, lon: 9.5215 },
+  { city: "Vilnius", lat: 54.6872, lon: 25.2797 },
+  { city: "Luxembourg", lat: 49.6117, lon: 6.13 },
+  { city: "Antananarivo", lat: -18.8792, lon: 47.5079 },
+  { city: "Lilongwe", lat: -13.9626, lon: 33.7741 },
+  { city: "Kuala Lumpur", lat: 3.139, lon: 101.6869 },
+  { city: "Malé", lat: 4.1755, lon: 73.5093 },
+  { city: "Bamako", lat: 12.6392, lon: -8.0029 },
+  { city: "Valletta", lat: 35.8997, lon: 14.5146 },
+  { city: "Majuro", lat: 7.0897, lon: 171.3803 },
+  { city: "Nouakchott", lat: 18.0735, lon: -15.9582 },
+  { city: "Port Louis", lat: -20.1669, lon: 57.502 },
+  { city: "Mexico City", lat: 19.4326, lon: -99.1332 },
+  { city: "Chisinau", lat: 47.0105, lon: 28.8638 },
+  { city: "Monaco", lat: 43.7384, lon: 7.4246 },
+  { city: "Ulaanbaatar", lat: 47.8864, lon: 106.9057 },
+  { city: "Podgorica", lat: 42.4304, lon: 19.2594 },
+  { city: "Rabat", lat: 34.0209, lon: -6.8416 },
+  { city: "Maputo", lat: -25.9692, lon: 32.5732 },
+  { city: "Naypyidaw", lat: 19.7633, lon: 96.0785 },
+  { city: "Windhoek", lat: -22.5597, lon: 17.0832 },
+  { city: "Yaren", lat: -0.5477, lon: 166.9209 },
+  { city: "Kathmandu", lat: 27.7172, lon: 85.324 },
+  { city: "Amsterdam", lat: 52.3676, lon: 4.9041 },
+  { city: "Wellington", lat: -41.2865, lon: 174.7762 },
+  { city: "Managua", lat: 12.1364, lon: -86.2514 },
+  { city: "Niamey", lat: 13.5128, lon: 2.1126 },
+  { city: "Abuja", lat: 9.0765, lon: 7.3986 },
+  { city: "Oslo", lat: 59.9139, lon: 10.7522 },
+  { city: "Muscat", lat: 23.588, lon: 58.3829 },
+  { city: "Islamabad", lat: 33.6844, lon: 73.0479 },
+  { city: "Ngerulmud", lat: 7.5004, lon: 134.6242 },
+  { city: "Panama City", lat: 8.9824, lon: -79.5199 },
+  { city: "Port Moresby", lat: -9.4438, lon: 147.1803 },
+  { city: "Asunción", lat: -25.2637, lon: -57.5759 },
+  { city: "Lima", lat: -12.0464, lon: -77.0428 },
+  { city: "Manila", lat: 14.5995, lon: 120.9842 },
+  { city: "Warsaw", lat: 52.2297, lon: 21.0122 },
+  { city: "Lisbon", lat: 38.7223, lon: -9.1393 },
+  { city: "Doha", lat: 25.2854, lon: 51.531 },
+  { city: "Bucharest", lat: 44.4268, lon: 26.1025 },
+  { city: "Moscow", lat: 55.7558, lon: 37.6173 },
+  { city: "Kigali", lat: -1.9706, lon: 30.1044 },
+  { city: "Basseterre", lat: 17.3026, lon: -62.7177 },
+  { city: "Castries", lat: 13.9094, lon: -60.9789 },
+  { city: "Kingstown", lat: 13.1609, lon: -61.2248 },
+  { city: "Apia", lat: -13.8507, lon: -171.7514 },
+  { city: "San Marino", lat: 43.9333, lon: 12.45 },
+  { city: "São Tomé", lat: 0.3365, lon: 6.7273 },
+  { city: "Riyadh", lat: 24.7136, lon: 46.6753 },
+  { city: "Dakar", lat: 14.6928, lon: -17.4467 },
+  { city: "Belgrade", lat: 44.7866, lon: 20.4489 },
+  { city: "Victoria", lat: -4.6191, lon: 55.4513 },
+  { city: "Freetown", lat: 8.4657, lon: -13.2317 },
+  { city: "Singapore", lat: 1.3521, lon: 103.8198 },
+  { city: "Bratislava", lat: 48.1486, lon: 17.1077 },
+  { city: "Ljubljana", lat: 46.0569, lon: 14.5058 },
+  { city: "Honiara", lat: -9.4456, lon: 159.9729 },
+  { city: "Mogadishu", lat: 2.0469, lon: 45.3182 },
+  { city: "Pretoria", lat: -25.7479, lon: 28.2293 },
+  { city: "Juba", lat: 4.8594, lon: 31.5713 },
+  { city: "Madrid", lat: 40.4168, lon: -3.7038 },
+  { city: "Colombo", lat: 6.9271, lon: 79.8612 },
+  { city: "Khartoum", lat: 15.5007, lon: 32.5599 },
+  { city: "Paramaribo", lat: 5.852, lon: -55.2038 },
+  { city: "Stockholm", lat: 59.3293, lon: 18.0686 },
+  { city: "Bern", lat: 46.9481, lon: 7.4474 },
+  { city: "Damascus", lat: 33.5138, lon: 36.2765 },
+  { city: "Taipei", lat: 25.033, lon: 121.5654 },
+  { city: "Dushanbe", lat: 38.5598, lon: 68.787 },
+  { city: "Dodoma", lat: -6.163, lon: 35.7516 },
+  { city: "Bangkok", lat: 13.7563, lon: 100.5018 },
+  { city: "Lomé", lat: 6.1725, lon: 1.2314 },
+  { city: "Nukuʻalofa", lat: -21.1394, lon: -175.2018 },
+  { city: "Port of Spain", lat: 10.6918, lon: -61.2225 },
+  { city: "Tunis", lat: 36.8065, lon: 10.1815 },
+  { city: "Ankara", lat: 39.9334, lon: 32.8597 },
+  { city: "Ashgabat", lat: 37.9601, lon: 58.3261 },
+  { city: "Funafuti", lat: -8.5211, lon: 179.1962 },
+  { city: "Kampala", lat: 0.3476, lon: 32.5825 },
+  { city: "Kyiv", lat: 50.4501, lon: 30.5234 },
+  { city: "Abu Dhabi", lat: 24.4539, lon: 54.3773 },
+  { city: "London", lat: 51.5074, lon: -0.1278 },
+  { city: "Washington, D.C.", lat: 38.9072, lon: -77.0369 },
+  { city: "Montevideo", lat: -34.9011, lon: -56.1645 },
+  { city: "Tashkent", lat: 41.2995, lon: 69.2401 },
+  { city: "Port Vila", lat: -17.7333, lon: 168.3273 },
+  { city: "Caracas", lat: 10.4806, lon: -66.9036 },
+  { city: "Hanoi", lat: 21.0285, lon: 105.8542 },
+  { city: "Sana'a", lat: 15.3694, lon: 44.191 },
+  { city: "Lusaka", lat: -15.3875, lon: 28.3228 },
+  { city: "Harare", lat: -17.8252, lon: 31.0335 }
+];
+
+
+  function randomIP() {
+    return `http://${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}:${[80, 81, 8080, 554][Math.floor(Math.random() * 4)]}`;
+  }
+
+  function generateCCTV() {
+    const loc = locations[Math.floor(Math.random() * locations.length)];
+    const ip = randomIP();
+    const type = cameraTypes[Math.floor(Math.random() * cameraTypes.length)];
+    const status = statuses[Math.floor(Math.random() * statuses.length)];
+
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <h3>📷 CCTV Feed</h3>
+      <p><strong>IP Address:</strong> ${ip}</p>
+      <p><strong>Type:</strong> ${type}</p>
+      <p><strong>Status:</strong> ${status}</p>
+      <p><strong>Location:</strong> ${loc.city}</p>
+      <button onclick="copyIP('${ip}')">📋 Copy IP</button>
+      <button onclick="openFeed('${ip}')">🌐 Open Feed</button>
+    `;
+    results.prepend(card);
+
+    const marker = L.marker([loc.lat, loc.lon]).addTo(map)
+      .bindPopup(`<b>${ip}</b><br>${loc.city}<br>Status: ${status}`)
+      .openPopup();
+
+    map.setView([loc.lat, loc.lon], 5);
+  }
+
+  function clearResults() {
+    results.innerHTML = "";
+  }
+
+  function copyIP(ip) {
+    navigator.clipboard.writeText(ip);
+    alert("Copied IP: " + ip);
+  }
+
+  function openFeed(ip) {
+    window.open(ip, "_blank");
+  }
+</script>
+
+</body>
+</html>

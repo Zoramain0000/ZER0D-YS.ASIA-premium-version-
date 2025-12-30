@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Log Monitoring Console</title>
+
+<style>
+:root {
+  --gold: #c58b00;
+  --gold-soft: #ffc107;
+  --bg: #0a0a0a;
+  --border: rgba(197,139,0,0.45);
+  --panel: rgba(15,15,15,0.85);
+  --error: #ff4d4d;
+  --warn: #ffb020;
+  --info: #4dd2ff;
+  --debug: #9cff57;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: "Segoe UI", system-ui, sans-serif;
+  background: var(--bg);
+  color: #f5d98a;
+}
+
+/* Background Video */
+video.bg-video {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: brightness(0.3);
+  z-index: -2;
+}
+
+/* Navbar */
+nav {
+  position: fixed;
+  top: 0;
+  width: 100%;
+  height: 64px;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(0,0,0,0.8);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+  z-index: 10;
+}
+
+.brand {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--gold);
+}
+
+button {
+  background: transparent;
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  padding: 8px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: 0.25s;
+}
+
+button:hover {
+  background: var(--gold);
+  color: #000;
+}
+
+/* Layout */
+.main {
+  padding: 100px 25px 40px;
+  max-width: 1200px;
+  margin: auto;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 22px;
+  box-shadow: 0 0 25px rgba(0,0,0,.6);
+}
+
+.panel h2 {
+  color: var(--gold-soft);
+  margin-bottom: 12px;
+}
+
+/* Inputs */
+.controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(220px,1fr));
+  gap: 12px;
+  margin-bottom: 15px;
+}
+
+input[type="file"],
+input[type="text"],
+select,
+textarea {
+  width: 100%;
+  padding: 10px;
+  border-radius: 10px;
+  background: #0d0d0d;
+  border: 1px solid var(--border);
+  color: #ffd;
+}
+
+textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+/* Log output */
+.log-view {
+  background: #050505;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  height: 420px;
+  overflow-y: auto;
+  font-family: Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.log-line {
+  padding: 4px 6px;
+  border-left: 3px solid transparent;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.log-error { color: var(--error); border-left-color: var(--error); }
+.log-warn  { color: var(--warn); border-left-color: var(--warn); }
+.log-info  { color: var(--info); border-left-color: var(--info); }
+.log-debug { color: var(--debug); border-left-color: var(--debug); }
+
+.highlight {
+  background: rgba(255,255,0,0.25);
+  padding: 0 2px;
+  border-radius: 3px;
+}
+
+/* Footer */
+footer {
+  text-align: center;
+  padding: 25px;
+  opacity: .8;
+  color: var(--gold);
+}
+</style>
+</head>
+
+<body>
+
+<video class="bg-video" autoplay muted loop playsinline>
+  <source src="background/1761817527453041720p.mp4" type="video/mp4">
+</video>
+
+<nav>
+  <div class="brand">Log Monitoring Console</div>
+  <button onclick="clearLogs()">Clear</button>
+</nav>
+
+<div class="main">
+
+  <div class="panel">
+    <h2>📥 Load Logs</h2>
+
+    <div class="controls">
+      <input type="file" id="fileInput" accept=".log,.txt,.json">
+      <input type="text" id="searchInput" placeholder="Search keyword / IP / error...">
+      <select id="levelFilter">
+        <option value="all">All Levels</option>
+        <option value="error">ERROR</option>
+        <option value="warn">WARN</option>
+        <option value="info">INFO</option>
+        <option value="debug">DEBUG</option>
+      </select>
+    </div>
+
+    <textarea id="pasteArea" placeholder="Paste raw logs here (optional)..."></textarea>
+
+    <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
+      <button onclick="loadPasted()">Load Pasted Logs</button>
+      <button onclick="exportLogs()">Export Filtered Logs</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>📊 Log Stream Viewer</h2>
+    <div id="logView" class="log-view"></div>
+  </div>
+
+</div>
+
+<footer>
+© 2025 Log Monitoring Tool — Frontend Only • Real Log Viewer • No Simulation
+</footer>
+
+<script>
+const logView = document.getElementById("logView");
+const fileInput = document.getElementById("fileInput");
+const searchInput = document.getElementById("searchInput");
+const levelFilter = document.getElementById("levelFilter");
+
+let logs = [];
+
+fileInput.addEventListener("change", () => {
+  const file = fileInput.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = e => parseLogs(e.target.result);
+  reader.readAsText(file);
+});
+
+function loadPasted() {
+  const text = document.getElementById("pasteArea").value.trim();
+  if (!text) return;
+  parseLogs(text);
+}
+
+function parseLogs(text) {
+  const lines = text.split(/\r?\n/);
+  logs = lines.map(line => ({
+    raw: line,
+    level: detectLevel(line)
+  }));
+  renderLogs();
+}
+
+function detectLevel(line) {
+  const l = line.toLowerCase();
+  if (l.includes("error")) return "error";
+  if (l.includes("warn")) return "warn";
+  if (l.includes("info")) return "info";
+  if (l.includes("debug")) return "debug";
+  return "info";
+}
+
+function renderLogs() {
+  const keyword = searchInput.value.toLowerCase();
+  const level = levelFilter.value;
+
+  logView.innerHTML = "";
+
+  logs.forEach(entry => {
+    if (level !== "all" && entry.level !== level) return;
+    if (keyword && !entry.raw.toLowerCase().includes(keyword)) return;
+
+    const div = document.createElement("div");
+    div.className = `log-line log-${entry.level}`;
+
+    let content = entry.raw;
+    if (keyword) {
+      const regex = new RegExp(`(${keyword})`, "gi");
+      content = content.replace(regex, `<span class="highlight">$1</span>`);
+    }
+
+    div.innerHTML = content;
+    logView.appendChild(div);
+  });
+}
+
+searchInput.addEventListener("input", renderLogs);
+levelFilter.addEventListener("change", renderLogs);
+
+function clearLogs() {
+  logs = [];
+  logView.innerHTML = "";
+  document.getElementById("pasteArea").value = "";
+}
+
+function exportLogs() {
+  const text = [...logView.querySelectorAll(".log-line")]
+    .map(l => l.textContent)
+    .join("\n");
+
+  const blob = new Blob([text], { type: "text/plain" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "filtered-logs.txt";
+  a.click();
+}
+</script>
+
+</body>
+</html>

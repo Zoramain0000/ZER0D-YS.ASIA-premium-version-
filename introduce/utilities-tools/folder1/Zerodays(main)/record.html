@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Visitor Log</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: monospace;
+      color: red;
+      overflow-y: auto;
+      position: relative;
+
+    }
+
+    #bg-video {
+      position: fixed;
+      top: 0;
+      left: 0;
+      min-width: 100%;
+      min-height: 100%;
+      object-fit: cover;
+      z-index: -1;
+      filter: brightness(0.3) contrast(1.2) saturate(1.5);
+    }
+
+    body {
+      padding: 20px;
+    }
+
+    h1 {
+      text-shadow: 0 0 5px red, 0 0 10px red;
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+      max-width: 800px;
+      margin: auto;
+    }
+
+    li {
+      background: rgba(0, 0, 0, 0.5);
+      padding: 10px;
+      margin-bottom: 15px;
+      border: 1px solid red;
+      border-radius: 5px;
+    }
+
+    .clear-btn {
+      display: block;
+      margin: 30px auto 0;
+      padding: 10px 20px;
+      background: transparent;
+      color: red;
+      border: 1px solid red;
+      cursor: pointer;
+      font-family: monospace;
+      font-size: 1em;
+    }
+
+    .clear-btn:hover {
+      background: rgba(255, 0, 0, 0.2);
+    }
+  </style>
+</head>
+<body>
+  <!-- Background video -->
+  <video id="bg-video" autoplay muted loop playsinline>
+    <source src="intro/main/personal-zone/mainsource/opensource/ai/image/backgroundvideo.mp4" type="video/mp4">
+    Your browser does not support the video tag.
+  </video>
+
+  <h1>📜 Visitor Log</h1>
+  <ul id="logList"></ul>
+  <button class="clear-btn" onclick="clearLogs()">🗑️ Clear Logs</button>
+
+  <script>
+    const logs = JSON.parse(localStorage.getItem('visitorLogs') || '[]');
+    const logList = document.getElementById('logList');
+
+    if (logs.length === 0) {
+      logList.innerHTML = "<li>No logs found.</li>";
+    } else {
+      logs.forEach((log, i) => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <b>#${i + 1} - ${log.time}</b><br>
+          IP: ${log.ip}<br>
+          Location: ${log.city}, ${log.region}, ${log.country}<br>
+          Coords: ${log.location}<br>
+          ISP: ${log.isp}<br>
+          OS: ${log.os}<br>
+          Browser: ${log.browser}
+        `;
+        logList.appendChild(li);
+      });
+    }
+
+    function clearLogs() {
+      if (confirm("Clear all visitor logs?")) {
+        localStorage.removeItem('visitorLogs');
+        location.reload();
+      }
+    }
+  </script>
+</body>
+</html>

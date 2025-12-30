@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>🌍 IP Power Map Locator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" rel="stylesheet" />
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s'); 
+      color: red;
+      padding: 20px;
+    }
+    h1 {
+      color: red;
+      text-align: center;
+    }
+    textarea, button {
+      padding: 10px;
+      border-radius: 5px;
+      font-size: 1rem;
+      border: none;
+      margin: 5px;
+    }
+    textarea {
+      width: 100%;
+      background: red;
+      color: green;
+      height: 100px;
+    }
+    button {
+      background: red;
+      color: green;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:hover {
+background: rgba(0,0,0,0.5); 
+    }
+    #map {
+      height: 400px;
+      margin-top: 15px;
+      border-radius: 8px;
+    }
+    #output {
+background: rgba(0,0,0,0.5); 
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 6px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>🌍 IP Locator</h1>
+  <textarea id="ipInput" placeholder="Enter IP addresses (IPv4/IPv6), one per line..."></textarea><br>
+  <button onclick="lookupIPs()">🌐 Locate IPs</button>
+  <button onclick="exportCSV()">📤 Export CSV</button>
+  <div id="map"></div>
+  <div id="output"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    let map;
+    const markers = [];
+    const results = [];
+
+    // Load saved data
+    window.onload = () => {
+      document.getElementById("ipInput").value = localStorage.getItem("savedIPs") || "";
+      document.getElementById("output").innerHTML = localStorage.getItem("savedOutput") || "";
+
+      map = L.map('map').setView([20, 0], 2);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(map);
+
+      const savedMarkers = JSON.parse(localStorage.getItem("savedMarkers") || "[]");
+      savedMarkers.forEach(m => {
+        const marker = L.marker([m.lat, m.lon]).addTo(map).bindPopup(m.label);
+        markers.push(marker);
+        results.push([m.ip, m.country, m.city, m.org, m.lat, m.lon]);
+      });
+    };
+
+    async function lookupIPs() {
+      const input = document.getElementById("ipInput").value.trim();
+      const output = document.getElementById("output");
+      output.innerHTML = "🔄 Locating IPs...<br>";
+      localStorage.setItem("savedIPs", input);
+      const ips = input.split(/\s+/).filter(Boolean);
+      const markerData = [];
+
+      for (let ip of ips) {
+        try {
+          const res = await fetch(`https://ipapi.co/${ip}/json/`);
+          const data = await res.json();
+          if (!data || !data.latitude) {
+            output.innerHTML += `❌ ${ip}: Not found or invalid<br>`;
+            continue;
+          }
+
+          const { latitude, longitude, city, country_name, org } = data;
+          const label = `${ip} - ${city || 'Unknown'}, ${country_name || 'Unknown'} (${org || 'Unknown'})`;
+
+          const marker = L.marker([latitude, longitude]).addTo(map).bindPopup(label);
+          markers.push(marker);
+          results.push([ip, country_name, city, org, latitude, longitude]);
+          output.innerHTML += `✅ ${label}<br>`;
+
+          markerData.push({ ip, country: country_name, city, org, lat: latitude, lon: longitude, label });
+        } catch (err) {
+          output.innerHTML += `⚠️ ${ip}: Error fetching data<br>`;
+        }
+      }
+
+      localStorage.setItem("savedOutput", output.innerHTML);
+      localStorage.setItem("savedMarkers", JSON.stringify(markerData));
+    }
+
+    function exportCSV() {
+      if (results.length === 0) return;
+      const rows = [["IP", "Country", "City", "ISP", "Latitude", "Longitude"], ...results];
+      const csv = rows.map(r => r.join(",")).join("\n");
+      const blob = new Blob([csv], { type: "text/csv" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "ip_locations.csv";
+      link.click();
+    }
+  </script>
+</body>
+</html>

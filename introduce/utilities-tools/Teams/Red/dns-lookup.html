@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DNS Records Analyzer</title>
+<style>
+:root {
+  --bg:#0a0a0f;
+  --panel: rgba(20,20,30,0.85);
+  --accent:#c58b00;
+  --border: rgba(197,139,0,0.5);
+  --text:#f5f5f5;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: "Segoe UI", system-ui, sans-serif; background: var(--bg); color: var(--text); }
+
+video.bg-video {
+  position: fixed; inset:0; width:100%; height:100%; object-fit: cover; filter: brightness(0.2); z-index:-2;
+}
+
+.container { max-width:900px; margin:auto; padding:100px 20px 40px; }
+
+h1 { text-align:center; color: var(--accent); margin-bottom:14px; }
+.panel { background: var(--panel); border:1px solid var(--border); border-radius:16px; padding:20px; margin-bottom:20px; }
+input { width:100%; padding:12px; border-radius:10px; border:1px solid var(--border); background:#0d0d0d; color:#fff; }
+button { background:var(--accent); border:none; padding:10px 18px; border-radius:10px; color:#000; cursor:pointer; font-weight:700; margin-top:8px; }
+button:hover { opacity:.85; }
+
+.results { margin-top:16px; display:grid; gap:12px; }
+
+.card {
+  background: var(--panel); border:1px solid var(--border); border-radius:12px; padding:14px;
+  display:flex; flex-direction:column; gap:6px;
+}
+
+.record-type { font-weight:700; color: var(--accent); margin-top:6px; }
+.log { margin-top:12px; font-size:14px; max-height:180px; overflow-y:auto; background:#050505; border:1px solid var(--border); border-radius:10px; padding:10px; font-family: monospace; }
+.log div { margin-bottom:6px; }
+</style>
+</head>
+
+<body>
+
+<video class="bg-video" autoplay muted loop playsinline>
+  <source src="background/1761817527453041720p.mp4" type="video/mp4">
+</video>
+
+<div class="container">
+  <h1>🌐 DNS Records Analyzer</h1>
+
+  <div class="panel">
+    <input type="text" id="domainInput" placeholder="Enter domain (example.com)">
+    <button onclick="fetchDNSRecords()">Analyze DNS</button>
+    <div class="log" id="log"></div>
+  </div>
+
+  <div id="results" class="results"></div>
+</div>
+
+<script>
+const logDiv = document.getElementById("log");
+
+// DNS-over-HTTPS API
+async function queryDNS(domain, type){
+  try {
+    const url = `https://cloudflare-dns.com/dns-query?name=${domain}&type=${type}`;
+    const res = await fetch(url, { headers: { "Accept": "application/dns-json" } });
+    return await res.json();
+  } catch(e){
+    return { error: true, message: e.message };
+  }
+}
+
+const recordTypes = ["A","AAAA","MX","CNAME","NS","TXT"];
+let allResults = [];
+
+async function fetchDNSRecords(){
+  const domain = document.getElementById("domainInput").value.trim();
+  if(!domain) return alert("Enter a domain.");
+
+  logDiv.innerHTML = "";
+  document.getElementById("results").innerHTML = "";
+  allResults = [];
+
+  for(const type of recordTypes){
+    const logLine = document.createElement("div");
+    logLine.textContent = `Fetching ${type} records for ${domain}...`;
+    logDiv.appendChild(logLine);
+
+    const data = await queryDNS(domain, type);
+    if(data.error){
+      const errorLine = document.createElement("div");
+      errorLine.textContent = `Error fetching ${type}: ${data.message}`;
+      logDiv.appendChild(errorLine);
+      continue;
+    }
+
+    allResults.push({ type, answers: data.Answer || [] });
+
+    renderRecord(type, data.Answer || []);
+  }
+
+  const finalLog = document.createElement("div");
+  finalLog.innerHTML = `<mark>✅ DNS analysis completed for ${domain}</mark>`;
+  logDiv.appendChild(finalLog);
+}
+
+function renderRecord(type, answers){
+  if(!answers.length) return;
+  const resultsDiv = document.getElementById("results");
+  const card = document.createElement("div");
+  card.className = "card";
+
+  const title = document.createElement("div");
+  title.className = "record-type";
+  title.textContent = type + " Records";
+  card.appendChild(title);
+
+  answers.forEach(a => {
+    const div = document.createElement("div");
+    div.textContent = a.data || a.name || JSON.stringify(a);
+    card.appendChild(div);
+  });
+
+  resultsDiv.appendChild(card);
+}
+</script>
+
+</body>
+</html>

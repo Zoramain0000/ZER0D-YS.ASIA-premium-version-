@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Social Media Log Generator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+      font-family: 'Segoe UI', sans-serif;
+      padding: 20px;
+      text-align: center;
+    }
+
+    h1 {
+      color: red;
+    }
+
+    button {
+      background: red;
+      color: green;
+      border: none;
+      padding: 10px 20px;
+      font-size: 16px;
+      margin: 10px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    button:hover {
+background: rgba(0, 0, 0, 0.5);
+    }
+
+    .log-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .log-card {
+background: rgba(0, 0, 0, 0.5);
+      border-radius: 10px;
+      padding: 20px;
+      margin: 10px;
+      width: 280px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+      text-align: left;
+    }
+
+    .log-card h3 {
+      margin-top: 0;
+      color: red;
+    }
+
+    .field {
+      margin: 5px 0;
+    }
+
+    .platform {
+      font-weight: bold;
+      color: red;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Fake Social Media Log Generator</h1>
+  <button onclick="generateLogs()">Generate More Logs</button>
+  <button onclick="clearLogs()">Clear All</button>
+
+  <div id="logContainer" class="log-container"></div>
+
+  <script>
+    const platforms = ['Facebook', 'Instagram', 'YouTube', 'Twitter', 'Telegram'];
+
+    function getRandomName() {
+      const firstNames = ['John', 'Jane', 'Alex', 'Mia', 'Chris', 'Sara', 'Mike', 'Emily', 'David', 'Laura'];
+      const lastNames = ['Smith', 'Johnson', 'Brown', 'Lee', 'Wilson', 'Taylor', 'Clark', 'Lewis', 'Hall', 'Allen'];
+      return firstNames[Math.floor(Math.random() * firstNames.length)] + ' ' +
+             lastNames[Math.floor(Math.random() * lastNames.length)];
+    }
+
+    function getRandomUsername(name) {
+      return name.toLowerCase().replace(' ', '') + Math.floor(Math.random() * 9999);
+    }
+
+    function getRandomEmail(username) {
+      const domains = ['gmail.com', 'yahoo.com', 'outlook.com', 'protonmail.com'];
+      return username + '@' + domains[Math.floor(Math.random() * domains.length)];
+    }
+
+    function getRandomDate() {
+      const year = 2014 + Math.floor(Math.random() * 10);
+      const month = String(1 + Math.floor(Math.random() * 12)).padStart(2, '0');
+      const day = String(1 + Math.floor(Math.random() * 28)).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    function getRandomFollowers() {
+      return Math.floor(Math.random() * 1000000);
+    }
+
+    function generateLogs(count = 10) {
+      const container = document.getElementById('logContainer');
+
+      for (let i = 0; i < count; i++) {
+        const name = getRandomName();
+        const username = getRandomUsername(name);
+        const platform = platforms[Math.floor(Math.random() * platforms.length)];
+        const email = getRandomEmail(username);
+        const joinDate = getRandomDate();
+        const followers = getRandomFollowers();
+
+        const card = document.createElement('div');
+        card.className = 'log-card';
+        card.innerHTML = `
+          <h3>${name}</h3>
+          <div class="field"><span class="platform">${platform}</span></div>
+          <div class="field"><strong>Username:</strong> @${username}</div>
+          <div class="field"><strong>Email:</strong> ${email}</div>
+          <div class="field"><strong>Joined:</strong> ${joinDate}</div>
+          <div class="field"><strong>Followers:</strong> ${followers.toLocaleString()}</div>
+        `;
+        container.appendChild(card);
+      }
+    }
+
+    function clearLogs() {
+      document.getElementById('logContainer').innerHTML = '';
+    }
+
+    window.onload = () => generateLogs();
+  </script>
+
+</body>
+</html>

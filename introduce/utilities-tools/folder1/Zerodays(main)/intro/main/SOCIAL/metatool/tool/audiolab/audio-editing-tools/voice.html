@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Advanced Voice Changer with Upload</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: red;
+    }
+    .controls, .effects {
+      max-width: 800px;
+      margin: 20px auto;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+    }
+    button, select, input[type="file"] {
+      padding: 10px 15px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+background: rgba(0, 0, 0, 0.5);
+      color: red;
+      font-weight: bold;
+    }
+    button:hover, input[type="file"]:hover {
+background: rgba(0, 0, 0, 0.5);
+    }
+    select {
+background: rgba(0, 0, 0, 0.5);
+      color: red;
+      font-weight: normal;
+      cursor: pointer;
+    }
+    audio {
+      display: block;
+      margin: 20px auto;
+      width: 80%;
+      background: #222;
+      border-radius: 8px;
+      outline: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎙️ Advanced Voice Changer (25 Effects)</h1>
+  <div class="controls">
+    <button onclick="startRecording()">🎤 Record</button>
+    <button onclick="stopRecording()">⏹️ Stop</button>
+    <input type="file" id="uploadAudio" accept="audio/*" title="Upload an audio file" />
+    <select id="effect">
+      <option value="normal">Normal</option>
+      <option value="female">Female</option>
+      <option value="male">Male</option>
+      <option value="girl">Girl</option>
+      <option value="boy">Boy</option>
+      <option value="robot">Robot</option>
+      <option value="alien">Alien</option>
+      <option value="chipmunk">Chipmunk</option>
+      <option value="deep">Deep</option>
+      <option value="echo">Echo</option>
+      <option value="reverb">Reverb</option>
+      <option value="fast">Fast</option>
+      <option value="slow">Slow</option>
+      <option value="vibrato">Vibrato</option>
+      <option value="telephone">Telephone</option>
+      <option value="underwater">Underwater</option>
+      <option value="cave">Cave</option>
+      <option value="helium">Helium</option>
+      <option value="monster">Monster</option>
+      <option value="distorted">Distorted</option>
+      <option value="whisper">Whisper</option>
+      <option value="robotic">Robotic</option>
+      <option value="echoey">Echoey</option>
+      <option value="bass">Bass</option>
+      <option value="treble">Treble</option>
+      <option value="pitchShift">Pitch Shift</option>
+      <option value="siren">Siren</option>
+      <option value="drunk">Drunk</option>
+      <option value="vocal">Vocal</option>
+      <option value="screech">Screech</option>
+    </select>
+    <button onclick="applyEffect()">🎧 Play Effect</button>
+    <button onclick="downloadAudio()">💾 Download</button>
+  </div>
+  <audio id="player" controls></audio>
+
+  <script>
+    let audioContext;
+    let mediaRecorder;
+    let audioChunks = [];
+    let audioBlob;
+    let recordedBuffer;
+
+    // Start recording
+    async function startRecording() {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      mediaRecorder = new MediaRecorder(stream);
+      audioChunks = [];
+      mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+      mediaRecorder.onstop = async () => {
+        audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+        const arrayBuffer = await audioBlob.arrayBuffer();
+        recordedBuffer = await audioContext.decodeAudioData(arrayBuffer);
+        document.getElementById("player").src = URL.createObjectURL(audioBlob);
+      };
+      mediaRecorder.start();
+    }
+
+    // Stop recording
+    function stopRecording() {
+      if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+      }
+    }
+
+    // Handle file upload
+    document.getElementById('uploadAudio').addEventListener('change', async (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      audioBlob = file;
+      const arrayBuffer = await file.arrayBuffer();
+
+      try {
+        recordedBuffer = await audioContext.decodeAudioData(arrayBuffer);
+        document.getElementById("player").src = URL.createObjectURL(file);
+      } catch (e) {
+        alert('Error decoding audio file. Please upload a valid audio file.');
+        recordedBuffer = null;
+      }
+    });
+
+    // Map effect to pitch ratio
+    function getPitchRatio(effect) {
+      const map = {
+        'normal': 1,
+        'female': 1.3,
+        'male': 0.7,
+        'girl': 1.5,
+        'boy': 1.2,
+        'robot': 1,
+        'alien': 0.6,
+        'chipmunk': 2,
+        'deep': 0.5,
+        'fast': 1.8,
+        'slow': 0.5,
+        'helium': 2.5,
+        'monster': 0.4,
+        'distorted': 0.3,
+        'whisper': 0.8,
+        'robotic': 0.9,
+        'echoey': 1.1,
+        'bass': 0.6,
+        'treble': 1.4,
+        'pitchShift': 1.2,
+        'siren': 1.5,
+        'drunk': 0.7,
+        'vocal': 1.1,
+        'screech': 1.6
+      };
+      return map[effect] || 1;
+    }
+
+    // Apply selected effect and play
+    function applyEffect() {
+      const effect = document.getElementById('effect').value;
+      if (!recordedBuffer) {
+        alert("Please record or upload an audio file first.");
+        return;
+      }
+
+      // Close old AudioContext if exists to prevent limit errors on some browsers
+      if (audioContext) {
+        audioContext.close();
+      }
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+      const source = audioContext.createBufferSource();
+      source.buffer = recordedBuffer;
+
+      let nodeChain = source;
+
+      // Effects chain
+      if (effect === 'echo') {
+        const delay = audioContext.createDelay();
+        delay.delayTime.value = 0.3;
+        const feedback = audioContext.createGain();
+        feedback.gain.value = 0.4;
+        delay.connect(feedback);
+        feedback.connect(delay);
+        source.connect(delay);
+        delay.connect(audioContext.destination);
+      } else if (effect === 'reverb' || effect === 'cave') {
+        const convolver = audioContext.createConvolver();
+        // Create simple impulse response
+        const reverbBuffer = audioContext.createBuffer(2, audioContext.sampleRate * 3, audioContext.sampleRate);
+        for (let ch = 0; ch < 2; ch++) {
+          const data = reverbBuffer.getChannelData(ch);
+          for (let i = 0; i < data.length; i++) {
+            data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / data.length, 2); // fading noise
+          }
+        }
+        convolver.buffer = reverbBuffer;
+        source.connect(convolver);
+        convolver.connect(audioContext.destination);
+      } else if (effect === 'vibrato') {
+        const gainNode = audioContext.createGain();
+        const oscillator = audioContext.createOscillator();
+        oscillator.frequency.value = 6;
+        const vibrato = audioContext.createGain();
+        vibrato.gain.value = 0.005;
+        oscillator.connect(vibrato);
+        vibrato.connect(gainNode.gain);
+        source.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        oscillator.start();
+      } else if (effect === 'telephone') {
+        const biquad = audioContext.createBiquadFilter();
+        biquad.type = "bandpass";
+        biquad.frequency.value = 3000;
+        nodeChain.connect(biquad);
+        biquad.connect(audioContext.destination);
+      } else if (effect === 'underwater') {
+        const biquad = audioContext.createBiquadFilter();
+        biquad.type = "lowpass";
+        biquad.frequency.value = 500;
+        nodeChain.connect(biquad);
+        biquad.connect(audioContext.destination);
+      } else {
+        const pitchRatio = getPitchRatio(effect);
+        source.playbackRate.value = pitchRatio;
+        nodeChain.connect(audioContext.destination);
+      }
+
+      source.start(0);
+      // Connect the audio to the player element so users can see playback progress
+      // Note: We can't directly set <audio> src from AudioContext playback, so we just start playing here.
+    }
+
+    // Download original recorded or uploaded audio (not effect applied)
+    function downloadAudio() {
+      if (!audioBlob) {
+        alert("No recording or uploaded audio available.");
+        return;
+      }
+      const url = URL.createObjectURL(audioBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'voice-changed.webm';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+  </script>
+</body>
+</html>

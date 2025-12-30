@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>🏹 Archery Game</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    h1 {
+      margin: 20px;
+      color: red;
+    }
+
+    canvas {
+background: rgba(0, 0, 0, 0.5);
+      border: 4px solid red;
+      border-radius: 10px;
+      touch-action: manipulation;
+    }
+
+    .controls {
+      margin: 10px;
+    }
+
+    select, button {
+      padding: 8px 12px;
+      font-size: 16px;
+      margin: 5px;
+      background: red;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      color: green;
+    }
+
+    #scoreDisplay, #levelDisplay {
+      font-size: 20px;
+      margin: 5px;
+      color: red;
+    }
+
+    .power-bar-container {
+      width: 300px;
+      height: 20px;
+background: rgba(0, 0, 0, 0.5);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-top: 10px;
+    }
+
+    .power-bar {
+      height: 100%;
+      width: 0;
+      background: red;
+      transition: width 0.1s;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🏹 Archery Game</h1>
+
+  <div class="controls">
+    <label for="difficulty">Difficulty:</label>
+    <select id="difficulty">
+      <option value="easy">Easy 🎯</option>
+      <option value="medium">Medium 💪</option>
+      <option value="hard">Hard 🔥</option>
+    </select>
+    <button onclick="startGame()">Start Game</button>
+  </div>
+
+  <canvas id="gameCanvas" width="800" height="500"></canvas>
+
+  <div class="power-bar-container">
+    <div class="power-bar" id="powerBar"></div>
+  </div>
+
+  <p id="scoreDisplay">Score: 0</p>
+  <p id="levelDisplay">Level: 1</p>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreDisplay = document.getElementById('scoreDisplay');
+    const levelDisplay = document.getElementById('levelDisplay');
+    const powerBar = document.getElementById('powerBar');
+    const difficultySelect = document.getElementById('difficulty');
+
+    let arrows = [], score = 0, level = 1, isGameRunning = false;
+    let gravity = 0.2, speedMultiplier = 1, targetRadius = 60;
+    const targetX = 700, targetY = 250;
+    let power = 0, charging = false;
+    const powerMax = 10;
+
+    class Arrow {
+      constructor(x, y, angle, power) {
+        this.x = x;
+        this.y = y;
+        this.vx = Math.cos(angle) * power * speedMultiplier;
+        this.vy = Math.sin(angle) * power * speedMultiplier;
+        this.hit = false;
+      }
+
+      update() {
+        if (this.hit) return;
+        this.vy += gravity;
+        this.x += this.vx;
+        this.y += this.vy;
+
+        const dx = this.x - targetX;
+        const dy = this.y - targetY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist <= targetRadius && !this.hit) {
+          this.hit = true;
+          const accuracy = Math.max(0, 100 - (dist / targetRadius) * 100);
+          score += Math.round(accuracy);
+          scoreDisplay.textContent = `Score: ${score}`;
+          checkLevelUp();
+        }
+      }
+
+      draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(Math.atan2(this.vy, this.vx));
+        ctx.fillStyle = this.hit ? '#0f0' : '#fff';
+        ctx.fillRect(-10, -2, 20, 4);
+        ctx.restore();
+      }
+    }
+
+    function drawTarget() {
+      for (let i = 5; i > 0; i--) {
+        ctx.beginPath();
+        ctx.arc(targetX, targetY, targetRadius * i / 5, 0, Math.PI * 2);
+        ctx.fillStyle = i % 2 === 0 ? '#f00' : '#fff';
+        ctx.fill();
+      }
+    }
+
+    function gameLoop() {
+      if (!isGameRunning) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawTarget();
+
+      for (let arrow of arrows) {
+        arrow.update();
+        arrow.draw();
+      }
+
+      arrows = arrows.filter(a => a.x < canvas.width && a.y < canvas.height);
+      requestAnimationFrame(gameLoop);
+    }
+
+    function startGame() {
+      arrows = [];
+      score = 0;
+      level = 1;
+      scoreDisplay.textContent = 'Score: 0';
+      levelDisplay.textContent = 'Level: 1';
+      isGameRunning = true;
+
+      setDifficulty();
+      gameLoop();
+    }
+
+    function setDifficulty() {
+      const difficulty = difficultySelect.value;
+      if (difficulty === 'easy') {
+        gravity = 0.2;
+        speedMultiplier = 1;
+        targetRadius = 60;
+      } else if (difficulty === 'medium') {
+        gravity = 0.3;
+        speedMultiplier = 1.2;
+        targetRadius = 45;
+      } else if (difficulty === 'hard') {
+        gravity = 0.4;
+        speedMultiplier = 1.4;
+        targetRadius = 35;
+      }
+    }
+
+    function checkLevelUp() {
+      const newLevel = Math.floor(score / 200) + 1;
+      if (newLevel > level) {
+        level = newLevel;
+        levelDisplay.textContent = `Level: ${level}`;
+        gravity += 0.05;
+        speedMultiplier += 0.05;
+        targetRadius = Math.max(20, targetRadius - 2);
+      }
+    }
+
+    function fireArrow(clientX, clientY) {
+      if (!isGameRunning) return;
+      const rect = canvas.getBoundingClientRect();
+      const startX = 100, startY = canvas.height / 2;
+      const dx = clientX - rect.left - startX;
+      const dy = clientY - rect.top - startY;
+      const angle = Math.atan2(dy, dx);
+      const clampedPower = Math.min(power, powerMax);
+      arrows.push(new Arrow(startX, startY, angle, clampedPower));
+      power = 0;
+      powerBar.style.width = '0';
+    }
+
+    // Power charging (hold & release)
+    canvas.addEventListener('mousedown', () => { charging = true; });
+    canvas.addEventListener('mouseup', (e) => {
+      charging = false;
+      fireArrow(e.clientX, e.clientY);
+    });
+
+    canvas.addEventListener('touchstart', () => { charging = true; }, { passive: true });
+    canvas.addEventListener('touchend', (e) => {
+      charging = false;
+      const touch = e.changedTouches[0];
+      fireArrow(touch.clientX, touch.clientY);
+    }, { passive: true });
+
+    setInterval(() => {
+      if (charging && power < powerMax) {
+        power += 0.3;
+        const percent = Math.min(100, (power / powerMax) * 100);
+        powerBar.style.width = percent + '%';
+      }
+    }, 50);
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Welcome</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: monospace;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      text-align: center;
+      color: red;
+      position: relative;
+    }
+
+    #bg-video {
+      position: fixed;
+      top: 0;
+      left: 0;
+      min-width: 100%;
+      min-height: 100%;
+      object-fit: cover;
+      z-index: -1;
+      filter: brightness(0.3) contrast(1.2) saturate(1.5);
+    }
+
+    h1 {
+      font-size: 2em;
+      text-shadow: 0 0 5px red, 0 0 10px red;
+    }
+
+    p {
+      background: rgba(0, 0, 0, 0.5);
+      padding: 10px 20px;
+      border-radius: 5px;
+      border: 1px solid red;
+      font-size: 1.1em;
+      margin-top: 10px;
+    }
+
+    a, button {
+      color: red;
+      background: rgba(0,0,0,0.5);
+      border: 2px solid red;
+      border-radius: 6px;
+      padding: 10px 20px;
+      font-size: 1.1em;
+      font-family: monospace;
+      cursor: pointer;
+      text-decoration: none;
+      margin-top: 20px;
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+
+    a:hover, button:hover {
+      background: rgba(0,0,0,0.8);
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <video id="bg-video" autoplay muted loop playsinline>
+    <source src="intro/main/personal-zone/mainsource/opensource/ai/image/1761817527453041720p.mp4" type="video/mp4">
+  </video>
+
+  <h1>🔐 Welcome to the Cyber Tools</h1>
+  <p>Your data has been logged successfully.</p>
+  <a href="../record.html">📜 View Visitor Log</a>
+  <button onclick="logUserInfo()">💬 Go to ChatX Assistant</button>
+
+  <script>
+    async function logUserInfo() {
+      try {
+        const res = await fetch('https://ipapi.co/json/');
+        const data = await res.json();
+
+        const log = {
+          time: new Date().toLocaleString(),
+          ip: data.ip,
+          city: data.city,
+          region: data.region,
+          country: data.country_name,
+          isp: data.org,
+          location: data.latitude + ', ' + data.longitude,
+          os: navigator.platform,
+          browser: navigator.userAgent
+        };
+
+        const logs = JSON.parse(localStorage.getItem('visitorLogs') || '[]');
+        logs.push(log);
+        localStorage.setItem('visitorLogs', JSON.stringify(logs));
+
+        // Redirect after logging
+        window.location.href = 'intro/intro.html';
+      } catch (e) {
+        alert("Failed to log data.");
+        window.location.href = 'intro/intro.html';
+      }
+    }
+  </script>
+</body>
+</html>

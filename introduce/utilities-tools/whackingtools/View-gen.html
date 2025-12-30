@@ -1,0 +1,499 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ViewState Analyzer — Safe Mode</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    /* Explicit colors (no :root) */
+    /* accent/gold */ 
+    --accent-color: #c58b00;
+    /* muted */ 
+    --muted-color: #d7c38a;
+    /* card background */ 
+    --card-bg: rgba(0,0,0,0.45);
+
+    * { box-sizing: border-box; }
+    html,body { height:100%; margin:0; font-family: "Segoe UI", system-ui, Arial, sans-serif; background:#000; color:#c58b00; }
+    .bg-video {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: -3;
+      filter: brightness(.45);
+    }
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,.65));
+      z-index: -2;
+    }
+    .wrap {
+      min-height: 100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding: 2rem;
+    }
+    .panel {
+      width:100%;
+      max-width:1100px;
+      background: var(--card-bg);
+      border:1px solid rgba(197,139,0,0.12);
+      padding: 1.25rem;
+      border-radius: 12px;
+      backdrop-filter: blur(6px);
+      position: relative;
+      z-index: 1;
+    }
+
+    header { display:flex; gap:1rem; align-items:center; justify-content:space-between; }
+    .title { display:flex; flex-direction:column; }
+    h1 { margin:0; font-size:1.4rem; color:#c58b00; }
+    p.lead { margin:6px 0 0; color:#d7c38a; font-size:0.95rem; }
+
+    .controls { margin-top:1rem; display:flex; gap:0.5rem; flex-wrap:wrap; }
+    textarea {
+      width:100%;
+      min-height:140px;
+      padding:10px;
+      border-radius:8px;
+      border:1px solid rgba(197,139,0,0.12);
+      background: transparent;
+      color: #c58b00;
+      resize: vertical;
+      font-family: monospace;
+      font-size:0.95rem;
+    }
+    .row { display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap; margin-top:0.75rem; }
+    .btn {
+      background: transparent;
+      border: 1px solid #c58b00;
+      color: #c58b00;
+      padding:10px 12px;
+      border-radius:8px;
+      cursor:pointer;
+      font-weight:600;
+    }
+    .btn.primary { background: #c58b00; color: #070707; border:none; }
+    .grid { display:grid; grid-template-columns: 1fr 420px; gap: 1rem; margin-top:1rem; }
+    .card {
+      padding:12px;
+      border-radius:8px;
+      background: rgba(255,255,255,0.02);
+      border:1px solid rgba(255,255,255,0.03);
+      height:100%;
+      overflow:auto;
+    }
+    pre { background:#071018; padding:12px; border-radius:8px; color:#d7c38a; overflow:auto; font-size:0.9rem; white-space:pre-wrap; word-break:break-word; }
+    .badge { display:inline-block; padding:6px 8px; border-radius:6px; background: rgba(197,139,0,0.12); color:#c58b00; font-weight:600; margin-right:6px; }
+
+    .suspicious { color:#ff7b7b; font-weight:700; }
+    .meta { color:#d7c38a; font-size:0.95rem; margin-top:8px; }
+
+    footer { margin-top:12px; color:#d7c38a; font-size:0.9rem; text-align:center; }
+
+    /* start button overlay */
+    .start-wrapper { text-align:center; }
+    .start-btn {
+      background: rgba(0,0,0,0.6);
+      color: #c58b00;
+      border: 1px solid #c58b00;
+      padding: 14px 26px;
+      border-radius: 10px;
+      font-size:1.05rem;
+      cursor:pointer;
+    }
+    .start-btn:hover { background:#c58b00; color:#070707; }
+
+    @media (max-width: 980px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ORIGINAL background video and music (use your existing local files) -->
+  <video class="bg-video" autoplay loop muted playsinline>
+    <source src="background/1761817527453041720p.mp4" type="video/mp4">
+    Your browser does not support the background video.
+  </video>
+
+  <div class="overlay"></div>
+
+  <audio id="bg-audio" loop>
+    <source src="background/Programming___Coding___Hacking_music_vol.18__ANONYMOUS_HEADQUARTERS_(48k).mp3" type="audio/mpeg">
+    Your browser does not support audio.
+  </audio>
+
+  <!-- Start overlay to enable audio (browser user gesture) -->
+  <div class="start-wrapper" id="start-wrapper" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:10;">
+    <button class="start-btn" id="start-btn">Start Analyzer</button>
+  </div>
+
+  <div class="wrap">
+    <div class="panel" id="panel" style="display:none;">
+      <header>
+        <div class="title">
+          <h1>ViewState Analyzer — Safe Mode</h1>
+          <p class="lead">Paste a Base64 ViewState blob below to decode, inspect and get defensive guidance. This tool is read-only and will not create exploit payloads.</p>
+        </div>
+        <div style="text-align:right;">
+          <span class="badge">SAFE</span>
+          <div style="font-size:0.85rem;color:#d7c38a;margin-top:6px;">Local decode only — no network calls</div>
+        </div>
+      </header>
+
+      <div class="controls">
+        <label style="width:100%;margin-top:8px;">
+          <strong style="color:#d7c38a">Paste Base64 ViewState</strong>
+          <textarea id="viewstate-input" placeholder="Paste Base64 ViewState here (remove surrounding &lt;input&gt; if present)"></textarea>
+        </label>
+
+        <div class="row">
+          <button class="btn primary" id="decode-btn">Decode & Analyze</button>
+          <button class="btn" id="clear-btn">Clear</button>
+          <button class="btn" id="copy-btn">Copy Decoded</button>
+          <button class="btn" id="download-btn">Export Decoded</button>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="card" style="min-height:320px;">
+          <h3 style="color:#c58b00;margin-top:0">Decoded Output</h3>
+          <div id="decoded-area">
+            <p style="color:#d7c38a">Decoded bytes and readable text will appear here after clicking <strong>Decode & Analyze</strong>.</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 style="color:#c58b00;margin-top:0">Analysis / Heuristics</h3>
+          <div id="analysis-area">
+            <p style="color:#d7c38a">No analysis yet.</p>
+          </div>
+
+          <div style="margin-top:12px;">
+            <h4 style="color:#c58b00;margin:8px 0 6px;">Quick Guidance</h4>
+            <ul style="color:#d7c38a;line-height:1.5;">
+              <li>ViewState data is sensitive — keep it signed/encrypted on servers.</li>
+              <li>This tool <strong>does not</strong> modify signatures or generate payloads.</li>
+              <li>Look for suspicious assembly names, paths, or known gadget types in decoded text.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <footer>
+        ViewState Analyzer — Safe Mode • No exploit generation • UI: gold-on-black theme
+      </footer>
+    </div>
+  </div>
+
+  <script>
+    // Utilities
+    function base64ToUint8Array(b64) {
+      // Remove whitespace
+      const cleaned = b64.replace(/\\s+/g, '');
+      try {
+        const binary = atob(cleaned);
+        const len = binary.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+          bytes[i] = binary.charCodeAt(i);
+        }
+        return bytes;
+      } catch (e) {
+        throw new Error('Invalid base64 input or decoding error.');
+      }
+    }
+
+    function bytesToHex(uint8) {
+      return Array.from(uint8).map(b => b.toString(16).padStart(2, '0')).join(' ');
+    }
+
+    function bytesToPrintableText(uint8) {
+      // Attempt to decode as UTF-8
+      try {
+        const decoder = new TextDecoder('utf-8', { fatal: false });
+        return decoder.decode(uint8);
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function findSuspiciousStrings(text) {
+      const suspicious = [];
+const needles = [
+  "System.",
+  "mscorlib",
+  "Assembly",
+  "Formatter",
+  "BinaryFormatter",
+  "TypeConfuseDelegate",
+  "ObjectDataProvider",
+  "WindowsIdentity",
+  "ProcessStartInfo",
+  "System.Diagnostics",
+  "Diagnostics.Process",
+  "System.Management.Automation",
+  "PowerShell",
+  "Runtime.InteropServices",
+  "Assembly.Load",
+  "Assembly.LoadFrom",
+  "Assembly.LoadFile",
+  "Activator.CreateInstance",
+  "AppDomain",
+  "AppDomainSetup",
+  "Marshal",
+  "DllImport",
+  "PInvoke",
+  "CreateObject",
+  "CreateInstance",
+  "InvokeMember",
+  "MethodInfo",
+  "FieldInfo",
+  "PropertyInfo",
+  "Reflection",
+  "System.Reflection",
+  "BinaryFormatter.Deserialize",
+  "BinaryFormatter.Serialize",
+  "NetDataContractSerializer",
+  "ObjectStateFormatter",
+  "LosFormatter",
+  "TextFormattingRunProperties",
+  "DataSet",
+  "DataTable",
+  "DataView",
+  "DataColumn",
+  "DataRow",
+  "TypeName",
+  "Type.InvokeMember",
+  "Runtime.Serialization",
+  "Runtime.Serialization.Formatters",
+  "StreamingContext",
+  "SurrogateSelector",
+  "ActivitySurrogateSelector",
+  "SerializationBinder",
+  "FormatterAssemblyStyle",
+  "FormatterTypeStyle",
+  "HttpClient",
+  "WebClient",
+  "WebRequest",
+  "HttpWebRequest",
+  "HttpWebResponse",
+  "Socket",
+  "TcpClient",
+  "UdpClient",
+  "Process.Start",
+  "Start-Process",
+  "Start /b",
+  "cmd.exe",
+  "powershell.exe",
+  "bash -c",
+  "sh -c",
+  "Win32",
+  "CreateRemoteThread",
+  "VirtualAlloc",
+  "LoadLibrary",
+  "GetProcAddress",
+  "System.Net.Sockets",
+  "System.Net.WebClient",
+  "System.Net.Http",
+  "System.Management",
+  "ManagementObject",
+  "WMI",
+  "Win32_Process",
+  "RegistryKey",
+  "Microsoft.CSharp",
+  "CSharpCodeProvider",
+  "CodeDom",
+  "CompileAssemblyFromSource",
+  "System.CodeDom",
+  "ScriptEngine",
+  "ScriptControl",
+  "JScript",
+  "Eval(",
+  "Execute(",
+  "Invoke-Sqlcmd",
+  "SqlCommand",
+  "System.Data.SqlClient",
+  "OleDbCommand",
+  "ODBC",
+  "Scripting.FileSystemObject",
+  "File.WriteAllBytes",
+  "File.WriteAllText",
+  "FileStream",
+  "FileInfo",
+  "DirectoryInfo",
+  "Environment.ExpandEnvironmentVariables",
+  "Environment.GetEnvironmentVariable",
+  "Registry.SetValue",
+  "Assembly.GetTypes",
+  "Type.GetType",
+  "ReflectionOnlyLoad",
+  "Assembly.GetType"
+];
+
+      const lower = text.toLowerCase();
+      for (const n of needles) {
+        if (lower.includes(n.toLowerCase())) suspicious.push(n);
+      }
+      return suspicious;
+    }
+
+    // UI elements
+    const startBtn = document.getElementById('start-btn');
+    const startWrapper = document.getElementById('start-wrapper');
+    const panel = document.getElementById('panel');
+    const bgAudio = document.getElementById('bg-audio');
+
+    // Start flow to enable audio and show UI
+    startBtn.addEventListener('click', () => {
+      // Try to play audio (must be user gesture)
+      bgAudio.play().catch(() => {});
+      // reveal panel and hide overlay start
+      panel.style.display = 'block';
+      startWrapper.style.display = 'none';
+    });
+
+    // Decode and analyze
+    const decodeBtn = document.getElementById('decode-btn');
+    const clearBtn = document.getElementById('clear-btn');
+    const copyBtn = document.getElementById('copy-btn');
+    const downloadBtn = document.getElementById('download-btn');
+
+    decodeBtn.addEventListener('click', () => {
+      const input = document.getElementById('viewstate-input').value.trim();
+      const decodedArea = document.getElementById('decoded-area');
+      const analysisArea = document.getElementById('analysis-area');
+
+      if (!input) {
+        decodedArea.innerHTML = '<p style="color:#ffb86b">Please paste a Base64 ViewState blob above first.</p>';
+        analysisArea.innerHTML = '<p style="color:#d7c38a">No data to analyze.</p>';
+        return;
+      }
+
+      // Try to strip typical wrappers (if they paste entire HTML input tag)
+      let cleaned = input;
+      const possibleWrap = cleaned.match(/value="([^"]+)"/) || cleaned.match(/>([A-Za-z0-9+/=\\n\\r\\s]+)</);
+      if (possibleWrap) cleaned = possibleWrap[1];
+
+      // Try decode
+      let bytes;
+      try {
+        bytes = base64ToUint8Array(cleaned);
+      } catch (err) {
+        decodedArea.innerHTML = `<p style="color:#ff7b7b">Decoding error: ${err.message}</p>`;
+        analysisArea.innerHTML = '<p style="color:#d7c38a">No analysis performed due to decode error.</p>';
+        return;
+      }
+
+      // Hex preview (first/last)
+      const hex = bytesToHex(bytes);
+      const printable = bytesToPrintableText(bytes) || '(binary data, not valid UTF-8)';
+      const summaryHex = hex.length > 2000 ? (hex.slice(0,2000) + ' ...') : hex;
+      const summaryText = printable.length > 4000 ? (printable.slice(0,4000) + '\\n\\n[truncated]') : printable;
+
+      // Populate decoded area
+      decodedArea.innerHTML = `
+        <div style="margin-bottom:8px;color:#d7c38a"><strong>Length:</strong> ${bytes.length} bytes</div>
+        <div style="margin-bottom:8px;"><strong>Hex (partial):</strong></div>
+        <pre>${summaryHex}</pre>
+        <div style="margin-top:10px;"><strong>Text / UTF-8 preview (if readable):</strong></div>
+        <pre>${escapeHtml(summaryText)}</pre>
+      `;
+
+      // Analysis heuristics
+      const suspicious = (typeof printable === 'string') ? findSuspiciousStrings(printable) : [];
+      const containsXml = printable && /\<\?xml|\<asp\:|<script|<assembly/i.test(printable);
+      const highEntropy = estimateEntropy(bytes) > 4.4; // rough check
+
+      let analysisHtml = '';
+      analysisHtml += `<p class="meta"><strong>Heuristics</strong></p>`;
+      analysisHtml += `<p style="color:#d7c38a"><strong>Contains readable XML/HTML-like tags:</strong> ${containsXml ? '<span class="suspicious">Yes</span>' : 'No'}</p>`;
+      analysisHtml += `<p style="color:#d7c38a"><strong>Suspicious tokens found:</strong> ${suspicious.length ? '<span class="suspicious">'+suspicious.join(', ')+'</span>' : 'None detected'}</p>`;
+      analysisHtml += `<p style="color:#d7c38a"><strong>Entropy (estimate):</strong> ${estimateEntropy(bytes).toFixed(2)} (higher values may indicate compressed / encrypted payloads)</p>`;
+      analysisHtml += `<p style="color:#d7c38a"><strong>Notes:</strong> This is a read-only analysis. If suspicious tokens appear, investigate server ViewState settings (validateRequest, machineKey, ViewStateEncryptionMode, ViewStateUserKey).</p>`;
+
+      analysisArea.innerHTML = analysisHtml;
+
+      // store for copy/export
+      lastDecoded = { bytes, printable, cleaned };
+    });
+
+    clearBtn.addEventListener('click', () => {
+      document.getElementById('viewstate-input').value = '';
+      document.getElementById('decoded-area').innerHTML = '<p style="color:#d7c38a">Decoded bytes and readable text will appear here after clicking <strong>Decode & Analyze</strong>.</p>';
+      document.getElementById('analysis-area').innerHTML = '<p style="color:#d7c38a">No analysis yet.</p>';
+      lastDecoded = null;
+    });
+
+    let lastDecoded = null;
+
+    copyBtn.addEventListener('click', async () => {
+      if (!lastDecoded) {
+        alert('No decoded data to copy. Decode something first.');
+        return;
+      }
+      try {
+        const text = lastDecoded.printable || bytesToHex(lastDecoded.bytes);
+        await navigator.clipboard.writeText(text);
+        alert('Decoded text copied to clipboard.');
+      } catch (e) {
+        alert('Copy failed: ' + e.message);
+      }
+    });
+
+    downloadBtn.addEventListener('click', () => {
+      if (!lastDecoded) {
+        alert('No decoded data to export. Decode something first.');
+        return;
+      }
+      const blob = new Blob([lastDecoded.bytes], { type: 'application/octet-stream' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'viewstate-decoded.bin';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    });
+
+    // Helpers
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/[&<>]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;' }[c]));
+    }
+
+    function estimateEntropy(uint8) {
+      // Shannon entropy (approx)
+      if (!uint8 || uint8.length === 0) return 0;
+      const freq = new Array(256).fill(0);
+      for (let i = 0; i < uint8.length; i++) freq[uint8[i]]++;
+      let ent = 0;
+      for (let i = 0; i < 256; i++) {
+        if (freq[i] === 0) continue;
+        const p = freq[i] / uint8.length;
+        ent -= p * Math.log2(p);
+      }
+      return ent;
+    }
+
+    // make panel visible after start action (also try autoplay audio silently)
+    (function attachQuickShortcuts(){
+      // allow pressing Ctrl+Enter to decode
+      document.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+          const panelVisible = document.getElementById('panel').style.display !== 'none';
+          if (panelVisible) document.getElementById('decode-btn').click();
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
+

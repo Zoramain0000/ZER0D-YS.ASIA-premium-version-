@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>🌐 v1 Domain Finder</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <style>
+    body {
+      background: #0f172a;
+      color: #f1f5f9;
+      font-family: 'Segoe UI', sans-serif;
+      padding: 20px;
+      margin: 0;
+    }
+
+    h1 {
+      text-align: center;
+      color: #38bdf8;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: auto;
+      background: #1e293b;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px #0005;
+    }
+
+    input, button, textarea {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      border-radius: 8px;
+      border: none;
+      font-size: 1rem;
+    }
+
+    input {
+      background: #334155;
+      color: #f8fafc;
+    }
+
+    button {
+      background: #38bdf8;
+      color: #000;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #0ea5e9;
+    }
+
+    textarea {
+      background: #0f172a;
+      color: #f8fafc;
+      height: 200px;
+      font-family: monospace;
+      resize: vertical;
+    }
+
+    .status {
+      text-align: center;
+      color: #facc15;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🌐 v1 Domain Finder</h1>
+  <div class="container">
+    <div class="status" id="statusMsg">Enter a base domain (e.g. example.com)</div>
+
+    <input type="text" id="baseDomain" placeholder="example.com" />
+    <button onclick="findDomains()">🔍 Find Domains</button>
+    <button onclick="exportResults()">📁 Export Results</button>
+
+    <textarea id="outputArea" placeholder="Results will appear here..."></textarea>
+  </div>
+
+  <script>
+const commonPrefixes = [
+  "www", "mail", "webmail", "ftp", "cpanel", "admin", "api", "dev", "test", "secure",
+  "vpn", "blog", "shop", "support", "m", "mobile", "portal", "dev1", "dev2", "dev3",
+  "dev4", "dev5", "test1", "test2", "test3", "test4", "test5", "stage1", "stage2",
+  "stage3", "stage4", "stage5", "prod1", "prod2", "prod3", "prod4", "prod5", "uat1",
+  "uat2", "uat3", "uat4", "uat5", "qa1", "qa2", "qa3", "qa4", "qa5", "db-us", "db-uk",
+  "db-eu", "db-asia", "db-au", "db-ca", "db-ph", "web-us", "web-uk", "web-eu",
+  "web-asia", "web-au", "web-ca", "web-ph", "app-us", "app-uk", "app-eu", "app-asia",
+  "app-au", "app-ca", "app-ph", "cache-us", "cache-uk", "cache-eu", "cache-asia",
+  "cache-au", "cache-ca", "cache-ph", "proxy-us", "proxy-uk", "proxy-eu", "proxy-asia",
+  "proxy-au", "proxy-ca", "proxy-ph", "login", "signup", "checkout", "dashboard",
+  "billing", "status", "aa", "ab", "ac", "ad", "ae", "af", "ag", "ah", "ai", "aj",
+  "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+  "x13", "x14", "x15", "x16", "x17", "x18", "x19", "x20", "x21", "x22", "x23", "x24",
+  "x25", "x26", "x27", "x28", "x29", "x30", "x31", "x32", "x33", "x34", "x35", "x36",
+  "x37", "x38", "x39", "x40", "x41", "x42", "x43", "x44", "x45", "x46", "x47", "x48",
+  "x49", "x50", "x51", "x52", "x53", "x54", "x55", "x56", "x57", "x58", "x59", "x60",
+  "x61", "x62", "x63", "x64", "x65", "x66", "x67", "x68", "x69", "x70", "x71", "x72",
+  "x73", "x74", "x75", "x76", "x77", "x78", "x79", "x80", "x81", "x82", "x83", "x84",
+  "x85", "x86", "x87", "x88", "x89", "x90", "x91", "x92", "x93", "x94", "x95", "x96",
+  "x97", "x98", "x99",
+  "test-dev", "legacy", "internal"
+];
+
+
+    async function checkDomain(domain) {
+      const url = `https://dns.google/resolve?name=${domain}&type=A`;
+      try {
+        const res = await fetch(url);
+        const json = await res.json();
+        return json.Answer && json.Answer.length > 0;
+      } catch {
+        return false;
+      }
+    }
+
+    async function findDomains() {
+      const base = document.getElementById("baseDomain").value.trim();
+      const output = document.getElementById("outputArea");
+      const status = document.getElementById("statusMsg");
+
+      if (!base) {
+        status.textContent = "⚠️ Please enter a domain.";
+        return;
+      }
+
+      output.value = "";
+      status.textContent = "⏳ Searching...";
+
+      let found = [];
+
+      for (let prefix of commonPrefixes) {
+        const subdomain = `${prefix}.${base}`;
+        const exists = await checkDomain(subdomain);
+        if (exists) {
+          found.push(subdomain);
+          output.value += `✅ ${subdomain}\n`;
+        } else {
+          output.value += `❌ ${subdomain}\n`;
+        }
+      }
+
+      status.textContent = `✅ Done. ${found.length} found.`;
+    }
+
+    function exportResults() {
+      const text = document.getElementById("outputArea").value;
+      const blob = new Blob([text], { type: "text/plain" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "domain_finder_results.txt";
+      a.click();
+    }
+  </script>
+</body>
+</html>

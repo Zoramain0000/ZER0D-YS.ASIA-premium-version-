@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Clickjacking Detector</title>
+  <style>
+    /* Base styling shared across templates */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #000;
+      color: #c58b00;
+      overflow-x: hidden;
+    }
+    
+    /* Media element styling */
+    video#bg-video {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      min-width: 100vw;
+      min-height: 100vh;
+      object-fit: cover;
+      opacity: 0.2;
+      z-index: -2;
+    }
+    
+    audio#bg-music {
+      position: fixed;
+      z-index: -1;
+      opacity: 0;
+      pointer-events: none;
+    }
+    
+    .container {
+      max-width: 920px;
+      margin: 50px auto;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 0 25px rgba(0, 0, 0, 0.7);
+    }
+    
+    /* Text color adjustments */
+    h1, h3, label {
+      color: #c58b00;
+    }
+    
+    input, textarea, pre, button {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      background: rgba(0, 0, 0, 0.5);
+      color: #c58b00;
+      border: 1px solid #c58b00;
+      border-radius: 5px;
+      font-size: 1rem;
+    }
+    
+    button {
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    
+    button:hover {
+      background: #000;
+      color: red;
+    }
+    
+    .section {
+      margin-top: 20px;
+    }
+    
+    .finding-result {
+      border-bottom: 1px solid #ffcc00;
+      padding: 5px;
+      font-size: 0.9rem;
+      color: #ffaa00;
+    }
+    
+    @media (max-width: 768px) {
+      .container { margin: 20px 10px; padding: 15px; }
+      button { width: 100%; margin: 8px 0; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Media players -->
+<video id="bg-video" autoplay muted loop playsinline>
+  <source src="background/1761817527453041720p.mp4" type="video/mp4">
+</video>
+<audio id="bg-music" loop>
+  <source src="background/Programming___Coding___Hacking_music_vol.18__ANONYMOUS_HEADQUARTERS_(48k).mp3" type="audio/mpeg">
+</audio>
+
+<div class="container">
+  <h1>Clickjacking Detection Tool</h1>
+  
+  <label for="target-site">Website URL:</label>
+  <input id="target-site" placeholder="https://example.com">
+  
+  <button onclick="checkClickjack()">Check Site</button>
+  
+  <!-- Scan results section -->
+  <div class="section">
+    <h3>Detection Results:</h3>
+    <div id="findings-container"></div>
+  </div>
+  
+  <!-- Technical findings -->
+  <div class="section">
+    <h3>Technical Details:</h3>
+    <pre id="security-headers"></pre>
+  </div>
+</div>
+
+<script>
+  const musicPlayer = document.getElementById('bg-music');
+  
+  // Initialize with silent click to enable sound
+  window.addEventListener('click', () => {
+    musicPlayer.play().catch(() => {});
+  }, { once: true });
+
+  function checkClickjack() {
+    const siteUrl = document.getElementById('target-site').value.trim();
+    const findingsContainer = document.getElementById('findings-container');
+    const securityHeadersPre = document.getElementById('security-headers');
+    
+    // Clear previous results
+    findingsContainer.innerHTML = '';
+    securityHeadersPre.innerHTML = '';
+    
+    if(!siteUrl) {
+      findingsContainer.innerHTML = 
+        '<p>Please enter a website URL to scan.</p>';
+      return;
+    }
+    
+    detectClickjacking(siteUrl)
+      .then(result => {
+        // Display findings
+        if(result.isVulnerable) {
+          findingsContainer.innerHTML = `
+            <p><span style="color: orange;">⚠️ VULNERABLE:</span> 
+               The site may be susceptible to clickjacking attacks.</p>
+            <br>
+            <h4>Suggested Fixes:</h4>
+            <ul>
+              <li>Add X-Frame-Options header: DENY or SAMEORIGIN</li>
+              <li>Implement Content-Security-Policy frame-ancestors directive</li>
+            </ul>
+          `;
+        } else {
+          findingsContainer.innerHTML = `
+            <p><span style="color: green;">✓ SECURE:</span> 
+               The site appears protected against clickjacking.</p>
+          `;
+        }
+        
+        // Show received headers
+        if(result.headers && Object.keys(result.headers).length > 0) {
+          securityHeadersPre.innerHTML = 
+            JSON.stringify(result.headers, null, 2);
+        } else {
+          securityHeadersPre.innerHTML = 
+            'Could not retrieve security-related HTTP headers.';
+        }
+      })
+      .catch(error => {
+        findingsContainer.innerHTML = 
+          'Error during detection: ' + error.message;
+      });
+  }
+  
+  async function detectClickjacking(url) {
+    const response = await fetch(`/?check=${encodeURIComponent(url)}`);
+    const data = await response.json();
+    
+    const result = {
+      isVulnerable: false,
+      headers: {}
+    };
+    
+    // In real implementation, this would analyze actual headers
+    // This is just placeholder example data
+    if(data.headers) {
+      result.headers = data.headers;
+      
+      // Simplified vulnerability determination
+      result.isVulnerable = Object.keys(data.headers).every(
+        key => ['X-FRAME-OPTIONS', 'FRAME-ANCESTORS'].none(key.toUpperCase())
+      );
+    }
+    
+    return result;
+  }
+</script>
+</body>
+</html>

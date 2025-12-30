@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>🖼️ Advanced Image FX Editor Pro</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: #0f172a;
+      color: #f8fafc;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+
+    h1 {
+      color: #38bdf8;
+      margin-bottom: 10px;
+    }
+
+    canvas {
+      border: 2px solid #38bdf8;
+      margin-bottom: 15px;
+      cursor: crosshair;
+      max-width: 100%;
+      image-rendering: pixelated;
+    }
+
+    .controls, .tools {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-width: 400px;
+      width: 100%;
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    input[type="range"], input[type="color"], select {
+      width: 100%;
+    }
+
+    button {
+      background: #38bdf8;
+      border: none;
+      color: #0f172a;
+      padding: 10px;
+      font-weight: bold;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #0ea5e9;
+    }
+  </style>
+</head>
+<body>
+  <h1>🖼️ Advanced Image FX Editor Pro</h1>
+  <input type="file" id="upload" accept="image/*" />
+  <canvas id="canvas" width="800" height="600"></canvas>
+
+  <div class="controls">
+    <label>Brightness <span id="val-brightness">100%</span></label>
+    <input type="range" id="brightness" min="0" max="200" value="100" />
+    <label>Contrast <span id="val-contrast">100%</span></label>
+    <input type="range" id="contrast" min="0" max="200" value="100" />
+    <label>Grayscale <span id="val-grayscale">0%</span></label>
+    <input type="range" id="grayscale" min="0" max="100" value="0" />
+    <label>Sepia <span id="val-sepia">0%</span></label>
+    <input type="range" id="sepia" min="0" max="100" value="0" />
+    <label>Invert <span id="val-invert">0%</span></label>
+    <input type="range" id="invert" min="0" max="100" value="0" />
+  </div>
+
+  <div class="tools">
+    <label><input type="checkbox" id="drawToggle" /> ✏️ Enable Drawing</label>
+    <label>Draw Color <input type="color" id="drawColor" value="#ff0000" /></label>
+    <button onclick="rotateImage()">🔁 Rotate 90°</button>
+    <button onclick="enableCrop()">✂️ Enable Crop</button>
+    <button onclick="resetFilters()">♻️ Reset Filters</button>
+    <label>Zoom: <input type="range" id="zoom" min="0.5" max="3" step="0.1" value="1" /></label>
+    <select id="format">
+      <option value="png">PNG</option>
+      <option value="jpeg">JPEG</option>
+      <option value="webp">WebP</option>
+    </select>
+    <button onclick="downloadImage()">💾 Download</button>
+    <button onclick="undoAction()">↩️ Undo</button>
+    <button onclick="redoAction()">↪️ Redo</button>
+  </div>
+
+  <script>
+    const upload = document.getElementById('upload');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const drawToggle = document.getElementById('drawToggle');
+    const drawColor = document.getElementById('drawColor');
+    const zoomSlider = document.getElementById('zoom');
+    const filters = ['brightness', 'contrast', 'grayscale', 'sepia', 'invert'];
+    let img = new Image();
+    let drawing = false, cropping = false, cropStart = {}, cropEnd = {};
+    let rotation = 0;
+    let scale = 1;
+    let history = [], redoStack = [];
+
+    function saveState() {
+      history.push(canvas.toDataURL());
+      if (history.length > 20) history.shift();
+      redoStack = [];
+    }
+
+    function undoAction() {
+      if (history.length) {
+        redoStack.push(canvas.toDataURL());
+        const last = history.pop();
+        let img = new Image();
+        img.onload = () => ctx.drawImage(img, 0, 0);
+        img.src = last;
+      }
+    }
+
+    function redoAction() {
+      if (redoStack.length) {
+        saveState();
+        let next = redoStack.pop();
+        let img = new Image();
+        img.onload = () => ctx.drawImage(img, 0, 0);
+        img.src = next;
+      }
+    }
+
+    upload.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        img.onload = () => {
+          canvas.width = img.width;
+          canvas.height = img.height;
+          rotation = 0;
+          scale = 1;
+          drawImage();
+          saveState();
+        };
+        img.src = evt.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    filters.forEach(filter => {
+      document.getElementById(filter).addEventListener('input', () => {
+        document.getElementById(`val-${filter}`).textContent = document.getElementById(filter).value + '%';
+        drawImage();
+        saveState();
+      });
+    });
+
+    canvas.addEventListener('mousedown', (e) => {
+      if (drawToggle.checked) {
+        drawing = true;
+        ctx.beginPath();
+        ctx.moveTo(e.offsetX, e.offsetY);
+      } else if (cropping) {
+        cropStart = { x: e.offsetX, y: e.offsetY };
+      }
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+      if (drawing && drawToggle.checked) {
+        ctx.strokeStyle = drawColor.value;
+        ctx.lineWidth = 2;
+        ctx.lineTo(e.offsetX, e.offsetY);
+        ctx.stroke();
+      }
+    });
+
+    canvas.addEventListener('mouseup', (e) => {
+      drawing = false;
+      if (cropping) {
+        cropEnd = { x: e.offsetX, y: e.offsetY };
+        applyCrop();
+        saveState();
+      }
+    });
+
+    zoomSlider.addEventListener('input', () => {
+      scale = parseFloat(zoomSlider.value);
+      drawImage();
+    });
+
+    function getFilterString() {
+      return filters.map(f => `${f}(${document.getElementById(f).value}%)`).join(' ');
+    }
+
+    function drawImage() {
+      if (!img.src) return;
+      const offCanvas = document.createElement('canvas');
+      const offCtx = offCanvas.getContext('2d');
+      const w = img.width, h = img.height;
+
+      if (rotation % 180 !== 0) {
+        offCanvas.width = h;
+        offCanvas.height = w;
+      } else {
+        offCanvas.width = w;
+        offCanvas.height = h;
+      }
+
+      offCtx.filter = getFilterString();
+      offCtx.save();
+      offCtx.translate(offCanvas.width / 2, offCanvas.height / 2);
+      offCtx.rotate(rotation * Math.PI / 180);
+      offCtx.drawImage(img, -w / 2, -h / 2);
+      offCtx.restore();
+
+      canvas.width = offCanvas.width * scale;
+      canvas.height = offCanvas.height * scale;
+      ctx.setTransform(scale, 0, 0, scale, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(offCanvas, 0, 0);
+    }
+
+    function rotateImage() {
+      rotation = (rotation + 90) % 360;
+      drawImage();
+      saveState();
+    }
+
+    function resetFilters() {
+      filters.forEach(f => {
+        document.getElementById(f).value = f === 'brightness' || f === 'contrast' ? 100 : 0;
+        document.getElementById(`val-${f}`).textContent = document.getElementById(f).value + '%';
+      });
+      drawImage();
+    }
+
+    function enableCrop() {
+      cropping = true;
+      alert('Crop mode: Click and drag to crop');
+    }
+
+    function applyCrop() {
+      const x = Math.min(cropStart.x, cropEnd.x);
+      const y = Math.min(cropStart.y, cropEnd.y);
+      const w = Math.abs(cropEnd.x - cropStart.x);
+      const h = Math.abs(cropEnd.y - cropStart.y);
+      const cropped = ctx.getImageData(x, y, w, h);
+      canvas.width = w;
+      canvas.height = h;
+      ctx.putImageData(cropped, 0, 0);
+      cropping = false;
+    }
+
+    function downloadImage() {
+      const format = document.getElementById('format').value;
+      const mime = `image/${format}`;
+      const link = document.createElement('a');
+      link.download = `image.${format}`;
+      link.href = canvas.toDataURL(mime);
+      link.click();
+    }
+  </script>
+</body>
+</html>

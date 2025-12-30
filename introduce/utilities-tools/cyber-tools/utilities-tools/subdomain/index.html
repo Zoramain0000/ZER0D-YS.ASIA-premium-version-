@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Subdomain Enumerator</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #000;
+      color: #c58b00;
+      overflow-x: hidden;
+    }
+
+    video#bg-video {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      min-width: 100vw;
+      min-height: 100vh;
+      object-fit: cover;
+      opacity: 0.2;
+      z-index: -2;
+    }
+
+    audio#bg-music {
+      position: fixed;
+      z-index: -1;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 50px auto;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 0 25px rgba(0, 0, 0, 0.7);
+    }
+
+    h1, label {
+      color: #c58b00;
+    }
+
+    input, textarea, pre {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      background: rgba(0, 0, 0, 0.5);
+      color: red;
+      border: 1px solid #c58b00;
+      border-radius: 5px;
+      font-size: 1rem;
+      white-space: pre-wrap;
+    }
+
+    button {
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid #c58b00;
+      color: #c58b00;
+      padding: 10px 15px;
+      margin: 5px 5px 15px 0;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+
+    button:hover {
+      background: #111;
+      color: red;
+    }
+
+    .section {
+      margin-top: 20px;
+    }
+
+    .history-item {
+      border-bottom: 1px solid red;
+      padding: 5px;
+      font-size: 0.9rem;
+      color: #ff8800;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        margin: 20px 10px;
+        padding: 15px;
+      }
+
+      button {
+        width: 100%;
+        margin: 8px 0;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Background Video -->
+  <video id="bg-video" autoplay muted loop playsinline>
+    <source src="background/1761817527453041720p.mp4" type="video/mp4">
+    Your browser does not support the video tag.
+  </video>
+
+  <!-- Background Music -->
+  <audio id="bg-music" loop>
+    <source src="background/Programming___Coding___Hacking_music_vol.18__ANONYMOUS_HEADQUARTERS_(48k).mp3" type="audio/mpeg">
+    Your browser does not support the audio tag.
+  </audio>
+
+  <div class="container">
+    <h1>Subdomain Enumerator</h1>
+
+    <label for="domain-input">Enter Target Domain:</label>
+    <input id="domain-input" placeholder="example.com" />
+
+    <button onclick="enumerate()">Start Enumeration</button>
+    <button onclick="clearResults()">Clear</button>
+
+    <div class="section">
+      <h3>Results</h3>
+      <pre id="results-output">Waiting for input...</pre>
+    </div>
+
+    <div class="section">
+      <h3>History</h3>
+      <div id="history-box"></div>
+    </div>
+  </div>
+
+  <script>
+    const music = document.getElementById("bg-music");
+    const resultsBox = document.getElementById("results-output");
+    const historyBox = document.getElementById("history-box");
+    const history = [];
+
+    // Enable music on first click
+    window.addEventListener('click', () => {
+      music.play().catch(() => {});
+    }, { once: true });
+
+const subList = [
+  //1080 total
+  "www", "mail", "ftp", "api", "cpanel", "admin", "test", "dev",
+  "portal", "blog", "beta", "vpn", "shop", "docs", "webmail", "internal",
+  "dashboard", "login", "support", "staging", "secure", "m", "img",
+  "cdn", "media", "news", "data", "mobile", "forum", "static", "services",
+  "ns1", "ns2", "db", "sql", "search", "private", "files", "cloud", "video",
+  "billing", "tracking", "auth", "api1", "api2", "new", "old", "gateway",
+  "gateway1", "status", "monitor", "test1", "test2", "prod", "qa", "sandbox",
+  "preview", "payment", "upload", "download", "resources", "git", "repo",
+  "dev1", "dev2", "vps", "host", "hosting", "node", "server", "backup", "updates",
+  "my", "your", "public", "account", "accounts", "book", "booking", "order",
+  "inventory", "tracking1", "tracking2", "pay", "invoice", "beta1", "alpha",
+  "secure1", "office", "staff", "site", "img1", "cdn1", "ftp1", "mail1", "admin1",
+  "internal1", "smtp", "imap", "pop", "noc", "radius", "sys", "api-dev", "api-test",
+  "test-env", "dev-env", "logs", "sso", "id", "identity", "oauth", "oauth2", "service",
+  "service1", "engine", "core", "core1", "edge", "proxy", "proxy1", "fw", "firewall",
+  "switch", "router", "client", "clients", "partner", "partners", "home", "corp",
+  "corporate", "maildev", "mailtest", "devops", "monitoring", "check", "checks", "cron",
+  "jobs", "ci", "cd", "pipeline", "registry", "license", "auth1", "signup", "signin",
+  "signout", "reset", "forgot", "docs1", "wiki", "articles", "articles1", "feedback",
+  "reviews", "rate", "rates", "api-beta", "api-old", "api-new", "push", "pull", "queue",
+  "worker", "node1", "node2", "region", "region1", "zone", "zone1", "ssl", "tls", "cert",
+  "certs", "domain", "domains", "whois", "dns", "blog1", "blog2", "cms", "cms1", "cms2",
+  "json", "xml", "html", "www1", "www2", "root", "admin2", "api3", "tools", "tools1",
+  "tools2", "console", "bridge", "dev3", "dev-api", "cache", "cache1", "image", "images",
+  "icons", "icon", "embed", "preview1", "preview2", "preview3", "clone", "mirror", "alt",
+  "alt1", "test3", "test4", "dev4", "api4", "db1", "db2", "sql1", "sql2", "rsync", "rsync1",
+  "mirror1", "scan", "scanner", "sniffer", "dns1", "dns2", "ip", "ipv6", "ipv4", "geo",
+  "geolocate", "map", "mapping", "maps", "location", "redirect", "redir", "jump", "url",
+  "urls", "link", "links", "short", "shorten", "bit", "tiny", "tinyurl", "qr", "qrcode",
+  "barcode", "pdf", "docs2", "export", "import", "xlsx", "csv", "xml1", "json1", "static1",
+  "media1", "img2", "asset", "assets", "asset1", "stream", "streams", "streaming",
+  "video1", "video2", "vod",
+  "ads", "adserver", "analytics", "pixel", "beacon", "beacons", "cache2", "api5", "dev5",
+  "test5", "test6", "preview4", "beta2", "live", "live1", "live2", "remote", "remotes",
+  "cdn2", "media2", "img3", "upload1", "download1", "chat", "messaging", "messenger",
+  "inbox", "email", "emails", "smtp1", "smtp2", "imap1", "imap2", "pop1", "mx", "mailserver",
+  "antivirus", "antispam", "filter", "filters", "security", "security1", "update", "updates1",
+  "fix", "patch", "devzone", "adminpanel", "webadmin", "rootpanel", "developer", "developers",
+  "devcenter", "us", "uk", "asia", "eu", "global", "intl", "world", "mobile1", "m1", "app",
+  "apps", "apk", "ios", "android", "windows", "mac", "linux", "desktop", "desktop1", "site1",
+  "status1", "ping", "latency", "response", "health", "uptime", "down", "maintenance", "build",
+  "builds", "version", "versions", "release", "releases", "cdn3", "public1", "internal2",
+  "corp1", "corp2", "vpn1", "vpn2", "proxy2", "vpnsecure",
+  "autodiscover", "webdisk", "webdav", "hostmaster", "mysql", "mysql1", "phpmyadmin",
+  "adminer", "mongo", "mongodb", "redis", "elastic", "elasticsearch", "kibana",
+  "grafana", "logstash", "splunk", "nagios", "zabbix", "prometheus", "alerts",
+  "metrics", "insights", "observe", "observe1", "audit", "auditlog", "monitor1",
+  "monitor2", "track", "traceroute", "whoami", "uptime1", "down1", "patches", "reboot",
+  "restart", "reset1", "api6", "api7", "dev6", "dev7", "test7", "test8", "devconsole",
+  "devportal", "keys", "tokens", "secrets", "vault", "env", "config", "configs",
+  "settings", "flags", "feature", "features", "abtest", "labs", "experiments", "preview5",
+  "alpha1", "beta3", "next", "nextgen", "legacy", "oldapi", "newapi", "migration",
+  "import1", "export1", "backup1", "restore", "clone1", "migrate", "transfer", "jobs1",
+  "queue1", "queue2", "worker1", "build1", "build2", "ci1", "cd1", "test-ci", "test-cd",
+  "deploy", "deploy1", "release1", "version1", "rollout", "rollback", "canary", "gray",
+  "ai", "ml", "mlapi", "ai-api", "deep", "deeplearning", "chat", "chatbot",
+  "bot", "autobot", "agent", "assistant", "copilot", "nlp", "speech", "voice",
+  "audio", "translate", "ocr", "vision", "camera", "face", "facial", "recognition",
+  "detector", "imageai", "transcribe", "speech-to-text", "text-to-speech",
+  "embedder", "encoder", "decoder", "nlpapi", "mlops", "mlflow", "vector",
+  "embedding", "models", "modelhub", "weights", "training", "train", "predict",
+  "predictor", "classification", "cluster", "clustering", "segment", "autolabel",
+  "tagger", "semantic", "syntax", "lang", "language", "textai", "docai", "docscan",
+  "scannerai", "xray", "medai", "bio", "biometrics", "genomics", "dna", "rna",
+  "molecule", "chem", "neuro", "neuron", "simulate", "vr", "ar", "mixedreality",
+  "streamai", "liveai", "detection", "intrusion", "firewallai", "anomaly",
+  "intelligence", "threat", "cyber", "cyberai", "defense", "forensics",
+  "analyticsai", "quantum", "quantumai", "compute", "supercompute", "simulator",
+  "cdn4", "edge1", "edge2", "cdn-edge", "static2", "static3", "blob", "bucket",
+  "storage", "filestore", "object", "container", "containers", "dock", "docker",
+  "kube", "kubernetes", "helm", "swarm", "compose", "orchestrator", "autoscale",
+  "scale", "scaling", "compute1", "compute2", "gpu", "accelerator", "instance",
+  "node3", "node4", "env1", "env2", "pipeline1", "pipeline2", "devtools", "stack",
+  "stack1", "layer", "layer1", "build3", "build4", "webhook", "webhooks", "event",
+  "events", "trigger", "queue3", "task", "tasks", "runner", "executer", "exec",
+  "scripts", "functions", "faas", "lambda", "workflow", "flow", "graph", "dag",
+  "notebook", "nb", "datasci", "datalake", "datastore", "datawarehouse", "lake",
+  "hdfs", "hadoop", "spark", "etl", "el", "esb", "message", "bus", "broker",
+  "pubsub", "subscribe", "emit", "inbox1", "msg", "push1", "pull1", "socket",
+  "sockets", "ws", "websocket", "stream1", "stream2", "dash", "realtime", "liveapi",
+  "rescue", "failover", "hotfix", "debug", "debugger", "troubleshoot", "incident",
+  "incident-response", "emergency", "bypass", "override", "statuspage", "rollback1",
+  "deprecate", "legacyapi", "readonly", "readonly1", "readonly-db", "nosql",
+  "postgres", "pg", "pgadmin", "influx", "timeseries", "metrics1", "metrics-api",
+  "log", "logfile", "logstore", "archiver", "archived", "audittrail", "eventstore",
+  "eventhub", "handler", "error", "errors", "fail", "failures", "catch", "try",
+  "retry", "failover1", "fallback", "slow", "timeout", "throttle", "limit", "quota",
+  "rate", "rate-limit", "block", "deny", "whitelist", "blacklist", "graylist",
+  "watchdog", "observer", "heartbeat", "ping1", "uptime-check", "diagnose",
+  "diagnostics", "telemetry", "instrument", "instrumentation", "monitorx",
+  "monitorplus", "sec", "secscan", "vuln", "vulnscan", "exploit", "poc",
+  "sandboxed", "attack", "defend", "firewall1", "xss", "sqlinjection", "malware",
+  "ransom", "payload", "infected", "threats", "risk", "breach", "spoof", "spoofing",
+  "phish", "phishing", "spoofed",
+  "honeypot", "decoy", "trap", "sniffer", "watch", "threatintel", "intel", "osint",
+  "recon", "enumerate", "probe", "suspicious", "alert", "alerting", "alarm", "escalate",
+  "forensic", "chain", "killchain", "incidenthub", "logparser", "syslog", "rawlog",
+  "secops", "sock", "soar", "siem", "correlate", "correlation", "analyze", "insight",
+  "intelhub", "dark", "darkweb", "deepweb", "blackhat", "redteam", "blueteam",
+  "purpleteam", "simulator", "injector", "payloads", "command", "control", "cnc",
+  "rat", "backdoor", "reverse", "bind", "scanhub", "netcat", "listener", "endpoint",
+  "epp", "edr", "xdr", "firewallx", "vpnx", "privatetunnel", "sshx", "sftp", "smb",
+  "rdp", "vnc", "telnet", "dnsx", "dnshijack", "spoofedns", "resolver", "dnsresolver",
+  "whois", "whoislookup", "zone", "zonefile", "zoneedit", "dnsdump", "enumx", "amass",
+  "subfinder", "fuzz", "dirsearch", "wayback", "archive", "snapshots", "mirror",
+  "redirect", "redirtest", "httpx", "headerx", "tls", "ssl", "cert", "certs",
+  "firebase", "supabase", "netlify", "vercel", "render", "fly", "cloudflare",
+  "cf", "pages", "cloudrun", "appengine", "functionsnet", "azure", "gcp", "aws",
+  "lambdaedge", "cloudwatch", "cloudlog", "cloudaudit", "auth0", "authx", "okta",
+  "passport", "jwt", "oauth", "sso", "identity", "profile", "signup", "signin",
+  "login", "register", "session", "tokens", "verify", "validate", "2fa", "mfa",
+  "qrcode", "onboard", "offboard", "roles", "acl", "permissions", "access",
+  "me", "account", "userdata", "usermeta", "userapi", "billing", "invoice",
+  "payment", "checkout", "pay", "payapi", "webpay", "cart", "shopapi", "buy",
+  "sell", "orderapi", "trackorder", "wallet", "crypto", "nft", "blockchain",
+  "eth", "btc", "tokenswap", "gas", "balance", "address", "mobile", "ios",
+  "android", "apk", "appstore", "playstore", "device", "devices", "sdk",
+  "sdkapi", "apkdl", "buildtools", "testflight", "emulator", "simulator",
+  "perf", "metricsx", "dashboard", "dashapi", "charts", "insightsapi",
+  "cdnx", "cdnedge", "loadbalancer", "lb", "balancer", "proxyx", "proxyapi", "reverseproxy",
+  "sslcheck", "certcheck", "certbot", "encrypt", "decrypt", "cipher", "hash", "hasher",
+  "checksum", "sign", "signature", "verifytoken", "debugtoken", "decodejwt", "debugapi",
+  "consolex", "browser", "webtools", "devtoolsx", "toolkit", "inspector", "packet", "packettrace",
+  "traffic", "bandwidth", "pingx", "dnsleak", "whoami", "httptrace", "httpdump", "tcpdump",
+  "netdump", "version", "v1", "v2", "v3", "betaapi", "alphaapi", "release", "stable", "nightly",
+  "preview", "canary", "archiveapi", "legacyx", "fallbackapi", "rollout", "rollbackapi",
+  "media", "mediaapi", "imageapi", "imgcdn", "imagekit", "mediastore", "musicapi", "audiokit",
+  "videokit", "videostream", "livecdn", "streamkit", "playerapi", "aiplay", "aimusic", "aivoice",
+  "aimix", "aifilter", "aitools", "aimedia", "genai", "genmedia", "genvid", "videogen", "imggen",
+  "promptkit", "prompter", "dbtools", "sqladmin", "nosqladmin", "datakit", "testingapi", "testserver",
+  "aiapi", "nlp", "llm", "aichat", "gpt", "gptapi", "openai", "claude", "mixtral",
+  "vector", "embedding", "embeddingapi", "searchai", "genkit", "aistudio", "aimodel",
+  "modelhub", "checkpoint", "modelapi", "inference", "inferenceapi", "promptapi",
+  "prompts", "promptflow", "fewshot", "rag", "chainlit", "langchain", "langflow",
+  "api-gateway", "api-test", "api-auth", "api-log", "api-status", "api-billing",
+  "api-v1", "api-v2", "mock", "mockapi", "sandboxapi", "simulate", "dummyapi",
+  "fakeapi", "fakeauth", "testingkit", "testbot", "testai", "tdd", "bdd", "qa",
+  "uat", "smoke", "staging-api", "ci", "ci-cd", "pipeline-api", "release-api",
+  "releasehub", "buildhub", "deployhub", "launchpad", "prodapi", "status-api",
+  "support", "helpdesk", "ticket", "ticketsystem", "bugreport", "bugtracker",
+  "errorlogs", "issueapi", "issues", "downtime", "incidentapi", "recoveryapi",
+  "reboot", "restart", "maintenance", "statuskit", "statustracker", "fallbackkit",
+  "crash", "errorpage", "failpage", "offline", "backsoon", "scheduled",
+];
+
+  
+
+    async function enumerate() {
+      const domain = document.getElementById("domain-input").value.trim();
+      if (!domain) return alert("Please enter a domain to scan.");
+
+      resultsBox.textContent = `🔍 Enumerating subdomains for: ${domain}\n\n`;
+
+      for (let sub of subList) {
+        const full = `${sub}.${domain}`;
+        resultsBox.textContent += `Checking: ${full} ...\n`;
+        await new Promise(res => setTimeout(res, 300)); // fake delay
+
+        // Simulate random result (pure frontend-only)
+        const found = Math.random() > 0.5;
+        if (found) {
+          resultsBox.textContent += `✅ Found: ${full}\n`;
+        } else {
+          resultsBox.textContent += `❌ Not Found: ${full}\n`;
+        }
+      }
+
+      const timestamp = new Date().toLocaleTimeString();
+      history.unshift(`${timestamp} - Scanned ${domain}`);
+      updateHistory();
+
+      resultsBox.textContent += `\n✅ Scan complete.`;
+    }
+
+    function clearResults() {
+      document.getElementById("domain-input").value = "";
+      resultsBox.textContent = "Waiting for input...";
+    }
+
+    function updateHistory() {
+      historyBox.innerHTML = "";
+      history.slice(0, 10).forEach(item => {
+        const div = document.createElement("div");
+        div.className = "history-item";
+        div.textContent = item;
+        historyBox.appendChild(div);
+      });
+    }
+  </script>
+</body>
+</html>

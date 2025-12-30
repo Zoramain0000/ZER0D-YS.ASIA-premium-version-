@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>IPv1–IPv9 Tracker with Map</title>
+
+<!-- Leaflet CSS -->
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  integrity="sha256-sA+4tbY1PkBqE7rYJcNQosSnJ8/0R1J0hPa8JrMMoik="
+  crossorigin=""
+/>
+
+<style>
+  body {
+    background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+    color: #ff0000;
+    font-family: "Courier New", Courier, monospace;
+    margin: 0;
+    padding: 20px;
+  }
+  h1 {
+    color: #ff0000;
+    text-align: center;
+    margin-bottom: 15px;
+  }
+  .input-group {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  input, button {
+    background-color: #0000001f;
+    color: rgb(255, 0, 0);
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #ff0000;
+    border-radius: 6px;
+  }
+  button {
+    background-color: #00000028;
+    cursor: pointer;
+  }
+  button:hover {
+    background-color: #00000017;
+  }
+  #results {
+    background-color: #00000044;
+    border: 1px solid #f50000;
+    border-radius: 10px;
+    padding: 20px;
+    white-space: pre-wrap;
+    margin-top: 10px;
+    max-height: 220px;
+    overflow-y: auto;
+  }
+  #map {
+    height: 400px;
+    border-radius: 10px;
+    margin-top: 20px;
+    border: 1px solid #ff0000;
+  }
+  .error {
+    color: #ff0000;
+  }
+</style>
+</head>
+<body>
+
+<h1>🛰️ IPv1–IPv9 Tracker with Map</h1>
+
+<div class="input-group">
+  <input id="ipInput" type="text" placeholder="Enter IP (any version)" />
+  <button onclick="trackIP()">Track</button>
+  <button onclick="exportResult()">Export</button>
+</div>
+
+<div id="results"></div>
+<div id="map"></div>
+
+<!-- Leaflet JS -->
+<script
+  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-o9N1j6j7xa6m9vL8tiQp4Bk5LYRRQlhwTA6AaHc1xPc="
+  crossorigin=""
+></script>
+
+<script>
+  // Initialize Leaflet map centered at (0,0), zoom 2
+  const map = L.map('map').setView([0, 0], 2);
+
+  // Add OpenStreetMap tile layer
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 18,
+    attribution:
+      '&copy; <a href="https://openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors',
+  }).addTo(map);
+
+  let marker;
+
+  function detectIPVersion(ip) {
+    if (/^(\d{1,3}\.){3}\d{1,3}$/.test(ip)) return 4;
+    if (/^([a-fA-F0-9]{1,4}:){1,7}[a-fA-F0-9]{1,4}$/.test(ip)) return 6;
+    if (/^IPV1-/.test(ip)) return 1;
+    if (/^IPV2-/.test(ip)) return 2;
+    if (/^IPV3-/.test(ip)) return 3;
+    if (/^STRM-/.test(ip)) return 5;
+    if (/^7v:/.test(ip)) return 7;
+    if (/^8v:/.test(ip)) return 8;
+    if (/^9v:/.test(ip)) return 9;
+    return 0;
+  }
+
+  // Random number helper between min and max inclusive
+  function randRange(min, max) {
+    return Math.random() * (max - min) + min;
+  }
+
+  // Simulate location per version (latitude, longitude)
+  function simulateCoordinates(version) {
+    switch (version) {
+      case 1: // Northern Hemisphere random
+        return [randRange(10, 70), randRange(-130, 60)];
+      case 2: // Southern Hemisphere random
+        return [randRange(-60, -10), randRange(-80, 130)];
+      case 3: // Europe-like
+        return [randRange(35, 65), randRange(-10, 40)];
+      case 4: // IPv4: realistic public IP geo range example
+        return [randRange(-50, 60), randRange(-130, 150)];
+      case 5: // Stream protocol: Random oceanic coordinates
+        return [randRange(-60, 60), randRange(-180, 180)];
+      case 6: // IPv6: Simulate data center location
+        return [randRange(30, 50), randRange(-125, -70)];
+      case 7: // Fictional
+        return [randRange(-45, 45), randRange(-90, 90)];
+      case 8: // Fictional
+        return [randRange(-80, 80), randRange(-180, 180)];
+      case 9: // Fictional
+        return [randRange(-90, 90), randRange(-180, 180)];
+      default:
+        return [0, 0];
+    }
+  }
+
+  function simulateTracking(ip, version) {
+    const countries = ['US', 'DE', 'FR', 'JP', 'IN', 'BR', 'AU', 'CN', 'RU', 'ZA'];
+    const isps = ['NetCom', 'CyberLink', 'DataHawk', 'UltraISP', 'GlobeNet'];
+    const asns = [12345, 64500, 8899, 2030, 45566];
+    const risks = ['Low', 'Medium', 'High', 'Suspicious', 'Unknown'];
+    const notes = [
+      'Normal traffic.',
+      'Experimental protocol.',
+      'Encrypted tunnel detected.',
+      'Malicious behavior suspected.',
+      'Unidentified version. Proceed with caution.'
+    ];
+
+    const coords = simulateCoordinates(version);
+
+    return {
+      ip: ip,
+      version: `IPv${version}`,
+      country: countries[Math.floor(Math.random() * countries.length)],
+      isp: isps[Math.floor(Math.random() * isps.length)],
+      asn: `AS${asns[Math.floor(Math.random() * asns.length)]}`,
+      risk: risks[Math.floor(Math.random() * risks.length)],
+      notes: notes[Math.floor(Math.random() * notes.length)],
+      lat: coords[0].toFixed(4),
+      lon: coords[1].toFixed(4),
+    };
+  }
+
+  function trackIP() {
+    const ip = document.getElementById("ipInput").value.trim();
+    const version = detectIPVersion(ip);
+    const output = document.getElementById("results");
+
+    if (version === 0) {
+      output.innerHTML = `<div class="error">❌ Invalid IP format or unsupported version.</div>`;
+      return;
+    }
+
+    const data = simulateTracking(ip, version);
+
+    // Show result text
+    const resultText = `
+📡 Tracking Result:
+==========================
+🌐 IP Address  : ${data.ip}
+🔢 IP Version  : ${data.version}
+🏳️ Country     : ${data.country}
+🏢 ISP         : ${data.isp}
+🔌 ASN         : ${data.asn}
+⚠️ Risk Level  : ${data.risk}
+📝 Notes       : ${data.notes}
+📍 Coordinates : ${data.lat}, ${data.lon}
+==========================`;
+
+    output.textContent = resultText;
+
+    // Update map
+    if (marker) {
+      map.removeLayer(marker);
+    }
+
+    marker = L.marker([data.lat, data.lon]).addTo(map);
+    marker.bindPopup(
+      `<b>${data.ip}</b><br>${data.version}<br>${data.country} - ${data.isp}<br>Risk: ${data.risk}`
+    ).openPopup();
+
+    map.setView([data.lat, data.lon], 5);
+  }
+
+  function exportResult() {
+    const text = document.getElementById("results").innerText;
+    if (!text.trim()) return;
+    const blob = new Blob([text], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "ip_tracking_result.txt";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+</script>
+
+</body>
+</html>

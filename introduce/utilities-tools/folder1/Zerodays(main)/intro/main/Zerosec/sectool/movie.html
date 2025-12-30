@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>🌍 Worldwide Movie Finder</title>
+  <style>
+    body {
+      background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: #f1f1f1;
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 40px auto;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      color: #ff0000;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 15px;
+      font-size: 18px;
+      border: none;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      background-color: #00000000;
+      color: rgb(255, 0, 0);
+    }
+
+    .filters {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .movie-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+    }
+
+    .movie-card {
+      background-color: #00000000;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 0 8px rgba(255, 0, 0, 0.3);
+      transition: transform 0.2s;
+    }
+
+    .movie-card:hover {
+      transform: scale(1.03);
+    }
+
+    .movie-card img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .movie-content {
+      padding: 15px;
+    }
+
+    .movie-title {
+      font-size: 18px;
+      font-weight: bold;
+      color: #ff0000;
+      margin-bottom: 5px;
+    }
+
+    .movie-details {
+      font-size: 14px;
+      color: #ff0000;
+    }
+
+    .movie-overview {
+      margin-top: 10px;
+      font-size: 14px;
+      color: #ff0303;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🌍 Worldwide Movie Finder</h1>
+    <input type="text" id="searchInput" placeholder="Search any movie...">
+    <div class="filters">
+      <select id="genreSelect">
+        <option value="">All Genres</option>
+      </select>
+      <select id="yearSelect">
+        <option value="">All Years</option>
+      </select>
+    </div>
+    <div class="movie-grid" id="movieResults"></div>
+  </div>
+
+  <script>
+    const apiKey = "2e3593534046ea4d1c2eeeab69ccad02";
+    const searchInput = document.getElementById("searchInput");
+    const genreSelect = document.getElementById("genreSelect");
+    const yearSelect = document.getElementById("yearSelect");
+    const movieResults = document.getElementById("movieResults");
+
+    let page = 1;
+    let query = "";
+    let genres = {};
+    let totalPages = 1;
+
+    async function fetchGenres() {
+      const res = await fetch(`https://api.themoviedb.org/3/genre/movie/list?api_key=${apiKey}`);
+      const data = await res.json();
+      data.genres.forEach(genre => {
+        genres[genre.id] = genre.name;
+        const option = document.createElement("option");
+        option.value = genre.id;
+        option.textContent = genre.name;
+        genreSelect.appendChild(option);
+      });
+    }
+
+    function populateYears() {
+      const currentYear = new Date().getFullYear();
+      for (let y = currentYear; y >= 1900; y--) {
+        const option = document.createElement("option");
+        option.value = y;
+        option.textContent = y;
+        yearSelect.appendChild(option);
+      }
+    }
+
+    async function searchMovies(loadMore = false) {
+      if (!loadMore) {
+        movieResults.innerHTML = "";
+        page = 1;
+      }
+
+      const genre = genreSelect.value;
+      const year = yearSelect.value;
+      const url = `https://api.themoviedb.org/3/search/movie?api_key=${apiKey}&query=${encodeURIComponent(query)}&page=${page}&language=en-US&include_adult=false` +
+        (genre ? `&with_genres=${genre}` : "") +
+        (year ? `&primary_release_year=${year}` : "");
+
+      const response = await fetch(url);
+      const data = await response.json();
+      totalPages = data.total_pages;
+      displayMovies(data.results);
+    }
+
+    function displayMovies(movies) {
+      movies.forEach(movie => {
+        const poster = movie.poster_path 
+          ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` 
+          : 'https://via.placeholder.com/500x750?text=No+Image';
+
+        const card = document.createElement("div");
+        card.className = "movie-card";
+        card.innerHTML = `
+          <img src="${poster}" alt="${movie.title}">
+          <div class="movie-content">
+            <div class="movie-title">${movie.title}</div>
+            <div class="movie-details">⭐ ${movie.vote_average} | 📅 ${movie.release_date}</div>
+            <div class="movie-overview">${movie.overview.substring(0, 100)}...</div>
+          </div>
+        `;
+        movieResults.appendChild(card);
+      });
+    }
+
+    window.addEventListener("scroll", () => {
+      if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 100 && page < totalPages) {
+        page++;
+        searchMovies(true);
+      }
+    });
+
+    searchInput.addEventListener("input", () => {
+      query = searchInput.value.trim();
+      if (query.length >= 2) searchMovies();
+      else movieResults.innerHTML = "";
+    });
+
+    genreSelect.addEventListener("change", () => { if (query) searchMovies(); });
+    yearSelect.addEventListener("change", () => { if (query) searchMovies(); });
+
+    fetchGenres();
+    populateYears();
+  </script>
+</body>
+</html>

@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>IP Address Finder</title>
+<style>
+  body {
+    margin: 0; padding: 0;
+    background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+    color: red;
+    font-family: 'Consolas', monospace;
+    display: flex; flex-direction: column; height: 100vh;
+  }
+  header {
+    padding: 12px 20px;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  label {
+    font-weight: bold;
+    font-size: 14px;
+  }
+  input[type=text], input[type=button] {
+    font-family: monospace;
+    font-size: 14px;
+    padding: 6px 12px;
+    border-radius: 4px;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    background: rgba(0,0,0,0.5);
+    color: red;
+  }
+  input[type=button] {
+    background: red;
+    color: green;
+    border: none;
+  }
+  input[type=button]:hover {
+    background: rgba(0,0,0,0.5);
+  }
+  input[type=text] {
+    flex-grow: 1;
+    min-width: 180px;
+  }
+  #logContainer {
+    flex-grow: 1;
+    overflow-y: auto;
+    background: rgba(0,0,0,0.5);
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  thead tr {
+    background: rgba(0,0,0,0.5);
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+  th, td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #333;
+    white-space: nowrap;
+    text-align: left;
+  }
+  tbody tr:hover {
+    background: #333;
+  }
+  #loadingIndicator {
+    padding: 10px 0;
+    text-align: center;
+    color: red;
+    font-style: italic;
+  }
+  #ipCount {
+    font-weight: bold;
+    font-size: 14px;
+    margin-left: auto;
+    color: #27ae60;
+  }
+  @media (max-width: 600px) {
+    th, td {
+      padding: 6px 8px;
+      font-size: 11px;
+    }
+    input[type=text], input[type=button] {
+      font-size: 12px;
+      padding: 5px 10px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <label for="ipPatternInput">Customize IP Pattern:</label>
+  <input type="text" id="ipPatternInput" placeholder="Enter IP or partial IP (e.g. 122.12)" aria-label="Customize IP pattern" />
+  <input type="button" id="generateBtn" value="Generate Logs" aria-label="Generate logs for IP pattern" />
+  <input type="text" id="searchInput" placeholder="Search logs..." aria-label="Search logs" />
+  <input type="button" id="downloadBtn" value="Download Logs" aria-label="Download generated logs" />
+  <div id="ipCount" aria-live="polite" aria-atomic="true">Unique IPs: 0</div>
+</header>
+
+<div id="logContainer" tabindex="0" aria-live="polite" aria-relevant="additions">
+  <table role="grid" aria-rowcount="0" aria-colcount="5" aria-label="Generated logs">
+    <thead>
+      <tr>
+        <th scope="col">IP Address</th>
+        <th scope="col">Date</th>
+        <th scope="col">Time</th>
+        <th scope="col">User-Agent</th>
+      </tr>
+    </thead>
+    <tbody id="logBody"></tbody>
+  </table>
+  <div id="loadingIndicator" hidden>Loading...</div>
+</div>
+
+<script>
+(() => {
+  const ipPatternInput = document.getElementById('ipPatternInput');
+  const generateBtn = document.getElementById('generateBtn');
+  const searchInput = document.getElementById('searchInput');
+  const logBody = document.getElementById('logBody');
+  const logContainer = document.getElementById('logContainer');
+  const loadingIndicator = document.getElementById('loadingIndicator');
+  const downloadBtn = document.getElementById('downloadBtn');
+  const ipCountDiv = document.getElementById('ipCount');
+
+  // Simplified user agents list (static, no OS or browser versions)
+  const userAgents = [
+    "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 12_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Safari/605.1.15",
+    "Mozilla/5.0 (X11; Linux x86_64) Gecko/20100101 Firefox/116.0",
+    "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0 Mobile Safari/537.36",
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1"
+  ];
+
+  function randInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  // Generate IP matching the pattern (partial IP)
+  // pattern example: "122.12" means first two octets fixed, last two random
+  function generateIPFromPattern(pattern) {
+    if (!pattern) return randomIP();
+
+    const parts = pattern.split('.');
+    if (parts.length > 4) return randomIP();
+
+    // Validate each part if numeric and in 0-255 range or empty
+    for (let p of parts) {
+      if (p !== '' && (isNaN(p) || p < 0 || p > 255)) {
+        return randomIP();
+      }
+    }
+
+    // Build IP with fixed parts from pattern, random for missing parts
+    const ipParts = [];
+    for (let i = 0; i < 4; i++) {
+      if (i < parts.length && parts[i] !== '') {
+        ipParts.push(parts[i]);
+      } else {
+        // For last octet, avoid 0 and 255 for realism
+        if (i === 0) ipParts.push(randInt(1, 255));
+        else if (i === 3) ipParts.push(randInt(1, 254));
+        else ipParts.push(randInt(0, 255));
+      }
+    }
+    return ipParts.join('.');
+  }
+
+  function randomIP() {
+    return `${randInt(1, 255)}.${randInt(0, 255)}.${randInt(0, 255)}.${randInt(1, 254)}`;
+  }
+
+  function randomDate() {
+    const year = 2022;
+    const month = randInt(1, 12);
+    const day = randInt(1, 28);
+    return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  }
+
+  function randomTime() {
+    const hour = randInt(0, 23);
+    const minute = randInt(0, 59);
+    const second = randInt(0, 59);
+    return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:${String(second).padStart(2, '0')}`;
+  }
+
+  function generateUserAgent() {
+    return userAgents[randInt(0, userAgents.length - 1)];
+  }
+
+  const BATCH_SIZE = 50;
+
+  let totalLogsGenerated = 0;
+  let currentIPPattern = null;
+  let allEntries = [];
+  let uniqueIPs = new Set();
+
+  function createRow(entry) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${entry.ip}</td>
+      <td>${entry.date}</td>
+      <td>${entry.time}</td>
+      <td>${entry.userAgent}</td>
+    `;
+    return tr;
+  }
+
+  function generateLogEntryForIPPattern(pattern) {
+    const ip = generateIPFromPattern(pattern);
+    return {
+      ip,
+      date: randomDate(),
+      time: randomTime(),
+      userAgent: generateUserAgent()
+    };
+  }
+
+  function loadMoreLogs() {
+    loadingIndicator.hidden = false;
+    setTimeout(() => {
+      const fragment = document.createDocumentFragment();
+      for (let i = 0; i < BATCH_SIZE; i++, totalLogsGenerated++) {
+        const entry = generateLogEntryForIPPattern(currentIPPattern);
+        allEntries.push(entry);
+        uniqueIPs.add(entry.ip);
+        fragment.appendChild(createRow(entry));
+      }
+      logBody.appendChild(fragment);
+      loadingIndicator.hidden = true;
+      updateAriaRowCount();
+      updateIPCount();
+    }, 100);
+  }
+
+  function resetLogs() {
+    totalLogsGenerated = 0;
+    allEntries = [];
+    uniqueIPs.clear();
+    logBody.innerHTML = '';
+    loadingIndicator.textContent = 'Loading...';
+    loadingIndicator.hidden = true;
+    updateAriaRowCount();
+    updateIPCount();
+  }
+
+  function filterLogs() {
+    const filter = searchInput.value.toLowerCase();
+    if (!filter) {
+      [...logBody.children].forEach(tr => tr.style.display = "");
+      return;
+    }
+    [...logBody.children].forEach(tr => {
+      const haystack = tr.textContent.toLowerCase();
+      tr.style.display = haystack.includes(filter) ? "" : "none";
+    });
+  }
+
+  function updateAriaRowCount() {
+    const totalRows = logBody.children.length;
+    logBody.parentElement.setAttribute('aria-rowcount', totalRows);
+  }
+
+  function updateIPCount() {
+    ipCountDiv.textContent = `Unique IPs: ${uniqueIPs.size}`;
+  }
+
+  logContainer.addEventListener('scroll', () => {
+    if (loadingIndicator.hidden &&
+        (logContainer.scrollTop + logContainer.clientHeight >= logContainer.scrollHeight - 50) &&
+        searchInput.value.trim() === '') {
+      loadMoreLogs();
+    }
+  });
+
+  generateBtn.addEventListener('click', () => {
+    const pattern = ipPatternInput.value.trim();
+    // Validate pattern: allow empty or partial IPs with 1-4 octets
+    if (pattern !== '') {
+      const parts = pattern.split('.');
+      if (parts.length > 4) {
+        alert('Invalid IP pattern: too many octets.');
+        return;
+      }
+      for (let p of parts) {
+        if (p !== '' && (isNaN(p) || p < 0 || p > 255)) {
+          alert('Invalid IP pattern: octets must be numbers 0-255.');
+          return;
+        }
+      }
+    }
+    currentIPPattern = pattern;
+    resetLogs();
+    loadMoreLogs();
+    searchInput.value = '';
+  });
+
+  searchInput.addEventListener('input', () => {
+    filterLogs();
+  });
+
+  downloadBtn.addEventListener('click', () => {
+    const csvContent = "data:text/csv;charset=utf-8," + 
+      "IP Address,Date,Time,User-Agent\n" + 
+      allEntries.map(e => `${e.ip},${e.date},${e.time},${e.userAgent}`).join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "logs.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  });
+
+  // Initialize with empty pattern (random IPs)
+  currentIPPattern = "";
+  ipPatternInput.value = "";
+  resetLogs();
+  loadMoreLogs();
+})();
+</script>
+
+</body>
+</html>

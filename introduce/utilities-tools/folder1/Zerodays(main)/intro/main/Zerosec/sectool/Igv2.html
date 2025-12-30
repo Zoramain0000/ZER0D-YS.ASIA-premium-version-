@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Instagram Media Downloader</title>
+  <style>
+    body {
+    background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: #ff0000;
+      font-family: 'Segoe UI', sans-serif;
+      padding: 20px;
+      max-width: 800px;
+      margin: auto;
+    }
+    h1 {
+      color: #ff0000;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    textarea {
+      width: 100%;
+      height: 200px;
+      background: #00000049;
+      border: 1px solid #ff0000;
+      border-radius: 8px;
+      padding: 10px;
+      color: #ff0000;
+      font-size: 14px;
+      resize: vertical;
+    }
+    button {
+      margin-top: 10px;
+      background-color: #ff0000;
+      border: none;
+      padding: 12px 20px;
+      font-size: 16px;
+      color: #00ff40;
+      cursor: pointer;
+      border-radius: 6px;
+      width: 100%;
+    }
+    button:hover {
+      background-color: #00000038;
+    }
+    .media {
+      margin-top: 30px;
+      text-align: center;
+    }
+    .media img, .media video {
+      max-width: 100%;
+      margin-top: 20px;
+      border-radius: 10px;
+    }
+    .download-link {
+      display: inline-block;
+      margin-top: 10px;
+      background: #0000002a;
+      color: rgb(255, 0, 0);
+      padding: 10px 15px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    .note {
+      font-size: 14px;
+      margin-top: 15px;
+      opacity: 0.8;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Instagram Image/Video Downloader</h1>
+  <p class="note">🔐 Paste Instagram post <strong>HTML source</strong> or <strong>media URLs</strong> below (right-click → “View Page Source” on Instagram, then copy).</p>
+
+  <textarea id="inputArea" placeholder="Paste Instagram post HTML source code here..."></textarea>
+  <button onclick="extractMedia()">Extract & Download</button>
+
+  <div id="mediaDisplay" class="media"></div>
+
+  <script>
+    function extractMedia() {
+      const input = document.getElementById('inputArea').value;
+      const mediaContainer = document.getElementById('mediaDisplay');
+      mediaContainer.innerHTML = '';
+
+      const imgRegex = /https:\/\/[^"' ]+\.cdninstagram\.com[^"' ]+\.jpg[^"' ]*/g;
+      const videoRegex = /https:\/\/[^"' ]+\.cdninstagram\.com[^"' ]+\.mp4[^"' ]*/g;
+
+      const images = [...new Set(input.match(imgRegex))];
+      const videos = [...new Set(input.match(videoRegex))];
+
+      if (images.length === 0 && videos.length === 0) {
+        mediaContainer.innerHTML = "<p>No media found. Make sure to paste the full page source.</p>";
+        return;
+      }
+
+      images.forEach(url => {
+        mediaContainer.innerHTML += `
+          <img src="${url}" alt="Instagram Image">
+          <br><a class="download-link" href="${url}" download target="_blank">Download Image</a><br><br>
+        `;
+      });
+
+      videos.forEach(url => {
+        mediaContainer.innerHTML += `
+          <video controls src="${url}"></video>
+          <br><a class="download-link" href="${url}" download target="_blank">Download Video</a><br><br>
+        `;
+      });
+    }
+  </script>
+</body>
+</html>

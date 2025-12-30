@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>🛰️ Ultra Tracker </title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+    }
+    header {
+      padding: 10px;
+background: rgba(0,0,0,0.5);
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+    }
+    input, button, select {
+      padding: 8px;
+      font-size: 14px;
+      border-radius: 4px;
+      border: none;
+background: rgba(0,0,0,0.5);
+    }
+    button {
+      cursor: pointer;
+background: rgba(0,0,0,0.5);
+color: red;
+    }
+    #map {
+      height: 70vh;
+      width: 100%;
+    }
+    #errorMsg {
+      display: none;
+      padding: 10px;
+background: rgba(0,0,0,0.5);
+      text-align: center;
+      color: red;
+      font-weight: bold;
+    }
+    #savedMarkersList {
+      padding: 10px;
+background: rgba(0,0,0,0.5);
+      margin: 10px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+background: rgba(0,0,0,0.5);
+    }
+    th, td {
+      padding: 8px;
+      border: 1px solid red;
+      text-align: left;
+    }
+    th {
+background: rgba(0,0,0,0.5);
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <input type="text" id="ipInput" placeholder="Enter IP address" />
+  <button onclick="trackIP()">Track IP</button>
+  <select id="mapProvider" onchange="switchMapProvider()">
+    <option value="openstreetmap">OpenStreetMap</option>
+    <option value="google">Google Maps</option>
+  </select>
+  <button onclick="setMapType('roadmap')">Roadmap</button>
+  <button onclick="setMapType('satellite')">Satellite</button>
+  <button onclick="setMapType('hybrid')">Hybrid</button>
+  <button onclick="setMapType('terrain')">Terrain</button>
+  <button onclick="toggleOSMDark()" id="osmToggle">🌙 OSM Dark Mode</button>
+  <button onclick="clearMarkers()">Clear</button>
+  <button onclick="exportMarkers('json')">⬇ Export JSON</button>
+  <button onclick="exportMarkers('csv')">⬇ Export CSV</button>
+  <button onclick="toggleSaved()">📌 Saved Marks & History</button>
+</header>
+
+<div id="errorMsg">Google Maps API Error: Billing not enabled or invalid API key.</div>
+<div id="map"></div>
+<div id="savedMarkersList" style="display:none;"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  let leafletMap, leafletMarker, leafletTileLayer;
+  let googleMap, googleMarker;
+  let currentProvider = 'openstreetmap';
+  let savedMarkers = JSON.parse(localStorage.getItem('savedMarkers') || '[]');
+  let isOSMDark = true;
+
+  const tileLight = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+  const tileDark = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+
+  function initLeafletMap() {
+    leafletMap = L.map('map').setView([14.5995, 120.9842], 5);
+    const tileURL = isOSMDark ? tileDark : tileLight;
+    leafletTileLayer = L.tileLayer(tileURL, {
+      attribution: '&copy; OpenStreetMap & CartoDB contributors'
+    }).addTo(leafletMap);
+  }
+
+  function initGoogleMap() {
+    try {
+      googleMap = new google.maps.Map(document.getElementById("map"), {
+        center: { lat: 14.5995, lng: 120.9842 },
+        zoom: 5,
+        mapTypeId: "roadmap"
+      });
+    } catch (e) {
+      document.getElementById('errorMsg').style.display = 'block';
+    }
+  }
+
+  function switchMapProvider() {
+    document.getElementById('map').innerHTML = '';
+    if (leafletMap) { leafletMap.remove(); leafletMap = null; }
+    if (googleMap) { googleMap = null; }
+
+    currentProvider = document.getElementById('mapProvider').value;
+    if (currentProvider === 'google') {
+      initGoogleMap();
+      document.getElementById('osmToggle').style.display = 'none';
+    } else {
+      initLeafletMap();
+      document.getElementById('osmToggle').style.display = 'inline-block';
+    }
+  }
+
+  function toggleOSMDark() {
+    isOSMDark = !isOSMDark;
+    if (currentProvider === 'openstreetmap' && leafletMap) {
+      leafletMap.removeLayer(leafletTileLayer);
+      const tileURL = isOSMDark ? tileDark : tileLight;
+      leafletTileLayer = L.tileLayer(tileURL, {
+        attribution: '&copy; OpenStreetMap & CartoDB contributors'
+      }).addTo(leafletMap);
+      document.getElementById('osmToggle').innerText = isOSMDark ? '🌙 OSM Dark Mode' : '☀️ OSM Light Mode';
+    }
+  }
+
+  function setMapType(type) {
+    if (currentProvider === 'google' && googleMap) {
+      googleMap.setMapTypeId(type);
+    }
+  }
+
+  function saveMarker(data) {
+    savedMarkers.push(data);
+    localStorage.setItem('savedMarkers', JSON.stringify(savedMarkers));
+  }
+
+  function clearMarkers() {
+    savedMarkers = [];
+    localStorage.removeItem('savedMarkers');
+    document.getElementById('savedMarkersList').innerHTML = '';
+    if (leafletMarker && leafletMap) leafletMap.removeLayer(leafletMarker);
+    if (googleMarker && googleMap) googleMarker.setMap(null);
+  }
+
+  function toggleSaved() {
+    const div = document.getElementById('savedMarkersList');
+    div.style.display = div.style.display === 'none' ? 'block' : 'none';
+    if (div.style.display === 'block') {
+      div.innerHTML = `<table><thead><tr><th>IP</th><th>City</th><th>Country</th><th>Lat</th><th>Lng</th><th>ASN</th><th>Org</th><th>Reverse</th></tr></thead><tbody>` +
+        savedMarkers.map(m => `<tr><td>${m.ip}</td><td>${m.city}</td><td>${m.country}</td><td>${m.latitude}</td><td>${m.longitude}</td><td>${m.asn?.asn || 'N/A'}</td><td>${m.connection?.org || 'N/A'}</td><td>${m.reverse || 'N/A'}</td></tr>`).join('') +
+        `</tbody></table>`;
+    }
+  }
+
+  function exportMarkers(type) {
+    if (savedMarkers.length === 0) return alert('No markers to export.');
+    let dataStr = '', filename = 'markers';
+    if (type === 'json') {
+      dataStr = JSON.stringify(savedMarkers, null, 2);
+      downloadFile(dataStr, filename + '.json', 'application/json');
+    } else if (type === 'csv') {
+      const headers = Object.keys(savedMarkers[0]).join(',');
+      const rows = savedMarkers.map(m => Object.values(m).join(',')).join('\n');
+      dataStr = headers + '\n' + rows;
+      downloadFile(dataStr, filename + '.csv', 'text/csv');
+    }
+  }
+
+  function downloadFile(data, filename, mime) {
+    const blob = new Blob([data], { type: mime });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    link.click();
+  }
+
+  function trackIP() {
+    const ip = document.getElementById("ipInput").value.trim();
+    if (!ip) return alert("Please enter an IP address.");
+    fetch(`https://ipwho.is/${ip}`)
+      .then(res => res.json())
+      .then(data => {
+        if (!data.success) return alert("IP lookup failed: " + data.message);
+        const loc = { lat: data.latitude, lng: data.longitude };
+        const info = {
+          ip: data.ip,
+          city: data.city || 'Unknown',
+          country: data.country || 'Unknown',
+          latitude: data.latitude,
+          longitude: data.longitude,
+          reverse: data.reverse || '',
+          asn: data.asn || '',
+          connection: data.connection || ''
+        };
+        if (currentProvider === 'google') {
+          googleMap.setCenter(loc); googleMap.setZoom(10);
+          if (googleMarker) googleMarker.setMap(null);
+          googleMarker = new google.maps.Marker({
+            position: loc, map: googleMap,
+            title: `${data.ip}\n${data.city}, ${data.country}`,
+          });
+        } else {
+          leafletMap.setView([loc.lat, loc.lng], 10);
+          if (leafletMarker) leafletMap.removeLayer(leafletMarker);
+          leafletMarker = L.marker([loc.lat, loc.lng]).addTo(leafletMap)
+            .bindPopup(`${data.ip}<br>${data.city}, ${data.country}`).openPopup();
+        }
+        saveMarker(info);
+      })
+      .catch(err => alert("Error fetching IP info."));
+  }
+
+  window.onload = () => {
+    initLeafletMap();
+    document.getElementById('osmToggle').style.display = 'inline-block';
+  };
+</script>
+
+<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCRVwhea4-9zMaz66NGmwVN1ILFUxm9aYQ&callback=initGoogleMap"></script>
+</body>
+</html>

@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>🌍 Unlimited IP Lookup Tool</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      background: #0f172a;
+      color: #f8fafc;
+      font-family: 'Segoe UI', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem;
+    }
+    h1 {
+      color: #38bdf8;
+      margin-bottom: 1rem;
+      font-size: 1.8rem;
+    }
+    input, select, button {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #f8fafc;
+      padding: 0.7rem 1rem;
+      margin: 0.3rem;
+      font-size: 1rem;
+      border-radius: 0.5rem;
+      transition: all 0.2s ease-in-out;
+    }
+    input:focus, select:focus {
+      outline: none;
+      border-color: #38bdf8;
+      box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.3);
+    }
+    button {
+      background-color: #2563eb;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #1d4ed8;
+    }
+    .actions {
+      margin-top: 0.5rem;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+    .results {
+      background: #1e293b;
+      padding: 1.5rem;
+      border-radius: 1rem;
+      margin-top: 2rem;
+      max-width: 700px;
+      width: 100%;
+      white-space: pre-wrap;
+      overflow-x: auto;
+      box-shadow: 0 0 20px rgba(30, 58, 138, 0.5);
+    }
+    #map {
+      height: 300px;
+      width: 100%;
+      max-width: 700px;
+      margin-top: 2rem;
+      border-radius: 1rem;
+      border: 2px solid #1e40af;
+      box-shadow: 0 0 20px rgba(30, 58, 138, 0.5);
+    }
+    .error {
+      color: #f87171;
+      margin-top: 1rem;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🌍 Free Unlimited IP Lookup Tool</h1>
+
+  <div>
+    <input id="ipInput" type="text" placeholder="Enter IP (or leave blank for your IP)" />
+    <select id="lang">
+      <option value="en">English</option>
+      <option value="fr">Français</option>
+      <option value="zh">简体中文</option>
+      <option value="de">Deutsch</option>
+      <option value="es">Español</option>
+    </select>
+  </div>
+
+  <div class="actions">
+    <button onclick="lookupIP()">Lookup</button>
+    <button onclick="copyToClipboard()">📋 Copy</button>
+    <button onclick="exportJSON()">📄 Export JSON</button>
+    <button onclick="exportCSV()">📄 Export CSV</button>
+  </div>
+
+  <div id="output" class="results"></div>
+  <div id="map"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    let currentData = null;
+    let map, marker;
+
+    async function lookupIP() {
+      const ip = document.getElementById('ipInput').value.trim();
+      const lang = document.getElementById('lang').value;
+      const output = document.getElementById('output');
+      output.innerHTML = '';
+      currentData = null;
+
+      const apiUrl = ip
+        ? `https://ipwho.is/${ip}?lang=${lang}`
+        : `https://ipwho.is/?lang=${lang}`;
+
+      try {
+        const res = await fetch(apiUrl);
+        const data = await res.json();
+
+        if (!data.success) {
+          output.innerHTML = `<div class="error">❌ Error: ${data.message || 'Invalid IP'}</div>`;
+          return;
+        }
+
+        currentData = {
+          ip: data.ip,
+          country: data.country || 'N/A',
+          region: data.region || 'N/A',
+          city: data.city || 'N/A',
+          latitude: data.latitude,
+          longitude: data.longitude,
+          asn: data.connection?.asn || 'N/A',
+          org: data.connection?.org || 'N/A',
+          isp: data.connection?.isp || 'N/A'
+        };
+
+        output.innerHTML = `<pre id="resultText">${JSON.stringify(currentData, null, 2)}</pre>`;
+        updateMap(data.latitude, data.longitude, data.ip);
+      } catch (err) {
+        console.error(err);
+        output.innerHTML = '<div class="error">❌ Failed to fetch IP data.</div>';
+      }
+    }
+
+    function copyToClipboard() {
+      const resultText = document.getElementById('resultText');
+      if (!resultText) return alert('No result to copy.');
+      navigator.clipboard.writeText(resultText.innerText)
+        .then(() => alert('📋 Copied to clipboard!'))
+        .catch(() => alert('❌ Copy failed.'));
+    }
+
+    function exportJSON() {
+      if (!currentData) return alert('No data to export.');
+      const blob = new Blob([JSON.stringify(currentData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      downloadFile(url, 'ip-lookup.json');
+    }
+
+    function exportCSV() {
+      if (!currentData) return alert('No data to export.');
+      const keys = Object.keys(currentData);
+      const values = keys.map(k => `"${currentData[k]}"`);
+      const csv = keys.join(',') + '\n' + values.join(',');
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      downloadFile(url, 'ip-lookup.csv');
+    }
+
+    function downloadFile(url, filename) {
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function updateMap(lat, lon, label) {
+      if (!lat || !lon) {
+        document.getElementById('map').style.display = 'none';
+        return;
+      }
+      document.getElementById('map').style.display = 'block';
+
+      if (!map) {
+        map = L.map('map').setView([lat, lon], 8);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+        marker = L.marker([lat, lon]).addTo(map);
+      } else {
+        map.setView([lat, lon], 8);
+        marker.setLatLng([lat, lon]);
+      }
+      marker.bindPopup(`<b>${label}</b><br>${lat}, ${lon}`).openPopup();
+    }
+
+    // Hide map initially
+    document.getElementById('map').style.display = 'none';
+  </script>
+</body>
+</html>

@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Company Website Finder lite </title>
+<style>
+  /* Reset and base */
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+    color: red;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+  }
+  h1 {
+    text-align: center;
+    color: red;
+    margin-bottom: 0.2rem;
+    user-select: none;
+    font-size: clamp(1.8rem, 4vw, 2.5rem);
+  }
+  p.description {
+    text-align: center;
+    color: red;
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+    user-select: none;
+    font-size: clamp(0.9rem, 2vw, 1.1rem);
+  }
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    background: rgba(0,0,0,0.5);
+    border-radius: 12px;
+    padding: 1.5rem 2rem;
+    box-shadow: 0 0 15px rgba(0,0,0,0.5);
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    flex-grow: 1;
+  }
+  label {
+    font-weight: 700;
+    margin-bottom: 0.3rem;
+    display: block;
+    color: red;
+    font-size: clamp(1rem, 2vw, 1.2rem);
+  }
+  textarea {
+    width: 100%;
+    min-height: 100px;
+    background: rgba(0,0,0,0.5);
+    border: none;
+    border-radius: 8px;
+    padding: 0.8rem;
+    font-size: clamp(0.9rem, 1.5vw, 1.1rem);
+    color: #eee;
+    resize: vertical;
+    font-family: monospace;
+    transition: background-color 0.3s ease;
+  }
+  textarea::placeholder {
+    color: red;
+  }
+  textarea:focus {
+    background: rgba(0,0,0,0.5);
+    color: red;
+    outline: none;
+  }
+  button {
+    background: red;
+    border: none;
+    color: green;
+    font-weight: 700;
+    font-size: clamp(1rem, 2vw, 1.2rem);
+    padding: 0.8rem 1.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.3s ease;
+    flex-grow: 1;
+    min-width: 120px;
+  }
+  button:hover:not(:disabled) {
+    background: rgba(0,0,0,0.5);
+  }
+  button:disabled {
+    background: rgba(0,0,0,0.5);
+    cursor: not-allowed;
+  }
+  .actions {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  section {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  section h2 {
+    color: red;
+    user-select: none;
+    margin: 0 0 0.5rem 0;
+    font-size: clamp(1.2rem, 2vw, 1.5rem);
+  }
+  .results, .log-container {
+    background: rgba(0,0,0,0.5);
+    border-radius: 10px;
+    padding: 1rem;
+    overflow-y: auto;
+    font-size: clamp(0.8rem, 1.2vw, 1rem);
+    flex-grow: 1;
+    min-height: 150px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    word-wrap: break-word;
+    background: rgba(0,0,0,0.5);
+  }
+  thead tr {
+    background: rgba(0,0,0,0.5);
+    color: black;
+  }
+  th, td {
+    padding: 0.6rem 0.8rem;
+    border-bottom: 1px solid red;
+    text-align: left;
+    vertical-align: middle;
+  }
+  th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+  td.status {
+    font-weight: 700;
+  }
+  td.status.found {
+    color: green;
+  }
+  td.status.notfound {
+    color: red;
+  }
+  .log-container {
+    font-family: monospace;
+    white-space: pre-wrap;
+    background: #111;
+    color: red;
+  }
+  .logo-img {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    border-radius: 4px;
+    margin-right: 6px;
+    vertical-align: middle;
+  }
+  .domain-link {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .confidence {
+    font-size: 0.8rem;
+    color: red;
+    margin-left: 4px;
+  }
+  @media (max-width: 600px) {
+    .container {
+      padding: 1rem;
+    }
+    button {
+      min-width: unset;
+      flex-grow: 1;
+    }
+    th, td {
+      font-size: 0.75rem;
+      padding: 0.4rem 0.5rem;
+    }
+    .logo-img {
+      width: 20px;
+      height: 20px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<h1>🔍 Company Website Finder </h1>
+<p class="description">Enter company names to find their websites using Clearout Autocomplete API and generate detailed logs. Add more companies anytime to load more results.</p>
+
+<div class="container" role="main" aria-label="Company website finder tool">
+  <label for="companyInput">Enter Company Names (comma or newline separated):</label>
+  <textarea id="companyInput" aria-describedby="inputHelp" placeholder="Example:&#10;OpenAI&#10;Google, Microsoft"></textarea>
+
+  <div class="actions" role="group" aria-label="Action buttons">
+    <button id="findBtn" type="button">Find Websites</button>
+    <button id="exportLogBtn" type="button" disabled>Export Logs as CSV</button>
+    <button id="clearLogBtn" type="button" disabled>Clear Logs</button>
+  </div>
+
+  <section aria-live="polite" aria-atomic="true" aria-relevant="additions">
+    <h2>Results (Scroll to see all)</h2>
+    <div class="results" id="resultsArea" tabindex="0" aria-label="Search results table container">
+      <em>No results yet. Start by entering company names and clicking "Find Websites".</em>
+    </div>
+  </section>
+
+  <section aria-live="polite" aria-atomic="true" aria-relevant="additions">
+    <h2>Logs</h2>
+    <div class="log-container" id="logArea" tabindex="0" aria-label="Logs output area">
+      <em>Logs will appear here...</em>
+    </div>
+  </section>
+</div>
+
+<script>
+(() => {
+  const companyInput = document.getElementById('companyInput');
+  const findBtn = document.getElementById('findBtn');
+  const exportLogBtn = document.getElementById('exportLogBtn');
+  const clearLogBtn = document.getElementById('clearLogBtn');
+  const resultsArea = document.getElementById('resultsArea');
+  const logArea = document.getElementById('logArea');
+
+  let logs = [];
+  let results = [];
+
+  // Clearout Autocomplete API endpoint
+  const API_BASE = 'https://api.clearout.io/public/companies/autocomplete?query=';
+
+  // Escape HTML to prevent injection
+  function escapeHtml(text) {
+    return text.replace(/[&<>"']/g, (m) => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    })[m]);
+  }
+
+  // Parse input into array of unique trimmed company names
+  function parseCompanies(input) {
+    if (!input) return [];
+    // Split by comma or newline, trim, filter empty, unique
+    const raw = input.split(/[\n,]+/).map(s => s.trim()).filter(Boolean);
+    return [...new Set(raw)];
+  }
+
+  // Add a log entry
+  function addLog(entry) {
+    logs.push(entry);
+    updateLogArea();
+    exportLogBtn.disabled = false;
+    clearLogBtn.disabled = false;
+  }
+
+  // Update the log display area
+  function updateLogArea() {
+    if (logs.length === 0) {
+      logArea.innerHTML = '<em>Logs will appear here...</em>';
+      exportLogBtn.disabled = true;
+      clearLogBtn.disabled = true;
+      return;
+    }
+    const logText = logs.map(log => {
+      return `[${log.timestamp}] Company: "${log.company}" - Status: ${log.status}` +
+        (log.websites && log.websites.length > 0
+          ? ` - Websites: ${log.websites.map(w => w.domain).join(', ')}`
+          : '');
+    }).join('\n');
+    logArea.textContent = logText;
+    logArea.scrollTop = logArea.scrollHeight;
+  }
+
+  // Render results table
+  function renderResults() {
+    if (results.length === 0) {
+      resultsArea.innerHTML = '<em>No results yet. Start by entering company names and clicking "Find Websites".</em>';
+      return;
+    }
+    const table = document.createElement('table');
+    table.setAttribute('role', 'table');
+    table.setAttribute('aria-label', 'Company website search results');
+    table.innerHTML = `
+      <thead>
+        <tr role="row">
+          <th role="columnheader" scope="col" style="width:4ch;">#</th>
+          <th role="columnheader" scope="col" style="width:20%;">Company</th>
+          <th role="columnheader" scope="col" style="width:50%;">Website(s) & Confidence</th>
+          <th role="columnheader" scope="col" style="width:12%;">Status</th>
+          <th role="columnheader" scope="col" style="width:14%;">Timestamp</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${results.map((r, i) => `
+          <tr role="row">
+            <td role="cell">${i + 1}</td>
+            <td role="cell">${escapeHtml(r.company)}</td>
+            <td role="cell">
+              ${r.websites && r.websites.length > 0
+                ? r.websites.map(w => `
+                  <div class="domain-link">
+                    <img class="logo-img" src="${escapeHtml(w.logo_url)}" alt="logo" loading="lazy" onerror="this.style.display='none'"/>
+                    <a href="https://${escapeHtml(w.domain)}" target="_blank" rel="noopener noreferrer">${escapeHtml(w.domain)}</a>
+                    <span class="confidence">(${w.confidence_score}%)</span>
+                  </div>
+                `).join('')
+                : '-'}
+            </td>
+            <td role="cell" class="status ${r.status === 'Found' ? 'found' : 'notfound'}">${r.status}</td>
+            <td role="cell">${new Date(r.timestamp).toLocaleString()}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    `;
+    resultsArea.innerHTML = '';
+    resultsArea.appendChild(table);
+  }
+
+  // Fetch company data from Clearout Autocomplete API
+  async function fetchCompanyData(company) {
+    const url = API_BASE + encodeURIComponent(company);
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        return { error: `HTTP error ${response.status}` };
+      }
+      const data = await response.json();
+      if (data.status === 'success' && Array.isArray(data.data) && data.data.length > 0) {
+        // Map to websites array with domain, confidence_score, logo_url
+        const websites = data.data.map(item => ({
+          domain: item.domain,
+          confidence_score: item.confidence_score,
+          logo_url: item.logo_url
+        }));
+        return { websites };
+      } else if (data.status === 'failed') {
+        return { error: data.error?.message || 'API returned failure' };
+      } else {
+        return { websites: [] };
+      }
+    } catch (err) {
+      return { error: err.message || 'Fetch error' };
+    }
+  }
+
+  // Main function to find websites for all companies
+  async function findWebsites() {
+    const input = companyInput.value;
+    const companies = parseCompanies(input);
+    if (companies.length === 0) {
+      alert('Please enter at least one company name.');
+      return;
+    }
+
+    findBtn.disabled = true;
+    findBtn.textContent = 'Finding...';
+
+    // Filter out companies already queried to avoid duplicates
+    const existingCompanies = new Set(results.map(r => r.company.toLowerCase()));
+    const newCompanies = companies.filter(c => !existingCompanies.has(c.toLowerCase()));
+
+    if (newCompanies.length === 0) {
+      alert('All entered companies have already been queried.');
+      findBtn.disabled = false;
+      findBtn.textContent = 'Find Websites';
+      return;
+    }
+
+    for (const company of newCompanies) {
+      const timestamp = new Date().toISOString();
+      const logEntry = {
+        company,
+        websites: [],
+        status: 'Not Found',
+        timestamp
+      };
+
+      const result = await fetchCompanyData(company);
+
+      if (result.error) {
+        logEntry.status = `Error: ${result.error}`;
+        addLog(logEntry);
+        results.push(logEntry);
+        renderResults();
+        continue;
+      }
+
+      if (result.websites.length > 0) {
+        logEntry.status = 'Found';
+        logEntry.websites = result.websites;
+      }
+
+      addLog(logEntry);
+      results.push(logEntry);
+      renderResults();
+    }
+
+    findBtn.disabled = false;
+    findBtn.textContent = 'Find Websites';
+  }
+
+  // Export logs as CSV
+  function exportLogsCSV() {
+    if (logs.length === 0) {
+      alert('No logs to export.');
+      return;
+    }
+    const header = ['Timestamp', 'Company', 'Websites', 'Status'];
+    const rows = logs.map(log => [
+      log.timestamp,
+      `"${log.company.replace(/"/g, '""')}"`,
+      log.websites && log.websites.length > 0
+        ? `"${log.websites.map(w => w.domain).join('; ').replace(/"/g, '""')}"`
+        : '',
+      `"${log.status.replace(/"/g, '""')}"`
+    ]);
+    const csvContent = [header, ...rows].map(e => e.join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'company_website_logs.csv';
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  // Clear logs and results
+  function clearLogs() {
+    if (!confirm('Are you sure you want to clear all logs and results?')) return;
+    logs = [];
+    results = [];
+    updateLogArea();
+    renderResults();
+  }
+
+  // Event listeners
+  findBtn.addEventListener('click', findWebsites);
+  exportLogBtn.addEventListener('click', exportLogsCSV);
+  clearLogBtn.addEventListener('click', clearLogs);
+
+  // Initial state
+  updateLogArea();
+  renderResults();
+})();
+</script>
+
+</body>
+</html>

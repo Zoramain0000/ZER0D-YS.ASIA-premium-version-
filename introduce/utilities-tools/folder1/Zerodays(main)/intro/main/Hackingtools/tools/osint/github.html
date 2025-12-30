@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>GitHub OSINT Tool</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+      padding: 20px;
+    }
+    h1 {
+      color: red;
+      text-align: center;
+    }
+    .container {
+      max-width: 800px;
+      margin: auto;
+background: rgba(0, 0, 0, 0.5)
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px red;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 6px;
+      border: none;
+      font-size: 16px;
+    }
+    button {
+      background: red;
+      color: green;
+      padding: 10px 20px;
+      border: none;
+      font-size: 16px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .profile {
+      display: flex;
+      gap: 20px;
+      margin-top: 20px;
+    }
+    .profile img {
+      border-radius: 10px;
+      width: 150px;
+    }
+    .info {
+      flex: 1;
+    }
+    .section {
+      margin-top: 20px;
+    }
+    a {
+      color: red;
+      text-decoration: none;
+    }
+    pre {
+background: rgba(0, 0, 0, 0.5)
+      padding: 10px;
+      white-space: pre-wrap;
+      border-left: 4px solid red;
+    }
+  </style>
+</head>
+<body>
+  <h1>🕵️ GitHub OSINT Tool</h1>
+  <div class="container">
+    <input type="text" id="username" placeholder="Enter GitHub username" />
+    <button onclick="runOSINT()">Run OSINT</button>
+
+    <div id="result" style="display:none;">
+      <div class="section profile" id="profile"></div>
+      <div class="section" id="repos"></div>
+      <div class="section" id="dorks"></div>
+      <div class="section">
+        <h3>📦 Export Data</h3>
+        <button onclick="exportTXT()">Export to TXT</button>
+        <pre id="exportText"></pre>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function runOSINT() {
+      const username = document.getElementById('username').value.trim();
+      if (!username) return alert("Enter a GitHub username");
+
+      document.getElementById('result').style.display = 'block';
+      const profileDiv = document.getElementById('profile');
+      const reposDiv = document.getElementById('repos');
+      const dorkDiv = document.getElementById('dorks');
+      const exportPre = document.getElementById('exportText');
+      profileDiv.innerHTML = 'Loading...';
+
+      let exportData = `GitHub OSINT Report for @${username}\n===============================\n`;
+
+      try {
+        const userRes = await fetch(`https://api.github.com/users/${username}`);
+        const user = await userRes.json();
+        if (user.message === "Not Found") throw new Error("User not found");
+
+        profileDiv.innerHTML = `
+          <img src="${user.avatar_url}" alt="Avatar" />
+          <div class="info">
+            <h2><a href="${user.html_url}" target="_blank">@${user.login}</a></h2>
+            <p>${user.name || ''}</p>
+            <p>${user.bio || ''}</p>
+            <p>📍 ${user.location || 'Unknown'}</p>
+            <p>📧 ${user.email || 'Hidden'}</p>
+            <p>🔗 <a href="${user.blog}" target="_blank">${user.blog}</a></p>
+            <p>🐦 <a href="https://twitter.com/${user.twitter_username}" target="_blank">@${user.twitter_username || 'N/A'}</a></p>
+            <p>👥 Followers: ${user.followers} | Following: ${user.following}</p>
+            <p>📁 Public Repos: ${user.public_repos}</p>
+          </div>
+        `;
+
+        exportData += `
+Username: @${user.login}
+Name: ${user.name || 'N/A'}
+Bio: ${user.bio || 'N/A'}
+Location: ${user.location || 'N/A'}
+Email: ${user.email || 'Hidden'}
+Blog: ${user.blog || 'N/A'}
+Twitter: ${user.twitter_username || 'N/A'}
+Followers: ${user.followers}
+Following: ${user.following}
+Public Repos: ${user.public_repos}
+Profile: ${user.html_url}
+Avatar: ${user.avatar_url}
+        `.trim();
+
+        const reposRes = await fetch(`https://api.github.com/users/${username}/repos?per_page=100`);
+        const repos = await reposRes.json();
+
+        let repoList = `<h3>📂 Public Repositories (${repos.length})</h3><ul>`;
+        repos.forEach(repo => {
+          repoList += `<li><a href="${repo.html_url}" target="_blank">${repo.name}</a>: ${repo.description || 'No description'}</li>`;
+        });
+        repoList += `</ul>`;
+        reposDiv.innerHTML = repoList;
+
+        exportData += `\n\nRepositories:\n`;
+        repos.forEach(repo => {
+          exportData += `- ${repo.name}: ${repo.html_url}\n`;
+        });
+
+        const dorks = [
+          ["Google: GitHub leaks", `https://www.google.com/search?q=site:github.com+${username}+password`],
+          ["Google: Pastebin leaks", `https://www.google.com/search?q=site:pastebin.com+${username}`],
+          ["Search commits", `https://github.com/search?q=author%3A${username}+password&type=commits`],
+          ["Search issues", `https://github.com/search?q=author%3A${username}&type=issues`],
+          ["Search forks", `https://github.com/${username}?tab=repositories&type=fork`],
+        ];
+
+        let dorkLinks = `<h3>🧠 OSINT Dorks</h3><ul>`;
+        dorks.forEach(([label, url]) => {
+          dorkLinks += `<li><a href="${url}" target="_blank">${label}</a></li>`;
+          exportData += `${label}: ${url}\n`;
+        });
+        dorkLinks += `</ul>`;
+        dorkDiv.innerHTML = dorkLinks;
+
+        exportPre.textContent = exportData;
+
+      } catch (e) {
+        profileDiv.innerHTML = `<p style="color:red;">Error: ${e.message}</p>`;
+        reposDiv.innerHTML = '';
+        dorkDiv.innerHTML = '';
+        exportPre.textContent = '';
+      }
+    }
+
+    function exportTXT() {
+      const text = document.getElementById('exportText').textContent;
+      const blob = new Blob([text], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "github_osint_report.txt";
+      link.click();
+    }
+  </script>
+</body>
+</html>

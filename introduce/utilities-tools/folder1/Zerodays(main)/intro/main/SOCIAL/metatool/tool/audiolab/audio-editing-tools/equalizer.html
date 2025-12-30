@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>🎧 Advanced Audio Equalizer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      
+      color: red;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .container {
+      width: 95%;
+      max-width: 1000px;
+      margin-top: 30px;
+      text-align: center;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 1rem;
+      border-radius: 10px;
+    }
+
+    .track-info, .visualization {
+      background: rgba(0, 0, 0, 0.5);
+      padding: 10px;
+      border-radius: 8px;
+      margin-top: 10px;
+    }
+
+    .visualization {
+      height: 150px;
+      position: relative;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .sliders {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+      gap: 10px;
+      margin: 20px 0;
+    }
+
+    .slider label {
+      display: block;
+      margin-bottom: 5px;
+      color: red;
+    }
+
+    input[type="range"] {
+      width: 100%;
+    }
+
+    button, input[type="file"] {
+      margin: 10px;
+      padding: 10px 20px;
+      background: red;
+      border: none;
+      color: green;
+      font-size: 16px;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+
+    button:hover {
+background: rgba(0, 0, 0, 0.5);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎧 Advanced Audio Equalizer</h1>
+    <input type="file" id="file-input" accept="audio/*">
+    <div class="track-info">
+      <p>Track Name: <span id="track-name">None</span></p>
+    </div>
+    <div class="visualization">
+      <canvas id="analyser" width="800" height="150"></canvas>
+    </div>
+    <button id="play-button">▶️ Play</button>
+    <button id="pause-button">⏸️ Pause</button>
+    <div class="sliders" id="eq-sliders"></div>
+    <button id="save-settings">💾 Save Settings</button>
+  </div>
+
+  <script>
+    const frequencies = [65, 131, 370, 740, 1500, 3000, 6000, 12000, 14000];
+    const gainNodes = [];
+    const eqSliders = document.getElementById('eq-sliders');
+    const canvas = document.getElementById('analyser');
+    const canvasCtx = canvas.getContext('2d');
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 256;
+    const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+    let source = null;
+    let audioBuffer = null;
+    let animationId;
+
+    function drawVisualizer() {
+      animationId = requestAnimationFrame(drawVisualizer);
+      analyser.getByteFrequencyData(dataArray);
+      canvasCtx.fillStyle = '#111';
+      canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+      const barWidth = (canvas.width / dataArray.length) * 2.5;
+      let x = 0;
+      for (let i = 0; i < dataArray.length; i++) {
+        const barHeight = dataArray[i];
+        canvasCtx.fillStyle = `rgb(${barHeight + 100}, 50, 200)`;
+        canvasCtx.fillRect(x, canvas.height - barHeight / 2, barWidth, barHeight / 2);
+        x += barWidth + 1;
+      }
+    }
+
+    function createSliders() {
+      frequencies.forEach(freq => {
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = "peaking";
+        filter.frequency.value = freq;
+        filter.Q.value = 1;
+        filter.gain.value = 0;
+        gainNodes.push(filter);
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'slider';
+
+        const label = document.createElement('label');
+        label.textContent = `${freq}Hz`;
+
+        const input = document.createElement('input');
+        input.type = 'range';
+        input.min = -12;
+        input.max = 12;
+        input.step = 0.1;
+        input.value = 0;
+
+        input.addEventListener('input', () => {
+          filter.gain.value = input.value;
+        });
+
+        wrapper.appendChild(label);
+        wrapper.appendChild(input);
+        eqSliders.appendChild(wrapper);
+      });
+    }
+
+    function connectChain(buffer) {
+      if (source) {
+        source.disconnect();
+        try { source.stop(); } catch {}
+        cancelAnimationFrame(animationId);
+      }
+
+      source = audioCtx.createBufferSource();
+      source.buffer = buffer;
+
+      let currentNode = source;
+      gainNodes.forEach(filter => {
+        currentNode.connect(filter);
+        currentNode = filter;
+      });
+
+      currentNode.connect(analyser);
+      analyser.connect(audioCtx.destination);
+    }
+
+    document.getElementById('file-input').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      document.getElementById('track-name').textContent = file.name;
+      const arrayBuffer = await file.arrayBuffer();
+      audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+      connectChain(audioBuffer);
+    });
+
+    document.getElementById('play-button').addEventListener('click', () => {
+      if (!audioBuffer) return;
+      connectChain(audioBuffer);
+      source.start(0);
+      drawVisualizer();
+    });
+
+    document.getElementById('pause-button').addEventListener('click', () => {
+      if (source) {
+        source.stop();
+        cancelAnimationFrame(animationId);
+      }
+    });
+
+    document.getElementById('save-settings').addEventListener('click', () => {
+      const settings = gainNodes.map((node, i) => ({
+        frequency: frequencies[i],
+        gain: node.gain.value
+      }));
+      alert("Settings saved:\n" + JSON.stringify(settings, null, 2));
+    });
+
+    createSliders();
+  </script>
+</body>
+</html>

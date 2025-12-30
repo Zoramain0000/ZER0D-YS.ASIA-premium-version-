@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>🔐 SecTool Dashboard</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      display: flex;
+      flex-direction: row;
+      min-height: 100vh;
+      font-family: 'Segoe UI', sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+    }
+    aside {
+      flex-shrink: 0;
+      width: 260px;
+background: rgba(0, 0, 0, 0.5);
+      padding: 20px;
+      border-right: 2px solid red;
+    }
+    aside h2 {
+      text-align: center;
+      color: #red;
+      margin-bottom: 30px;
+      font-size: 22px;
+    }
+    nav a {
+      display: block;
+      color: red;
+      text-decoration: none;
+      padding: 10px 15px;
+      margin: 6px 0;
+      border-radius: 6px;
+      transition: background 0.2s, color 0.2s;
+      font-size: 15px;
+    }
+    nav a:hover {
+background: rgba(0, 0, 0, 0.5);
+      color: red;
+    }
+    main {
+      flex: 1;
+      padding: 40px 30px;
+      overflow-y: auto;
+    }
+    main h1 {
+      font-size: 32px;
+      color: red;
+    }
+    .description {
+      margin-top: 20px;
+      font-size: 18px;
+      color: red;
+    }
+    footer {
+      margin-top: 50px;
+      text-align: center;
+      color: red;
+      font-size: 14px;
+    }
+
+    @media (max-width: 768px) {
+      body {
+        flex-direction: column;
+      }
+      aside {
+        width: 100%;
+        border-right: none;
+        border-bottom: 2px solid red;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <aside>
+    <h2>🔐 SecTool</h2>
+    <nav>
+      <a href="who.html">🖼️ Image Metadata Viewer</a>
+      <a href="vimgosint.html">📸 Instagram Media Finder</a>
+      <a href="vimagv2.html">📘 Facebook Media Finder</a>
+      <a href="url.html">🔗 URL Finder Tool</a>
+      <a href="trackeruser.html">👤 TrackSocial</a>
+      <a href="Telegram.html">📨 Telegram OSINT Tool</a>
+      <a href="schoolfdr.html">🏫 Global School Finder</a>
+      <a href="Recorf.html">🌍 Universal Tracker</a>
+      <a href="Rd2(ipv6gen2).html">🧬 IPv6 Generator Tool</a>
+      <a href="Rd(ipv6gen).html">📄 IPv6 Log Generator Tool</a>
+      <a href="Rd(ip1-9).html">📡 IP Version Generator</a>
+      <a href="random.html">🎲 Image & GIF Fetcher</a>
+      <a href="musicplayer.html">🎵 Universal Music Player</a>
+      <a href="Music.html">🎧 Freesound Explorer</a>
+      <a href="Movie2.html">🎬 Movie Finder v2</a>
+      <a href="movie.html">🎥 Movie Finder</a>
+      <a href="live.html">📰 Global News</a>
+      <a href="li.html">🌐 Live Global Tracker</a>
+      <a href="jobfdr.html">💼 Job Finder Tool</a>
+      <a href="It.html">🚀 Remote Launcher</a>
+      <a href="ipv6.html">🛰️ IPv6 Tracker</a>
+      <a href="intelligencex.html">🗂️ Log Generator</a>
+      <a href="igv2.html">📥 Instagram Downloader</a>
+      <a href="identify.html">🕵️ Fake Identity Generator</a>
+      <a href="Github.html">🐱 GitHub Finder</a>
+      <a href="git.html">🔍 GitHub Project Finder</a>
+      <a href="extract.html">📌 Info Extractor</a>
+      <a href="digital.html">🕒 Clock Tool</a>
+      <a href="check.html">📞 Phone Number Lookup</a>
+      <a href="adb3.html">🧭 Live Route Tracker</a>
+      <a href="adb.html">📍 Track Any Place</a>
+      <a href="8000.html">🧾 IPv1–IPv9 Tracker</a>
+      <a href="247.html">✈️ Live Airplane Tracker v2</a>
+      <a href="0sint2.html">🧠 Zerolock OSINT Engine</a>
+    </nav>
+  </aside>
+
+  <main>
+    <h1>👋 Welcome to SecTool Dashboard</h1>
+    <p class="description">
+      Choose a tool from the list to begin your OSINT journey. Each one offers a unique way to gather, analyze, and explore data — all from the convenience of your browser.
+    </p>
+    <footer>
+      &copy; 2025 🔐 SecTool
+    </footer>
+  </main>
+
+</body>
+</html>

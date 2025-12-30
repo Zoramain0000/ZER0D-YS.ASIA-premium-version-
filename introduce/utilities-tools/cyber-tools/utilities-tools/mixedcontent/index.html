@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mixed Content Detector</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #000;
+      color: #c58b00;
+      overflow-x: hidden;
+    }
+
+    video#bg-video {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      min-width: 100vw;
+      min-height: 100vh;
+      object-fit: cover;
+      z-index: -2;
+      opacity: 0.25;
+    }
+
+    audio#bg-music {
+      position: fixed;
+      z-index: -1;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 50px auto;
+      padding: 25px;
+      border-radius: 12px;
+      background: rgba(0, 0, 0, 0.2);
+    }
+
+    h1, label {
+      color: #c58b00;
+      text-shadow: 1px 1px 3px black;
+    }
+
+    input[type="text"] {
+      width: 100%; padding: 12px; margin: 10px 0;
+      background: rgba(0, 0, 0, 0.3);
+      color: #c58b00; border: 1px solid #c58b00;
+      border-radius: 5px; font-size: 1rem;
+    }
+
+    button {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid #c58b00;
+      color: #c58b00; padding: 10px 15px;
+      margin: 5px 5px 15px 0; border-radius: 5px;
+      cursor: pointer; transition: 0.2s ease;
+    }
+
+    button:hover { background: rgba(255,255,255,0.1); color: red; }
+
+    pre {
+      white-space: pre-wrap;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 10px; border: 1px solid red;
+      color: #00ffcc; margin: 10px 0;
+      border-radius: 5px;
+    }
+
+    .history { margin-top: 20px; }
+    .history-item {
+      border-bottom: 1px solid red; padding: 5px;
+      font-size: 0.9rem; color: #ff8800;
+    }
+
+    @media (max-width: 768px) {
+      .container { margin: 20px 10px; padding: 15px; }
+      button { width: 100%; margin: 8px 0; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Background Video -->
+  <video id="bg-video" autoplay muted loop playsinline>
+    <source src="background/1761817527453041720p.mp4" type="video/mp4" />
+  </video>
+
+  <!-- Background Music -->
+  <audio id="bg-music" loop>
+    <source src="background/Programming___Coding___Hacking_music_vol.18__ANONYMOUS_HEADQUARTERS_(48k).mp3" type="audio/mpeg" />
+  </audio>
+
+  <div class="container">
+    <h1>🌐 Mixed Content Detector</h1>
+    <label>Website URL:</label>
+    <input type="text" id="site-url" placeholder="https://example.com" />
+
+    <div>
+      <button onclick="scanPage()">Scan for Mixed Content</button>
+      <button onclick="clearAll()">Clear</button>
+    </div>
+
+    <label>Result:</label>
+    <pre id="result-box">No result yet...</pre>
+    <button onclick="copyResult()">Copy Result</button>
+
+    <div class="history">
+      <h3>History</h3>
+      <div id="history-box"></div>
+    </div>
+  </div>
+
+  <script>
+    const music = document.getElementById("bg-music");
+    const resultBox = document.getElementById("result-box");
+    const historyBox = document.getElementById("history-box");
+    let history = [];
+
+    // Autoplay music after first click
+    window.addEventListener('click', () => {
+      music.play().catch(() => {});
+    }, { once: true });
+
+    async function scanPage() {
+      const url = document.getElementById("site-url").value.trim();
+      if (!url) {
+        resultBox.textContent = "⚠️ Please enter a URL.";
+        return;
+      }
+
+      try {
+        const response = await fetch(url);
+        const text = await response.text();
+
+        const mixed = [];
+        const regex = /(http:\/\/[^\s"'>]+)/gi;
+        let match;
+        while ((match = regex.exec(text)) !== null) {
+          mixed.push(match[1]);
+        }
+
+        if (mixed.length > 0) {
+          resultBox.textContent = "❌ Mixed Content Found:\n" + mixed.join("\n");
+          logHistory("Scan", `Found ${mixed.length} insecure resources at ${url}`);
+        } else {
+          resultBox.textContent = "✅ No mixed content detected!";
+          logHistory("Scan", `No mixed content at ${url}`);
+        }
+      } catch (e) {
+        resultBox.textContent = "⚠️ Error fetching page (maybe CORS blocked).\n" + e.message;
+        logHistory("Error", `Could not scan ${url}`);
+      }
+    }
+
+    function copyResult() {
+      const text = resultBox.textContent;
+      if (!text || text === "No result yet...") return alert("Nothing to copy!");
+      navigator.clipboard.writeText(text).then(() => alert("Result copied!"));
+    }
+
+    function clearAll() {
+      document.getElementById("site-url").value = "";
+      resultBox.textContent = "No result yet...";
+    }
+
+    function logHistory(type, snippet) {
+      const time = new Date().toLocaleTimeString();
+      const line = `${time} - ${type}: ${snippet}`;
+      history.unshift(line);
+      updateHistory();
+    }
+
+    function updateHistory() {
+      historyBox.innerHTML = "";
+      history.slice(0, 8).forEach(entry => {
+        const div = document.createElement("div");
+        div.className = "history-item";
+        div.textContent = entry;
+        historyBox.appendChild(div);
+      });
+    }
+  </script>
+</body>
+</html>

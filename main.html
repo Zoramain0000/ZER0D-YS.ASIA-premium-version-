@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ZeroDays Premium</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: 'Segoe UI', sans-serif;
+      color: #c58b00;
+      background: rgba(0,0,0,0.5);
+    }
+
+    body {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 1rem;
+    }
+
+    video.bg-video {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw;
+      height: 100vh;
+      object-fit: cover;
+      z-index: -2;
+    }
+
+    .overlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: -1;
+    }
+
+    .container {
+      text-align: center;
+      padding: 2rem;
+      max-width: 960px;
+      width: 100%;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      color: #c58b00;
+      margin-bottom: 1rem;
+    }
+
+    p {
+      font-size: 1.1rem;
+      color: #c58b00;
+      margin-bottom: 2rem;
+    }
+
+    .tool-section {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.5rem;
+      margin-top: 2rem;
+    }
+
+    .tool-box {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid #c58b00;
+      border-radius: 12px;
+      padding: 1.5rem;
+      transition: 0.3s;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+    }
+
+    .tool-box:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    }
+
+    .tool-box h3 {
+      color: #c58b00;
+      margin-bottom: 0.5rem;
+    }
+
+    footer {
+      margin-top: 3rem;
+      font-size: 0.9rem;
+      color:#c58b00;
+    }
+
+    .dev-tag {
+      margin-top: 0.5rem;
+      font-size: 1rem;
+      color: #c58b00;
+    }
+
+    .start-btn {
+      background: rgba(0,0,0,0.5);
+      color:#c58b00;
+      border: none;
+      padding: 12px 24px;
+      font-size: 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+
+    @media (max-width: 768px) {
+      h1 {
+        font-size: 2rem;
+      }
+
+      .tool-section {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Background Video -->
+  <video class="bg-video" autoplay loop muted playsinline>
+    <source src="introduce/background/1761817527453041720p.mp4" type="video/mp4">
+    Your browser does not support background videos.
+  </video>
+
+  <!-- Overlay -->
+  <div class="overlay"></div>
+
+  <!-- Background Music -->
+  <audio id="bg-music" loop>
+    <source src="introduce/background/Programming___Coding___Hacking_music_vol.18__ANONYMOUS_HEADQUARTERS_(48k).mp3" type="audio/mpeg">
+    Your browser does not support audio.
+  </audio>
+
+  <!-- Main Content -->
+  <div class="container" id="main-content" style="display:none;">
+    <h1>ZeroDays Premium</h1>
+<p>
+  <strong>ZeroDays Premium</strong> is a high-performance, real-time cybersecurity platform designed for professionals. Unlike simulated environments or demo-based tools, it delivers fully functional, browser-based capabilities without relying on backends, generators, or mock systems. Every interaction reflects actual operational behavior — no fakes, no placeholders, just real execution in a client-side environment.
+</p>
+
+
+    <div class="tool-section">
+      <div class="tool-box">
+        <h3>Red Team Toolkit</h3>
+        <p>
+          Real-world recon, payload crafting utilities, and browser-based exploitation helpers for offensive security specialists. No generators — all logic is client-executed.
+        </p>
+      </div>
+      <div class="tool-box">
+        <h3>Blue Team Monitor</h3>
+        <p>
+          Frontend-based incident response tools including log parsers, hash scanners, and browser fingerprint analysis to aid in defensive operations.
+        </p>
+      </div>
+      <div class="tool-box">
+        <h3>Cyber Utility Suite</h3>
+        <p>
+          Full set of operational utilities such as URL encoders, Base64 tools, JWT viewers, IP lookup, and hex viewers. Every tool is functional in-browser.
+        </p>
+      </div>
+    </div>
+
+    <div style="margin-top: 2rem;">
+      <button class="start-btn" onclick="window.location.href='introduce/dashboard.html'">Go to Dashboard Now</button>
+    </div>
+
+    <footer>
+      © 2025 ZeroDays Premium. Real-time security tools.
+      <div class="dev-tag">Zorathedevdeveloper00</div>
+    </footer>
+  </div>
+
+  <!-- Start Button -->
+  <div id="start-btn-wrapper" style="text-align: center;">
+    <button class="start-btn" onclick="startZeroDays()">Start ZeroDays Premium</button>
+  </div>
+
+  <script>
+    function startZeroDays() {
+      const music = document.getElementById("bg-music");
+      const mainContent = document.getElementById("main-content");
+      const btnWrapper = document.getElementById("start-btn-wrapper");
+
+      music.play().then(() => {
+        mainContent.style.display = "block";
+        btnWrapper.style.display = "none";
+
+        // Auto-redirect to dashboard.html after 10 seconds
+        setTimeout(() => {
+          window.location.href = "introduce/Dashboard.html"; // Make sure this file exists
+        }, 10000000); // 10,000,000 milliseconds = ? seconds
+
+      }).catch(err => {
+        alert("Music playback failed. Try clicking again or allow audio playback in browser settings.");
+      });
+    }
+  </script>
+</body>
+</html>

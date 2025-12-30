@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>📡 Nearby Public Devices Locator</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    html, body, #map { height: 100%; margin: 0; padding: 0; }
+    #map { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 0; }
+    #controls {
+      position: fixed;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.7);
+      padding: 10px 15px;
+      border-radius: 10px;
+      z-index: 1000;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      font-family: Arial, sans-serif;
+    }
+    #controls input[type="text"] {
+      padding: 6px 10px;
+      font-size: 16px;
+      border-radius: 6px;
+      border: none;
+      outline: none;
+      width: 220px;
+    }
+    #controls button {
+      background: #1d3557;
+      border: none;
+      color: white;
+      padding: 7px 14px;
+      font-size: 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    #controls button:hover {
+      background: #457b9d;
+    }
+    #info {
+      position: fixed;
+      top: 70px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.6);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-family: Arial, sans-serif;
+      font-size: 16px;
+      z-index: 1000;
+      pointer-events: none;
+      user-select: none;
+      min-width: 280px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<div id="controls">
+  <input type="text" id="placeInput" placeholder="Search a place (e.g. Tokyo)" />
+  <button id="searchBtn">🔍 Search</button>
+  <button id="trackBtn">📍 Track Me</button>
+  <button id="refreshBtn">📡 Refresh Devices</button>
+</div>
+
+<div id="info">Move the map or search a place to find nearby public devices</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  const map = L.map('map').setView([20, 0], 2);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '© OpenStreetMap contributors'
+  }).addTo(map);
+
+  let deviceMarkers = [];
+
+  const info = document.getElementById('info');
+  const placeInput = document.getElementById('placeInput');
+  const searchBtn = document.getElementById('searchBtn');
+  const trackBtn = document.getElementById('trackBtn');
+  const refreshBtn = document.getElementById('refreshBtn');
+
+  function debounce(func, wait) {
+    let timeout;
+    return function(...args) {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => func.apply(this, args), wait);
+    };
+  }
+
+  async function fetchDevices() {
+    const bounds = map.getBounds();
+    const south = bounds.getSouth();
+    const north = bounds.getNorth();
+    const west = bounds.getWest();
+    const east = bounds.getEast();
+
+    info.textContent = "Searching for public devices...";
+
+    const query = `
+      [out:json][timeout:25];
+      (
+        node["device"](${south},${west},${north},${east});
+        way["device"](${south},${west},${north},${east});
+        relation["device"](${south},${west},${north},${east});
+      );
+      out center;
+    `;
+
+    const url = "https://overpass-api.de/api/interpreter?data=" + encodeURIComponent(query);
+
+    try {
+      const res = await fetch(url);
+      const data = await res.json();
+
+      deviceMarkers.forEach(m => map.removeLayer(m));
+      deviceMarkers = [];
+
+      if (!data.elements.length) {
+        info.textContent = "No public devices found here.";
+        return;
+      }
+
+      data.elements.forEach(el => {
+        const lat = el.lat || el.center?.lat;
+        const lon = el.lon || el.center?.lon;
+        if (!lat || !lon) return;
+
+        const tags = el.tags || {};
+        const type = tags.device || 'Unknown device';
+        const name = tags.name || '';
+        const note = tags.note || '';
+
+        const marker = L.marker([lat, lon]).addTo(map)
+          .bindPopup(`<b>📡 ${type}</b><br>${name}<br>${note}`);
+        deviceMarkers.push(marker);
+      });
+
+      info.textContent = `Found ${deviceMarkers.length} public device${deviceMarkers.length !== 1 ? 's' : ''} in this area.`;
+    } catch (err) {
+      console.error(err);
+      info.textContent = "Error fetching devices.";
+    }
+  }
+
+  const debouncedFetchDevices = debounce(fetchDevices, 5000);
+  fetchDevices();
+  map.on('moveend', debouncedFetchDevices);
+
+  async function searchPlace() {
+    const place = placeInput.value.trim();
+    if (!place) return alert("Enter a place.");
+    info.textContent = "Searching...";
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(place)}`;
+
+    try {
+      const res = await fetch(url);
+      const data = await res.json();
+      if (!data.length) return alert("Place not found.");
+      const lat = parseFloat(data[0].lat);
+      const lon = parseFloat(data[0].lon);
+      map.setView([lat, lon], 16);
+      info.textContent = `Moved to ${place}. Searching nearby devices...`;
+      fetchDevices();
+    } catch (err) {
+      console.error(err);
+      info.textContent = "Place lookup failed.";
+    }
+  }
+
+  function trackLocation() {
+    if (!navigator.geolocation) return alert("Geolocation not supported.");
+    info.textContent = "Getting your location...";
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const lat = pos.coords.latitude;
+        const lon = pos.coords.longitude;
+        map.setView([lat, lon], 16);
+        info.textContent = "Location found. Searching devices...";
+        fetchDevices();
+      },
+      () => {
+        alert("Unable to get location.");
+        info.textContent = "Location error.";
+      }
+    );
+  }
+
+  searchBtn.addEventListener('click', searchPlace);
+  placeInput.addEventListener('keydown', e => { if (e.key === 'Enter') searchPlace(); });
+  trackBtn.addEventListener('click', trackLocation);
+  refreshBtn.addEventListener('click', fetchDevices);
+</script>
+
+</body>
+</html>

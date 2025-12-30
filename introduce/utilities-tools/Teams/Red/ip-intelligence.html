@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IP Intelligence Lookup</title>
+
+<style>
+:root {
+  --bg:#0a0a0f;
+  --panel: rgba(20,20,30,0.85);
+  --accent:#c58b00;
+  --border: rgba(197,139,0,0.5);
+  --text:#f5f5f5;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: "Segoe UI", system-ui, sans-serif; background: var(--bg); color: var(--text); }
+
+video.bg-video {
+  position: fixed; inset:0; width:100%; height:100%; object-fit: cover; filter: brightness(0.2); z-index:-2;
+}
+
+.container { max-width:1000px; margin:auto; padding:100px 20px 40px; }
+
+h1 { text-align:center; color: var(--accent); margin-bottom:14px; }
+.panel { background: var(--panel); border:1px solid var(--border); border-radius:16px; padding:20px; margin-bottom:20px; }
+textarea { width:100%; min-height:100px; padding:12px; border-radius:10px; background:#0d0d0d; border:1px solid var(--border); color:#fff; font-family: monospace; resize:vertical; }
+
+button { background:var(--accent); border:none; padding:10px 18px; border-radius:10px; color:#000; cursor:pointer; font-weight:700; margin-top:8px; }
+button:hover { opacity:.85; }
+
+.results { margin-top:16px; display:grid; gap:12px; }
+
+.card {
+  background: var(--panel); border:1px solid var(--border); border-radius:12px; padding:14px;
+  display:flex; flex-direction:column; gap:6px;
+}
+
+.ip { font-weight:700; font-size:1.1rem; color:#ffd27a; }
+.badge { display:inline-block; padding:4px 8px; border-radius:6px; font-size:12px; margin-right:6px; }
+.good { background:#14532d; color:#9affc2 }
+.warn { background:#4b3b00; color:#ffd27a }
+.bad  { background:#4c1d1d; color:#ff9a9a }
+
+mark { background:#ffd27a; color:#000; font-weight:700; }
+.log { margin-top:12px; font-size:14px; max-height:180px; overflow-y:auto; background:#050505; border:1px solid var(--border); border-radius:10px; padding:10px; font-family: monospace; }
+.log div { margin-bottom:6px; }
+</style>
+</head>
+
+<body>
+
+<video class="bg-video" autoplay muted loop playsinline>
+  <source src="background/1761817527453041720p.mp4" type="video/mp4">
+</video>
+
+<div class="container">
+  <h1>🛰️ IP Intelligence Lookup</h1>
+
+  <div class="panel">
+    <textarea id="ipInput" placeholder="Enter IP addresses (comma or space separated)"></textarea>
+    <button onclick="lookupIPs()">Lookup</button>
+    <div class="log" id="log"></div>
+  </div>
+
+  <div id="results" class="results"></div>
+</div>
+
+<script>
+const logDiv = document.getElementById("log");
+
+function isPrivate(ip){
+  return (
+    ip.startsWith("10.") ||
+    ip.startsWith("192.168.") ||
+    ip.startsWith("172.16.") ||
+    ip.startsWith("172.17.") ||
+    ip.startsWith("172.18.") ||
+    ip.startsWith("172.19.") ||
+    ip.startsWith("172.2") ||
+    ip.startsWith("127.")
+  );
+}
+
+async function fetchIPInfo(ip){
+  try{
+    const res = await fetch(`https://ipapi.co/${ip}/json/`);
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+async function lookupIPs(){
+  const input = document.getElementById("ipInput").value.trim();
+  if(!input) return alert("Enter at least one IP address.");
+
+  const ips = input.split(/[\s,]+/).filter(Boolean);
+  logDiv.innerHTML = "";
+  const resultsDiv = document.getElementById("results");
+  resultsDiv.innerHTML = "";
+
+  for(const ip of ips){
+    const logLine = document.createElement("div");
+    logLine.textContent = `Fetching data for ${ip}...`;
+    logDiv.appendChild(logLine);
+  }
+
+  for(const ip of ips){
+    const data = await fetchIPInfo(ip);
+    const card = document.createElement("div");
+    card.className = "card";
+
+    let statusBadge = `<span class="badge warn">Unknown</span>`;
+    if(!data || data.error) statusBadge = `<span class="badge bad">Invalid</span>`;
+    else if(isPrivate(ip)) statusBadge = `<span class="badge warn">Private</span>`;
+    else statusBadge = `<span class="badge good">Public</span>`;
+
+    card.innerHTML = `
+      <div class="ip">${ip} ${statusBadge}</div>
+      <div><b>Country:</b> ${data?.country_name || "-"}</div>
+      <div><b>Region:</b> ${data?.region || "-"}</div>
+      <div><b>City:</b> ${data?.city || "-"}</div>
+      <div><b>ISP:</b> ${data?.org || "-"}</div>
+      <div><b>ASN:</b> ${data?.asn || "-"}</div>
+      <div><b>Timezone:</b> ${data?.timezone || "-"}</div>
+      <div><b>IP Version:</b> ${data?.version || "-"}</div>
+    `;
+
+    resultsDiv.appendChild(card);
+
+    const logLine = document.createElement("div");
+    logLine.innerHTML = `<mark>${ip}</mark> → ${data?.city || "-"}, ${data?.region || "-"}, ${data?.country_name || "-"} | ${data?.org || "-"}`;
+    logDiv.appendChild(logLine);
+  }
+}
+</script>
+
+</body>
+</html>

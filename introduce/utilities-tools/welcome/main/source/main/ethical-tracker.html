@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Cyber Tools — IP Intelligence (Dual Mode)</title>
+<style>
+  /* Visual design adapted from your theme */
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;background:#000;color:#c58b00;font-family:"Segoe UI",system-ui,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+  .bg-video{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:-3;opacity:0.7}
+  .overlay{position:fixed;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0.12),rgba(0,0,0,0.75));z-index:-2}
+  nav{position:fixed;left:0;right:0;top:0;display:flex;justify-content:space-between;align-items:center;padding:12px 18px;background:rgba(0,0,0,0.6);border-bottom:1px solid rgba(255,255,255,0.04);z-index:40}
+  .brand{display:flex;align-items:center;gap:10px;color:#c58b00;font-weight:700}
+  .mode-switch{display:flex;gap:8px}
+  .mode-btn{background:transparent;border:1px solid rgba(255,255,255,0.04);color:#c58b00;padding:8px 10px;border-radius:8px;cursor:pointer}
+  .mode-btn.active{background:linear-gradient(90deg,#00c896,#00a8cc);color:#021218;border:none;box-shadow:0 6px 24px rgba(0,200,150,0.08)}
+  .main{padding-top:100px;max-width:1200px;margin:0 auto 40px;padding:18px}
+  .search-row{display:flex;gap:10px;align-items:center;margin-bottom:12px}
+  .search-input{flex:1;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:#0b0b0c;color:#ffc107;font-family:monospace}
+  .search-btn{padding:11px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:#ffc107;cursor:pointer}
+  .controls{display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap}
+  .filter{padding:8px;border-radius:8px;background:#0a0a0a;border:1px solid rgba(255,255,255,0.03);color:#caa44a}
+  .muted{color:#9fbcd8;font-size:0.92rem}
+  .results{margin-top:16px;transition:all .25s ease;min-height:200px;display:block}
+  .card{background:rgba(7,7,8,0.6);border:1px solid rgba(255,255,255,0.03);padding:14px;border-radius:10px;margin-bottom:12px}
+  .card h3{color:#00a8cc;margin-bottom:8px;font-size:1.05rem}
+  .kv{display:flex;gap:8px;flex-wrap:wrap}
+  .kv div{min-width:180px}
+  .label{color:#9fbcd8;font-size:0.85rem}
+  .value{color:#dbefff;font-weight:700}
+  .terminal{background:#000814;border:1px solid rgba(0,200,150,0.08);padding:12px;border-radius:8px;color:#bfe3ff;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;height:320px;overflow:auto;white-space:pre-wrap}
+  .line{margin-bottom:6px}
+  .src-badge{display:inline-block;padding:4px 8px;border-radius:6px;font-weight:700;font-size:0.8rem;margin-left:8px;color:#021218;background:#c58b00}
+  .warn{background:#2b1515;color:#ffb4b4;padding:10px;border-radius:8px;margin-bottom:12px;border:1px solid rgba(255,80,80,0.12)}
+  .actions{display:flex;gap:8px;margin-top:10px}
+  .btn{padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:#ffc107;cursor:pointer}
+  .btn.primary{background:linear-gradient(90deg,#00c896,#00a8cc);color:#021218;border:none}
+  a.map-link{color:#00c896;text-decoration:none;font-weight:700}
+  footer{margin-top:22px;color:#9fbcd8;font-size:0.82rem}
+  @media(max-width:640px){ .kv div{min-width:140px} .terminal{height:260px} }
+</style>
+</head>
+<body>
+  <video class="bg-video" autoplay loop muted playsinline>
+    <source src="background/1761817527453041720p.mp4" type="video/mp4">
+  </video>
+  <div class="overlay"></div>
+  <audio id="bg-music" loop>
+    <source src="background/Programming___Coding___Hacking_music_vol.18__ANONYMOUS_HEADQUARTERS_(48k).mp3" type="audio/mpeg">
+  </audio>
+
+  <nav>
+    <div class="brand"><span style="font-size:14px">Cyber Tools</span> <span style="opacity:.9;font-size:12px;margin-left:6px">IP Intelligence</span></div>
+    <div class="mode-switch">
+      <button class="mode-btn active" id="btn-report" onclick="setMode('report')">Report</button>
+      <button class="mode-btn" id="btn-live" onclick="setMode('live')">Live Terminal</button>
+      <button class="mode-btn" id="btn-dual" onclick="setMode('dual')">Dual</button>
+    </div>
+  </nav>
+
+  <div class="main">
+    <div class="warn">
+      <strong>Use responsibly:</strong> Only look up IPs / hostnames you own or have explicit permission to investigate.
+      This tool performs <em>non-invasive</em> lookups (public geolocation / ASN). It does not perform port scans, exploitation, or covert tracking.
+    </div>
+
+    <div class="search-row">
+      <input id="query" class="search-input" placeholder="Enter IP address or hostname (e.g. 8.8.8.8 or example.com)">
+      <button class="search-btn" onclick="runLookup()">Lookup</button>
+    </div>
+
+    <div class="controls">
+      <input id="consent" type="checkbox" class="filter" style="width:auto" /> <label for="consent" style="color:#9fbcd8">I confirm I have permission to query this IP</label>
+      <div style="margin-left:auto" class="muted">Client-only • Uses public IP info APIs (ipapi.co)</div>
+    </div>
+
+    <div id="results" class="results">
+      <div class="muted" style="margin-top:18px">Enter an IP/host and press Lookup. Choose Report (structured), Live (terminal-style), or Dual to show both.</div>
+    </div>
+
+    <footer>
+      Built for education and diagnostics only. IP geolocation is approximate. Heuristics are not authoritative.
+    </footer>
+  </div>
+
+<script>
+/* Mode state */
+let mode = 'report';
+function setMode(m){
+  mode = m;
+  document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
+  if(m==='report') document.getElementById('btn-report').classList.add('active');
+  if(m==='live') document.getElementById('btn-live').classList.add('active');
+  if(m==='dual') document.getElementById('btn-dual').classList.add('active');
+  // clear results area
+  document.getElementById('results').innerHTML = '';
+}
+
+/* auto-play music on first interaction */
+window.addEventListener('click', ()=>{ document.getElementById('bg-music').play().catch(()=>{}); }, { once:true });
+
+/* Utility: fetch JSON with timeout */
+async function fetchWithTimeout(url, opts={}, timeout=8000){
+  const controller = new AbortController();
+  const id = setTimeout(()=>controller.abort(), timeout);
+  try{
+    const res = await fetch(url, { signal: controller.signal, ...opts });
+    clearTimeout(id);
+    return res;
+  } catch(e){
+    clearTimeout(id);
+    throw e;
+  }
+}
+
+/* Core lookup: ipapi.co (no key, limited) */
+async function lookupIpRaw(target){
+  // ipapi supports domain or IP; using /json endpoint
+  const api = `https://ipapi.co/${encodeURIComponent(target)}/json/`;
+  const res = await fetchWithTimeout(api, { headers:{ 'Accept':'application/json' } }, 9000);
+  if(!res.ok) throw new Error('IP API error: ' + res.status);
+  const json = await res.json();
+  return json;
+}
+
+/* Heuristic analysis (non-definitive) */
+function analyze(ipinfo){
+  const heur = {};
+  const org = (ipinfo.org||'').toLowerCase();
+  heur.isCloud = /amazon|aws|google|google cloud|microsoft|azure|digitalocean|linode|ovh|hetzner|cloudflare|oracle/i.test(org);
+  heur.isISP = /isp|internet service|telecom|telecomunicaciones|telecomunications|inc|llc|telco/i.test(org);
+  heur.org = ipinfo.org || ipinfo.orgname || '';
+  heur.asn = ipinfo.asn || ipinfo.network || '';
+  // simple "risk" heuristics (very rough)
+  let score=0;
+  if(heur.isCloud) score += 1;
+  if(heur.isISP) score += 0.5;
+  if(ipinfo.country && ipinfo.country.toLowerCase() === 'us') score += 0; // neutral
+  heur.attackSurface = Math.min(10, Math.round(score*3 + (ipinfo.prefix_length?ipinfo.prefix_length/24:0)));
+  return heur;
+}
+
+/* Build a structured report card */
+function buildReport(ipinfo, heuristics, target){
+  const card = document.createElement('div'); card.className='card fade';
+  const title = document.createElement('h3'); title.textContent = `${ipinfo.ip || target} — IP Intelligence`;
+  card.appendChild(title);
+
+  const kv = document.createElement('div'); kv.className='kv';
+
+  function add(k,v){ const d=document.createElement('div'); d.innerHTML = `<div class="label">${k}</div><div class="value">${v||'—'}</div>`; kv.appendChild(d); }
+
+  add('Hostname', ipinfo.hostname || ipinfo.net || ipinfo.org || '—');
+  add('City', ipinfo.city);
+  add('Region', ipinfo.region);
+  add('Country', ipinfo.country_name || ipinfo.country);
+  add('Latitude,Longitude', (ipinfo.latitude && ipinfo.longitude) ? `${ipinfo.latitude}, ${ipinfo.longitude}` : '—');
+  add('Timezone', ipinfo.timezone);
+  add('ASN / Org', ipinfo.org || ipinfo.asn || '—');
+  add('Postal', ipinfo.postal || '—');
+  add('Network', ipinfo.network || ipinfo.cidr || '—');
+  add('ISP / Provider', ipinfo.org || '—');
+  add('Currency', ipinfo.currency || '—');
+  add('Attack surface (heuristic)', heuristics.attackSurface + ' / 10');
+  add('Cloud provider (heuristic)', heuristics.isCloud ? 'Likely cloud' : 'Not detected');
+
+  card.appendChild(kv);
+
+  // Map & external links
+  const extras = document.createElement('div'); extras.style.marginTop='10px';
+  if(ipinfo.latitude && ipinfo.longitude){
+    const gmap = document.createElement('a'); gmap.className='map-link'; gmap.href = `https://www.google.com/maps/search/?api=1&query=${ipinfo.latitude},${ipinfo.longitude}`; gmap.target='_blank'; gmap.textContent = 'Open location in Google Maps';
+    extras.appendChild(gmap);
+  }
+  const whois = document.createElement('a'); whois.className='map-link'; whois.style.marginLeft='12px'; whois.href = `https://whois.domaintools.com/${encodeURIComponent(target)}`; whois.target='_blank'; whois.textContent = 'WHOIS / Domain tools';
+  extras.appendChild(whois);
+
+  card.appendChild(extras);
+
+  return card;
+}
+
+/* Terminal streaming UI */
+function createTerminal(){
+  const term = document.createElement('div'); term.className='terminal';
+  return term;
+}
+
+function typeLine(term, text){
+  return new Promise(resolve=>{
+    const line = document.createElement('div'); line.className='line';
+    term.appendChild(line);
+    let i=0;
+    const speed = 6 + Math.floor(Math.random()*8);
+    const t = setInterval(()=>{
+      line.textContent += text.charAt(i++);
+      term.scrollTop = term.scrollHeight;
+      if(i>=text.length){ clearInterval(t); resolve(); }
+    }, speed);
+  });
+}
+
+/* Main runner */
+async function runLookup(){
+  const target = document.getElementById('query').value.trim();
+  if(!target) return alert('Enter an IP or hostname.');
+  if(!document.getElementById('consent').checked){
+    return alert('Please confirm you have permission to query this IP/hostname.');
+  }
+
+  const results = document.getElementById('results');
+  results.innerHTML = '<div class="muted">Looking up…</div>';
+
+  try {
+    // 1) Resolve / lookup via ipapi
+    const ipinfo = await lookupIpRaw(target);
+
+    // Normalize fields (ipapi returns varying property names)
+    const normalized = {
+      ip: ipinfo.ip || ipinfo.address || target,
+      hostname: ipinfo.hostname || ipinfo.city ? undefined : undefined,
+      city: ipinfo.city || ipinfo.region || '',
+      region: ipinfo.region || ipinfo.region_code || '',
+      country: ipinfo.country_name || ipinfo.country || '',
+      country_code: ipinfo.country || ipinfo.country_code || '',
+      latitude: ipinfo.latitude || ipinfo.lat || '',
+      longitude: ipinfo.longitude || ipinfo.lon || ipinfo.longitude || '',
+      timezone: ipinfo.timezone || '',
+      org: ipinfo.org || ipinfo.org_name || ipinfo.orgname || '',
+      asn: ipinfo.asn || ipinfo.network || '',
+      postal: ipinfo.postal || ipinfo.postcode || '',
+      network: ipinfo.network || ipinfo.cidr || '',
+      currency: ipinfo.currency || '',
+      raw: ipinfo
+    };
+
+    // 2) Heuristics
+    const heur = analyze(normalized);
+
+    // 3) Render according to mode
+    results.innerHTML = '';
+    if(mode === 'report'){
+      results.appendChild(buildReport(normalized, heur, target));
+    } else if(mode === 'live'){
+      const term = createTerminal();
+      results.appendChild(term);
+      // stream a cinematic flow
+      await typeLine(term, `> Starting live OSINT feed for ${normalized.ip || target}`);
+      await sleep(300);
+      await typeLine(term, `> Querying public geolocation API (ipapi.co)`);
+      await sleep(300);
+      await typeLine(term, `  IP: ${normalized.ip || '—'}`);
+      await sleep(150);
+      if(normalized.org) await typeLine(term, `  Org: ${normalized.org}`);
+      if(normalized.country) await typeLine(term, `  Country: ${normalized.country} (${normalized.country_code||''})`);
+      if(normalized.city) await typeLine(term, `  Location: ${normalized.city}, ${normalized.region}`);
+      if(normalized.latitude && normalized.longitude) await typeLine(term, `  Coordinates: ${normalized.latitude}, ${normalized.longitude}`);
+      await sleep(250);
+      await typeLine(term, `> Heuristics: Cloud provider? ${heur.isCloud ? 'YES' : 'NO'} — Attack surface score: ${heur.attackSurface}/10`);
+      await sleep(250);
+      await typeLine(term, `> External links:`);
+      await typeLine(term, `  Google Maps: https://www.google.com/maps/search/?api=1&query=${normalized.latitude},${normalized.longitude}`);
+      await typeLine(term, `  WHOIS: https://whois.domaintools.com/${encodeURIComponent(target)}`);
+      await sleep(200);
+      await typeLine(term, `> Live feed complete. (Non-invasive public lookup only)`);
+    } else if(mode === 'dual'){
+      // left: report, right: terminal (stacked on mobile)
+      const container = document.createElement('div'); container.style.display='grid'; container.style.gridTemplateColumns='1fr 1fr'; container.style.gap='12px';
+      if(window.innerWidth < 900) container.style.gridTemplateColumns='1fr';
+      const rcard = buildReport(normalized, heur, target);
+      const term = createTerminal();
+      container.appendChild(rcard); container.appendChild(term);
+      results.appendChild(container);
+
+      // stream into the terminal pane
+      await typeLine(term, `> Dual mode — streaming OSINT for ${normalized.ip || target}`);
+      await sleep(200);
+      await typeLine(term, `  Org: ${normalized.org || '—'}`);
+      await typeLine(term, `  Country: ${normalized.country || '—'}`);
+      if(normalized.latitude && normalized.longitude) await typeLine(term, `  Coords: ${normalized.latitude}, ${normalized.longitude}`);
+      await sleep(200);
+      await typeLine(term, `  Attack surface (heuristic): ${heur.attackSurface}/10`);
+      await sleep(200);
+      await typeLine(term, `  Links: Google Maps | WHOIS`);
+      await sleep(150);
+      await typeLine(term, `> End of stream`);
+    }
+
+  } catch(err){
+    console.error(err);
+    results.innerHTML = `<div class="muted">Lookup failed: ${err.message || 'Network / CORS or API rate limit'}</div>`;
+  }
+}
+
+/* small sleep util */
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+/* Enter key triggers lookup */
+document.getElementById('query').addEventListener('keydown', function(e){
+  if(e.key === 'Enter') runLookup();
+});
+</script>
+</body>
+</html>

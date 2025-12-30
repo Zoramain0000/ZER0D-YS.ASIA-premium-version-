@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Metadata Extractor | Cyber Tools Toolkit</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{
+      font-family:'Segoe UI',monospace;
+      background:#000;
+      color:#ffc107;
+      overflow-x:hidden;
+    }
+    video.bg-video{
+      position:fixed;
+      top:0;left:0;
+      width:100vw;height:100vh;
+      object-fit:cover;
+      z-index:-2;
+      filter:brightness(0.25);
+    }
+    nav{
+      background:rgba(0,0,0,0.7);
+      color:#ffc107;
+      border-bottom:1px solid #c58b00;
+      padding:1rem 2rem;
+      display:flex;justify-content:space-between;align-items:center;
+      position:fixed;width:100%;top:0;z-index:10;
+    }
+    nav .brand{font-weight:bold;font-size:1.3rem;}
+    .main{
+      padding:120px 20px 60px;
+      max-width:900px;margin:auto;
+    }
+    .section{
+      background:rgba(0,0,0,0.5);
+      border:1px solid #c58b00;
+      border-radius:12px;
+      padding:1.5rem;
+      box-shadow:0 0 20px rgba(0,0,0,0.7);
+    }
+    h1{color:#ffc107;text-align:center;margin-bottom:1rem;}
+    p{text-align:center;color:#ffdf91;margin-bottom:1.5rem;}
+    .file-input{
+      width:100%;
+      padding:1rem;
+      background:#111;
+      border:1px dashed #c58b00;
+      border-radius:10px;
+      text-align:center;
+      cursor:pointer;
+      color:#ffc107;
+      margin-bottom:1.2rem;
+      transition:0.3s;
+    }
+    .file-input:hover{background:#1a1a1a;}
+    pre{
+      background:#111;
+      color:#00ffb3;
+      border:1px solid #c58b00;
+      padding:1rem;
+      border-radius:8px;
+      overflow:auto;
+      font-size:0.9rem;
+      max-height:400px;
+    }
+    .btn{
+      background:rgba(0,0,0,0.7);
+      border:1px solid #c58b00;
+      color:#ffc107;
+      padding:10px 18px;
+      border-radius:8px;
+      cursor:pointer;
+      transition:0.25s;
+      margin:0.3rem;
+    }
+    .btn:hover{background:rgba(255,193,7,0.1);}
+    .btn-group{text-align:center;margin-top:1rem;}
+    footer{
+      text-align:center;
+      padding:1.5rem;
+      color:#c58b00;
+      font-size:0.9rem;
+    }
+    #preview{
+      display:block;
+      margin:1rem auto;
+      max-width:100%;
+      border-radius:8px;
+      border:1px solid #c58b00;
+      display:none;
+    }
+  </style>
+</head>
+<body>
+
+  <video class="bg-video" autoplay loop muted playsinline>
+    <source src="background/1761817527453041720p.mp4" type="video/mp4">
+  </video>
+
+  <audio id="bg-music" loop>
+    <source src="background/Programming___Coding___Hacking_music_vol.18__ANONYMOUS_HEADQUARTERS_(48k).mp3" type="audio/mpeg">
+  </audio>
+
+  <nav>
+    <div class="brand">Metadata Extractor</div>
+  </nav>
+
+  <div class="main">
+    <div class="section">
+      <h1>📂 Metadata Extractor Tool</h1>
+      <p>Analyze and extract hidden metadata (EXIF, type, dimensions, encoding) directly from your files. Everything runs locally — no uploads, no backend, total privacy.</p>
+
+      <label for="fileInput" class="file-input">
+        <strong>Click or Drop File Here to Extract Metadata</strong>
+        <input type="file" id="fileInput" style="display:none;">
+      </label>
+
+      <img id="preview" alt="Preview">
+      <pre id="output">Metadata details will appear here...</pre>
+
+      <div class="btn-group">
+        <button class="btn" onclick="clearAll()">Clear</button>
+        <button class="btn" onclick="copyMetadata()">Copy Metadata</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>© 2025 Cyber Tools Toolkit — Zorathedevdeveloper00</footer>
+
+  <script>
+    // Background music auto start after first click
+    window.addEventListener('click',()=>{
+      document.getElementById('bg-music').play().catch(()=>{});
+    },{once:true});
+
+    const fileInput=document.getElementById('fileInput');
+    const output=document.getElementById('output');
+    const preview=document.getElementById('preview');
+
+    fileInput.addEventListener('change',handleFile,false);
+
+    function handleFile(e){
+      const file=e.target.files[0];
+      if(!file){return;}
+      output.textContent='🔍 Extracting metadata...';
+      preview.style.display='none';
+
+      const metadata={
+        "File Name":file.name,
+        "File Type":file.type||'Unknown',
+        "File Size":(file.size/1024).toFixed(2)+' KB',
+        "Last Modified":new Date(file.lastModified).toLocaleString(),
+      };
+
+      // Detect file type and extract extra info
+      const reader=new FileReader();
+      reader.onload=function(ev){
+        const arrayBuffer=ev.target.result;
+
+        // Image metadata (EXIF basic)
+        if(file.type.startsWith('image/')){
+          const blobURL=URL.createObjectURL(file);
+          preview.src=blobURL;
+          preview.style.display='block';
+          const img=new Image();
+          img.onload=()=>{
+            metadata["Image Width"]=img.width+" px";
+            metadata["Image Height"]=img.height+" px";
+            showMetadata(metadata);
+            URL.revokeObjectURL(blobURL);
+          };
+          img.src=blobURL;
+        }
+        // Audio metadata (duration)
+        else if(file.type.startsWith('audio/')){
+          const audio=document.createElement('audio');
+          audio.src=URL.createObjectURL(file);
+          audio.addEventListener('loadedmetadata',()=>{
+            metadata["Duration"]=audio.duration.toFixed(2)+' sec';
+            metadata["Channels"]=audio.mozChannels||audio.webkitAudioDecodedByteCount?'Stereo':'Mono';
+            showMetadata(metadata);
+          });
+        }
+        // Video metadata
+        else if(file.type.startsWith('video/')){
+          const video=document.createElement('video');
+          video.src=URL.createObjectURL(file);
+          video.addEventListener('loadedmetadata',()=>{
+            metadata["Duration"]=video.duration.toFixed(2)+' sec';
+            metadata["Resolution"]=video.videoWidth+' x '+video.videoHeight;
+            showMetadata(metadata);
+          });
+        }
+        // Text/JSON/HTML/Code metadata
+        else if(file.type.startsWith('text/')||file.type.includes('json')||file.type.includes('html')||file.type.includes('javascript')){
+          const text=new TextDecoder().decode(arrayBuffer);
+          metadata["Character Count"]=text.length;
+          metadata["Line Count"]=text.split(/\r?\n/).length;
+          metadata["Preview Sample"]=text.slice(0,200).replace(/\n/g,'\\n');
+          showMetadata(metadata);
+        }
+        // Generic binary file
+        else{
+          const bytes=new Uint8Array(arrayBuffer);
+          metadata["Binary Signature"]=Array.from(bytes.slice(0,8)).map(b=>b.toString(16).padStart(2,'0')).join(' ');
+          showMetadata(metadata);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function showMetadata(meta){
+      let result='🧠 Extracted Metadata:\n\n';
+      for(const [k,v] of Object.entries(meta)){
+        result+=`${k}: ${v}\n`;
+      }
+      output.textContent=result;
+    }
+
+    function clearAll(){
+      fileInput.value='';
+      output.textContent='Metadata details will appear here...';
+      preview.style.display='none';
+    }
+
+    function copyMetadata(){
+      navigator.clipboard.writeText(output.textContent);
+      alert('✅ Metadata copied to clipboard!');
+    }
+  </script>
+</body>
+</html>

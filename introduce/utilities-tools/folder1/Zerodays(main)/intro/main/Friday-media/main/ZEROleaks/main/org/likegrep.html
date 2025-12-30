@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>📝 Text File Analyzer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0f172a;
+      color: #f8fafc;
+      margin: 0;
+      padding: 2rem;
+    }
+    h1 {
+      color: #38bdf8;
+    }
+    input[type="file"] {
+      padding: 1rem;
+      background: #1e293b;
+      border: none;
+      color: #f8fafc;
+      border-radius: 6px;
+      font-size: 1rem;
+      margin-bottom: 1rem;
+    }
+    pre {
+      background: #1e293b;
+      padding: 1rem;
+      border-radius: 6px;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      color: #38fdd8;
+    }
+    table {
+      width: 100%;
+      margin-top: 1rem;
+      border-collapse: collapse;
+    }
+    th, td {
+      padding: 0.6rem;
+      text-align: left;
+      border-bottom: 1px solid #334155;
+    }
+    th {
+      color: #38bdf8;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>📝 Text File Analyzer</h1>
+
+  <input type="file" id="fileInput" accept=".txt" />
+  <pre id="stats">Upload a .txt file to analyze its content.</pre>
+  <div id="wordStats"></div>
+
+  <script>
+    document.getElementById('fileInput').addEventListener('change', function(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const text = e.target.result;
+        analyzeText(text);
+      };
+      reader.readAsText(file);
+    });
+
+    function analyzeText(text) {
+      const lines = text.split(/\r?\n/);
+      const words = text.match(/\b\w+\b/g) || [];
+      const chars = text.length;
+
+      const wordFreq = {};
+      words.forEach(word => {
+        const w = word.toLowerCase();
+        wordFreq[w] = (wordFreq[w] || 0) + 1;
+      });
+
+      const sortedWords = Object.entries(wordFreq)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 20);
+
+      let statOutput = `📄 Lines: ${lines.length}\n🔤 Words: ${words.length}\n🔠 Characters: ${chars}`;
+      document.getElementById('stats').textContent = statOutput;
+
+      let tableHTML = `<h3>📊 Top 20 Most Frequent Words:</h3><table><thead><tr><th>Word</th><th>Frequency</th></tr></thead><tbody>`;
+      sortedWords.forEach(([word, freq]) => {
+        tableHTML += `<tr><td>${word}</td><td>${freq}</td></tr>`;
+      });
+      tableHTML += `</tbody></table>`;
+
+      document.getElementById('wordStats').innerHTML = tableHTML;
+    }
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>🧬 Identity Generator Tool</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      display: flex;
+      justify-content: center;
+      padding: 50px 10px;
+      min-height: 100vh;
+    }
+
+    .container {
+background: rgba(0, 0, 0, 0.5);
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+      max-width: 950px;
+      width: 100%;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: red;
+    }
+
+    .profile-pic {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .profile-pic img {
+      border-radius: 50%;
+      border: 4px solid red;
+      width: 120px;
+      height: 120px;
+      object-fit: cover;
+    }
+
+    .profile-pic input {
+      display: block;
+      margin: 10px auto 0;
+    }
+
+    .info p {
+      margin: 6px 0;
+      line-height: 1.5;
+      color: red;
+    }
+
+    .info span {
+      font-weight: bold;
+      color: red;
+    }
+
+    button {
+      width: 100%;
+      background: red;
+      color: green;
+      border: none;
+      padding: 12px;
+      border-radius: 8px;
+      margin: 5px 0;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+background: rgba(0, 0, 0, 0.5);
+    }
+
+    textarea {
+      width: 100%;
+      height: 200px;
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid red;
+      resize: vertical;
+    }
+
+    #qrcode {
+      display: flex;
+      justify-content: center;
+      margin: 20px 0;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 20px;
+      color: red;
+      font-size: 0.9em;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧬 Identity Generator Tool</h1>
+    <div class="profile-pic">
+      <img id="avatar" src="" alt="Avatar">
+      <input type="file" accept="image/*" onchange="editAvatar(this)">
+    </div>
+    <div class="info" id="identityInfo">
+      <p>Loading identity...</p>
+    </div>
+
+    <div id="qrcode"></div>
+
+    <textarea id="bulkOutput" placeholder="Bulk generated identities appear here..."></textarea>
+    <button onclick="generateIdentity()">🎲 Generate Identity</button>
+    <button onclick="generateBulkIdentities(5)">📦 Generate 5 Identities</button>
+    <button onclick="exportAsJSON()">💾 Export JSON</button>
+    <button onclick="exportAsPDF()">📄 Export PDF</button>
+    <button onclick="saveToLocal()">💽 Save to Browser</button>
+    <button onclick="downloadAllSaved()">📤 Download All Saved</button>
+    <footer>&copy; 2025 IdentityTools</footer>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script>
+    const { jsPDF } = window.jspdf;
+    let currentIdentity = {};
+
+    async function generateIdentity() {
+      const res = await fetch("https://randomuser.me/api/");
+      const data = await res.json();
+      const user = data.results[0];
+
+      currentIdentity = {
+        fullName: `${user.name.first} ${user.name.last}`,
+        gender: user.gender,
+        dob: user.dob.date,
+        email: user.email,
+        phone: user.phone,
+        cell: user.cell,
+        location: `${user.location.street.number} ${user.location.street.name}, ${user.location.city}, ${user.location.state}, ${user.location.country} - ${user.location.postcode}`,
+        nationality: user.nat,
+        username: user.login.username,
+        password: user.login.password,
+        id: `${user.id.name || 'ID'} ${user.id.value || 'N/A'}`,
+        picture: user.picture.large
+      };
+
+      document.getElementById("avatar").src = currentIdentity.picture;
+
+      document.getElementById("identityInfo").innerHTML = `
+        <p><span>Full Name:</span> ${currentIdentity.fullName}</p>
+        <p><span>Gender:</span> ${currentIdentity.gender}</p>
+        <p><span>Date of Birth:</span> ${new Date(currentIdentity.dob).toDateString()}</p>
+        <p><span>Email:</span> ${currentIdentity.email}</p>
+        <p><span>Phone:</span> ${currentIdentity.phone}</p>
+        <p><span>Cell:</span> ${currentIdentity.cell}</p>
+        <p><span>Address:</span> ${currentIdentity.location}</p>
+        <p><span>Nationality:</span> ${currentIdentity.nationality}</p>
+        <p><span>Username:</span> ${currentIdentity.username}</p>
+        <p><span>Password:</span> ${currentIdentity.password}</p>
+        <p><span>ID:</span> ${currentIdentity.id}</p>
+      `;
+
+      generateQRCode();
+    }
+
+    function generateQRCode() {
+      document.getElementById("qrcode").innerHTML = "";
+      const qr = new QRCode(document.getElementById("qrcode"), {
+        text: JSON.stringify(currentIdentity, null, 2),
+        width: 140,
+        height: 140
+      });
+    }
+
+    function editAvatar(input) {
+      const file = input.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        document.getElementById("avatar").src = e.target.result;
+        currentIdentity.picture = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    async function generateBulkIdentities(count = 5) {
+      const results = [];
+      for (let i = 0; i < count; i++) {
+        const res = await fetch("https://randomuser.me/api/");
+        const data = await res.json();
+        const u = data.results[0];
+        results.push({
+          fullName: `${u.name.first} ${u.name.last}`,
+          gender: u.gender,
+          dob: u.dob.date,
+          email: u.email,
+          phone: u.phone,
+          cell: u.cell,
+          address: `${u.location.street.number} ${u.location.street.name}, ${u.location.city}, ${u.location.state}, ${u.location.country} - ${u.location.postcode}`,
+          nationality: u.nat,
+          username: u.login.username,
+          password: u.login.password,
+          id: `${u.id.name || 'ID'} ${u.id.value || 'N/A'}`
+        });
+      }
+      document.getElementById("bulkOutput").value = results.map(r => JSON.stringify(r, null, 2)).join("\n---\n");
+    }
+
+    function exportAsJSON() {
+      const blob = new Blob([JSON.stringify(currentIdentity, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "identity.json";
+      a.click();
+    }
+
+    function exportAsPDF() {
+      const doc = new jsPDF();
+      let y = 10;
+      Object.entries(currentIdentity).forEach(([k, v]) => {
+        doc.text(`${k}: ${v}`, 10, y);
+        y += 10;
+      });
+      doc.save("identity.pdf");
+    }
+
+    function saveToLocal() {
+      const saved = JSON.parse(localStorage.getItem("identities") || "[]");
+      saved.push(currentIdentity);
+      localStorage.setItem("identities", JSON.stringify(saved));
+      alert("Identity saved to browser storage.");
+    }
+
+    function downloadAllSaved() {
+      const all = JSON.parse(localStorage.getItem("identities") || "[]");
+      const blob = new Blob([JSON.stringify(all, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "all_identities.json";
+      a.click();
+    }
+
+    generateIdentity();
+  </script>
+</body>
+</html>

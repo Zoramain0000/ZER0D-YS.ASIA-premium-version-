@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Password Policy Checker</title>
+  <style>
+    * {margin: 0; padding: 0; box-sizing: border-box;}
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #000;
+      color: #c58b00;
+      overflow-x: hidden;
+    }
+    video#bg-video {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      min-width: 100vw; min-height: 100vh;
+      object-fit: cover;
+      z-index: -2; opacity: 0.25;
+    }
+    audio#bg-music {
+      position: fixed; z-index: -1;
+      opacity: 0; pointer-events: none;
+    }
+    .container {
+      max-width: 900px; margin: 50px auto;
+      padding: 25px; border-radius: 12px;
+      background: rgba(0, 0, 0, 0.2);
+    }
+    h1, label {color: #c58b00; text-shadow: 1px 1px 3px black;}
+    input[type="text"], input[type="password"] {
+      width: 100%; padding: 12px; margin: 10px 0;
+      background: rgba(0, 0, 0, 0.3);
+      color: #c58b00; border: 1px solid #c58b00;
+      border-radius: 5px; font-size: 1rem;
+    }
+    button {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid #c58b00; color: #c58b00;
+      padding: 10px 15px; margin: 5px 5px 15px 0;
+      border-radius: 5px; cursor: pointer;
+      transition: 0.2s ease;
+    }
+    button:hover {background: rgba(255, 255, 255, 0.1); color: red;}
+    pre {
+      white-space: pre-wrap;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 10px; border: 1px solid red;
+      color: #00ffcc; margin: 10px 0;
+      border-radius: 5px;
+    }
+    .history {margin-top: 20px;}
+    .history-item {
+      border-bottom: 1px solid red;
+      padding: 5px; font-size: 0.9rem;
+      color: #ff8800;
+    }
+    @media (max-width: 768px) {
+      .container {margin: 20px 10px; padding: 15px;}
+      button {width: 100%; margin: 8px 0;}
+    }
+  </style>
+</head>
+<body>
+  <!-- Background Video -->
+  <video id="bg-video" autoplay muted loop playsinline>
+    <source src="background/1761817527453041720p.mp4" type="video/mp4" />
+    Your browser does not support the video tag.
+  </video>
+
+  <!-- Background Music -->
+  <audio id="bg-music" loop>
+    <source src="background/Programming___Coding___Hacking_music_vol.18__ANONYMOUS_HEADQUARTERS_(48k).mp3" type="audio/mpeg" />
+    Your browser does not support the audio tag.
+  </audio>
+
+  <div class="container">
+    <h1>🔑 Password Policy Checker</h1>
+
+    <label>Enter Password:</label>
+    <input type="password" id="password" placeholder="Enter your password..." />
+
+    <div>
+      <button onclick="checkPassword()">Check Password</button>
+      <button onclick="clearAll()">Clear</button>
+    </div>
+
+    <label>Result:</label>
+    <pre id="result-box">No result yet...</pre>
+    <button onclick="copyResult()">Copy Result</button>
+
+    <div class="history">
+      <h3>History</h3>
+      <div id="history-box"></div>
+    </div>
+  </div>
+
+  <script>
+    const music = document.getElementById("bg-music");
+    const resultBox = document.getElementById("result-box");
+    const historyBox = document.getElementById("history-box");
+    let history = [];
+
+    window.addEventListener('click', () => {
+      music.play().catch(() => {});
+    }, { once: true });
+
+    function checkPassword() {
+      const pwd = document.getElementById("password").value.trim();
+      if (!pwd) {
+        resultBox.textContent = "⚠️ Please enter a password first.";
+        return;
+      }
+
+      let checks = [];
+      let score = 0;
+
+      if (pwd.length >= 12) { checks.push("✔️ Length is strong (12+ chars)"); score++; }
+      else if (pwd.length >= 8) { checks.push("⚠️ Length is acceptable (8-11 chars)"); }
+      else { checks.push("❌ Too short (min 8 chars required)"); }
+
+      if (/[a-z]/.test(pwd)) { checks.push("✔️ Contains lowercase"); score++; }
+      else { checks.push("❌ Missing lowercase"); }
+
+      if (/[A-Z]/.test(pwd)) { checks.push("✔️ Contains uppercase"); score++; }
+      else { checks.push("❌ Missing uppercase"); }
+
+      if (/[0-9]/.test(pwd)) { checks.push("✔️ Contains number"); score++; }
+      else { checks.push("❌ Missing number"); }
+
+      if (/[^A-Za-z0-9]/.test(pwd)) { checks.push("✔️ Contains symbol"); score++; }
+      else { checks.push("❌ Missing symbol"); }
+
+      // Common weak password blacklist
+      const blacklist = ["password","123456","qwerty","admin","letmein","welcome","iloveyou"];
+      if (blacklist.includes(pwd.toLowerCase())) {
+        checks.push("❌ Found in common weak password list");
+        score = 0;
+      }
+
+      // Strength evaluation
+      let strength;
+      if (score >= 5) strength = "🔥 Very Strong";
+      else if (score >= 3) strength = "💪 Medium Strength";
+      else strength = "⚠️ Weak";
+
+      resultBox.textContent = `Password Check Result:\n\n${checks.join("\n")}\n\nOverall Strength: ${strength}`;
+      logHistory("Password Check", strength);
+    }
+
+    function copyResult() {
+      const text = resultBox.textContent;
+      if (!text || text === "No result yet...") return alert("Nothing to copy!");
+      navigator.clipboard.writeText(text).then(() => alert("Result copied!"));
+    }
+
+    function clearAll() {
+      document.getElementById("password").value = "";
+      resultBox.textContent = "No result yet...";
+    }
+
+    function logHistory(type, snippet) {
+      const time = new Date().toLocaleTimeString();
+      const line = `${time} - ${type}: ${snippet}`;
+      history.unshift(line);
+      updateHistory();
+    }
+
+    function updateHistory() {
+      historyBox.innerHTML = "";
+      history.slice(0, 8).forEach(entry => {
+        const div = document.createElement("div");
+        div.className = "history-item";
+        div.textContent = entry;
+        historyBox.appendChild(div);
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>🎵 Advanced Audio Spectrum Analyzer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #0f172a;
+      color: #f8fafc;
+      margin: 0;
+      padding: 0;
+    }
+    canvas {
+      width: 100%;
+      height: 300px;
+      background: #1e293b;
+      display: block;
+      border-top: 1px solid #334155;
+      border-bottom: 1px solid #334155;
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      padding: 1rem;
+      background: #1e293b;
+    }
+    select, input[type="number"], input[type="checkbox"] {
+      background: #0f172a;
+      color: #f8fafc;
+      border: 1px solid #334155;
+      padding: 0.3rem;
+      font-size: 0.9rem;
+    }
+    .toolbar button {
+      background: #111;
+      color: #0f0;
+      border: 1px solid #0f0;
+      border-radius: 3px;
+      padding: 0.3rem 0.8rem;
+      font-size: 0.9rem;
+    }
+    .toolbar button.active {
+      background: #0f0;
+      color: #000;
+    }
+    .info-panel {
+      font-size: 0.8rem;
+      text-align: center;
+      padding: 0.5rem;
+      background: #1e293b;
+    }
+  </style>
+</head>
+<body>
+  <h2 style="text-align:center; padding: 0.5rem;">🎵 Audio Spectrum Analyzer</h2>
+  <canvas id="analyzer"></canvas>
+
+  <div class="info-panel">
+    RMS: <span id="rms">-</span> dB |
+    Cursor: <input id="cursorInput" type="number" value="0" step="1" style="width:70px"> Hz |
+    Peak: <span id="peakFreq">-</span> Hz / <span id="peakDb">-</span> dB
+  </div>
+
+  <div class="controls">
+    <label>Sample Rate:
+      <select id="sampleRate">
+        <option>8000</option><option>11025</option><option>16000</option>
+        <option>22050</option><option>32000</option>
+        <option selected>44100</option><option>48000</option>
+      </select>
+    </label>
+    <label>FFT Length:
+      <select id="fftSize">
+        <option>512</option><option>1024</option><option>2048</option>
+        <option>4096</option><option>8192</option>
+        <option>16384</option><option>32768</option>
+      </select>
+    </label>
+    <label>Averaging (nAve):
+      <select id="nAve">
+        <option>1</option><option>2</option><option>4</option>
+        <option>8</option><option>16</option><option>32</option>
+      </select>
+    </label>
+    <label>Scale:
+      <select id="scaleMode">
+        <option value="linear">Linear</option>
+        <option value="log" selected>Log</option>
+      </select>
+    </label>
+    <label>dB Mode:
+      <select id="dbWeight">
+        <option value="db">dB</option>
+        <option value="dba">dBA</option>
+      </select>
+    </label>
+    <label>Freq Range:
+      <input type="number" id="freqLow" value="0" step="10" /> -
+      <input type="number" id="freqHigh" value="22050" step="10" /> Hz
+    </label>
+    <label>dB Range:
+      <input type="number" id="dbLow" value="-120" step="1" /> -
+      <input type="number" id="dbHigh" value="0" step="1" /> dB
+    </label>
+    <label><input type="checkbox" id="lockRange" /> Lock Range</label>
+    <button onclick="loadPrevious()">Load Previous</button>
+    <button onclick="loadCalibration()">Load Calibration</button>
+    <button onclick="startAnalyzer()">Run</button>
+  </div>
+
+  <script>
+    let audioCtx, analyser, source, dataArray, bufferLength;
+    const canvas = document.getElementById("analyzer");
+    const ctx = canvas.getContext("2d");
+    canvas.width = window.innerWidth;
+    canvas.height = 300;
+
+    function setupAnalyzer() {
+      const fft = parseInt(document.getElementById("fftSize").value);
+      analyser = audioCtx.createAnalyser();
+      analyser.fftSize = fft;
+      bufferLength = analyser.frequencyBinCount;
+      dataArray = new Uint8Array(bufferLength);
+    }
+
+    async function startAnalyzer() {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      source = audioCtx.createMediaStreamSource(stream);
+      setupAnalyzer();
+      source.connect(analyser);
+      draw();
+    }
+
+    function draw() {
+      requestAnimationFrame(draw);
+      analyser.getByteFrequencyData(dataArray);
+
+      ctx.fillStyle = "#1e293b";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      const scale = document.getElementById("scaleMode").value;
+      const barCount = bufferLength;
+      const barWidth = canvas.width / barCount;
+      let maxVal = 0;
+      let maxIdx = 0;
+      let sum = 0;
+
+      for (let i = 0; i < barCount; i++) {
+        const val = dataArray[i];
+        sum += val;
+        if (val > maxVal) {
+          maxVal = val;
+          maxIdx = i;
+        }
+        let x = i * barWidth;
+        let h = val * canvas.height / 256;
+        ctx.fillStyle = `rgb(${val},${255 - val},200)`;
+        ctx.fillRect(x, canvas.height - h, barWidth, h);
+      }
+
+      const rms = (sum / barCount) / 255 * 100;
+      const peakHz = (maxIdx * audioCtx.sampleRate) / analyser.fftSize;
+      const peakDb = (20 * Math.log10(maxVal / 255)).toFixed(1);
+
+      document.getElementById("rms").textContent = rms.toFixed(1);
+      document.getElementById("peakFreq").textContent = peakHz.toFixed(1);
+      document.getElementById("peakDb").textContent = peakDb;
+    }
+
+    function loadCalibration() {
+      alert("[Placeholder] Load calibration data from local file or config.");
+    }
+
+    function loadPrevious() {
+      alert("[Placeholder] Load previous analyzer settings from localStorage.");
+    }
+  </script>
+</body>
+</html>

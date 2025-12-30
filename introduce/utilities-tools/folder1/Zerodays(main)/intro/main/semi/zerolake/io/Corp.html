@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CORS Policy Tester</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    input, button { padding: 8px; margin: 5px 0; width: 100%; }
+    #results { margin-top: 20px; }
+    .success { color: green; }
+    .failure { color: red; }
+  </style>
+</head>
+<body>
+  <h1>CORS Policy Tester</h1>
+  <p>Enter a URL to test its CORS policy:</p>
+  <input type="text" id="urlInput" placeholder="https://example.com/api" />
+  <button id="testBtn">Run Test</button>
+  <div id="results"></div>
+
+  <script>
+    document.getElementById('testBtn').addEventListener('click', () => {
+      const url = document.getElementById('urlInput').value;
+      const resultsDiv = document.getElementById('results');
+      resultsDiv.innerHTML = 'Testing...';
+
+      fetch(url, { method: 'GET', mode: 'cors' })
+        .then(response => {
+          resultsDiv.innerHTML = '<p class="success">CORS request succeeded.</p>';
+          resultsDiv.innerHTML += `<p>Status: ${response.status}</p>`;
+          resultsDiv.innerHTML += `<p>Access-Control-Allow-Origin: ${response.headers.get('Access-Control-Allow-Origin')}</p>`;
+        })
+        .catch(error => {
+          resultsDiv.innerHTML = `<p class="failure">CORS request failed: ${error.message}</p>`;
+        });
+    });
+  </script>
+</body>
+</html>

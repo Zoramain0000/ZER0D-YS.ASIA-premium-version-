@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Advanced Audio Merger Tool</title>
+  <style>
+    body {
+      font-family: sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      margin: 0;
+      padding: 2em;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 1em;
+    }
+    .dropzone {
+      border: 2px dashed red;
+      border-radius: 8px;
+      padding: 2em;
+      text-align: center;
+background: rgba(0, 0, 0, 0.5);
+      color: r3d;
+      margin-bottom: 1em;
+    }
+    .dropzone.dragover {
+background: rgba(0, 0, 0, 0.5);
+      border-color: red;
+    }
+    #fileList {
+      margin: 1em 0;
+      padding: 0;
+      list-style: none;
+    }
+    #fileList li {
+      padding: 0.5em;
+      border-bottom: 1px solid red;
+    }
+    .btn {
+      background: red;
+      color: green;
+      border: none;
+      padding: 0.75em 1.5em;
+      font-size: 1em;
+      cursor: pointer;
+      border-radius: 5px;
+      margin-top: 1em;
+    }
+    .btn:hover {
+background: rgba(0, 0, 0, 0.5);
+    }
+    audio {
+      width: 100%;
+      margin-top: 1em;
+    }
+  </style>
+</head>
+<body>
+  <h1 style="color:red;">🔊 Advanced Audio Merger</h1>
+  <div class="dropzone" id="dropzone">
+    <p style="color:red;">Drag & Drop Audio Files Here or</p>
+    <input type="file" id="audioFiles" multiple accept="audio/*" style="color:red;"/>
+  </div>
+
+  <ul id="fileList"></ul>
+
+  <button class="btn" id="mergeBtn">Merge and Download</button>
+  <audio id="mergedAudio" controls></audio>
+
+  <script>
+    const fileInput = document.getElementById('audioFiles');
+    const fileList = document.getElementById('fileList');
+    const dropzone = document.getElementById('dropzone');
+    const mergeBtn = document.getElementById('mergeBtn');
+    const mergedAudio = document.getElementById('mergedAudio');
+
+    let files = [];
+
+    fileInput.addEventListener('change', (e) => {
+      handleFiles(e.target.files);
+    });
+
+    dropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropzone.classList.add('dragover');
+    });
+
+    dropzone.addEventListener('dragleave', () => {
+      dropzone.classList.remove('dragover');
+    });
+
+    dropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('dragover');
+      handleFiles(e.dataTransfer.files);
+    });
+
+    function handleFiles(selectedFiles) {
+      for (const file of selectedFiles) {
+        if (file.type.startsWith('audio/')) {
+          files.push(file);
+        }
+      }
+      renderFileList();
+    }
+
+    function renderFileList() {
+      fileList.innerHTML = '';
+      files.forEach((file, i) => {
+        const li = document.createElement('li');
+        li.textContent = `${i + 1}. ${file.name}`;
+        fileList.appendChild(li);
+      });
+    }
+
+    mergeBtn.addEventListener('click', async () => {
+      if (files.length < 2) {
+        alert("Please select at least 2 audio files.");
+        return;
+      }
+
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      let totalLength = 0;
+      const audioBuffers = [];
+
+      for (let file of files) {
+        const arrayBuffer = await file.arrayBuffer();
+        const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+        audioBuffers.push(audioBuffer);
+        totalLength += audioBuffer.length;
+      }
+
+      const output = audioCtx.createBuffer(
+        audioBuffers[0].numberOfChannels,
+        totalLength,
+        audioCtx.sampleRate
+      );
+
+      let offset = 0;
+      for (let buffer of audioBuffers) {
+        for (let channel = 0; channel < output.numberOfChannels; channel++) {
+          output.getChannelData(channel).set(buffer.getChannelData(channel), offset);
+        }
+        offset += buffer.length;
+      }
+
+      const mergedBlob = bufferToWavBlob(output);
+      const url = URL.createObjectURL(mergedBlob);
+      mergedAudio.src = url;
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'merged_audio.wav';
+      a.click();
+    });
+
+    function bufferToWavBlob(buffer) {
+      const numChannels = buffer.numberOfChannels;
+      const sampleRate = buffer.sampleRate;
+      const format = 1;
+      const bitDepth = 16;
+
+      let samples;
+      if (numChannels === 2) {
+        const left = buffer.getChannelData(0);
+        const right = buffer.getChannelData(1);
+        samples = interleave(left, right);
+      } else {
+        samples = buffer.getChannelData(0);
+      }
+
+      const wavBuffer = new ArrayBuffer(44 + samples.length * 2);
+      const view = new DataView(wavBuffer);
+
+      function writeString(view, offset, str) {
+        for (let i = 0; i < str.length; i++) {
+          view.setUint8(offset + i, str.charCodeAt(i));
+        }
+      }
+
+      writeString(view, 0, 'RIFF');
+      view.setUint32(4, 36 + samples.length * 2, true);
+      writeString(view, 8, 'WAVE');
+      writeString(view, 12, 'fmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, format, true);
+      view.setUint16(22, numChannels, true);
+      view.setUint32(24, sampleRate, true);
+      view.setUint32(28, sampleRate * numChannels * bitDepth / 8, true);
+      view.setUint16(32, numChannels * bitDepth / 8, true);
+      view.setUint16(34, bitDepth, true);
+      writeString(view, 36, 'data');
+      view.setUint32(40, samples.length * 2, true);
+
+      floatTo16BitPCM(view, 44, samples);
+
+      return new Blob([view], { type: 'audio/wav' });
+    }
+
+    function floatTo16BitPCM(output, offset, input) {
+      for (let i = 0; i < input.length; i++, offset += 2) {
+        const s = Math.max(-1, Math.min(1, input[i]));
+        output.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+      }
+    }
+
+    function interleave(left, right) {
+      const length = left.length + right.length;
+      const result = new Float32Array(length);
+      let inputIndex = 0;
+
+      for (let i = 0; i < length;) {
+        result[i++] = left[inputIndex];
+        result[i++] = right[inputIndex];
+        inputIndex++;
+      }
+      return result;
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Image Metadata Viewer</title>
+<style>
+  /* Dark theme */
+  body {
+    margin: 0;
+    padding: 0;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+    color: red;
+    display: flex; 
+    height: 100vh; overflow: hidden;
+  }
+  #container {
+    display: flex; flex-direction: row; width: 100%; height: 100%;
+  }
+  #drop-area {
+    flex: 1; border: 2px dashed red; margin: 10px; border-radius: 8px;
+background: rgba(0,0,0,0.5);
+      color: red; display: flex; align-items: center; justify-content: center;
+    font-size: 18px; text-align: center; padding: 20px; cursor: pointer;
+    transition: border-color 0.3s ease;
+  }
+  #drop-area.hover {
+    border-color: #b298dc;
+  }
+  #metadata-panel {
+    flex: 1; margin: 10px; padding: 10px;
+    background: rgba(0,0,0,0.5); border-radius: 8px; overflow-y: auto;
+    display: flex; flex-direction: column;
+  }
+  #metadata-tree {
+    flex: 1;
+    font-size: 14px;
+    color: #d4d4d4;
+  }
+  ul, li {
+    list-style: none; padding-left: 20px;
+  }
+  li > ul {
+    margin-left: 12px; border-left: 1px solid red; padding-left: 10px;
+  }
+  li {
+    margin: 4px 0;
+  }
+  li span.key {
+    color: red;
+  }
+  li span.value {
+    color: red;
+  }
+  li span.phone-flag {
+    color: red;
+    font-style: italic;
+    font-weight: 600;
+  }
+  #map {
+    margin-top: 10px;
+    border-radius: 6px;
+    max-width: 100%;
+    height: 200px;
+    border: 1px solid red;
+  }
+  #export-btn {
+    margin-top: 10px;
+    background-color: red;
+    border: none;
+    color: green;
+    padding: 8px 15px;
+    border-radius: 4px;
+    font-size: 15px;
+    cursor: pointer;
+    align-self: flex-start;
+    transition: background-color 0.3s ease;
+  }
+  #export-btn:hover {
+    background: rgba(0,0,0,0.5);
+  }
+  #error-message {
+    color: #f44747;
+    font-weight: 600;
+    margin-top: 10px;
+  }
+  a {
+    color: red;
+    text-decoration: none;
+  }
+  a:hover {
+    text-decoration: underline;
+  }
+</style>
+</head>
+<body>
+<div id="container">
+  <div id="drop-area" tabindex="0">
+    Drag and drop an image here<br />or click to browse
+    <input type="file" id="file-input" accept="image/*" style="display:none" />
+  </div>
+  <div id="metadata-panel">
+    <div id="metadata-tree"></div>
+    <img id="map" style="display:none" alt="Map Location" />
+    <button id="export-btn" style="display:none">Export to JSON</button>
+    <div id="error-message"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/exif-js"></script>
+<script>
+  const dropArea = document.getElementById('drop-area');
+  const fileInput = document.getElementById('file-input');
+  const metadataTree = document.getElementById('metadata-tree');
+  const exportBtn = document.getElementById('export-btn');
+  const mapImg = document.getElementById('map');
+  const errorMessage = document.getElementById('error-message');
+
+  let currentMetadata = null;
+  let currentGPS = null;
+
+  // Utility: Convert GPS DMS to Decimal
+  function gpsToDecimal(gpsData, ref) {
+    if (!gpsData || gpsData.length !== 3) return null;
+    let d = gpsData[0].numerator / gpsData[0].denominator;
+    let m = gpsData[1].numerator / gpsData[1].denominator;
+    let s = gpsData[2].numerator / gpsData[2].denominator;
+    let dec = d + m/60 + s/3600;
+    if (ref === 'S' || ref === 'W') dec = -dec;
+    return dec;
+  }
+
+  // Build metadata tree recursively
+  function buildTree(data, container) {
+    container.innerHTML = '';
+    function buildList(obj) {
+      const ul = document.createElement('ul');
+      for (const key in obj) {
+        const li = document.createElement('li');
+        if (typeof obj[key] === 'object' && obj[key] !== null) {
+          li.innerHTML = `<span class="key">${key}:</span>`;
+          li.appendChild(buildList(obj[key]));
+        } else {
+          li.innerHTML = `<span class="key">${key}:</span> <span class="value">${obj[key]}</span>`;
+          if (key.toLowerCase().includes('make') || key.toLowerCase().includes('model')) {
+            // Just a simple marker for phone detection later
+            li.classList.add('device-info');
+          }
+        }
+        ul.appendChild(li);
+      }
+      return ul;
+    }
+    container.appendChild(buildList(data));
+  }
+
+  // Detect if device is likely a phone
+  function isPhone(metadata) {
+    const phoneMakes = [
+      'Apple', 'Samsung', 'Huawei', 'Xiaomi', 'Google', 'OnePlus', 'Sony',
+      'LG', 'Nokia', 'Motorola', 'HTC', 'Oppo', 'Vivo', 'Realme',
+      'Lenovo', 'Asus', 'BlackBerry', 'ZTE', 'Alcatel', 'Meizu', 'Tecno'
+    ];
+    const strMeta = JSON.stringify(metadata).toLowerCase();
+    return phoneMakes.some(make => strMeta.includes(make.toLowerCase()));
+  }
+
+  // Display metadata and handle GPS & map
+  function displayMetadata(file) {
+    errorMessage.textContent = '';
+    currentMetadata = null;
+    currentGPS = null;
+    metadataTree.innerHTML = 'Loading metadata...';
+    mapImg.style.display = 'none';
+    exportBtn.style.display = 'none';
+
+    EXIF.getData(file, function() {
+      let allMeta = EXIF.getAllTags(this);
+      if (Object.keys(allMeta).length === 0) {
+        metadataTree.textContent = "No metadata found in this image.";
+        return;
+      }
+      currentMetadata = allMeta;
+
+      // Extract GPS info
+      let gpsLat = gpsToDecimal(allMeta.GPSLatitude, allMeta.GPSLatitudeRef);
+      let gpsLon = gpsToDecimal(allMeta.GPSLongitude, allMeta.GPSLongitudeRef);
+
+      currentGPS = (gpsLat !== null && gpsLon !== null) ? { latitude: gpsLat, longitude: gpsLon } : null;
+
+      // Show device info + phone detection
+      const deviceInfo = {};
+      if(allMeta.Make) deviceInfo.Make = allMeta.Make;
+      if(allMeta.Model) deviceInfo.Model = allMeta.Model;
+
+      // Build display object
+      const displayData = {
+        "Device Information": deviceInfo,
+        "GPS Information": currentGPS || "Not available",
+        "Date/Time": allMeta.DateTimeOriginal || allMeta.DateTime || "Not available",
+        "All Metadata": allMeta
+      };
+
+      buildTree(displayData, metadataTree);
+
+      // Phone flag
+      if (isPhone(allMeta)) {
+        const phoneFlag = document.createElement('div');
+        phoneFlag.className = 'phone-flag';
+        phoneFlag.textContent = 'The device is likely a phone.';
+        metadataTree.prepend(phoneFlag);
+      }
+
+      // If GPS available, fetch address & show map
+      if (currentGPS) {
+        fetchReverseGeocode(currentGPS.latitude, currentGPS.longitude);
+        showMap(currentGPS.latitude, currentGPS.longitude);
+      }
+
+      exportBtn.style.display = 'inline-block';
+    });
+  }
+
+  // Reverse geocode with OpenStreetMap Nominatim
+  async function fetchReverseGeocode(lat, lon) {
+    try {
+      const resp = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=jsonv2`, {
+        headers: { 'User-Agent': 'MetadataViewer/1.0' }
+      });
+      if (!resp.ok) throw new Error(`HTTP error! Status: ${resp.status}`);
+      const data = await resp.json();
+      if (data && data.display_name) {
+        const div = document.createElement('div');
+        div.style.marginTop = '8px';
+        div.style.color = '#9cdcfe';
+        div.textContent = `Approximate Location: ${data.display_name}`;
+        metadataTree.appendChild(div);
+      }
+    } catch (e) {
+      console.warn('Reverse geocoding failed:', e);
+    }
+  }
+
+  // Show static map with marker from OpenStreetMap
+  function showMap(lat, lon) {
+    // Use static map from OSM + marker (via MapQuest Open Static Map API)
+    // Since we cannot use MapQuest without key, fallback to static OSM tile with marker using a simple trick:
+    // We use a free static map tile with marker added via URL.
+    // Use "https://static-maps.yandex.ru/1.x/?ll=lon,lat&size=450,250&pt=lon,lat,pm2rdm"
+    // or fallback to openstreetmap.org tile with no marker
+
+    // Use Yandex static maps free for demo (no key required):
+    const mapUrl = `https://static-maps.yandex.ru/1.x/?ll=${lon},${lat}&size=450,250&z=14&pt=${lon},${lat},pm2rdm`;
+
+    mapImg.src = mapUrl;
+    mapImg.style.display = 'block';
+  }
+
+  // Handle drag & drop and click browse
+  dropArea.addEventListener('dragenter', (e) => {
+    e.preventDefault();
+    dropArea.classList.add('hover');
+  });
+  dropArea.addEventListener('dragover', (e) => {
+    e.preventDefault();
+  });
+  dropArea.addEventListener('dragleave', (e) => {
+    e.preventDefault();
+    dropArea.classList.remove('hover');
+  });
+  dropArea.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropArea.classList.remove('hover');
+    if (e.dataTransfer.files.length) {
+      const file = e.dataTransfer.files[0];
+      if (file.type.startsWith('image/')) {
+        displayMetadata(file);
+      } else {
+        errorMessage.textContent = "Please drop a valid image file.";
+      }
+    }
+  });
+
+  dropArea.addEventListener('click', () => fileInput.click());
+  dropArea.addEventListener('keydown', (e) => {
+    if(e.key === 'Enter' || e.key === ' ') fileInput.click();
+  });
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files.length) {
+      const file = fileInput.files[0];
+      if (file.type.startsWith('image/')) {
+        displayMetadata(file);
+      } else {
+        errorMessage.textContent = "Please select a valid image file.";
+      }
+    }
+  });
+
+  // Export metadata JSON
+  exportBtn.addEventListener('click', () => {
+    if (!currentMetadata) return;
+    const jsonStr = JSON.stringify(currentMetadata, null, 2);
+    const blob = new Blob([jsonStr], {type: 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'image-metadata.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+</script>
+</body>
+</html>

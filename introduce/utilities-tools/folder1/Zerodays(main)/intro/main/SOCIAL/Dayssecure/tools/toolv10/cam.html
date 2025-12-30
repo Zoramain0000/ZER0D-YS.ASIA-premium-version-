@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>IP Camera/CCTV Log Generator</title>
+  <style>
+    body {
+      font-family: "Segoe UI", sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      color: red;
+      margin-bottom: 20px;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+
+    .controls input,
+    .controls button {
+      padding: 10px;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
+    }
+
+    .controls input {
+      width: 220px;
+background: rgba(0, 0, 0, 0.5);
+      color: red;
+    }
+
+    .controls button {
+      background-color: red;
+      color: green;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    .controls button:hover {
+background: rgba(0, 0, 0, 0.5);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      table-layout: fixed;
+      word-wrap: break-word;
+    }
+
+    table, th, td {
+      border: 1px solid #333;
+    }
+
+    th, td {
+      padding: 10px;
+      text-align: center;
+    }
+
+    th {
+background: rgba(0, 0, 0, 0.5);
+      color: red;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 20px;
+      color: red;
+      user-select: none;
+    }
+
+    .status-good {
+      color: #00ff00;
+      font-weight: bold;
+    }
+    .status-slow {
+      color: #ffaa00;
+      font-weight: bold;
+    }
+    .status-bad {
+      color: #ff0033;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>📹 IP Camera/CCTV Log Generator</h1>
+
+  <div class="controls">
+    <input type="text" id="cameraName" placeholder="Camera Name (optional)" />
+    <input type="text" id="ipAddress" placeholder="IP Address (optional)" />
+    <button onclick="addLog()">Add Log</button>
+    <button onclick="generateRandom()">Random</button>
+    <button onclick="exportCSV()">Export CSV</button>
+    <button onclick="clearLogs()">Clear Logs</button>
+  </div>
+
+  <table id="logTable">
+    <thead>
+      <tr>
+        <th style="width:40px;">#</th>
+        <th>Camera</th>
+        <th>IP</th>
+        <th>Status</th>
+        <th>Health</th>
+        <th>Timestamp</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <div class="footer">&copy; 2025 CCTVLogger - Infinite Scroll & Live Preview Removed</div>
+
+  <script>
+    let count = 1;
+    let autoCameraIndex = 1;
+    const logTableBody = document.querySelector("#logTable tbody");
+
+    // Generate health status with label & CSS class
+    function healthStatus() {
+      const status = Math.random();
+      if (status < 0.6) return { label: "Good", class: "status-good" };
+      if (status < 0.85) return { label: "Slow", class: "status-slow" };
+      return { label: "Unreachable", class: "status-bad" };
+    }
+
+    // Format camera name with leading zeros (e.g. Camera-001)
+    function formatCameraName(index) {
+      return `Camera-${String(index).padStart(3, '0')}`;
+    }
+
+    // Generate a random IP address (fully random 0-255 for each octet)
+    function generateRandomIP() {
+      return Array(4).fill(0).map(() => Math.floor(Math.random() * 256)).join('.');
+    }
+
+    // Add a log entry, optionally passing camera name, IP, status
+    function addLog(name = null, ip = null, status = null) {
+      let cameraName = name ?? document.getElementById("cameraName").value.trim();
+      let ipAddress = ip ?? document.getElementById("ipAddress").value.trim();
+      const statusText = status ?? "Online";
+
+      // Auto-generate camera name if empty
+      if (!cameraName) {
+        cameraName = formatCameraName(autoCameraIndex++);
+      }
+
+      // Auto-generate IP if empty
+      if (!ipAddress) {
+        ipAddress = generateRandomIP();
+      }
+
+      // Basic IP validation (very loose)
+      if (!/^(\d{1,3}\.){3}\d{1,3}$/.test(ipAddress)) {
+        alert("Invalid IP address format.");
+        return;
+      }
+
+      // Validate each octet is 0-255
+      if (ipAddress.split('.').some(octet => +octet < 0 || +octet > 255)) {
+        alert("IP address octets must be between 0 and 255.");
+        return;
+      }
+
+      const health = healthStatus();
+
+      const row = logTableBody.insertRow();
+      row.insertCell(0).textContent = count++;
+      row.insertCell(1).textContent = cameraName;
+      row.insertCell(2).textContent = ipAddress;
+      row.insertCell(3).textContent = statusText;
+      const healthCell = row.insertCell(4);
+      healthCell.textContent = health.label;
+      healthCell.className = health.class;
+      row.insertCell(5).textContent = new Date().toLocaleString();
+
+      // Clear input fields
+      document.getElementById("cameraName").value = "";
+      document.getElementById("ipAddress").value = "";
+    }
+
+    // Generate a fully random log (random camera name and IP, random status)
+    function generateRandom() {
+      const statuses = ["Online", "Offline", "Maintenance", "Error"];
+      const status = statuses[Math.floor(Math.random() * statuses.length)];
+      addLog(null, null, status);
+    }
+
+    // Generate batch of random logs
+    function generateBatch(n = 10) {
+      for (let i = 0; i < n; i++) generateRandom();
+    }
+
+    // Clear all logs and reset counters
+    function clearLogs() {
+      logTableBody.innerHTML = "";
+      count = 1;
+      autoCameraIndex = 1;
+    }
+
+    // Export current table data to CSV file
+    function exportCSV() {
+      const headers = ["#", "Camera", "IP", "Status", "Health", "Timestamp"];
+      const rows = [headers];
+
+      document.querySelectorAll("#logTable tbody tr").forEach(tr => {
+        const cells = tr.children;
+        const row = [
+          cells[0].textContent,
+          cells[1].textContent,
+          cells[2].textContent,
+          cells[3].textContent,
+          cells[4].textContent,
+          cells[5].textContent
+        ];
+        rows.push(row);
+      });
+
+      const csvContent = rows.map(r => r.map(field => `"${field.replace(/"/g, '""')}"`).join(",")).join("\n");
+      const blob = new Blob([csvContent], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "cctv_logs.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // Infinite scroll: generate batch when near bottom of page
+    window.addEventListener("scroll", () => {
+      if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 100) {
+        generateBatch(10);
+      }
+    });
+
+    // Initial batch of logs on load
+    generateBatch(30);
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Gamer Username Generator</title>
+
+<style>
+:root {
+  --bg:#0b1220;
+  --panel:#111827;
+  --border:#1f2937;
+  --accent:#22c55e;
+  --text:#e5e7eb;
+  --muted:#9ca3af;
+}
+
+* {
+  box-sizing: border-box;
+  font-family: system-ui, sans-serif;
+}
+
+body {
+  margin: 0;
+  background: radial-gradient(circle at top, #1a2550, #050814);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.app {
+  max-width: 950px;
+  width: 100%;
+  padding: 20px;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+}
+
+h1 {
+  margin: 0;
+  color: var(--accent);
+}
+
+.subtitle {
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin-bottom: 14px;
+}
+
+.input-box {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+input {
+  flex: 1;
+  padding: 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #020617;
+  color: var(--text);
+}
+
+button {
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #020617;
+  color: var(--text);
+  cursor: pointer;
+}
+
+button:hover {
+  background: #0f172a;
+}
+
+.controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(160px,1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.control {
+  background: #020617;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px;
+}
+
+label {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+select, input[type="number"] {
+  width: 100%;
+  margin-top: 4px;
+  padding: 8px;
+  background: #020617;
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 8px;
+}
+
+.footer {
+  margin-top: 12px;
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-align: center;
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="panel">
+    <h1>Gamer Username Generator</h1>
+    <div class="subtitle">
+      Uses first + last names • frontend only • no fake availability
+    </div>
+
+    <div class="input-box">
+      <input id="username" placeholder="Generated username..." />
+      <button onclick="copyName()">Copy</button>
+    </div>
+
+    <div class="controls">
+      <div class="control">
+        <label>Case Style</label>
+        <select id="caseStyle">
+          <option value="camel">CamelCase</option>
+          <option value="lower">lowercase</option>
+          <option value="upper">UPPERCASE</option>
+          <option value="mixed">MiXeD</option>
+        </select>
+      </div>
+
+      <div class="control">
+        <label>Numbers</label>
+        <select id="numbers">
+          <option value="on">Include</option>
+          <option value="off">Disable</option>
+        </select>
+      </div>
+
+      <div class="control">
+        <label>Symbols</label>
+        <select id="symbols">
+          <option value="off">Disable</option>
+          <option value="on">Include</option>
+        </select>
+      </div>
+
+      <div class="control">
+        <label>Max Length</label>
+        <input type="number" id="maxLen" value="16" min="6" max="24">
+      </div>
+    </div>
+
+    <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;">
+      <button onclick="generateUsername()">Generate</button>
+      <button onclick="leet()">Leetspeak</button>
+      <button onclick="cleanSymbols()">Clean Symbols</button>
+      <button onclick="trimEnds()">Trim _.-</button>
+    </div>
+
+    <div class="footer">
+      Offline • Rule-based • Gamer-safe
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===== NAME DATA ===== */
+
+const firstNames = [
+    "Alex", "Jordan", "Taylor", "Morgan", "Casey", "Jamie", "Blake", "Skyler", "Riley", "Dakota", 
+    "Abby", "Abigail", "Ada", "Addie", "Addison", "Adelaide", "Adele", "Adora", "Adriana", "Ælfgifu", 
+    "Æthelburh", "Agnes", "Aileen", "Alaina", "Alanna", "Alberta", "Albina", "Aleana", "Alexa", 
+    "Alexandra", "Alexandria", "Alexis", "Alice", "Alicia", "Alisha", "Alison", "Allyson", "Alma", 
+    "Althea", "Alvina", "Alyson", "Amanda", "Amber", "Amberley", "Amelia", "Amy", "Ana", "Andrea", 
+    "Andrée", "Andy", "Angel", "Angela", "Angelica", "Angelina", "Angella", "Angie", "Anna", 
+    "Annabelle", "Annabeth", "Anne", "Annette", "Annie", "Antonia", "April", "Arabella", "Arda", 
+    "Ariana", "Ariel", "Arya", "Ash", "Ashley", "Astrid", "Aubrey", "Audra", "Audrey", "Aurora", 
+    "Autumn", "Averil", "Avis", "Azalea", "Babette", "Barb", "Barbara", "Beatrice", "Beatrix", 
+    "Beau", "Becca", "Becki", "Becky", "Belinda", "Bella", "Berenice", "Bertha", "Betsy", 
+    "Bettina", "Betty", "Beverly", "Bianca", "Blair", "Blake", "Blanche", "Blossom", "Bobbi", 
+    "Bobby", "Bonnie", "Braden", "Brandy", "Brenda", "Brianna", "Bridget", "Brielle", "Brilliana", 
+    "Brooklyn", "Brynlee", "Bryony", "Caden", "Calla", "Candy", "Cara", "Cari", "Carina", 
+    "Carissa", "Carlena", "Carlene", "Carlie", "Carly", "Carmelita", "Carol", "Carol Ann", 
+    "Carol Anne", "Carole", "Carolina", "Caroline", "Carolyn", "Carrie Ann", "Carrie Anne", 
+    "Carroll", "Carry", "Carson", "Cary", "Casey", "Cassandra", "Cassidy", "Cathleen", "Cathy", 
+    "Cecilia", "Cecily", "Celestia", "Celia", "Celinda", "Chara", "Charis", "Charisse", 
+    "Charity", "Charla", "Charle", "Charlee", "Charlene", "Charley", "Charli", "Charlie", 
+    "Charlotte", "Charly", "Charlyne", "Charmaine", "Chas", "Chelsea", "Cherry", "Cheryl", 
+    "Chloe", "Chris", "Christabel", "Christi", "Christina", "Christine", "Christy", "Cindy", 
+    "Claire", "Clara", "Clare", "Claribel", "Clarice", "Clarissa", "Claudia", "Clementine", 
+    "Clover", "Cody", "Colette", "Colleen", "Constance", "Cora", "Coral", "Coraline", 
+    "Cordelia", "Courtney", "Crystal", "Cynthia",
+    "Daenerys", "Daisy", "Dana", "Dani", "Danielle", "Danna", "Daphne", "Darla", "Darlene", 
+    "Davina", "Dawn", "Deanna", "D", "Deanne", "Deb", "Debbie", "Deborah", "Dede", "Deja", 
+    "Delaney", "Delia", "Demetria", "Demi", "Denise", "Destiny", "Devon", "Diamond", "Diana", 
+    "Diane", "Dimity", "Donna", "Dora", "Doreen", "Doris", "Dorothy", "Dottie", "Drew", 
+    "Dulcie", "E", "Eadgifu", "Ealdgyth", "Ebony", "Edburga", "Eden", "Edith", "Edna", 
+    "Edris", "Edwina", "Effie", "Eileen", "Elaine", "Eleanor", "Elektra", "Elisha", "Eliza", 
+    "Elizabeth", "Ella", "Elle", "Ellen", "Ellie", "Ellis", "Elora", "Ember", "Emerald", 
+    "Emily", "Emma", "Enid", "Erika", "Erin", "Estelle", "Esther", "Esty", "Ethel", 
+    "Etheldreda", "Etty", "Eudora", "Eva", "Evan", "Evangelina", "Eve", "Evelyn", "F", 
+    "Fabienne", "Faith", "Fancy", "Faye", "Felicity", "Fern", "Finn", "Fiona", "Fleur", 
+    "Florence", "Frances", "Francie", "Francine", "Frankie", "Frederica", "Frida", "G", 
+    "Gage", "Gail", "Gale", "Gemma", "Gene", "Genevieve", "Georgene", "Georgette", "Georgia", 
+    "Georgiana", "Georgina", "Gertie", "Gertrude", "Gia", "Gina", "Ginny", "Giselle", 
+    "Gladys", "Glenda", "Glenna", "Gloria", "Glynis", "Goldie", "Grace", "Gussie", "Gwen", 
+    "Gwenda", "Gwendolen", "Gwendoline", "Gwendolyn", "Gwyneth",
+    "Haisley", "Haley", "Hannah", "Harmony", "Harriet", "Hayden", "Hayley", "Hazel", 
+    "Heather", "Heidi", "Helen", "Helena", "Helene", "Henrietta", "Hero", "Hester", 
+    "Hilary", "Hilda", "Hodierna", "Holly", "Honor", "Hope", "Hunter", 
+    "Ida", "Ila", "Imelda", "Imogen", "Ingrid", "Iona", "Irene", "Iris", 
+    "Irma", "Isa", "Isabel", "Isabella", "Isla", "Ivy", 
+    "Jacinta", "Jack", "Jackie", "Jacqueline", "Jacqui", "Jade", "Jaime", "Jamie", 
+    "Jan", "Jana", "Jane", "Janee", "Janelle", "Janet", "Janey", "Janie", 
+    "January", "Jasmine", "Jay", "Jayda", "Jayden", "Jayne", "Jaynie", 
+    "Jean", "Jeanie", "Jeannie", "Jemima", "Jemma", "Jenna", "Jennifer", "Jenny", 
+    "Jensen", "Jerri", "Jerry", "Jess", "Jessica", "Jessie", "Jill", 
+    "Joan", "Joanna", "Joanne", "Jodi", "Jodie", "Jody", "Joelle", 
+    "Joey", "Johnny", "Jolie", "Jordan", 
+    "Josephine", "Josie", "Joy", "Joyce", "Judith", "Julia", "Julianne", 
+    "Julie", "Juliet", "June", "Juniper", "Juno", "Justine", 
+    "Kailey", "Kalla", "Kara", "Karen", "Karin", "Karlee", "Karlene", 
+    "Karli", "Karlie", "Karly", "Karolyn", "Karrie", "Karyn", "Karyne", 
+    "Kasey", "Kate", "Katey", "Kathleen", "Kathryn", "Kathy", "Katie", 
+    "Katina", "Katrina", "Katy", "Kay", "Kayla", "Kaylee", "Kelly", 
+    "Kelsey", "Kierra", "Kim", "Kimberly", "Kira", "Kirsteen", 
+    "Kirstin", "Kitty", "Krista", "Kristen", "Kristi", "Kristin", 
+    "Kristy", "Kylie", "Kyra",
+    "Lacey", "Lana", "Lanna", "Lara", "Larissa", "Laura", "Laurel", "Lauren", 
+    "Laurence", "Lauretta", "Laurie", "Lauryn", "Lavender", "Leah", "Leanne", 
+    "Lee", "Leila", "Leisha", "Lena", "Lenna", "Leona", "Leonora", "Leslie", 
+    "Lettice", "Lexi", "Lila", "Liliana", "Lilibet", "Lilibeth", "Lilla", 
+    "Lillian", "Lillie", "Lilly", "Lily", "Lina", "Linda", "Lindsay", 
+    "Lindy", "Lisa", "Liza", "Lizzie", "Lois", "Loraine", "Lorelei", 
+    "Lorena", "Loretta", "Lori", "Lorinda", "Lorna", "Lorraine", "Lottie", 
+    "Lotty", "Louella", "Louisa", "Louise", "Lucia", "Lucinda", "Lucy", 
+    "Lydia", "Lyndsay", "Lynnette", "Lysette", "Mabel", "Mable", "Macy", 
+    "Madelaine", "Madeleine", "Madelyn", "Madge", "Madison", "Madonna", 
+    "Mae", "Maggie", "Magnolia", "Mallory", "Mandy", "Mara", "Marcia", 
+    "Marcie", "Margaret", "Margie", "Margo", "Maria", "Mariah", "Marian", 
+    "Marianne", "Marie", "Marigold", "Marilyn", "Marina", "Marissa", 
+    "Marjorie", "Marlene", "Marsha", "Marta", "Martha", "Martina", 
+    "Mary", "Mary Belle", "Maryanne", "Mason", "Matilda", "Maud", 
+    "Maude", "Maura", "Maureen", "Mavis", "Maxine", "May", "Maya", 
+    "Mayola", "McKenna", "Meara", "Medea", "Megan", "Mehitable", 
+    "Mel", "Melanie", "Melina", "Melinda", "Melissa", "Melody", 
+    "Mercedes", "Meredith", "Merilyn", "Merle", "Merrilyn", "Mia", 
+    "Micah", "Michele", "Michelle", "Mila", "Mildred", "Miley", 
+    "Millicent", "Millie", "Mina", "Mindi", "Mindy", "Minerva", 
+    "Minnie", "Miranda", "Miriam", "Misty", "Moira", "Molly", 
+    "Morgan", "Muriel", "Myra", "Myrna", "Myrtle",
+    "Nadia", "Nadine", "Naila", "Nancy", "Naomi", "Narcissa", "Nathalie", 
+    "Nena", "Nettie", "Netty", "Nevaeh", "Nia", "Nicki", "Nicola", 
+    "Nicole", "Nina", "Noel", "Noella", "Noelle",
+    "Napoleon", "Nate", "Nathan", "Nathanael", "Nathaniel", "Ned", "Nehemiah", 
+    "Neil", "Nelson", "Nestor", "Newt", "Newton", "Niall", "Nicholas", 
+    "Nick", "Nicodemus", "Nicolas", "Nigel", "Niles", "Noah", "Noam", 
+    "Norm", "Norman", "Nowell",
+    "Obadiah", "Odin", "Oliver", "Ollie", "Orion", "Orlando", "Orville", 
+    "Osbert", "Osborne", "Oscar", "Osric", "Oswald", "Otis", "Otto", 
+    "Owen", "Ozzie",
+    "Paddy", "Palmer", "Paris", "Patrick", "Patsy", "Patty", "Paul", 
+    "Peleg", "Percival", "Percy", "Perry", "Pete", "Peter", "Philip", 
+    "Phillipps", "Phineas", "Pierse", "Poe", "Porter", "Posy", "Preston",
+    "Quentin", "Quincy", "Quinn",
+    "Race", "Rafe", "Raife", "Raleigh", "Ralph", "Ralphie", "Ramsey", 
+    "Randall", "Randi", "Randolph", "Randy", "Raphael", "Rathbone", 
+    "Ray", "Raymond", "Reese", "Reggie", "Reginald", "Rembrandt", 
+    "Rendell", "Renssalaer", "Reuben", "Rex", "Reynold", "Rhett", 
+    "Rich", "Richard", "Richie", "Rick", "Ricky", "Riley", "Ritchie", 
+    "Rob", "Robbie", "Robert", "Robin", "Roderick", "Rodger", 
+    "Rodney", "Roger", "Rogers", "Roland", "Roman", "Ron", "Ronald", 
+    "Ronnie", "Rory", "Roscoe", "Ross", "Roualeyn", "Rowland", 
+    "Roy", "Rudolph", "Rudy", "Rufus", "Rupert", "Russ", "Russell", 
+    "Ryan", "Ryder",
+    "Sam", "Sammy", "Samson", "Samuel", "Sandy", "Sanford", "Saul", 
+    "Sawyer", "Scott", "Sean", "Sebastian", "Seth", "Seymour", 
+    "Shane", "Shaun", "Shawn", "Shayne", "Sheldon", "Shepherd", 
+    "Sid", "Sidney", "Sigmund", "Simon", "Sky", "Skyler", 
+    "Sloane", "Smith", "Sol", "Solomon", "Spencer", "Stan", 
+    "Stanford", "Stanley", "Stefan", "Stephen", "Stetson", 
+    "Steve", "Stevie", "Stevland", "Stewart", "Storm", "Stuart", 
+    "Swaine", "Syd", "Sydney", "Sylvester",
+    "Tanner", "Taran", "Taylor", "Tazewell", "Ted", "Tedd", "Teddy", 
+    "Terence", "Terry", "Thaddeus", "Theo", "Theodore", "Thomas", 
+    "Thor", "Tim", "Timmy", "Timothy", "Tobias", "Toby", "Tod", 
+    "Todd", "Toddy", "Tom", "Tommie", "Tommy", "Tony", "Tracy", 
+    "Travis", "Tregonwell", "Trent", "Trevor", "Trey", "Tristan", 
+    "Troy", "Truman", "Tucker", "Tyler", "Tyson",
+    "Ultan", "Ulysses", "Uriah",
+    "Val", "Valentine", "Vernon", "Vic", "Vicary", "Victor", "Vince", 
+    "Vincent", "Vinny", "Vivian",
+    "Wade", "Wadsworth", "Walden", "Waldo", "Walker", "Wallace", 
+    "Wally", "Walt", "Walter", "Warren", "Waverly", "Waylon", 
+    "Wayne", "Wells", "Wes", "Wesley", "Whitney", "Wilber", 
+    "Wilbert", "Wilbur", "Wilf", "Wilfred", "Wilfried", "Wilhelm", 
+    "Will", "Willard", "William", "Willis", "Willy", "Wilmon", 
+    "Wilson", "Winnie", "Winston", "Wolfgang", "Woodrow", 
+    "Woodruff", "Woody", "Wyatt", "Wyndham",
+    "Xander", "Xavier",
+    "Yancy",
+    "Zabdiel", "Zach", "Zachary", "Zack", "Zadoc", "Zak", "Zane", 
+    "Zayden", "Zeb", "Zechariah", "Zedekiah", "Zeke", "Zeph", 
+    "Zephaniah", "Zion"
+];
+    
+const lastNames = [
+  "Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis", "Rodriguez", "Martinez",
+  "Hernandez", "Lopez", "Gonzalez", "Wilson", "Anderson", "Thomas", "Taylor", "Moore", "Jackson", "Martin",
+  "Lee", "Perez", "Thompson", "White", "Harris", "Sanchez", "Clark", "Ramirez", "Lewis", "Robinson",
+  "Walker", "Young", "Allen", "King", "Wright", "Scott", "Torres", "Nguyen", "Hill", "Flores",
+  "Green", "Adams", "Nelson", "Baker", "Hall", "Rivera", "Campbell", "Mitchell", "Carter", "Roberts",
+  "Gomez", "Phillips", "Evans", "Turner", "Diaz", "Parker", "Cruz", "Edwards", "Collins", "Reyes",
+  "Stewart", "Morris", "Morales", "Murphy", "Cook", "Rogers", "Gutierrez", "Ortiz", "Morgan", "Cooper",
+  "Peterson", "Bailey", "Reed", "Kelly", "Howard", "Ramos", "Kim", "Cox", "Ward", "Richardson",
+  "Watson", "Brooks", "Chavez", "Wood", "James", "Bennett", "Gray", "Mendoza", "Ruiz", "Hughes",
+  "Price", "Alvarez", "Castillo", "Sanders", "Patel", "Myers", "Long", "Ross", "Foster", "Jimenez",
+  "Powell", "Jenkins", "Perry", "Russell", "Sullivan", "Bell", "Coleman", "Butler", "Henderson", "Barnes",
+  "Gonzales", "Fisher", "Vasquez", "Simmons", "Romero", "Jordan", "Patterson", "Alexander", "Hamilton", "Graham",
+  "Reynolds", "Griffin", "Wallace", "Moreno", "West", "Cole", "Hayes", "Bryant", "Herrera", "Gibson",
+  "Ellis", "Tran", "Medina", "Aguilar", "Stevens", "Murray", "Ford", "Castro", "Marshall", "Owens",
+  "Harrison", "Fernandez", "Mcdonald", "Woods", "Washington", "Kennedy", "Wells", "Vargas", "Henry", "Chen",
+  "Freeman", "Webb", "Tucker", "Guzman", "Burns", "Crawford", "Olson", "Simpson", "Porter", "Hunter",
+  "Gordon", "Mendez", "Silva", "Shaw", "Snyder", "Mason", "Dixon", "Munoz", "Hunt", "Hicks",
+  "Holmes", "Palmer", "Wagner", "Black", "Robertson", "Boyd", "Rose", "Stone", "Salazar", "Fox",
+  "Warren", "Mills", "Meyer", "Rice", "Schmidt", "Garza", "Daniels", "Ferguson", "Nichols", "Stephens",
+  "Soto", "Weaver", "Ryan", "Gardner", "Payne", "Grant", "Dunn", "Kelley", "Spencer", "Hawkins",
+  "Arnold", "Pierce", "Vazquez", "Hansen", "Peters", "Santos", "Hart", "Bradley", "Knight", "Elliott",
+  "Cunningham", "Duncan", "Armstrong", "Hudson", "Carroll", "Lane", "Riley", "Andrews", "Alvarado", "Ray",
+  "Delgado", "Berry", "Perkins", "Hoffman", "Johnston", "Matthews", "Pena", "Richards", "Contreras", "Willis",
+  "Carpenter", "Lawrence", "Sandoval", "Guerrero", "George", "Chapman", "Rios", "Estrada", "Ortega", "Watkins",
+  "Greene", "Nunez", "Wheeler", "Valdez", "Harper", "Burke", "Larson", "Santiago", "Maldonado", "Morrison",
+  "Franklin", "Carlson", "Austin", "Dominguez", "Carr", "Lawson", "Jacobs", "Obrien", "Lynch", "Singh",
+  "Vega", "Bishop", "Montgomery", "Oliver", "Jensen", "Harvey", "Williamson", "Gilbert", "Dean", "Sims",
+  "Espinoza", "Howell", "Li", "Wong", "Reid", "Hanson", "Le", "Mccoy", "Garrett", "Burton",
+  "Fuller", "Wang", "Weber", "Welch", "Rojas", "Lucas", "Marquez", "Fields", "Park", "Yang",
+  "Little", "Banks", "Padilla", "Day", "Walsh", "Bowman", "Schultz", "Luna", "Fowler", "Mejia",
+  "Davidson", "Acosta", "Brewer", "May", "Holland", "Juarez", "Newman", "Pearson", "Curtis", "Cortez",
+  "Douglas", "Schneider", "Joseph", "Barrett", "Navarro", "Figueroa", "Keller", "Avila", "Wade", "Molina",
+  "Stanley", "Hopkins", "Campos", "Barnett", "Bates", "Chambers", "Caldwell", "Beck", "Lambert", "Miranda",
+  "Byrd", "Craig", "Ayala", "Lowe", "Frazier", "Powers", "Neal", "Leonard", "Gregory", "Carrillo",
+  "Sutton", "Fleming", "Rhodes", "Shelton", "Schwartz", "Norris", "Jennings", "Watts", "Duran", "Walters",
+  "Cohen", "Mcdaniel", "Moran", "Parks", "Steele", "Vaughn", "Becker", "Holt", "Deleon", "Barker",
+  "Terry", "Hale", "Leon", "Hail", "Baldwin", "Kirk", "Underwood", "Wilkins", "Gaines", "Madden"
+];
+
+/* ===== GENERATOR ===== */
+
+function rand(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function generateUsername() {
+  const caseStyle = document.getElementById("caseStyle").value;
+  const numbers = document.getElementById("numbers").value === "on";
+  const symbols = document.getElementById("symbols").value === "on";
+  const maxLen = parseInt(document.getElementById("maxLen").value);
+
+  let name =
+    rand(firstNames) +
+    rand(lastNames);
+
+  if (numbers) {
+    name += Math.floor(Math.random() * 99);
+  }
+
+  if (symbols) {
+    name += rand(["_", ".", "-"]);
+  }
+
+  // casing
+  if (caseStyle === "lower") name = name.toLowerCase();
+  if (caseStyle === "upper") name = name.toUpperCase();
+  if (caseStyle === "camel") {
+    name = name.replace(/(^|\W)(\w)/g, (_, a, b) => b.toUpperCase());
+  }
+  if (caseStyle === "mixed") {
+    name = name.split("").map(c =>
+      Math.random() > 0.5 ? c.toUpperCase() : c.toLowerCase()
+    ).join("");
+  }
+
+  // trim to length
+  name = name.slice(0, maxLen);
+
+  document.getElementById("username").value = name;
+}
+
+function copyName() {
+  navigator.clipboard.writeText(
+    document.getElementById("username").value
+  );
+}
+
+function leet() {
+  const input = document.getElementById("username");
+  input.value = input.value
+    .replace(/a/gi,"4")
+    .replace(/e/gi,"3")
+    .replace(/i/gi,"1")
+    .replace(/o/gi,"0")
+    .replace(/s/gi,"5");
+}
+
+function cleanSymbols() {
+  const input = document.getElementById("username");
+  input.value = input.value.replace(/[^a-zA-Z0-9._-]/g,"");
+}
+
+function trimEnds() {
+  const input = document.getElementById("username");
+  input.value = input.value.replace(/^[._-]+|[._-]+$/g,"");
+}
+</script>
+
+</body>
+</html>

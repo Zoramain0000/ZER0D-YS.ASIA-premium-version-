@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Random Identity Generator (Infinite)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+      font-family: 'Segoe UI', sans-serif;
+      padding: 20px;
+      text-align: center;
+    }
+    h1 {
+      color: red;
+    }
+    button {
+      background: red;
+      color: green;
+      border: none;
+      padding: 10px 20px;
+      font-size: 16px;
+      margin: 10px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:hover {
+background: rgba(0, 0, 0, 0.5);
+    }
+    .user-card {
+background: rgba(0, 0, 0, 0.5);
+      margin: 20px auto;
+      padding: 20px;
+      border-radius: 10px;
+      max-width: 500px;
+      text-align: left;
+      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    }
+    img {
+      border-radius: 50%;
+      float: right;
+      width: 80px;
+      height: 80px;
+    }
+    .field {
+      margin: 5px 0;
+    }
+    .controls {
+      position: sticky;
+      top: 0;
+background: rgba(0, 0, 0, 0.5);
+      padding: 10px 0;
+      z-index: 999;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Random Identity Generator</h1>
+
+  <div class="controls">
+    <button onclick="getRandomUsers()">Generate More</button>
+    <button onclick="clearAll()">Clear All</button>
+  </div>
+
+  <div id="usersContainer"></div>
+
+  <script>
+    async function getRandomUsers(count = 10) {
+      const res = await fetch(`https://randomuser.me/api/?results=${count}`);
+      const data = await res.json();
+      const users = data.results;
+
+      const container = document.getElementById('usersContainer');
+
+      users.forEach(user => {
+        const userCard = document.createElement('div');
+        userCard.className = 'user-card';
+
+        userCard.innerHTML = `
+          <h2>${user.name.title} ${user.name.first} ${user.name.last}</h2>
+          <img src="${user.picture.large}" alt="User Photo">
+          <div class="field"><strong>Gender:</strong> ${user.gender}</div>
+          <div class="field"><strong>Email:</strong> ${user.email}</div>
+          <div class="field"><strong>Phone:</strong> ${user.phone}</div>
+          <div class="field"><strong>Location:</strong> ${user.location.city}, ${user.location.state}, ${user.location.country}</div>
+          <div class="field"><strong>DOB:</strong> ${user.dob.date.split("T")[0]} (Age: ${user.dob.age})</div>
+          <div class="field"><strong>Username:</strong> ${user.login.username}</div>
+          <div class="field"><strong>Password:</strong> ${user.login.password}</div>
+          <div class="field"><strong>Nationality:</strong> ${user.nat}</div>
+        `;
+
+        container.appendChild(userCard);
+      });
+    }
+
+    function clearAll() {
+      document.getElementById('usersContainer').innerHTML = '';
+    }
+
+    // Load some users initially
+    window.onload = () => getRandomUsers();
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>8D Audio Tool - Advanced Stereo Panning Effect</title>
+<style>
+  body {
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+    color: rrd;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 30px;
+    min-height: 100vh;
+  }
+  h1 {
+    color: red;
+    margin-bottom: 25px;
+    text-align: center;
+  }
+  .container {
+background: rgba(0, 0, 0, 0.5)
+    border-radius: 15px;
+    padding: 25px 30px;
+    max-width: 520px;
+    width: 100%;
+    box-shadow: 0 0 25px red;
+  }
+  label {
+    font-weight: bold;
+    margin-bottom: 8px;
+    display: block;
+  }
+  input[type="file"], input[type="range"] {
+    width: 100%;
+    margin-bottom: 20px;
+background: rgba(0, 0, 0, 0.5)
+  }
+  .buttons {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 15px;
+  }
+  button {
+    background: red;
+    border: none;
+    color: green;
+    font-weight: bold;
+    padding: 12px 20px;
+    border-radius: 10px;
+    cursor: pointer;
+    flex: 1;
+    transition: background-color 0.3s ease;
+  }
+  button:hover:not(:disabled) {
+background: rgba(0, 0, 0, 0.5)
+  }
+  button:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+  .time-display {
+    text-align: center;
+    font-size: 14px;
+    color: red;
+    margin-bottom: 15px;
+  }
+  .range-label {
+    margin-bottom: 5px;
+    color: red;
+  }
+  .download-btn {
+    background: red;
+    color: green;
+  }
+  .download-btn:hover {
+background: rgba(0, 0, 0, 0.5)
+  }
+</style>
+</head>
+<body>
+
+<h1>🎧 Advanced 8D Audio Tool</h1>
+
+<div class="container">
+  <label for="audioFile" style="color:red;">Upload Audio File</label>
+  <input type="file" id="audioFile" accept="audio/*" />
+
+  <label for="speedRange" class="range-label">Panning Speed: <span id="speedValue">0.5</span> Hz</label>
+  <input type="range" id="speedRange" min="0.1" max="5" value="0.5" step="0.05" />
+
+  <div class="buttons">
+    <button id="btnPlay" disabled>▶️ Play</button>
+    <button id="btnPause" disabled>⏸️ Pause</button>
+    <button id="btnStop" disabled>⏹️ Stop</button>
+  </div>
+
+  <div class="time-display" id="timeDisplay">00:00 / 00:00</div>
+
+  <button id="btnDownload" class="download-btn" disabled>⬇️ Download 8D Audio (WAV)</button>
+</div>
+
+<script>
+  const audioFileInput = document.getElementById('audioFile');
+  const speedRange = document.getElementById('speedRange');
+  const speedValueLabel = document.getElementById('speedValue');
+  const btnPlay = document.getElementById('btnPlay');
+  const btnPause = document.getElementById('btnPause');
+  const btnStop = document.getElementById('btnStop');
+  const btnDownload = document.getElementById('btnDownload');
+  const timeDisplay = document.getElementById('timeDisplay');
+
+  let audioCtx;
+  let sourceNode;
+  let pannerNode;
+  let audioBuffer;
+  let startTime = 0;
+  let pauseTime = 0;
+  let isPlaying = false;
+  let animationFrameId;
+  let oscillationStart;
+
+  // Format seconds as mm:ss
+  function formatTime(seconds) {
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+  }
+
+  // Update speed label
+  speedRange.addEventListener('input', () => {
+    speedValueLabel.textContent = speedRange.value;
+  });
+
+  function resetControls() {
+    btnPlay.disabled = !audioBuffer;
+    btnPause.disabled = true;
+    btnStop.disabled = true;
+    btnDownload.disabled = !audioBuffer;
+    timeDisplay.textContent = "00:00 / 00:00";
+  }
+
+  audioFileInput.addEventListener('change', async () => {
+    const file = audioFileInput.files[0];
+    if (!file) return;
+
+    if (!audioCtx) audioCtx = new AudioContext();
+
+    const arrayBuffer = await file.arrayBuffer();
+    try {
+      audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+      resetControls();
+    } catch (err) {
+      alert('Error decoding audio file. Please upload a valid audio file.');
+      audioBuffer = null;
+      resetControls();
+    }
+  });
+
+  function playAudio() {
+    if (!audioBuffer) return;
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+
+    sourceNode = audioCtx.createBufferSource();
+    sourceNode.buffer = audioBuffer;
+
+    pannerNode = audioCtx.createStereoPanner();
+
+    sourceNode.connect(pannerNode).connect(audioCtx.destination);
+
+    const offset = pauseTime;
+    startTime = audioCtx.currentTime - offset;
+    sourceNode.start(0, offset);
+    isPlaying = true;
+    btnPlay.disabled = true;
+    btnPause.disabled = false;
+    btnStop.disabled = false;
+
+    oscillationStart = audioCtx.currentTime - offset;
+
+    sourceNode.onended = () => {
+      isPlaying = false;
+      pauseTime = 0;
+      resetControls();
+      cancelAnimationFrame(animationFrameId);
+    };
+
+    animatePanning();
+    updateTime();
+  }
+
+  function animatePanning() {
+    if (!isPlaying) return;
+    const speedHz = parseFloat(speedRange.value);
+    const elapsed = audioCtx.currentTime - oscillationStart;
+    // Oscillate panning from -1 (left) to 1 (right) using sine wave
+    const panValue = Math.sin(2 * Math.PI * speedHz * elapsed);
+    pannerNode.pan.value = panValue;
+    animationFrameId = requestAnimationFrame(animatePanning);
+  }
+
+  function updateTime() {
+    if (!isPlaying) return;
+    const currentTime = audioCtx.currentTime - startTime;
+    if (currentTime >= audioBuffer.duration) return;
+    timeDisplay.textContent = `${formatTime(currentTime)} / ${formatTime(audioBuffer.duration)}`;
+    requestAnimationFrame(updateTime);
+  }
+
+  btnPlay.addEventListener('click', () => {
+    playAudio();
+  });
+
+  btnPause.addEventListener('click', () => {
+    if (!isPlaying) return;
+    sourceNode.stop();
+    pauseTime = audioCtx.currentTime - startTime;
+    isPlaying = false;
+    btnPlay.disabled = false;
+    btnPause.disabled = true;
+    btnStop.disabled = false;
+    cancelAnimationFrame(animationFrameId);
+  });
+
+  btnStop.addEventListener('click', () => {
+    if (sourceNode) {
+      sourceNode.stop();
+    }
+    pauseTime = 0;
+    isPlaying = false;
+    timeDisplay.textContent = `00:00 / ${audioBuffer ? formatTime(audioBuffer.duration) : '00:00'}`;
+    resetControls();
+    cancelAnimationFrame(animationFrameId);
+  });
+
+  // Create WAV Blob from AudioBuffer (offline rendered with 8D effect)
+  function audioBufferToWav(buffer) {
+    const numOfChan = buffer.numberOfChannels,
+          length = buffer.length * numOfChan * 2 + 44,
+          bufferArray = new ArrayBuffer(length),
+          view = new DataView(bufferArray),
+          channels = [],
+          sampleRate = buffer.sampleRate,
+          bitsPerSample = 16;
+    
+    function writeString(view, offset, string) {
+      for (let i = 0; i < string.length; i++) {
+        view.setUint8(offset + i, string.charCodeAt(i));
+      }
+    }
+
+    writeString(view, 0, 'RIFF');
+    view.setUint32(4, length - 8, true);
+    writeString(view, 8, 'WAVE');
+    writeString(view, 12, 'fmt ');
+    view.setUint32(16, 16, true); // Subchunk1Size (16 for PCM)
+    view.setUint16(20, 1, true);  // PCM format
+    view.setUint16(22, numOfChan, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * numOfChan * bitsPerSample/8, true);
+    view.setUint16(32, numOfChan * bitsPerSample/8, true);
+    view.setUint16(34, bitsPerSample, true);
+    writeString(view, 36, 'data');
+    view.setUint32(40, length - 44, true);
+
+    for(let i=0; i<numOfChan; i++) {
+      channels.push(buffer.getChannelData(i));
+    }
+
+    let offset = 44;
+    for(let i=0; i<buffer.length; i++) {
+      for(let ch=0; ch<numOfChan; ch++) {
+        let sample = Math.max(-1, Math.min(1, channels[ch][i]));
+        sample = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+        view.setInt16(offset, sample, true);
+        offset += 2;
+      }
+    }
+
+    return new Blob([view], {type: "audio/wav"});
+  }
+
+  // Offline render 8D effect by applying panning oscillation and mixdown
+  async function render8DEffect(buffer, speedHz) {
+    if (!audioCtx) audioCtx = new AudioContext();
+
+    // OfflineAudioContext for rendering
+    const offlineCtx = new OfflineAudioContext(
+      buffer.numberOfChannels,
+      buffer.length,
+      buffer.sampleRate
+    );
+
+    const source = offlineCtx.createBufferSource();
+    source.buffer = buffer;
+
+    const panner = offlineCtx.createStereoPanner();
+
+    source.connect(panner).connect(offlineCtx.destination);
+    source.start(0);
+
+    // Apply oscillating pan automation
+    const panParam = panner.pan;
+    const duration = buffer.duration;
+    const sampleRate = offlineCtx.sampleRate;
+    const totalSamples = Math.floor(duration * sampleRate);
+
+    // We'll create a Float32Array with pan values over time using sine wave
+    const panAutomation = new Float32Array(totalSamples);
+    for (let i = 0; i < totalSamples; i++) {
+      let time = i / sampleRate;
+      panAutomation[i] = Math.sin(2 * Math.PI * speedHz * time);
+    }
+
+    // Web Audio API automation isn't flexible for arbitrary curves offline, so
+    // we use setValueCurveAtTime with 1024 sample resolution repeatedly.
+
+    // Automate pan values in chunks (1024 samples)
+    const chunkSize = 1024;
+    let currentTime = 0;
+    while (currentTime < duration) {
+      const remaining = Math.min(chunkSize / sampleRate, duration - currentTime);
+      const startSample = Math.floor(currentTime * sampleRate);
+      const endSample = startSample + Math.min(chunkSize, totalSamples - startSample);
+      const curve = panAutomation.slice(startSample, endSample);
+      panner.pan.setValueCurveAtTime(curve, currentTime, remaining);
+      currentTime += remaining;
+    }
+
+    const renderedBuffer = await offlineCtx.startRendering();
+    return renderedBuffer;
+  }
+
+  btnDownload.addEventListener('click', async () => {
+    if (!audioBuffer) return;
+    btnDownload.disabled = true;
+    btnDownload.textContent = "🔄 Rendering...";
+    try {
+      const speedHz = parseFloat(speedRange.value);
+      const rendered = await render8DEffect(audioBuffer, speedHz);
+      const wavBlob = audioBufferToWav(rendered);
+      const url = URL.createObjectURL(wavBlob);
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `8d_audio_${Date.now()}.wav`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch(e) {
+      alert("Error during rendering: " + e.message);
+    } finally {
+      btnDownload.textContent = "⬇️ Download 8D Audio (WAV)";
+      btnDownload.disabled = false;
+    }
+  });
+
+  // Initialize UI state on load
+  resetControls();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>🔁 All-in-One Converter Tool</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      background: #0f172a;
+      color: red;
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 2rem;
+    }
+    h1 { color: #38bdf8; text-align: center; }
+    .section {
+      background: #1e293b;
+      padding: 1rem;
+      margin: 1rem 0;
+      border-radius: 8px;
+    }
+    label {
+      display: block;
+      margin: 0.5rem 0 0.3rem;
+      font-weight: bold;
+    }
+    textarea, input, select, button {
+      width: 100%;
+      padding: 0.7rem;
+      margin-bottom: 1rem;
+      background: #0f172a;
+      color: #f8fafc;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      font-family: monospace;
+    }
+    button {
+      background: #38bdf8;
+      color: #0f172a;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    pre {
+      background: #0f172a;
+      padding: 0.8rem;
+      border-radius: 6px;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+  </style>
+</head>
+<body>
+
+<h1>🔁 All-in-One Converter Tool</h1>
+
+<div class="section">
+  <h2>1️⃣ Number Base Converter</h2>
+  <label>Input Number</label>
+  <input type="text" id="numInput" placeholder="Enter number (any base)" />
+  <label>Input Base</label>
+  <select id="numBase">
+    <option value="2">Binary</option>
+    <option value="8">Octal</option>
+    <option value="10" selected>Decimal</option>
+    <option value="16">Hexadecimal</option>
+  </select>
+  <button onclick="convertNumber()">Convert</button>
+  <pre id="numOutput"></pre>
+</div>
+
+<div class="section">
+  <h2>2️⃣ Text ↔ ASCII / Hex</h2>
+  <label>Input Text</label>
+  <input type="text" id="textInput" placeholder="Hello" />
+  <button onclick="textToAscii()">🔤 To ASCII</button>
+  <button onclick="textToHex()">🧾 To HEX</button>
+  <button onclick="asciiToText()">🔢 ASCII to Text</button>
+  <button onclick="hexToText()">🔣 HEX to Text</button>
+  <pre id="textOutput"></pre>
+</div>
+
+<div class="section">
+  <h2>3️⃣ URL Encode / Decode</h2>
+  <label>Input</label>
+  <input type="text" id="urlInput" placeholder="https://example.com?x=1&y=2" />
+  <button onclick="urlEncode()">🔐 Encode</button>
+  <button onclick="urlDecode()">🔓 Decode</button>
+  <pre id="urlOutput"></pre>
+</div>
+
+<div class="section">
+  <h2>4️⃣ Base64 Encode / Decode</h2>
+  <label>Input</label>
+  <input type="text" id="b64Input" placeholder="Some text here..." />
+  <button onclick="b64Encode()">📤 Encode</button>
+  <button onclick="b64Decode()">📥 Decode</button>
+  <pre id="b64Output"></pre>
+</div>
+
+<script>
+  function convertNumber() {
+    const input = document.getElementById('numInput').value.trim();
+    const base = parseInt(document.getElementById('numBase').value);
+    let dec;
+    try {
+      dec = parseInt(input, base);
+      document.getElementById('numOutput').textContent =
+        `Decimal: ${dec}
+Binary: ${dec.toString(2)}
+Octal: ${dec.toString(8)}
+Hex: ${dec.toString(16).toUpperCase()}`;
+    } catch (e) {
+      document.getElementById('numOutput').textContent = "❌ Invalid input";
+    }
+  }
+
+  function textToAscii() {
+    const input = document.getElementById('textInput').value;
+    const ascii = input.split('').map(c => c.charCodeAt(0)).join(' ');
+    document.getElementById('textOutput').textContent = ascii;
+  }
+
+  function textToHex() {
+    const input = document.getElementById('textInput').value;
+    const hex = input.split('').map(c => c.charCodeAt(0).toString(16)).join(' ');
+    document.getElementById('textOutput').textContent = hex;
+  }
+
+  function asciiToText() {
+    const input = document.getElementById('textInput').value.trim();
+    try {
+      const chars = input.split(/\s+/).map(n => String.fromCharCode(parseInt(n)));
+      document.getElementById('textOutput').textContent = chars.join('');
+    } catch (e) {
+      document.getElementById('textOutput').textContent = "❌ Invalid ASCII input";
+    }
+  }
+
+  function hexToText() {
+    const input = document.getElementById('textInput').value.trim();
+    try {
+      const chars = input.split(/\s+/).map(h => String.fromCharCode(parseInt(h, 16)));
+      document.getElementById('textOutput').textContent = chars.join('');
+    } catch (e) {
+      document.getElementById('textOutput').textContent = "❌ Invalid HEX input";
+    }
+  }
+
+  function urlEncode() {
+    try {
+      document.getElementById('urlOutput').textContent = encodeURIComponent(document.getElementById('urlInput').value);
+    } catch {
+      document.getElementById('urlOutput').textContent = "❌ Error encoding";
+    }
+  }
+
+  function urlDecode() {
+    try {
+      document.getElementById('urlOutput').textContent = decodeURIComponent(document.getElementById('urlInput').value);
+    } catch {
+      document.getElementById('urlOutput').textContent = "❌ Error decoding";
+    }
+  }
+
+  function b64Encode() {
+    try {
+      const encoded = btoa(document.getElementById('b64Input').value);
+      document.getElementById('b64Output').textContent = encoded;
+    } catch {
+      document.getElementById('b64Output').textContent = "❌ Encoding failed";
+    }
+  }
+
+  function b64Decode() {
+    try {
+      const decoded = atob(document.getElementById('b64Input').value);
+      document.getElementById('b64Output').textContent = decoded;
+    } catch {
+      document.getElementById('b64Output').textContent = "❌ Decoding failed";
+    }
+  }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>🎥 YouTube Infinite Finder Tool</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+color: red;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      max-width: 900px;
+      margin: auto;
+background: rgba(0, 0, 0, 0.5)
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 16px rgba(0,0,0,0.1);
+    }
+    h1 {
+      text-align: center;
+      color: red;
+    }
+    input {
+      padding: 12px;
+      font-size: 1em;
+      margin-top: 10px;
+      width: 100%;
+      border: 1px solid red;
+      border-radius: 6px;
+    }
+    select {
+      padding: 12px;
+      font-size: 1em;
+      margin-top: 10px;
+      width: 100%;
+      border: 1px solid red;
+      border-radius: 6px;
+    }
+    button {
+      background: red;
+      color: green;
+      border: none;
+      padding: 12px;
+      width: 100%;
+      font-size: 1em;
+      margin-top: 10px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    button:hover {
+background: rgba(0, 0, 0, 0.5)
+    }
+    .video {
+      margin-top: 20px;
+      border: 1px solid red;
+      padding: 15px;
+      border-radius: 8px;
+background: rgba(0, 0, 0, 0.5)
+    }
+    .video img {
+      max-width: 100%;
+      border-radius: 6px;
+    }
+    .video h3 {
+      margin: 10px 0 5px;
+    }
+    .error {
+      color: red;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎥 YouTube Infinite Finder Tool</h1>
+    <input type="text" id="searchQuery" placeholder="🔍 Search for videos (e.g. AI, Music, Space)">
+    <select id="searchType">
+      <option value="videos">Video</option>
+      <option value="channels">Channel</option>
+      <option value="playlists">Playlist</option>
+      <option value="playlistItems">Playlist Item</option>
+      <option value="subscriptions">Subscription</option>
+      <option value="activities">Activity</option>
+      <option value="captions">Captions</option>
+      <option value="commentThreads">Comment Thread</option>
+      <option value="comments">Comment</option>
+      <option value="guideCategories">Guide Category</option>
+      <option value="i18nLanguages">I18n Language</option>
+      <option value="i18nRegions">I18n Region</option>
+      <option value="search">Search Result</option>
+      <option value="thumbnails">Thumbnail</option>
+      <option value="videoCategories">Video Category</option>
+      <option value="watermarks">Watermark</option>
+      <option value="channelSections">Channel Section</option>
+    </select>
+    <button onclick="startSearch()">🔎 Search</button>
+    <div class="error" id="error"></div>
+    <div id="results"></div>
+  </div>
+
+  <script>
+    const apiKey = "AIzaSyAtLgFyHTcT6eMS_4UYtiYs8ltRmE_qRgk"; // Replace with your YouTube Data API key
+    let nextPageToken = "";
+    let currentQuery = "";
+    let currentType = "videos";
+    let loading = false;
+
+    async function startSearch() {
+      document.getElementById("results").innerHTML = "";
+      nextPageToken = "";
+      currentQuery = document.getElementById("searchQuery").value.trim();
+      currentType = document.getElementById("searchType").value;
+
+      if (!currentQuery) {
+        document.getElementById("error").textContent = "Please enter a search term.";
+        return;
+      }
+      document.getElementById("error").textContent = "";
+      await loadVideos();
+    }
+
+    async function loadVideos() {
+      if (loading) return;
+      loading = true;
+
+      const url = new URL("https://www.googleapis.com/youtube/v3/search");
+      url.searchParams.set("part", "snippet");
+      url.searchParams.set("type", currentType);
+      url.searchParams.set("q", currentQuery);
+      url.searchParams.set("maxResults", "10");
+      url.searchParams.set("key", apiKey);
+      if (nextPageToken) url.searchParams.set("pageToken", nextPageToken);
+
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (data.error) {
+          document.getElementById("error").textContent = data.error.message;
+          loading = false;
+          return;
+        }
+
+        nextPageToken = data.nextPageToken || "";
+        const results = document.getElementById("results");
+
+        data.items.forEach(item => {
+          const videoId = item.id.videoId || item.id.channelId || item.id.playlistId;
+          const snippet = item.snippet;
+          const div = document.createElement("div");
+          div.className = "video";
+          div.innerHTML = `
+            <a href="https://www.youtube.com/watch?v=${videoId}" target="_blank">
+              <img src="${snippet.thumbnails.medium.url}" alt="${snippet.title}">
+            </a>
+            <h3>${snippet.title}</h3>
+            <p><strong>Channel:</strong> ${snippet.channelTitle}</p>
+            <p>${snippet.description}</p>
+          `;
+          results.appendChild(div);
+        });
+
+      } catch (e) {
+        document.getElementById("error").textContent = "Error loading videos.";
+      }
+
+      loading = false;
+    }
+
+    // Load more when scrolled to bottom
+    window.addEventListener("scroll", () => {
+      if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 100) {
+        if (currentQuery && nextPageToken) {
+          loadVideos();
+        }
+      }
+    });
+  </script>
+</body>
+</html>

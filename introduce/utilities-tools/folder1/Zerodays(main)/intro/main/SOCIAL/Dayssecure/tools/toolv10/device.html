@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Advanced IP Device Log Generator</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: "Segoe UI", sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+    }
+
+    header {
+      padding: 20px;
+      text-align: center;
+background: rgba(0, 0, 0, 0.5);
+      box-shadow: 0 2px 5px red;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 24px;
+      color: red;
+    }
+
+    #logTableContainer {
+      max-width: 100%;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0 auto;
+      font-size: 14px;
+    }
+
+    th, td {
+      padding: 10px;
+      border-bottom: 1px solid #333;
+      text-align: left;
+    }
+
+    th {
+background: rgba(0, 0, 0, 0.5);
+      color: red;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    tr:hover {
+background: rgba(0, 0, 0, 0.5);
+    }
+
+    #loader {
+      text-align: center;
+      padding: 20px;
+      color: red;
+    }
+
+    #exportBtn {
+      margin: 10px;
+      background-color: red;
+      color: green;
+      border: none;
+      padding: 10px 20px;
+      cursor: pointer;
+      border-radius: 6px;
+      font-weight: bold;
+    }
+
+    #exportBtn:hover {
+background: rgba(0, 0, 0, 0.5);
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Advanced IP Device Log Generator</h1>
+</header>
+
+<div style="text-align:right; padding: 10px;">
+  <button id="exportBtn">Export CSV</button>
+</div>
+
+<div id="logTableContainer">
+  <table id="logTable">
+    <thead>
+      <tr>
+        <th>Timestamp</th>
+        <th>Device</th>
+        <th>OS</th>
+        <th>IP Address</th>
+        <th>Location</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+    </tbody>
+  </table>
+  <div id="loader">Loading more logs...</div>
+</div>
+
+<script>
+  const devices = ["Android", "iOS", "Windows", "Linux", "macOS", "Router", "SmartTV", "NAS"];
+  const osVersions = {
+    "Android": ["12", "13", "14"],
+    "iOS": ["15.6", "16.2", "17.0"],
+    "Windows": ["10", "11", "Server 2019"],
+    "Linux": ["Ubuntu 22.04", "Debian 12", "Kali Linux"],
+    "macOS": ["Monterey", "Ventura", "Sonoma"],
+    "Router": ["OpenWRT", "DD-WRT", "Stock"],
+    "SmartTV": ["Tizen", "webOS", "AndroidTV"],
+    "NAS": ["Synology DSM", "QNAP QTS"]
+  };
+const locations = [
+  "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda", "Argentina",
+  "Armenia", "Australia", "Austria", "Azerbaijan", "Bahamas", "Bahrain", "Bangladesh", "Barbados",
+  "Belarus", "Belgium", "Belize", "Benin", "Bhutan", "Bolivia", "Bosnia and Herzegovina",
+  "Botswana", "Brazil", "Brunei", "Bulgaria", "Burkina Faso", "Burundi", "Cabo Verde", "Cambodia",
+  "Cameroon", "Canada", "Central African Republic", "Chad", "Chile", "China", "Colombia", "Comoros",
+  "Congo (Congo-Brazzaville)", "Costa Rica", "Croatia", "Cuba", "Cyprus", "Czechia (Czech Republic)",
+  "Democratic Republic of the Congo", "Denmark", "Djibouti", "Dominica", "Dominican Republic",
+  "Ecuador", "Egypt", "El Salvador", "Equatorial Guinea", "Eritrea", "Estonia", "Eswatini (fmr. Swaziland)",
+  "Ethiopia", "Fiji", "Finland", "France", "Gabon", "Gambia", "Georgia", "Germany", "Ghana",
+  "Greece", "Grenada", "Guatemala", "Guinea", "Guinea-Bissau", "Guyana", "Haiti", "Holy See",
+  "Honduras", "Hungary", "Iceland", "India", "Indonesia", "Iran", "Iraq", "Ireland", "Israel",
+  "Italy", "Jamaica", "Japan", "Jordan", "Kazakhstan", "Kenya", "Kiribati", "Kuwait", "Kyrgyzstan",
+  "Laos", "Latvia", "Lebanon", "Lesotho", "Liberia", "Libya", "Liechtenstein", "Lithuania",
+  "Luxembourg", "Madagascar", "Malawi", "Malaysia", "Maldives", "Mali", "Malta", "Marshall Islands",
+  "Mauritania", "Mauritius", "Mexico", "Micronesia", "Moldova", "Monaco", "Mongolia", "Montenegro",
+  "Morocco", "Mozambique", "Myanmar (Burma)", "Namibia", "Nauru", "Nepal", "Netherlands",
+  "New Zealand", "Nicaragua", "Niger", "Nigeria", "North Korea", "North Macedonia", "Norway",
+  "Oman", "Pakistan", "Palau", "Palestine State", "Panama", "Papua New Guinea", "Paraguay", "Peru",
+  "Philippines", "Poland", "Portugal", "Qatar", "Romania", "Russia", "Rwanda", "Saint Kitts and Nevis",
+  "Saint Lucia", "Saint Vincent and the Grenadines", "Samoa", "San Marino", "Sao Tome and Principe",
+  "Saudi Arabia", "Senegal", "Serbia", "Seychelles", "Sierra Leone", "Singapore", "Slovakia",
+  "Slovenia", "Solomon Islands", "Somalia", "South Africa", "South Korea", "South Sudan", "Spain",
+  "Sri Lanka", "Sudan", "Suriname", "Sweden", "Switzerland", "Syria", "Tajikistan", "Tanzania",
+  "Thailand", "Timor-Leste", "Togo", "Tonga", "Trinidad and Tobago", "Tunisia", "Turkey",
+  "Turkmenistan", "Tuvalu", "Uganda", "Ukraine", "United Arab Emirates", "United Kingdom",
+  "United States of America", "Uruguay", "Uzbekistan", "Vanuatu", "Venezuela", "Vietnam",
+  "Yemen", "Zambia", "Zimbabwe"
+];
+
+const actions = ["offline", "online", "invalid","not avaible","avaible",];
+
+
+  function randomIP() {
+    return Array.from({length: 4}, () => Math.floor(Math.random() * 255)).join(".");
+  }
+
+  function getRandomItem(arr) {
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
+
+  function generateLogRow() {
+    const device = getRandomItem(devices);
+    const os = getRandomItem(osVersions[device] || ["Unknown"]);
+    const timestamp = new Date().toLocaleString();
+    const ip = randomIP();
+    const location = getRandomItem(locations);
+    const action = getRandomItem(actions);
+
+    return `
+      <tr>
+        <td>${timestamp}</td>
+        <td>${device}</td>
+        <td>${os}</td>
+        <td>${ip}</td>
+        <td>${location}</td>
+        <td>${action}</td>
+      </tr>
+    `;
+  }
+
+  function loadLogs(count = 30) {
+    const tbody = document.querySelector("#logTable tbody");
+    for (let i = 0; i < count; i++) {
+      tbody.insertAdjacentHTML("beforeend", generateLogRow());
+    }
+  }
+
+  // Initial load
+  loadLogs();
+
+  // Infinite Scroll
+  const loader = document.getElementById("loader");
+  window.addEventListener("scroll", () => {
+    if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 100) {
+      loader.style.display = "block";
+      setTimeout(() => {
+        loadLogs();
+        loader.style.display = "none";
+      }, 500);
+    }
+  });
+
+  // Export CSV
+  document.getElementById("exportBtn").addEventListener("click", () => {
+    const rows = [["Timestamp", "Device", "OS", "IP Address", "Location", "Action"]];
+    document.querySelectorAll("#logTable tbody tr").forEach(tr => {
+      const cells = Array.from(tr.children).map(td => td.textContent);
+      rows.push(cells);
+    });
+    const csv = rows.map(r => r.join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "ip_device_logs.csv";
+    a.click();
+  });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>🧨 Real File Spoofer Tool</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #0f172a;
+      color: #f8fafc;
+      padding: 2rem;
+    }
+
+    h1 {
+      text-align: center;
+      color: #38bdf8;
+    }
+
+    .container {
+      max-width: 600px;
+      background: #1e293b;
+      margin: auto;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.4);
+    }
+
+    label {
+      font-weight: bold;
+      display: block;
+      margin-top: 1rem;
+    }
+
+    input[type="text"],
+    input[type="file"],
+    button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 0.5rem;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+    }
+
+    input[type="text"] {
+      background: #334155;
+      color: #f1f5f9;
+    }
+
+    input[type="file"] {
+      background: #0ea5e9;
+      color: #fff;
+    }
+
+    button {
+      background: #10b981;
+      color: white;
+      margin-top: 1.5rem;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #059669;
+    }
+
+    #output {
+      margin-top: 1rem;
+      background: #0f172a;
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      word-break: break-word;
+    }
+  </style>
+</head>
+<body>
+  <h1>🧨 Real File Spoofer Tool</h1>
+  <div class="container">
+    <label for="file">📁 Select File:</label>
+    <input type="file" id="file" />
+
+    <label for="newName">📝 New File Name (with extension):</label>
+    <input type="text" id="newName" placeholder="e.g. tax_document.pdf" />
+
+    <label for="mime">🔧 New MIME Type:</label>
+    <input type="text" id="mime" placeholder="e.g. application/pdf" />
+
+    <button onclick="spoofAndDownload()">💾 Spoof & Download</button>
+
+    <div id="output"></div>
+  </div>
+
+  <script>
+    function spoofAndDownload() {
+      const fileInput = document.getElementById("file");
+      const newName = document.getElementById("newName").value.trim();
+      const newMime = document.getElementById("mime").value.trim();
+      const output = document.getElementById("output");
+
+      if (!fileInput.files.length) return alert("❌ Please choose a file.");
+      if (!newName || !newMime) return alert("❌ New name and MIME type are required.");
+
+      const originalFile = fileInput.files[0];
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const buffer = e.target.result;
+        const spoofedBlob = new Blob([buffer], { type: newMime });
+
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(spoofedBlob);
+        a.download = newName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        output.innerHTML = `✅ File spoofed and downloaded.<br>📄 Name: <strong>${newName}</strong><br>🧪 MIME: <strong>${newMime}</strong>`;
+      };
+
+      reader.readAsArrayBuffer(originalFile);
+    }
+  </script>
+</body>
+</html>

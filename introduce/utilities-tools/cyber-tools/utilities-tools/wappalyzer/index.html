@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Technology Stack Detector</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #000;
+      color: #c58b00;
+      overflow-x: hidden;
+    }
+
+    video#bg-video {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      min-width: 100vw;
+      min-height: 100vh;
+      object-fit: cover;
+      opacity: 0.2;
+      z-index: -2;
+    }
+
+    audio#bg-music {
+      position: fixed;
+      z-index: -1;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 50px auto;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 0 25px rgba(0, 0, 0, 0.7);
+    }
+
+    h1, label {
+      color: #c58b00;
+    }
+
+    input, textarea, pre {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      background: rgba(0, 0, 0, 0.5);
+      color: red;
+      border: 1px solid #c58b00;
+      border-radius: 5px;
+      font-size: 1rem;
+    }
+
+    button {
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid #c58b00;
+      color: #c58b00;
+      padding: 10px 15px;
+      margin: 5px 5px 15px 0;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+
+    button:hover {
+      background: #111;
+      color: red;
+    }
+
+    .result {
+      margin-top: 20px;
+    }
+
+    .tech-tag {
+      display: inline-block;
+      background: #111;
+      border: 1px solid red;
+      color: #ff8800;
+      padding: 6px 10px;
+      margin: 5px;
+      border-radius: 5px;
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        margin: 20px 10px;
+        padding: 15px;
+      }
+
+      button {
+        width: 100%;
+        margin: 8px 0;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<video id="bg-video" autoplay muted loop playsinline>
+  <source src="background/1761817527453041720p.mp4" type="video/mp4">
+</video>
+
+<audio id="bg-music" loop>
+  <source src="background/Programming___Coding___Hacking_music_vol.18__ANONYMOUS_HEADQUARTERS_(48k).mp3" type="audio/mpeg">
+</audio>
+
+<div class="container">
+  <h1>Technology Stack Detector</h1>
+  <label for="url">Enter Website URL:</label>
+  <input type="text" id="url" placeholder="https://example.com" />
+
+  <button onclick="detectTech()">Detect Stack</button>
+  <button onclick="clearResults()">Clear</button>
+
+  <div class="result" id="resultBox"></div>
+</div>
+
+<script>
+  const music = document.getElementById("bg-music");
+  window.addEventListener('click', () => music.play().catch(() => {}), { once: true });
+
+  const resultBox = document.getElementById("resultBox");
+
+  function detectTech() {
+    const url = document.getElementById("url").value.trim();
+    if (!url) return alert("Enter a valid URL.");
+
+    resultBox.innerHTML = `<p style="color:#888;">Scanning ${url}...</p>`;
+
+    fetch("https://corsproxy.io/?" + encodeURIComponent(url))
+      .then(res => res.text())
+      .then(html => {
+        const techs = [];
+
+        const checks = {
+          "WordPress": /wp-content|wordpress/i,
+          "Bootstrap": /bootstrap/i,
+          "jQuery": /jquery/i,
+          "React": /react/i,
+          "Angular": /angular/i,
+          "Vue.js": /vue/i,
+          "Cloudflare": /cloudflare/i,
+          "Shopify": /cdn.shopify.com/i,
+          "Google Analytics": /www.google-analytics.com|gtag\(/i,
+          "Font Awesome": /fontawesome/i,
+          "PHP": /\.php/i,
+          "Python": /\.py/i,
+          "Laravel": /laravel/i,
+          "Next.js": /_next/i,
+          "Vite": /vite/i
+        };
+
+        for (let tech in checks) {
+          if (checks[tech].test(html)) techs.push(tech);
+        }
+
+        if (techs.length === 0) {
+          resultBox.innerHTML = `<p style="color:gray;">No detectable technologies found (basic scan).</p>`;
+        } else {
+          resultBox.innerHTML = techs.map(t => `<span class="tech-tag">${t}</span>`).join('');
+        }
+      })
+      .catch(() => {
+        resultBox.innerHTML = `<p style="color:red;">Failed to fetch or scan the website.</p>`;
+      });
+  }
+
+  function clearResults() {
+    document.getElementById("url").value = "";
+    resultBox.innerHTML = "";
+  }
+</script>
+
+</body>
+</html>

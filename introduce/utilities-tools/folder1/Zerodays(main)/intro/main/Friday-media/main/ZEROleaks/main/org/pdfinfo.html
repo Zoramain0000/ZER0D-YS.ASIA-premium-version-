@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>📄 PDF Info Tool</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0f172a;
+      color: #f8fafc;
+      margin: 0;
+      padding: 2rem;
+    }
+    h1 {
+      color: #38bdf8;
+    }
+    input[type="file"] {
+      padding: 1rem;
+      background: #1e293b;
+      color: #f8fafc;
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+      margin-bottom: 1rem;
+    }
+    pre {
+      background: #1e293b;
+      padding: 1rem;
+      border-radius: 6px;
+      color: #38fdd8;
+      overflow-x: auto;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>📄 PDF Info Tool</h1>
+  <input type="file" accept="application/pdf" id="pdfFile" />
+  <pre id="output">Upload a PDF file to see its metadata.</pre>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    const fileInput = document.getElementById('pdfFile');
+    const output = document.getElementById('output');
+
+    fileInput.addEventListener('change', async function () {
+      const file = this.files[0];
+      if (!file) return;
+
+      output.textContent = "🔄 Reading PDF metadata...";
+
+      const arrayBuffer = await file.arrayBuffer();
+      const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+
+      loadingTask.promise.then(async pdf => {
+        const meta = await pdf.getMetadata();
+        const info = meta.info || {};
+        const metaData = meta.metadata ? meta.metadata.getAll() : {};
+
+        const encrypted = pdf._pdfInfo.Encrypt ? "Yes" : "No";
+
+        const result = `
+📄 File Name: ${file.name}
+📦 File Size: ${(file.size / 1024).toFixed(2)} KB
+📑 Pages: ${pdf.numPages}
+🔐 Encrypted: ${encrypted}
+📌 PDF Version: ${info.PDFFormatVersion || 'N/A'}
+✍️ Author: ${info.Author || 'N/A'}
+📝 Title: ${info.Title || 'N/A'}
+📚 Subject: ${info.Subject || 'N/A'}
+🏷️ Keywords: ${info.Keywords || 'N/A'}
+🕒 Created: ${info.CreationDate || 'N/A'}
+🕒 Modified: ${info.ModDate || 'N/A'}
+        `.trim();
+
+        output.textContent = result;
+      }).catch(err => {
+        output.textContent = "❌ Failed to read PDF metadata.";
+        console.error(err);
+      });
+    });
+  </script>
+
+</body>
+</html>

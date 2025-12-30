@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>🔐 Advanced Text Encryptor</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      background: #0f172a;
+      color: #f1f5f9;
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 2rem;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: auto;
+      background: #1e293b;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.4);
+    }
+
+    textarea, select, input {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      margin-top: 10px;
+      border: none;
+      font-size: 1rem;
+    }
+
+    button {
+      padding: 10px 20px;
+      margin: 10px 5px 0 0;
+      background: #0ea5e9;
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #0284c7;
+    }
+
+    .row {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .row > div {
+      flex: 1;
+      min-width: 45%;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔐 Advanced Text Encryptor</h1>
+  <div class="container">
+    <label>Encryption Algorithm:</label>
+    <select id="algo">
+      <option value="base64">Base64</option>
+      <option value="aes">AES (256-bit)</option>
+      <option value="caesar">Caesar Cipher</option>
+    </select>
+
+    <label>Input Text:</label>
+    <textarea id="input" rows="5" placeholder="Enter your text..."></textarea>
+
+    <div id="key-field" style="display: none;">
+      <label>Key / Password:</label>
+      <input type="text" id="key" placeholder="Enter encryption key" />
+    </div>
+
+    <div id="shift-field" style="display: none;">
+      <label>Caesar Shift (1-25):</label>
+      <input type="number" id="shift" min="1" max="25" value="3" />
+    </div>
+
+    <div class="row">
+      <div>
+        <button onclick="encryptText()">Encrypt</button>
+        <button onclick="decryptText()">Decrypt</button>
+      </div>
+      <div>
+        <button onclick="copyResult()">Copy</button>
+        <button onclick="clearAll()">Clear</button>
+      </div>
+    </div>
+
+    <label>Result:</label>
+    <textarea id="output" rows="5" readonly></textarea>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.1.1/crypto-js.min.js"></script>
+  <script>
+    const algoSelect = document.getElementById("algo");
+    const keyField = document.getElementById("key-field");
+    const shiftField = document.getElementById("shift-field");
+
+    algoSelect.addEventListener("change", () => {
+      const algo = algoSelect.value;
+      keyField.style.display = algo === "aes" ? "block" : "none";
+      shiftField.style.display = algo === "caesar" ? "block" : "none";
+    });
+
+    function encryptText() {
+      const text = document.getElementById("input").value;
+      const algo = algoSelect.value;
+      let result = "";
+
+      if (algo === "base64") {
+        result = btoa(text);
+      } else if (algo === "aes") {
+        const key = document.getElementById("key").value;
+        if (!key) return alert("Please provide a key for AES encryption.");
+        result = CryptoJS.AES.encrypt(text, key).toString();
+      } else if (algo === "caesar") {
+        const shift = parseInt(document.getElementById("shift").value) || 3;
+        result = caesarEncrypt(text, shift);
+      }
+
+      document.getElementById("output").value = result;
+    }
+
+    function decryptText() {
+      const text = document.getElementById("input").value;
+      const algo = algoSelect.value;
+      let result = "";
+
+      if (algo === "base64") {
+        try {
+          result = atob(text);
+        } catch {
+          alert("Invalid Base64 string.");
+        }
+      } else if (algo === "aes") {
+        const key = document.getElementById("key").value;
+        if (!key) return alert("Please provide a key for AES decryption.");
+        try {
+          const bytes = CryptoJS.AES.decrypt(text, key);
+          result = bytes.toString(CryptoJS.enc.Utf8);
+        } catch {
+          alert("Decryption failed.");
+        }
+      } else if (algo === "caesar") {
+        const shift = parseInt(document.getElementById("shift").value) || 3;
+        result = caesarEncrypt(text, 26 - shift); // decrypt = encrypt with reverse shift
+      }
+
+      document.getElementById("output").value = result;
+    }
+
+    function caesarEncrypt(str, shift) {
+      return str.replace(/[a-z]/gi, c =>
+        String.fromCharCode(
+          (c.charCodeAt(0) - (c < "a" ? 65 : 97) + shift) % 26 +
+          (c < "a" ? 65 : 97)
+        )
+      );
+    }
+
+    function copyResult() {
+      const output = document.getElementById("output");
+      output.select();
+      document.execCommand("copy");
+      alert("Result copied to clipboard!");
+    }
+
+    function clearAll() {
+      document.getElementById("input").value = "";
+      document.getElementById("output").value = "";
+    }
+  </script>
+</body>
+</html>

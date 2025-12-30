@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>🧬 Entropy Visualizer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      margin: 0;
+background: #000 url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s') ;
+      font-family: 'Courier New', monospace;
+      color: red;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    header {
+      text-align: center;
+      padding: 20px;
+      font-size: 2em;
+      background: rgba(0, 0, 0, 0.7);
+      border-bottom: 2px solid red;
+    }
+
+    #controls {
+      display: flex;
+      gap: 10px;
+      padding: 15px;
+      background: rgba(0, 0, 0, 0.5);
+      justify-content: center;
+      border-bottom: 1px solid red;
+    }
+
+    #controls input[type="file"],
+    #controls textarea {
+      background-color: #222;
+      color: red;
+      border: 1px solid red;
+      padding: 5px;
+      font-family: inherit;
+    }
+
+    #entropy {
+      text-align: center;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+
+    canvas {
+      max-width: 100%;
+      height: 400px;
+    }
+
+    footer {
+      text-align: center;
+      font-size: 0.9em;
+      padding: 10px;
+      border-top: 1px solid red;
+      background: rgba(0, 0, 0, 0.5);
+      margin-top: auto;
+    }
+  </style>
+</head>
+<body>
+  <header>🧬 Entropy Visualizer</header>
+
+  <div id="controls">
+    <input type="file" id="fileInput" />
+    <textarea id="textInput" rows="4" cols="50" placeholder="Or paste raw text here..."></textarea>
+    <button onclick="analyze()">Analyze</button>
+  </div>
+
+  <div id="entropy">Entropy: <span id="entropyValue">0</span> bits/byte</div>
+
+  <canvas id="entropyChart"></canvas>
+
+  <footer>
+    &copy; 2025 ZeroDayAI — For ethical & educational use only.
+  </footer>
+
+  <script>
+    const ctx = document.getElementById('entropyChart').getContext('2d');
+    let chart;
+
+    function calculateEntropy(data) {
+      const freq = new Array(256).fill(0);
+      for (let i = 0; i < data.length; i++) {
+        freq[data[i]]++;
+      }
+
+      const total = data.length;
+      let entropy = 0;
+      for (let i = 0; i < 256; i++) {
+        if (freq[i] > 0) {
+          const p = freq[i] / total;
+          entropy -= p * Math.log2(p);
+        }
+      }
+      return { entropy, freq };
+    }
+
+    function updateChart(freq) {
+      const labels = Array.from({ length: 256 }, (_, i) => i.toString(16).padStart(2, '0').toUpperCase());
+      const data = {
+        labels: labels,
+        datasets: [{
+          label: 'Byte Frequency',
+          data: freq,
+          backgroundColor: 'rgba(255, 0, 0, 0.7)',
+          borderWidth: 0
+        }]
+      };
+
+      if (chart) chart.destroy();
+      chart = new Chart(ctx, {
+        type: 'bar',
+        data: data,
+        options: {
+          scales: {
+            x: { display: false },
+            y: {
+              beginAtZero: true,
+              ticks: { color: 'red' },
+              grid: { color: '#333' }
+            }
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: { enabled: true }
+          }
+        }
+      });
+    }
+
+    function analyze() {
+      const fileInput = document.getElementById('fileInput');
+      const textInput = document.getElementById('textInput').value;
+      if (fileInput.files.length > 0) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          const bytes = new Uint8Array(e.target.result);
+          processEntropy(bytes);
+        };
+        reader.readAsArrayBuffer(fileInput.files[0]);
+      } else if (textInput.trim()) {
+        const bytes = new TextEncoder().encode(textInput);
+        processEntropy(bytes);
+      } else {
+        alert('Please upload a file or enter text.');
+      }
+    }
+
+    function processEntropy(bytes) {
+      const { entropy, freq } = calculateEntropy(bytes);
+      document.getElementById('entropyValue').textContent = entropy.toFixed(4);
+      updateChart(freq);
+    }
+  </script>
+</body>
+</html>

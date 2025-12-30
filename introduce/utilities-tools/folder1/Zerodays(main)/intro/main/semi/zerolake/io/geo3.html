@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>📶 Geo WiFi Finder – OpenCelliD</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: #0f172a;
+      color: #f1f5f9;
+    }
+    #map {
+      height: 80vh;
+      width: 100%;
+    }
+    header {
+      background: #1e293b;
+      padding: 1rem;
+      text-align: center;
+      font-size: 1.4rem;
+    }
+    .form {
+      background: #1e293b;
+      padding: 1rem;
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+    }
+    input, button {
+      padding: 0.5rem;
+      font-size: 1rem;
+      border: none;
+      border-radius: 0.5rem;
+    }
+    input {
+      flex: 1;
+      max-width: 300px;
+    }
+    button {
+      background: #3b82f6;
+      color: white;
+      cursor: pointer;
+    }
+    #info {
+      padding: 1rem;
+      background: #0f172a;
+    }
+  </style>
+</head>
+<body>
+  <header>📶 Geo WiFi Finder (Powered by OpenCelliD)</header>
+  <div class="form">
+    <input id="bssid" placeholder="Enter BSSID / MAC (e.g. 00:11:22:33:44:55)" />
+    <button onclick="lookup()">Locate WiFi</button>
+  </div>
+  <div id="map"></div>
+  <div id="info"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const map = L.map('map').setView([14.5995, 120.9842], 13); // Manila default
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    const markerGroup = L.layerGroup().addTo(map);
+
+    async function lookup() {
+      const bssid = document.getElementById("bssid").value.trim().toLowerCase();
+      if (!/^([0-9a-f]{2}:){5}[0-9a-f]{2}$/i.test(bssid)) {
+        alert("Invalid MAC/BSSID format.");
+        return;
+      }
+
+      const apiKey = "pk.106568f3c5066353b15d5ddf4ceec5f5"; // Replace with your key
+      const url = `https://us1.unwiredlabs.com/v2/process.php`;
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token: apiKey,
+          wifi: [{ mac: bssid }],
+          fallback: false
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.status === "ok" && data.lat && data.lon) {
+        markerGroup.clearLayers();
+        const marker = L.marker([data.lat, data.lon])
+          .bindPopup(`📡 BSSID: ${bssid}<br/>🔐 Encryption: Unknown<br/>📍 Location: ${data.lat.toFixed(5)}, ${data.lon.toFixed(5)}`)
+          .addTo(markerGroup)
+          .openPopup();
+        map.setView([data.lat, data.lon], 16);
+
+        document.getElementById("info").innerHTML = `
+          <h3>WiFi Info</h3>
+          <p><strong>BSSID:</strong> ${bssid}</p>
+          <p><strong>Estimated Location:</strong> ${data.lat.toFixed(6)}, ${data.lon.toFixed(6)}</p>
+          <p><strong>Accuracy:</strong> ${data.accuracy || "Unknown"} meters</p>
+          <p><strong>Encryption:</strong> Unknown (OpenCelliD doesn't provide)</p>
+        `;
+      } else {
+        alert("WiFi not found in OpenCelliD database.");
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>OSINT Framework Explorer</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #000;
+      color: #c58b00;
+      overflow-x: hidden;
+    }
+    video#bg-video {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      min-width: 100vw;
+      min-height: 100vh;
+      object-fit: cover;
+      opacity: 0.2;
+      z-index: -2;
+    }
+    audio#bg-music {
+      position: fixed;
+      z-index: -1;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .container {
+      max-width: 960px;
+      margin: 50px auto;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 0 25px rgba(0, 0, 0, 0.7);
+    }
+    h1, h2, label { color: #c58b00; }
+    select, button, textarea {
+      width: 100%;
+      margin: 10px 0;
+      padding: 10px;
+      background: rgba(0,0,0,0.5);
+      color: red;
+      border: 1px solid #c58b00;
+      border-radius: 5px;
+      font-size: 1rem;
+    }
+    button:hover {
+      background: #111;
+      color: red;
+    }
+    .tool-list {
+      margin-top: 15px;
+    }
+    .tool-item {
+      margin-bottom: 10px;
+      padding: 10px;
+      background: rgba(255, 255, 255, 0.05);
+      border-left: 3px solid #ff8800;
+      color: #ff8800;
+      font-size: 0.95rem;
+    }
+    .history-item {
+      border-bottom: 1px solid red;
+      padding: 5px;
+      font-size: 0.9rem;
+      color: #ff8800;
+    }
+    @media (max-width: 768px) {
+      .container { margin: 20px 10px; padding: 15px; }
+      button { width: 100%; margin: 8px 0; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Background Video & Music -->
+<video id="bg-video" autoplay muted loop playsinline>
+  <source src="background/1761817527453041720p.mp4" type="video/mp4" />
+</video>
+<audio id="bg-music" loop>
+  <source src="background/Programming___Coding___Hacking_music_vol.18__ANONYMOUS_HEADQUARTERS_(48k).mp3" type="audio/mpeg" />
+</audio>
+
+<div class="container">
+  <h1>OSINT Framework Explorer</h1>
+
+  <label for="category">Select OSINT Category:</label>
+  <select id="category">
+    <option value="">-- Choose a Category --</option>
+    <option value="People Search">People Search</option>
+    <option value="Usernames">Usernames</option>
+    <option value="Emails">Emails</option>
+    <option value="Phone Numbers">Phone Numbers</option>
+    <option value="Social Networks">Social Networks</option>
+    <option value="Domains & WHOIS">Domains & WHOIS</option>
+    <option value="Dark Web">Dark Web</option>
+    <option value="Images & Metadata">Images & Metadata</option>
+  </select>
+
+  <div class="tool-list" id="tool-list"></div>
+
+  <div class="section">
+    <h2>History</h2>
+    <div id="history-box"></div>
+  </div>
+</div>
+
+<script>
+  const music = document.getElementById("bg-music");
+  window.addEventListener("click", () => music.play().catch(() => {}), { once: true });
+
+  const categorySelect = document.getElementById("category");
+  const toolList = document.getElementById("tool-list");
+  const historyBox = document.getElementById("history-box");
+  const history = [];
+
+  const tools = {
+    "People Search": [
+      { name: "Pipl", url: "https://pipl.com" },
+      { name: "PeekYou", url: "https://www.peekyou.com" },
+      { name: "Spokeo", url: "https://www.spokeo.com" }
+    ],
+    "Usernames": [
+      { name: "Namechk", url: "https://namechk.com" },
+      { name: "WhatsMyName", url: "https://whatsmyname.app" }
+    ],
+    "Emails": [
+      { name: "Have I Been Pwned", url: "https://haveibeenpwned.com" },
+      { name: "Hunter.io", url: "https://hunter.io" }
+    ],
+    "Phone Numbers": [
+      { name: "Sync.me", url: "https://sync.me" },
+      { name: "Truecaller", url: "https://www.truecaller.com" }
+    ],
+    "Social Networks": [
+      { name: "Social Searcher", url: "https://www.social-searcher.com" },
+      { name: "IntelX", url: "https://intelx.io" }
+    ],
+    "Domains & WHOIS": [
+      { name: "WHOIS Lookup", url: "https://whois.domaintools.com" },
+      { name: "SecurityTrails", url: "https://securitytrails.com" }
+    ],
+    "Dark Web": [
+      { name: "Ahmia", url: "https://ahmia.fi" },
+      { name: "Onion Land Search", url: "https://onion.land" }
+    ],
+    "Images & Metadata": [
+      { name: "Exif.tools", url: "https://exif.tools" },
+      { name: "Google Reverse Image", url: "https://images.google.com" }
+    ]
+  };
+
+  categorySelect.addEventListener("change", () => {
+    const selected = categorySelect.value;
+    toolList.innerHTML = "";
+
+    if (tools[selected]) {
+      tools[selected].forEach(tool => {
+        const div = document.createElement("div");
+        div.className = "tool-item";
+        div.innerHTML = `
+          🔍 <strong>${tool.name}</strong> — 
+          <a href="${tool.url}" target="_blank" style="color: red;">Open</a> | 
+          <button onclick="copyURL('${tool.url}')">Copy</button> | 
+          <button onclick="searchGoogle('${tool.name}')">Google</button>
+        `;
+        toolList.appendChild(div);
+        logHistory(`Category: ${selected} → ${tool.name}`);
+      });
+    }
+  });
+
+  function copyURL(url) {
+    navigator.clipboard.writeText(url).then(() => alert("URL copied!"));
+  }
+
+  function searchGoogle(query) {
+    window.open(`https://www.google.com/search?q=${encodeURIComponent(query)}`, "_blank");
+  }
+
+  function logHistory(entry) {
+    const time = new Date().toLocaleTimeString();
+    history.unshift(`${time} → ${entry}`);
+    updateHistory();
+  }
+
+  function updateHistory() {
+    historyBox.innerHTML = "";
+    history.slice(0, 10).forEach(h => {
+      const div = document.createElement("div");
+      div.className = "history-item";
+      div.textContent = h;
+      historyBox.appendChild(div);
+    });
+  }
+</script>
+
+</body>
+</html>

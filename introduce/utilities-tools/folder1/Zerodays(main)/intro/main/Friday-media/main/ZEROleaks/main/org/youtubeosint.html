@@ -1,0 +1,133 @@
+  
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>YouTube OSINT Tool</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #121212;
+      color: #f0f0f0;
+      padding: 20px;
+    }
+    h1 {
+      color: #00bcd4;
+    }
+    input, button {
+      padding: 10px;
+      font-size: 16px;
+      margin: 5px 0;
+      border: none;
+      border-radius: 5px;
+    }
+    input {
+      width: 300px;
+    }
+    button {
+      background-color: #00bcd4;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0097a7;
+    }
+    .result {
+      margin-top: 20px;
+      background: #1e1e1e;
+      padding: 15px;
+      border-radius: 10px;
+    }
+    .result img {
+      width: 100px;
+      border-radius: 50%;
+    }
+    .external-links a {
+      display: block;
+      color: #4fc3f7;
+    }
+    pre {
+      background: #2e2e2e;
+      padding: 10px;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>YouTube OSINT Tool</h1>
+  <input type="text" id="searchQuery" placeholder="Enter Username or Channel Name" />
+  <button onclick="searchYouTube()">Search</button>
+
+  <div class="result" id="results" style="display: none;">
+    <h2 id="channelTitle"></h2>
+    <img id="channelImage" />
+    <p><strong>ID:</strong> <span id="channelId"></span></p>
+    <p><strong>Subscribers:</strong> <span id="subscribers"></span></p>
+    <p><strong>Created:</strong> <span id="createdDate"></span></p>
+    <p><strong>Description:</strong><br><span id="description"></span></p>
+    <div class="external-links" id="externalLinks"></div>
+    <button onclick="exportJSON()">Export as JSON</button>
+    <pre id="jsonOutput" style="display:none;"></pre>
+  </div>
+
+  <script>
+    const apiKey = "AIzaSyBr2mb1Oa9vg6_geu7dlHyWKhzxfa_lurM";
+
+    async function searchYouTube() {
+      const query = document.getElementById("searchQuery").value.trim();
+      if (!query) return alert("Please enter a search term.");
+
+      try {
+        const searchRes = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=channel&maxResults=1&key=${apiKey}`);
+        const searchData = await searchRes.json();
+        if (!searchData.items.length) return alert("No channels found.");
+
+        const channel = searchData.items[0].snippet;
+        const channelId = searchData.items[0].snippet.channelId || searchData.items[0].id.channelId;
+
+        const channelRes = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics,brandingSettings&id=${channelId}&key=${apiKey}`);
+        const channelData = await channelRes.json();
+
+        const ch = channelData.items[0];
+        document.getElementById("channelTitle").innerText = ch.snippet.title;
+        document.getElementById("channelImage").src = ch.snippet.thumbnails.default.url;
+        document.getElementById("channelId").innerText = ch.id;
+        document.getElementById("subscribers").innerText = ch.statistics.subscriberCount;
+        document.getElementById("createdDate").innerText = new Date(ch.snippet.publishedAt).toLocaleDateString();
+        document.getElementById("description").innerText = ch.snippet.description || "N/A";
+
+        const links = ch.brandingSettings?.channel?.externalLinks || [];
+        const extLinksDiv = document.getElementById("externalLinks");
+        extLinksDiv.innerHTML = "<h3>External Links:</h3>";
+        if (links.length === 0) {
+          extLinksDiv.innerHTML += "<p>No external links found.</p>";
+        } else {
+          links.forEach(link => {
+            extLinksDiv.innerHTML += `<a href="${link.url}" target="_blank">${link.title || link.url}</a>`;
+          });
+        }
+
+        document.getElementById("results").style.display = "block";
+        document.getElementById("jsonOutput").style.display = "none";
+      } catch (err) {
+        console.error(err);
+        alert("Failed to fetch data. Check the console for more info.");
+      }
+    }
+
+    function exportJSON() {
+      const data = {
+        channelTitle: document.getElementById("channelTitle").innerText,
+        channelId: document.getElementById("channelId").innerText,
+        subscribers: document.getElementById("subscribers").innerText,
+        createdDate: document.getElementById("createdDate").innerText,
+        description: document.getElementById("description").innerText,
+        image: document.getElementById("channelImage").src,
+        externalLinks: Array.from(document.querySelectorAll("#externalLinks a")).map(a => a.href),
+      };
+      document.getElementById("jsonOutput").style.display = "block";
+      document.getElementById("jsonOutput").textContent = JSON.stringify(data, null, 2);
+    }
+  </script>
+</body>
+</html>

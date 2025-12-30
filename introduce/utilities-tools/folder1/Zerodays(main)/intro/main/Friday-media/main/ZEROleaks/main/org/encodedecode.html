@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Advanced Text Encoder/Decoder</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: #f0f0f0;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      color: #00ffae;
+    }
+
+    textarea, select, button {
+      width: 100%;
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 6px;
+      border: none;
+      font-size: 16px;
+    }
+
+    textarea {
+      height: 100px;
+      resize: vertical;
+      background: #222;
+      color: #f0f0f0;
+    }
+
+    button {
+      background-color: #00c27e;
+      color: white;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+
+    button:hover {
+      background-color: #009f63;
+    }
+
+    .result {
+      margin-top: 20px;
+      padding: 10px;
+      background: #1c1c1c;
+      border-left: 5px solid #00ffae;
+      white-space: pre-wrap;
+      font-family: monospace;
+    }
+
+    .mode-select {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .mode-select button {
+      flex: 1;
+    }
+  </style>
+</head>
+<body>
+  <h1>Advanced Text Encoder / Decoder</h1>
+
+  <div class="mode-select">
+    <button onclick="setMode('encode')">Encode</button>
+    <button onclick="setMode('decode')">Decode</button>
+  </div>
+
+  <textarea id="inputText" placeholder="Enter your text here..."></textarea>
+  <button onclick="process()">Run</button>
+
+  <div id="results" class="result"></div>
+
+  <script>
+    let mode = 'encode';
+
+    function setMode(selected) {
+      mode = selected;
+      document.getElementById('results').textContent = '';
+    }
+
+    const BASE58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+
+    function base58Encode(buffer) {
+      let intVal = BigInt('0x' + [...buffer].map(b => b.toString(16).padStart(2, '0')).join(''));
+      let encoded = '';
+      while (intVal > 0) {
+        let mod = intVal % 58n;
+        encoded = BASE58_ALPHABET[Number(mod)] + encoded;
+        intVal = intVal / 58n;
+      }
+      for (let byte of buffer) {
+        if (byte === 0) encoded = BASE58_ALPHABET[0] + encoded;
+        else break;
+      }
+      return encoded;
+    }
+
+    function base58Decode(str) {
+      let intVal = 0n;
+      for (let char of str) {
+        let index = BASE58_ALPHABET.indexOf(char);
+        if (index === -1) throw new Error("Invalid Base58 character.");
+        intVal = intVal * 58n + BigInt(index);
+      }
+      let hex = intVal.toString(16);
+      if (hex.length % 2) hex = '0' + hex;
+      const bytes = hex.match(/.{1,2}/g).map(byte => parseInt(byte, 16));
+      return new Uint8Array(bytes);
+    }
+
+    function process() {
+      const input = document.getElementById('inputText').value;
+      const results = [];
+
+      try {
+        if (mode === 'encode') {
+          const encoder = new TextEncoder();
+          const bytes = encoder.encode(input);
+          results.push(`URL      : ${encodeURIComponent(input)}`);
+          results.push(`HTML     : ${input.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}`);
+          results.push(`Base64   : ${btoa(input)}`);
+          results.push(`Base58   : ${base58Encode(bytes)}`);
+          results.push(`ASCII    : ${[...input].map(c => c.charCodeAt(0)).join(' ')}`);
+          results.push(`HEX      : ${[...bytes].map(b => b.toString(16).padStart(2, '0')).join('')}`);
+          results.push(`OCTAL    : ${[...input].map(c => c.charCodeAt(0).toString(8)).join(' ')}`);
+          results.push(`BINARY   : ${[...input].map(c => c.charCodeAt(0).toString(2).padStart(8, '0')).join(' ')}`);
+        } else {
+          results.push(`URL      : ${decodeURIComponent(input)}`);
+          results.push(`HTML     : ${input.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&')}`);
+          try { results.push(`Base64   : ${atob(input)}`); } catch { results.push("Base64   : ERROR"); }
+          try { results.push(`Base58   : ${new TextDecoder().decode(base58Decode(input))}`); } catch { results.push("Base58   : ERROR"); }
+          try { results.push(`HEX      : ${new TextDecoder().decode(Uint8Array.from(input.match(/.{1,2}/g).map(h => parseInt(h, 16))))}`); } catch { results.push("HEX      : ERROR"); }
+          try { results.push(`ASCII    : ${input.split(' ').map(c => String.fromCharCode(parseInt(c))).join('')}`); } catch { results.push("ASCII   : ERROR"); }
+          try { results.push(`OCTAL    : ${input.split(' ').map(c => String.fromCharCode(parseInt(c, 8))).join('')}`); } catch { results.push("OCTAL   : ERROR"); }
+          try { results.push(`BINARY   : ${input.split(' ').map(c => String.fromCharCode(parseInt(c, 2))).join('')}`); } catch { results.push("BINARY  : ERROR"); }
+        }
+      } catch (e) {
+        results.push("An error occurred during processing.");
+      }
+
+      document.getElementById('results').textContent = results.join('\n');
+    }
+  </script>
+</body>
+</html>

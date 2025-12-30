@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Audio Tag Editor</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 2rem;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+    }
+    h1 {
+      text-align: center;
+      color: red;
+    }
+    .container {
+      max-width: 600px;
+      margin: auto;
+background: rgba(0, 0, 0, 0.5);
+    }
+    input[type="text"], input[type="number"] {
+      width: 100%;
+      padding: 0.5rem;
+      margin: 0.5rem 0;
+background: rgba(0, 0, 0, 0.5);
+    }
+    label {
+      font-weight: bold;
+background: rgba(0, 0, 0, 0.5);
+    }
+    button {
+      padding: 0.5rem 1rem;
+      margin-top: 1rem;
+      cursor: pointer;
+background: rgba(0, 0, 0, 0.5);
+color: red;
+    }
+    audio {
+      width: 100%;
+      margin-top: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Audio Tag Editor</h1>
+    <input type="file" id="fileInput" accept=".mp3" />
+    <audio id="audioPlayer" controls></audio>
+    <div id="tagEditor" style="display: none;">
+      <label for="title">Title:</label>
+      <input type="text" id="title" />
+      <label for="artist">Artist:</label>
+      <input type="text" id="artist" />
+      <label for="album">Album:</label>
+      <input type="text" id="album" />
+      <label for="year">Year:</label>
+      <input type="number" id="year" />
+      <label for="genre">Genre:</label>
+      <input type="text" id="genre" />
+      <button id="saveButton">Save Tags & Download</button>
+    </div>
+  </div>
+
+  <!-- Include mp3tag.js library -->
+  <script src="https://cdn.jsdelivr.net/npm/mp3tag.js@3.11.4/dist/mp3tag.min.js"></script>
+  <script>
+    const fileInput = document.getElementById('fileInput');
+    const audioPlayer = document.getElementById('audioPlayer');
+    const tagEditor = document.getElementById('tagEditor');
+    const titleInput = document.getElementById('title');
+    const artistInput = document.getElementById('artist');
+    const albumInput = document.getElementById('album');
+    const yearInput = document.getElementById('year');
+    const genreInput = document.getElementById('genre');
+    const saveButton = document.getElementById('saveButton');
+
+    let mp3tag;
+    let audioBuffer;
+    let fileName;
+
+    fileInput.addEventListener('change', async (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+      fileName = file.name;
+      const arrayBuffer = await file.arrayBuffer();
+      audioBuffer = arrayBuffer;
+      mp3tag = new MP3Tag(arrayBuffer);
+      mp3tag.read();
+      if (mp3tag.tags) {
+        titleInput.value = mp3tag.tags.title || '';
+        artistInput.value = mp3tag.tags.artist || '';
+        albumInput.value = mp3tag.tags.album || '';
+        yearInput.value = mp3tag.tags.year || '';
+        genreInput.value = mp3tag.tags.genre || '';
+      }
+      const blob = new Blob([arrayBuffer], { type: 'audio/mpeg' });
+      audioPlayer.src = URL.createObjectURL(blob);
+      tagEditor.style.display = 'block';
+    });
+
+    saveButton.addEventListener('click', () => {
+      if (!mp3tag) return;
+      mp3tag.tags.title = titleInput.value;
+      mp3tag.tags.artist = artistInput.value;
+      mp3tag.tags.album = albumInput.value;
+      mp3tag.tags.year = yearInput.value;
+      mp3tag.tags.genre = genreInput.value;
+      mp3tag.save();
+      const blob = new Blob([mp3tag.buffer], { type: 'audio/mpeg' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'edited_' + fileName;
+      link.click();
+    });
+  </script>
+</body>
+</html>

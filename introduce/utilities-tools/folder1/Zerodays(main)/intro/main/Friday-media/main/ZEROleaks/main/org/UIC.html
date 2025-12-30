@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>🔍 Username & ID Brute Checker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #0f172a;
+      color: #f8fafc;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 700px;
+      margin: auto;
+      background: #1e293b;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 10px #00000050;
+    }
+
+    h1, select, input, button {
+      width: 100%;
+      margin: 10px 0;
+      font-size: 1rem;
+    }
+
+    input, select {
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+    }
+
+    button {
+      padding: 12px;
+      background-color: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #2563eb;
+    }
+
+    #results {
+      margin-top: 20px;
+      background: #0f172a;
+      border: 1px solid #334155;
+      padding: 15px;
+      border-radius: 10px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .valid {
+      color: #22c55e;
+    }
+
+    .invalid {
+      color: #f87171;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔍 Username & ID Brute Checker</h1>
+
+    <select id="modeSelect">
+      <option value="1">Facebook ID</option>
+      <option value="2">Twitter Handle</option>
+      <option value="3">Reddit Username</option>
+      <option value="9">Custom URL with {i}/{t}</option>
+    </select>
+
+    <input type="text" id="urlPattern" placeholder="Enter URL pattern e.g. https://facebook.com/profile.php?id={i}" />
+    <input type="number" id="startNumber" value="1" placeholder="Start number (for {i})" />
+    <button onclick="startBruteForce()">Start Brute Force</button>
+
+    <div id="results"></div>
+  </div>
+
+  <script>
+    const userAgents = [
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
+      "Mozilla/5.0 (Linux; Android 10)",
+      "Mozilla/5.0 (iPhone; CPU iPhone OS 13_5 like Mac OS X)",
+      "Mozilla/5.0 (X11; Ubuntu; Linux x86_64)"
+    ];
+
+    let running = false;
+
+    function getRandomText(length = 8) {
+      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+      return Array.from({ length }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+    }
+
+    function replacePlaceholders(url, i) {
+      return url.replaceAll('{i}', i).replaceAll('{t}', getRandomText());
+    }
+
+    async function checkURL(url, headers) {
+      try {
+        const res = await fetch(url, {
+          method: 'GET',
+          mode: 'no-cors',
+          headers: {
+            "User-Agent": headers["User-Agent"]
+          }
+        });
+        return res.status || 200; // no-cors often hides the status, so we assume 200
+      } catch (err) {
+        return 0;
+      }
+    }
+
+    async function startBruteForce() {
+      const mode = document.getElementById('modeSelect').value;
+      const patternInput = document.getElementById('urlPattern').value;
+      let start = parseInt(document.getElementById('startNumber').value) || 1;
+      const resultBox = document.getElementById('results');
+      resultBox.innerHTML = "";
+      running = true;
+
+      let pattern = patternInput;
+
+      // Predefined patterns
+      if (mode === "1") pattern = "https://www.facebook.com/profile.php?id={i}";
+      else if (mode === "2") pattern = "https://twitter.com/{t}";
+      else if (mode === "3") pattern = "https://www.reddit.com/user/{t}";
+
+      for (let count = 0; count < 100 && running; count++) {
+        const currentUrl = replacePlaceholders(pattern, start);
+        const ua = userAgents[Math.floor(Math.random() * userAgents.length)];
+        const status = await checkURL(currentUrl, { "User-Agent": ua });
+
+        const el = document.createElement("p");
+        if (status === 200) {
+          el.className = "valid";
+          el.textContent = `✅ ${currentUrl} is Valid`;
+        } else {
+          el.className = "invalid";
+          el.textContent = `❌ ${currentUrl} might be invalid`;
+        }
+        resultBox.appendChild(el);
+        resultBox.scrollTop = resultBox.scrollHeight;
+
+        start++;
+        await new Promise(res => setTimeout(res, 500)); // delay between requests
+      }
+    }
+  </script>
+</body>
+</html>

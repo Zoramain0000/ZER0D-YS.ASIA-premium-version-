@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Cyber Utility Gateway</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+:root {
+  --bg:#0b1220;
+  --panel:#111827cc;
+  --border:#1f2937;
+  --accent:#00ffc6;
+  --text:#e5e7eb;
+  --muted:#9ca3af;
+}
+
+* {
+  box-sizing: border-box;
+  font-family: system-ui, monospace;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  overflow-x: hidden;
+}
+
+/* Background video */
+video.bg-video {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.35;
+  z-index: -2;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at center, rgba(0,0,0,.3), rgba(0,0,0,.85));
+  z-index: -1;
+}
+
+/* Layout */
+.container {
+  min-height: 100vh;
+  padding: 40px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.title {
+  font-size: 2.4rem;
+  color: var(--accent);
+  text-shadow: 0 0 20px rgba(0,255,198,.4);
+  margin-bottom: 10px;
+}
+
+.subtitle {
+  color: var(--muted);
+  margin-bottom: 40px;
+  text-align: center;
+}
+
+/* Door grid */
+.doors {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+  width: 100%;
+  max-width: 900px;
+}
+
+/* Door card */
+.door {
+  background: linear-gradient(145deg, #0f172a, #020617);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 26px 20px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: 0.25s ease;
+  text-align: center;
+}
+
+.door::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent, rgba(0,255,198,.15), transparent);
+  transform: translateX(-100%);
+  transition: 0.6s;
+}
+
+.door:hover::before {
+  transform: translateX(100%);
+}
+
+.door:hover {
+  transform: translateY(-6px) scale(1.02);
+  border-color: var(--accent);
+  box-shadow: 0 0 25px rgba(0,255,198,.25);
+}
+
+.icon {
+  font-size: 36px;
+  margin-bottom: 10px;
+  color: var(--accent);
+}
+
+.label {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.desc {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 6px;
+}
+
+/* Footer */
+.footer {
+  margin-top: 40px;
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+}
+</style>
+</head>
+
+<body>
+
+<!-- Background Video -->
+<video class="bg-video" autoplay muted loop playsinline>
+  <source src="background/1761817527453041720p.mp4" type="video/mp4">
+</video>
+<div class="overlay"></div>
+
+<div class="container">
+  <div class="title">CYBER UTILITY GATEWAY</div>
+  <div class="subtitle">Select a module to open — secure, local, frontend only</div>
+
+  <div class="doors">
+
+<div class="door" onclick="openTool('airtag.html')">
+  <div class="icon">📍</div>
+  <div class="label">AirTag Scanner</div>
+  <div class="desc">Detect nearby tracker signals & safety status</div>
+</div>
+
+<div class="door" onclick="openTool('browsers.html')">
+  <div class="icon">🌐</div>
+  <div class="label">Browser Intelligence</div>
+  <div class="desc">Analyze browser types, engines & fingerprints</div>
+</div>
+
+<div class="door" onclick="openTool('ethical-tracker.html')">
+  <div class="icon">🛡️</div>
+  <div class="label">Ethical Tracker</div>
+  <div class="desc">Privacy-safe tracking & awareness utilities</div>
+</div>
+
+<div class="door" onclick="openTool('finderweb.html')">
+  <div class="icon">🔎</div>
+  <div class="label">Web Finder</div>
+  <div class="desc">Search and discover indexed websites</div>
+</div>
+
+<div class="door" onclick="openTool('ign.html')">
+  <div class="icon">🧠</div>
+  <div class="label">IGN Analyzer</div>
+  <div class="desc">Identity & name intelligence lookup</div>
+</div>
+
+<div class="door" onclick="openTool('igtag.html')">
+  <div class="icon">📸</div>
+  <div class="label">IG Tag Finder</div>
+  <div class="desc">Username & tag discovery utilities</div>
+</div>
+
+<div class="door" onclick="openTool('liveip.html')">
+  <div class="icon">📡</div>
+  <div class="label">Live IP Monitor</div>
+  <div class="desc">Public IP details & network metadata</div>
+</div>
+
+<div class="door" onclick="openTool('radio-star.html')">
+  <div class="icon">📻</div>
+  <div class="label">Radio Star</div>
+  <div class="desc">Streaming & signal-based utilities</div>
+</div>
+
+<div class="door" onclick="openTool('signal2.html')">
+  <div class="icon">📶</div>
+  <div class="label">Signal Analyzer</div>
+  <div class="desc">Signal strength & connectivity tools</div>
+</div>
+
+<div class="door" onclick="openTool('user-gen.html')">
+  <div class="icon">👤</div>
+  <div class="label">User Generator</div>
+  <div class="desc">Generate usernames & identities</div>
+</div>
+
+  </div>
+
+  <div class="footer">
+    Cyber Utility Gateway 
+  </div>
+</div>
+
+<script>
+function openTool(file) {
+  window.location.href = file;
+}
+</script>
+
+</body>
+</html>

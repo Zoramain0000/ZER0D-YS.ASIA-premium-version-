@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>IP Address Generator (IPv1–IPv9)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      font-family: 'Courier New', monospace;
+      background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+      overflow: hidden;
+    }
+
+    #sidebar {
+      width: 250px;
+      background: rgba(0, 0, 0, 0.5);
+      border-right: 2px solid red;
+      display: flex;
+      flex-direction: column;
+      transition: width 0.3s ease;
+    }
+
+    #sidebar.collapsed {
+      width: 60px;
+    }
+
+    #sidebar h2 {
+      text-align: center;
+      font-size: 1.2em;
+      margin: 10px 0;
+      color: red;
+    }
+
+    #sidebar .menu-item {
+      padding: 12px 20px;
+      cursor: pointer;
+      border-bottom: 1px solid #111;
+      color: red;
+      transition: background 0.2s;
+      white-space: nowrap;
+      text-decoration: none;
+    }
+
+    #sidebar .menu-item:hover {
+      background: rgba(0, 0, 0, 0.5);
+    }
+
+    #toggle-btn {
+      background-color: red;
+      color: #000;
+      border: none;
+      padding: 10px;
+      cursor: pointer;
+      font-weight: bold;
+      width: 100%;
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    header {
+      background: rgba(0, 0, 0, 0.5);
+      color: red;
+      padding: 15px;
+      text-align: center;
+      font-size: 1.5em;
+      border-bottom: 2px solid red;
+    }
+
+    footer {
+      background: rgba(0, 0, 0, 0.5);
+      color: red;
+      font-size: 0.8em;
+      text-align: center;
+      padding: 8px;
+      border-top: 1px solid;
+    }
+
+    #generator {
+      margin-top: 20px;
+      text-align: center;
+    }
+
+    #generator button {
+      padding: 10px 20px;
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid red;
+      color: red;
+      font-weight: bold;
+      border-radius: 5px;
+      cursor: pointer;
+      margin: 5px;
+    }
+
+    #generator button:hover {
+      background: rgba(0, 0, 0, 0.7);
+    }
+
+    #result {
+      margin-top: 20px;
+      padding: 10px;
+      background: rgba(0, 0, 0, 0.5);
+      border-radius: 5px;
+      color: red;
+      font-size: 1.2em;
+    }
+
+    .action-buttons {
+      margin-top: 10px;
+    }
+
+    .action-buttons button {
+      margin: 0 10px;
+      font-size: 0.9em;
+    }
+
+    #commentary {
+      margin-top: 15px;
+      color: #ff9999;
+      font-size: 0.95em;
+    }
+
+    #qrcode {
+      margin-top: 15px;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+</head>
+<body>
+  <div id="sidebar">
+    <button id="toggle-btn">☰</button>
+    <h2>Tools</h2>
+    <a class="menu-item" href="#" onclick="showGenerator()">IP Address Generator</a>
+  </div>
+
+  <main>
+    <header>IP Generator Tool (IPv1–IPv9)</header>
+    <div id="generator">
+      <h2>Generate IP Address</h2>
+      <div>
+        <button onclick="generateIP('IPv1')">IPv1</button>
+        <button onclick="generateIP('IPv2')">IPv2</button>
+        <button onclick="generateIP('IPv3')">IPv3</button>
+        <button onclick="generateIP('IPv4')">IPv4</button>
+        <button onclick="generateIP('IPv5')">IPv5</button>
+        <button onclick="generateIP('IPv6')">IPv6</button>
+        <button onclick="generateIP('IPv7')">IPv7</button>
+        <button onclick="generateIP('IPv8')">IPv8</button>
+        <button onclick="generateIP('IPv9')">IPv9</button>
+      </div>
+
+      <div id="result">Generated IP will appear here...</div>
+      <div id="commentary"></div>
+      <div id="qrcode"></div>
+
+      <div class="action-buttons">
+        <button onclick="copyToClipboard()">📋 Copy</button>
+        <button onclick="saveToFile('txt')">💾 Save .txt</button>
+        <button onclick="saveToFile('csv')">💾 Save .csv</button>
+        <button onclick="saveToFile('json')">💾 Save .json</button>
+        <button onclick="resetDisplay()">❌ Reset</button>
+      </div>
+    </div>
+
+    <footer>
+      For educational and ethical use only. &copy; 2025 ZeroDayAI
+    </footer>
+  </main>
+
+  <script>
+    const sidebar = document.getElementById("sidebar");
+    const toggleBtn = document.getElementById("toggle-btn");
+    const resultDiv = document.getElementById("result");
+    const commentaryDiv = document.getElementById("commentary");
+    const qrCodeDiv = document.getElementById("qrcode");
+
+    const commentaryMap = {
+      IPv1: "IPv1 is a fictional AI-defined legacy prototype format used internally in simulation tools.",
+      IPv2: "IPv2 is a speculative, compressed address model derived from experimental networking.",
+      IPv3: "IPv3 existed briefly as an experimental transition format before IPv4 matured.",
+      IPv4: "IPv4 is the most widely deployed internet protocol using 32-bit dot-decimal notation.",
+      IPv5: "IPv5 was used experimentally for streaming protocols but never standardized.",
+      IPv6: "IPv6 is the official modern protocol with 128-bit addressing, solving IPv4 exhaustion.",
+      IPv7: "IPv7 is a hypothetical successor in AI network simulations, using custom 6-block hex.",
+      IPv8: "IPv8 symbolizes intelligent routing layers in quantum or AI-based networks.",
+      IPv9: "IPv9 is a speculative ultra-wide address space proposed in research circles and AI-driven labs."
+    };
+
+    toggleBtn.onclick = () => {
+      sidebar.classList.toggle("collapsed");
+    };
+
+    function generateIP(version) {
+      let ip = "";
+      switch (version) {
+        case 'IPv1':
+        case 'IPv2':
+        case 'IPv3':
+        case 'IPv5':
+        case 'IPv7':
+        case 'IPv8':
+        case 'IPv9':
+          ip = Array.from({ length: 6 }, () =>
+            Math.floor(Math.random() * 0xffff).toString(16).padStart(4, '0')
+          ).join('-');
+          break;
+        case 'IPv4':
+          ip = Array.from({ length: 4 }, () => Math.floor(Math.random() * 256)).join('.');
+          break;
+        case 'IPv6':
+          ip = Array.from({ length: 8 }, () =>
+            Math.floor(Math.random() * 0xffff).toString(16).padStart(4, '0')
+          ).join(':');
+          break;
+      }
+      const output = `Generated ${version}: ${ip}`;
+      resultDiv.textContent = output;
+      commentaryDiv.textContent = commentaryMap[version] || '';
+      qrCodeDiv.innerHTML = "";
+      QRCode.toCanvas(document.createElement('canvas'), output, function (err, canvas) {
+        if (!err) qrCodeDiv.appendChild(canvas);
+      });
+    }
+
+    function showGenerator() {
+      resetDisplay();
+    }
+
+    function copyToClipboard() {
+      const text = resultDiv.textContent;
+      if (!text.includes("Generated")) return;
+      navigator.clipboard.writeText(text).then(() => {
+        alert("Copied to clipboard!");
+      }).catch(() => {
+        alert("Copy failed.");
+      });
+    }
+
+    function saveToFile(type) {
+      const text = resultDiv.textContent;
+      if (!text.includes("Generated")) return;
+
+      const versionMatch = text.match(/Generated (\w+): (.+)/);
+      if (!versionMatch) return;
+      const version = versionMatch[1];
+      const ip = versionMatch[2];
+      let content = "", filename = "";
+
+      switch (type) {
+        case 'txt':
+          content = text;
+          filename = "generated_ip.txt";
+          break;
+        case 'csv':
+          content = `Version,IP\n${version},${ip}`;
+          filename = "generated_ip.csv";
+          break;
+        case 'json':
+          content = JSON.stringify({ version, ip }, null, 2);
+          filename = "generated_ip.json";
+          break;
+      }
+
+      const blob = new Blob([content], { type: 'text/plain' });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      link.click();
+    }
+
+    function resetDisplay() {
+      resultDiv.textContent = "Generated IP will appear here...";
+      commentaryDiv.textContent = "";
+      qrCodeDiv.innerHTML = "";
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,765 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Cyber Tools — Global Radio Finder (Updated)</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
+<style>
+  /* Base visuals (kept and enhanced from your theme) */
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;background:#000;color:#c58b00;font-family:"Segoe UI",system-ui,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+  .bg-video{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:-3;opacity:0.7}
+  .overlay{position:fixed;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0.12),rgba(0,0,0,0.75));z-index:-2}
+  nav{position:fixed;left:0;right:0;top:0;display:flex;justify-content:space-between;align-items:center;padding:12px 18px;background:rgba(0,0,0,0.6);border-bottom:1px solid rgba(255,255,255,0.04);z-index:40}
+  .brand{display:flex;align-items:center;gap:10px;color:#c58b00;font-weight:700}
+  .mode-switch{display:flex;gap:8px}
+  .mode-btn{background:transparent;border:1px solid rgba(255,255,255,0.04);color:#c58b00;padding:8px 10px;border-radius:8px;cursor:pointer}
+  .mode-btn.active{background:linear-gradient(90deg,#00c896,#00a8cc);color:#021218;border:none;box-shadow:0 6px 24px rgba(0,200,150,0.08)}
+  .main{padding-top:100px;max-width:1200px;margin:0 auto 40px;padding:18px}
+  .search-row{display:flex;gap:10px;align-items:center;margin-bottom:12px}
+  .search-input{flex:1;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:#0b0b0c;color:#ffc107;font-family:monospace}
+  .search-btn{padding:11px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:#ffc107;cursor:pointer}
+  .controls{display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap}
+  .filter{padding:8px;border-radius:8px;background:#0a0a0a;border:1px solid rgba(255,255,255,0.03);color:#caa44a}
+  .muted{color:#9fbcd8;font-size:0.92rem}
+  .results{margin-top:16px;transition:all .25s ease;min-height:200px;display:block}
+  .card{background:rgba(7,7,8,0.6);border:1px solid rgba(255,255,255,0.03);padding:14px;border-radius:10px;margin-bottom:12px}
+  .card h3{color:#00a8cc;margin-bottom:8px;font-size:1.05rem}
+  .kv{display:flex;gap:8px;flex-wrap:wrap}
+  .kv div{min-width:180px}
+  .label{color:#9fbcd8;font-size:0.85rem}
+  .value{color:#dbefff;font-weight:700}
+  .terminal{background:#000814;border:1px solid rgba(0,200,150,0.08);padding:12px;border-radius:8px;color:#bfe3ff;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;height:320px;overflow:auto;white-space:pre-wrap}
+  .line{margin-bottom:6px}
+  .src-badge{display:inline-block;padding:4px 8px;border-radius:6px;font-weight:700;font-size:0.8rem;margin-left:8px;color:#021218;background:#c58b00}
+  .warn{background:#2b1515;color:#ffb4b4;padding:10px;border-radius:8px;margin-bottom:12px;border:1px solid rgba(255,80,80,0.12)}
+  .actions{display:flex;gap:8px;margin-top:10px}
+  .btn{padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:#ffc107;cursor:pointer}
+  .btn.primary{background:linear-gradient(90deg,#00c896,#00a8cc);color:#021218;border:none}
+  a.map-link{color:#00c896;text-decoration:none;font-weight:700}
+  footer{margin-top:22px;color:#9fbcd8;font-size:0.82rem}
+  #map{height:62vh;border-radius:10px;border:1px solid rgba(255,255,255,0.03);overflow:hidden}
+  #sidebar{margin-top:12px;display:grid;grid-template-columns:1fr;gap:10px}
+  .station{background:rgba(255,255,255,0.02);padding:10px;border-radius:8px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .station .meta{display:flex;flex-direction:column}
+  .small{font-size:12px;color:#9fbcd8}
+  .player{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;background:rgba(0,0,0,0.6);padding:10px 12px;border-radius:12px;border:1px solid rgba(255,255,255,0.04);display:flex;gap:10px;align-items:center;z-index:60}
+  .fav-btn{background:transparent;border:0;color:#c58b00;cursor:pointer;font-size:18px}
+  .controls-right{margin-left:auto;display:flex;gap:8px;align-items:center}
+  .progress{height:8px;border-radius:6px;background:rgba(255,255,255,0.04);overflow:hidden;width:160px}
+  .progress > i{display:block;height:100%;width:0;background:linear-gradient(90deg,#00c896,#00a8cc)}
+  .filters-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-left:6px}
+  .fav-panel{position:fixed;right:12px;top:72px;width:340px;max-height:60vh;overflow:auto;background:rgba(3,3,4,0.9);border:1px solid rgba(255,255,255,0.04);padding:10px;border-radius:10px;z-index:60}
+  .visualizer{width:220px;height:40px;background:#001;display:block;border-radius:6px;overflow:hidden}
+  .vis-bar{height:100%;display:inline-block;vertical-align:bottom}
+  .kbd-hint{font-size:12px;color:#9fbcd8}
+  @media(max-width:900px){ #map{height:48vh} .terminal{height:220px} .fav-panel{display:none} }
+</style>
+</head>
+<body>
+  <!-- Background media (optional) -->
+  <video class="bg-video" autoplay loop muted playsinline>
+    <source src="background/1761817527453041720p.mp4" type="video/mp4">
+  </video>
+  <div class="overlay"></div>
+  <audio id="bg-music" loop>
+    <source src="background/Programming___Coding___Hacking_music_vol.18__ANONYMOUS_HEADQUARTERS_(48k).mp3" type="audio/mpeg">
+  </audio>
+
+  <nav>
+    <div class="brand"><span style="font-size:14px">Cyber Tools</span> <span style="opacity:.9;font-size:12px;margin-left:6px">Global Radio Finder</span></div>
+    <div class="mode-switch">
+      <button class="mode-btn active" id="btn-report" onclick="setMode('map')">Map</button>
+      <button class="mode-btn" id="btn-live" onclick="setMode('list')">List</button>
+      <button class="mode-btn" id="btn-dual" onclick="setMode('dual')">Dual</button>
+    </div>
+  </nav>
+
+  <div class="main">
+    <div class="warn">
+      <strong>Use responsibly:</strong> This tool finds publicly-tagged radio stations on OpenStreetMap and attempts to locate streams via public directories. It does not break access controls. Respect copyright and streaming TOS.
+    </div>
+
+    <div class="search-row">
+      <input id="searchInput" class="search-input" placeholder="Search station name / country / tag (press Enter or use Search)">
+      <button class="search-btn" id="btnSearch" onclick="searchRadioByName()">Search</button>
+    </div>
+
+    <div class="controls">
+      <label class="filter"><input id="autoScan" type="checkbox" checked /> Auto-scan as you move the map</label>
+      <label class="filter"><input id="rbLookup" type="checkbox" checked /> Try Radio-Browser</label>
+      <label class="filter"><input id="showFavs" type="checkbox" /> Show favorites panel</label>
+      <div class="filters-row">
+        <input id="countryFilter" placeholder="Country code (e.g. US, GB) or blank" class="filter" style="width:200px" />
+        <input id="minBitrate" placeholder="Min bitrate kbps" class="filter" style="width:120px" type="number" min="0" />
+      </div>
+      <div class="controls-right muted">
+        <div class="kbd-hint">Keys: <strong>M</strong> map <strong>L</strong> list <strong>D</strong> dual</div>
+      </div>
+    </div>
+
+    <div id="map" aria-label="Map (OpenStreetMap)"></div>
+
+    <div id="sidebar">
+      <div id="resultSummary" class="small muted">Zoom or pan the map to search the visible area. Click markers to open station cards.</div>
+      <div id="results" class="results"></div>
+    </div>
+
+    <footer>
+      Built with OpenStreetMap, Overpass API and Radio-Browser. Some streams may be blocked by CORS or be in formats unsupported by your browser.
+    </footer>
+  </div>
+
+  <!-- Player -->
+  <div id="player" class="player" style="display:none">
+    <div id="playerTitle" style="min-width:220px;color:#e6eef6">—</div>
+    <audio id="audio" controls crossorigin="anonymous" style="max-width:520px"></audio>
+    <div style="display:flex;gap:6px;align-items:center">
+      <button id="stopBtn" class="btn">Stop</button>
+      <button id="copyBtn" class="btn">Copy URL</button>
+      <button id="openExternal" class="btn">Open in external player</button>
+    </div>
+    <div style="margin-left:10px;display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+      <div class="visualizer" id="visualizer"></div>
+      <div class="small muted" id="visHint">Visualizer</div>
+    </div>
+  </div>
+
+  <!-- Favorites panel -->
+  <div id="favPanel" class="fav-panel" style="display:none">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <strong style="color:#00a8cc">Favorites</strong>
+      <div><button id="clearFavs" class="btn">Clear</button></div>
+    </div>
+    <div id="favList"></div>
+  </div>
+
+  <!-- Libraries -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
+<script>
+/* Global Radio Finder — Updated version
+   - Completed missing logic
+   - Improvements: favorites panel, filters, RB retries, visualizer, progress indicator
+   - Single-file, client-only
+*/
+
+const overpassURL = 'https://overpass-api.de/api/interpreter';
+const radioBrowserMirrors = [
+  'https://de1.api.radio-browser.info/json/stations/search',
+  'https://nl1.api.radio-browser.info/json/stations/search',
+  'https://rt.mp3.radiobrowser.info/json/stations/search'
+];
+
+let radioBrowserApi = radioBrowserMirrors[0];
+
+// UI elements
+const resultsEl = document.getElementById('results');
+const summaryEl = document.getElementById('resultSummary');
+const playerEl = document.getElementById('player');
+const audioEl = document.getElementById('audio');
+const playerTitle = document.getElementById('playerTitle');
+const stopBtn = document.getElementById('stopBtn');
+const copyBtn = document.getElementById('copyBtn');
+const openExternal = document.getElementById('openExternal');
+const searchInput = document.getElementById('searchInput');
+const btnSearch = document.getElementById('btnSearch');
+const countryFilter = document.getElementById('countryFilter');
+const minBitrate = document.getElementById('minBitrate');
+const rbLookupCheckbox = document.getElementById('rbLookup');
+const showFavsCheckbox = document.getElementById('showFavs');
+const favPanel = document.getElementById('favPanel');
+const favList = document.getElementById('favList');
+const clearFavsBtn = document.getElementById('clearFavs');
+const progressBarInner = createProgressBar();
+const visContainer = document.getElementById('visualizer');
+
+let mode = 'map';
+function setMode(m){
+  mode = m;
+  document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
+  if(m==='map') document.getElementById('btn-report').classList.add('active');
+  if(m==='list') document.getElementById('btn-live').classList.add('active');
+  if(m==='dual') document.getElementById('btn-dual').classList.add('active');
+  renderCurrentView();
+}
+
+// map setup
+const map = L.map('map', {preferCanvas:true}).setView([20,0], 2);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 19, attribution: '&copy; OpenStreetMap contributors'
+}).addTo(map);
+
+const markers = L.markerClusterGroup({chunkedLoading:true});
+map.addLayer(markers);
+
+let lastElements = [];
+let favorites = JSON.parse(localStorage.getItem('rf_favorites_v1') || '[]');
+let currentStream = null;
+
+// WebAudio visualizer setup
+let audioCtx, analyser, sourceNode, rafId;
+function setupVisualizer(){
+  try {
+    if(!audioCtx){
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 256;
+    }
+    if(sourceNode) try{ sourceNode.disconnect(); }catch(e){}
+    sourceNode = audioCtx.createMediaElementSource(audioEl);
+    sourceNode.connect(analyser);
+    analyser.connect(audioCtx.destination);
+    drawVisualizer();
+  } catch(e){
+    // visualizer not available (CORS or autoplay restrictions)
+    visContainer.style.display='none';
+  }
+}
+function drawVisualizer(){
+  if(!analyser) return;
+  const bufferLength = analyser.frequencyBinCount;
+  const dataArray = new Uint8Array(bufferLength);
+  visContainer.innerHTML = '';
+  const bars = Math.min(32, bufferLength);
+  for(let i=0;i<bars;i++){
+    const b = document.createElement('div');
+    b.className='vis-bar';
+    b.style.width = (100/bars)+'%';
+    b.style.background = 'linear-gradient(180deg,#00c896,#00a8cc)';
+    b.style.marginRight='1px';
+    b.style.height='4px';
+    visContainer.appendChild(b);
+  }
+  function render(){
+    analyser.getByteFrequencyData(dataArray);
+    for(let i=0;i<bars;i++){
+      const v = dataArray[Math.floor(i*(bufferLength/bars))];
+      const h = Math.max(2, (v/255)*100);
+      const el = visContainer.children[i];
+      if(el) el.style.height = h+'%';
+    }
+    rafId = requestAnimationFrame(render);
+  }
+  cancelAnimationFrame(rafId);
+  render();
+}
+
+function stopVisualizer(){
+  try{ cancelAnimationFrame(rafId); }catch(e){}
+}
+
+// progress helper
+function createProgressBar(){
+  const container = document.createElement('div');
+  container.className='progress';
+  const inner = document.createElement('i');
+  container.appendChild(inner);
+  container.style.marginLeft='12px';
+  container.style.display='inline-block';
+  document.querySelector('.controls-right').appendChild(container);
+  return inner;
+}
+function setProgress(p){
+  progressBarInner.style.width = Math.max(4, Math.min(100, p)) + '%';
+}
+
+// tags to search for
+function buildOverpassQuery(bbox){
+  const [s,w,n,e] = bbox;
+  return `
+[out:json][timeout:60];
+(
+  node["office"="radio_station"](${s},${w},${n},${e});
+  way["office"="radio_station"](${s},${w},${n},${e});
+  relation["office"="radio_station"](${s},${w},${n},${e});
+
+  node["office"="broadcaster"](${s},${w},${n},${e});
+  way["office"="broadcaster"](${s},${w},${n},${e});
+  relation["office"="broadcaster"](${s},${w},${n},${e});
+
+  node["amenity"="studio"]["studio"="radio"](${s},${w},${n},${e});
+  way["amenity"="studio"]["studio"="radio"](${s},${w},${n},${e});
+  relation["amenity"="studio"]["studio"="radio"](${s},${w},${n},${e});
+
+  node["communication:radio"="yes"](${s},${w},${n},${e});
+  way["communication:radio"="yes"](${s},${w},${n},${e});
+  relation["communication:radio"="yes"](${s},${w},${n},${e});
+
+  node["seamark:type"="radio_station"](${s},${w},${n},${e});
+  way["seamark:type"="radio_station"](${s},${w},${n},${e});
+  relation["seamark:type"="radio_station"](${s},${w},${n},${e});
+);
+out center qt;
+`;
+}
+
+async function fetchOverpassForBBox(bbox, depth=0){
+  try {
+    const q = buildOverpassQuery(bbox);
+    const url = overpassURL + '?data=' + encodeURIComponent(q);
+    const resp = await fetch(url);
+    if(!resp.ok) throw new Error('Overpass HTTP ' + resp.status);
+    const json = await resp.json();
+    if(json.elements && json.elements.length > 800 && depth < 3){
+      const [s,w,n,e] = bbox;
+      const midLat = (s+n)/2;
+      const midLon = (w+e)/2;
+      const tiles = [
+        [s,w,midLat,midLon],
+        [s,midLon,midLat,e],
+        [midLat,w,n,midLon],
+        [midLat,midLon,n,e],
+      ];
+      let combined = [];
+      for(const t of tiles){
+        const part = await fetchOverpassForBBox(t, depth+1);
+        if(part && part.elements) combined.push(...part.elements);
+      }
+      return { elements: combined };
+    }
+    return json;
+  } catch (err){
+    console.warn('Overpass error', err);
+    // fallback splitting if possible
+    if(depth < 2){
+      const [s,w,n,e] = bbox;
+      const midLat = (s+n)/2, midLon=(w+e)/2;
+      const tiles = [
+        [s,w,midLat,midLon],
+        [s,midLon,midLat,e],
+        [midLat,w,n,midLon],
+        [midLat,midLon,n,e],
+      ];
+      let combined=[];
+      for(const t of tiles){
+        try {
+          const part = await fetchOverpassForBBox(t, depth+1);
+          if(part && part.elements) combined.push(...part.elements);
+        } catch(e){}
+      }
+      return { elements: combined };
+    }
+    return { elements: [] };
+  }
+}
+
+function elemCenter(el){
+  if(el.lat && el.lon) return {lat: el.lat, lon: el.lon};
+  if(el.center) return {lat: el.center.lat, lon: el.center.lon};
+  if(el.bounds) return { lat: (el.bounds.minlat+el.bounds.maxlat)/2, lon: (el.bounds.minlon+el.bounds.maxlon)/2 };
+  return null;
+}
+
+function tagSummary(tags){
+  if(!tags) return '';
+  const parts=[];
+  if(tags.name) parts.push(tags.name);
+  if(tags.frequency) parts.push(tags.frequency);
+  if(tags.operator) parts.push(tags.operator);
+  if(tags.website) parts.push('site');
+  return parts.join(' • ');
+}
+
+function clearResults(){
+  markers.clearLayers();
+  resultsEl.innerHTML = '';
+  lastElements = [];
+  summaryEl.textContent = '0 stations';
+}
+
+function addMarkerForElement(el){
+  const c = elemCenter(el);
+  if(!c) return;
+  const title = (el.tags && (el.tags.name || el.tags.ref)) || 'Unnamed station';
+  const marker = L.marker([c.lat, c.lon], {title: title});
+  const summary = tagSummary(el.tags);
+  const popup = document.createElement('div');
+  popup.style.maxWidth='320px';
+  popup.innerHTML = `
+    <div style="font-weight:700;color:#00a8cc">${escapeHtml(title)}</div>
+    <div class="small" style="margin-top:6px">${escapeHtml(summary)}</div>
+  `;
+  const btns = document.createElement('div');
+  btns.style.marginTop='8px'; btns.style.display='flex'; btns.style.gap='6px';
+  const zoomBtn = document.createElement('button'); zoomBtn.className='btn'; zoomBtn.textContent='Zoom'; zoomBtn.onclick = ()=>map.setView([c.lat,c.lon],15);
+  const osmBtn = document.createElement('button'); osmBtn.className='btn'; osmBtn.textContent='Open OSM'; osmBtn.onclick = ()=>window.open(`https://www.openstreetmap.org/${el.type}/${el.id}`,'_blank');
+  const rbBtn = document.createElement('button'); rbBtn.className='btn primary'; rbBtn.textContent='Find stream'; rbBtn.onclick = ()=>findAndShowStreams(el, popup);
+  btns.appendChild(zoomBtn); btns.appendChild(osmBtn); btns.appendChild(rbBtn);
+  popup.appendChild(btns);
+  marker.bindPopup(popup);
+  markers.addLayer(marker);
+
+  // Add to sidebar list
+  const card = document.createElement('div'); card.className='station';
+  const meta = document.createElement('div'); meta.className='meta';
+  meta.innerHTML = `<div style="font-weight:700;color:#00a8cc">${escapeHtml(title)}</div><div class="small">${escapeHtml(summary)}</div>`;
+  const actions = document.createElement('div');
+  const favBtn = document.createElement('button'); favBtn.className='fav-btn'; favBtn.innerHTML = favorites.find(f=>f.osm===(`${el.type}/${el.id}`)) ? '★' : '☆';
+  favBtn.title='Toggle favorite';
+  favBtn.onclick = ()=>{ toggleFavorite(el, favBtn); };
+  const playBtn = document.createElement('button'); playBtn.className='btn primary'; playBtn.textContent='Find & Play'; playBtn.onclick = ()=>findAndShowStreams(el, card);
+  const openBtn = document.createElement('button'); openBtn.className='btn'; openBtn.textContent='Open OSM'; openBtn.onclick = ()=>window.open(`https://www.openstreetmap.org/${el.type}/${el.id}`,'_blank');
+  actions.appendChild(favBtn); actions.appendChild(playBtn); actions.appendChild(openBtn);
+  card.appendChild(meta); card.appendChild(actions);
+  resultsEl.appendChild(card);
+}
+
+function escapeHtml(str){ if(!str) return ''; return String(str).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+async function runScan(){
+  setProgress(6);
+  const bboxLeaf = map.getBounds();
+  const bbox = [bboxLeaf.getSouth(), bboxLeaf.getWest(), bboxLeaf.getNorth(), bboxLeaf.getEast()];
+  summaryEl.textContent = 'Searching visible area...';
+  btnSearch.disabled = true; btnSearch.textContent='Scanning...';
+  try {
+    setProgress(12);
+    const data = await fetchOverpassForBBox(bbox);
+    setProgress(60);
+    const elems = (data.elements || []).filter(e=> e && (e.type && e.id));
+    // dedupe
+    const seen = new Set();
+    const uniq = [];
+    for(const el of elems){
+      const key = `${el.type}/${el.id}`;
+      if(!seen.has(key)){ seen.add(key); uniq.push(el); }
+    }
+    lastElements = uniq;
+    markers.clearLayers();
+    resultsEl.innerHTML = '';
+    // Add markers in chunks to avoid UI freeze
+    for(let i=0;i<uniq.length;i++){
+      addMarkerForElement(uniq[i]);
+      if(i%60===0) await sleep(8);
+      if(i%10===0) setProgress(60 + Math.min(30, Math.floor((i/uniq.length)*30)));
+    }
+    summaryEl.textContent = `${uniq.length} station(s) in view`;
+    setProgress(100);
+  } catch(err){
+    console.error(err);
+    summaryEl.textContent = 'Scan failed: ' + (err.message||'');
+    setProgress(0);
+  } finally {
+    btnSearch.disabled = false; btnSearch.textContent='Search';
+    setTimeout(()=>setProgress(0), 500);
+  }
+}
+
+// Search by name using Radio-Browser (client-side directory) and/or filter by name posting in OSM tags
+async function searchRadioByName(){
+  const q = searchInput.value.trim();
+  if(!q){
+    // fallback: run map scan
+    return runScan();
+  }
+  // apply local filters
+  const countryCode = (countryFilter.value||'').trim();
+  const minBr = parseInt(minBitrate.value||'0',10) || 0;
+
+  // 1) search Radio-Browser if enabled
+  if(rbLookupCheckbox.checked){
+    btnSearch.disabled = true; btnSearch.textContent='Searching RB...';
+    try {
+      // try mirrors, pick first responsive
+      let arr=null;
+      for(const root of radioBrowserMirrors){
+        try {
+          // use sensible query params: name + optional country
+          let url = `${root}?name=${encodeURIComponent(q)}&limit=80`;
+          if(countryCode) url += `&countrycode=${encodeURIComponent(countryCode)}`;
+          const resp = await fetch(url);
+          if(resp.ok){
+            arr = await resp.json();
+            radioBrowserApi = root;
+            break;
+          }
+        } catch(e){ continue; }
+      }
+      if(!arr) throw new Error('Radio-Browser mirrors unreachable');
+      // apply min bitrate filter if provided
+      if(minBr > 0) arr = arr.filter(s => (s.bitrate || 0) >= minBr);
+      // show results in list
+      markers.clearLayers();
+      resultsEl.innerHTML = '';
+      // place top results first
+      arr.forEach(s=>{
+        const card = document.createElement('div'); card.className='station';
+        const meta = document.createElement('div'); meta.className='meta';
+        const country = s.country || s.countrycode || '';
+        meta.innerHTML = `<div style="font-weight:700;color:#00a8cc">${escapeHtml(s.name)}</div><div class="small">${escapeHtml((country?country+' • ':'') + (s.bitrate||'') + 'kbps')}</div>`;
+        const actions = document.createElement('div');
+        const playBtn = document.createElement('button'); playBtn.className='btn primary'; playBtn.textContent='Play'; playBtn.onclick = ()=>playStream(s.url_resolved || s.stream || s.url);
+        const copyBtn = document.createElement('button'); copyBtn.className='btn'; copyBtn.textContent='Copy'; copyBtn.onclick = async ()=>{ try { await navigator.clipboard.writeText(s.url_resolved || s.stream || s.url); alert('Copied'); } catch(e){ prompt('Stream URL', s.url_resolved || s.stream || s.url); } };
+        const openBtn = document.createElement('button'); openBtn.className='btn'; openBtn.textContent='Open page'; openBtn.onclick = ()=>window.open(s.homepage || s.url || s.website, '_blank');
+        actions.appendChild(playBtn); actions.appendChild(copyBtn); actions.appendChild(openBtn);
+        card.appendChild(meta); card.appendChild(actions);
+        resultsEl.appendChild(card);
+      });
+      summaryEl.textContent = `${arr.length} Radio-Browser result(s)`;
+    } catch(err){
+      console.warn(err);
+      // fallback: try to filter OSM-tags by name in visible area
+      summaryEl.textContent = 'Radio-Browser search failed; falling back to OSM filter.';
+      await runScan();
+      const qLower = q.toLowerCase();
+      const filtered = lastElements.filter(e=> (e.tags && ((e.tags.name||'')+''+ (e.tags.operator||'') + (e.tags.ref||'')).toLowerCase().includes(qLower)));
+      markers.clearLayers();
+      resultsEl.innerHTML='';
+      filtered.forEach(el=>addMarkerForElement(el));
+      summaryEl.textContent = `${filtered.length} OSM match(es)`;
+    } finally {
+      btnSearch.disabled = false; btnSearch.textContent='Search';
+    }
+  } else {
+    // Only search OSM tags within current map bounds
+    await runScan();
+    const qLower = q.toLowerCase();
+    const filtered = lastElements.filter(e=> (e.tags && ((e.tags.name||'')+''+ (e.tags.operator||'') + (e.tags.ref||'')).toLowerCase().includes(qLower)));
+    // apply additional client filters
+    const countryCode = (countryFilter.value||'').trim().toLowerCase();
+    const minBr = parseInt(minBitrate.value||'0',10) || 0;
+    const filtered2 = filtered.filter(e=>{
+      if(countryCode){
+        const c = (e.tags && ((e.tags['addr:country']||e.tags['is_in:country']||e.tags.country||'')).toLowerCase());
+        if(!c.includes(countryCode)) return false;
+      }
+      // can't reliably filter bitrate from OSM tags; keep
+      return true;
+    });
+    markers.clearLayers();
+    resultsEl.innerHTML='';
+    filtered2.forEach(el=>addMarkerForElement(el));
+    summaryEl.textContent = `${filtered2.length} OSM match(es)`;
+  }
+}
+
+// Radio-Browser lookup for a single OSM element
+async function findAndShowStreams(osmEl, container){
+  const title = (osmEl.tags && (osmEl.tags.name || osmEl.tags.ref)) || '';
+  const country = (osmEl.tags && (osmEl.tags['addr:country'] || osmEl.tags['is_in:country'] || osmEl.tags.country)) || '';
+  const qParts = [];
+  if(title) qParts.push('name=' + encodeURIComponent(title));
+  if(country) qParts.push('country=' + encodeURIComponent(country));
+  const qstr = qParts.length ? '?' + qParts.join('&') : '?name=' + encodeURIComponent(title || '');
+  const status = document.createElement('div'); status.className='small'; status.style.marginTop='8px'; status.textContent='Searching Radio-Browser...';
+  container.appendChild(status);
+  try {
+    let arr;
+    for(const root of radioBrowserMirrors){
+      try {
+        const rbResp = await fetch(root + qstr + '&limit=15');
+        if(rbResp.ok){
+          arr = await rbResp.json();
+          radioBrowserApi = root;
+          break;
+        }
+      } catch(e){ continue; }
+    }
+    if(!arr) throw new Error('Radio-Browser unreachable or returned no results');
+    status.textContent = `Found ${arr.length} entry(ies)`;
+    const list = document.createElement('div'); list.style.marginTop='8px';
+    arr.forEach(s=>{
+      const item = document.createElement('div');
+      item.style.display='flex'; item.style.justifyContent='space-between'; item.style.alignItems='center'; item.style.gap='8px'; item.style.marginTop='6px';
+      const left = document.createElement('div'); left.innerHTML = `<div style="font-weight:700">${escapeHtml(s.name)}</div><div class="small">${escapeHtml((s.country||'') + (s.bitrate ? ' • ' + s.bitrate + 'kbps' : ''))}</div>`;
+      const controls = document.createElement('div'); controls.style.display='flex'; controls.style.gap='6px';
+      const play = document.createElement('button'); play.className='btn primary'; play.textContent='Play'; play.onclick = ()=>playStream(s.url_resolved || s.url || s.stream);
+      const copy = document.createElement('button'); copy.className='btn'; copy.textContent='Copy'; copy.onclick = async ()=>{ try{ await navigator.clipboard.writeText(s.url_resolved || s.url || s.stream); alert('Copied'); } catch(e){ prompt('Stream URL', s.url_resolved || s.url || s.stream); } };
+      const open = document.createElement('button'); open.className='btn'; open.textContent='Page'; open.onclick = ()=>window.open(s.homepage || s.url || s.website, '_blank');
+      controls.appendChild(play); controls.appendChild(copy); controls.appendChild(open);
+      item.appendChild(left); item.appendChild(controls); list.appendChild(item);
+    });
+    container.appendChild(list);
+    if(arr.length===0){
+      const none = document.createElement('div'); none.className='small'; none.style.marginTop='8px'; none.textContent = 'No streams found. Try the station website in OSM or a broader Radio-Browser search.';
+      container.appendChild(none);
+    }
+  } catch(err){
+    console.warn('RB lookup error', err);
+    status.textContent = 'Radio-Browser lookup failed.';
+  }
+}
+
+async function playStream(url){
+  if(!url){ alert('No stream URL available'); return; }
+  // If AudioContext suspended because of autoplay policy, try to resume
+  try { if(audioCtx && audioCtx.state === 'suspended') await audioCtx.resume(); } catch(e){}
+  audioEl.src = url;
+  // Attempt to play; handle CORS/format errors gracefully
+  try {
+    await audioEl.play();
+    currentStream = url;
+    playerTitle.textContent = 'Playing: ' + (url.length>50 ? url.slice(0,46)+'…' : url);
+    playerEl.style.display = 'flex';
+    try{ setupVisualizer(); }catch(e){}
+  } catch(e){
+    console.warn('Play error', e);
+    // CORS or unsupported; offer to copy/open externally
+    const msg = 'Could not play stream in browser (CORS/format). You can copy the URL and open in an external player.';
+    if(confirm(msg + '\n\nOpen externally now?')) window.open(url, '_blank');
+  }
+}
+
+stopBtn.onclick = ()=>{
+  audioEl.pause(); audioEl.src = ''; playerEl.style.display='none'; currentStream=null;
+  stopVisualizer();
+};
+copyBtn.onclick = async ()=>{
+  if(!currentStream) return;
+  try { await navigator.clipboard.writeText(currentStream); alert('Stream URL copied'); }
+  catch(e){ prompt('Stream URL', currentStream); }
+};
+openExternal.onclick = ()=>{
+  if(!currentStream) return;
+  window.open(currentStream, '_blank');
+};
+
+// favorites
+function toggleFavorite(el, btn){
+  const osmId = `${el.type}/${el.id}`;
+  const idx = favorites.findIndex(f=>f.osm===osmId);
+  if(idx >= 0){ favorites.splice(idx,1); btn.innerHTML='☆'; }
+  else {
+    const f = { osm: osmId, name: (el.tags && (el.tags.name||el.tags.ref))||osmId, center: elemCenter(el) };
+    favorites.push(f); btn.innerHTML='★';
+  }
+  localStorage.setItem('rf_favorites_v1', JSON.stringify(favorites));
+  renderFavorites();
+}
+
+function renderFavorites(){
+  favList.innerHTML='';
+  favorites.forEach(f=>{
+    const card = document.createElement('div'); card.className='station'; card.style.marginBottom='8px';
+    const meta = document.createElement('div'); meta.className='meta';
+    meta.innerHTML = `<div style="font-weight:700;color:#00a8cc">${escapeHtml(f.name)}</div><div class="small">${escapeHtml(f.osm)}</div>`;
+    const actions = document.createElement('div');
+    const zoom = document.createElement('button'); zoom.className='btn'; zoom.textContent='Zoom'; zoom.onclick = ()=> map.setView([f.center.lat, f.center.lon], 13);
+    const remove = document.createElement('button'); remove.className='btn'; remove.textContent='Remove'; remove.onclick = ()=>{ favorites = favorites.filter(x=>x.osm!==f.osm); localStorage.setItem('rf_favorites_v1', JSON.stringify(favorites)); renderFavorites(); };
+    actions.appendChild(zoom); actions.appendChild(remove);
+    card.appendChild(meta); card.appendChild(actions);
+    favList.appendChild(card);
+  });
+}
+
+// mode rendering: map / list / dual
+function renderCurrentView(){
+  if(mode === 'map'){
+    document.getElementById('map').style.display = 'block';
+    document.getElementById('sidebar').style.display='grid';
+    if(lastElements.length === 0) runScan();
+    else {
+      resultsEl.innerHTML=''; lastElements.forEach(el=>addMarkerForElement(el));
+    }
+  } else if(mode === 'list'){
+    document.getElementById('map').style.display='block';
+    document.getElementById('sidebar').style.display='grid';
+    renderLiveTerminal();
+  } else {
+    document.getElementById('map').style.display='block';
+    document.getElementById('sidebar').style.display='grid';
+    renderLiveTerminal(true);
+  }
+}
+
+// Terminal-style rendering
+async function renderLiveTerminal(alsoStructured=false){
+  resultsEl.innerHTML='';
+  if(alsoStructured){
+    const block = document.createElement('div'); block.className='card';
+    block.innerHTML = '<h3>Nearby stations (sample)</h3>';
+    const sample = document.createElement('div');
+    sample.className='small muted';
+    block.appendChild(sample);
+    resultsEl.appendChild(block);
+    const sampleList = document.createElement('div');
+    sampleList.style.marginTop='8px';
+    (lastElements.slice(0,6)).forEach(el=>{
+      const c = elemCenter(el);
+      const name = (el.tags && (el.tags.name||el.tags.ref))||`${el.type}/${el.id}`;
+      const line = document.createElement('div'); line.style.marginBottom='6px';
+      line.innerHTML = `<strong style="color:#00a8cc">${escapeHtml(name)}</strong> <span class="small" style="margin-left:8px">${escapeHtml(tagSummary(el.tags))}</span>`;
+      sampleList.appendChild(line);
+    });
+    resultsEl.appendChild(sampleList);
+  }
+
+  const term = document.createElement('div'); term.className='terminal'; resultsEl.appendChild(term);
+  await typeLine(term, `> Live Radio Finder — scanning visible map area`);
+  await sleep(250);
+  await typeLine(term, `> Map center: ${map.getCenter().lat.toFixed(4)}, ${map.getCenter().lng.toFixed(4)} — Zoom ${map.getZoom()}`);
+  await sleep(200);
+  await typeLine(term, `> Stations in cache: ${lastElements.length}`);
+  await sleep(200);
+  if(lastElements.length>0){
+    const sample = lastElements.slice(0,8);
+    for(const s of sample){
+      const name = (s.tags && (s.tags.name || s.tags.ref)) || `${s.type}/${s.id}`;
+      await typeLine(term, `  • ${name} — ${s.tags && s.tags.operator ? s.tags.operator : (s.tags && s.tags.frequency ? s.tags.frequency : 'no extra tags')}`);
+      await sleep(80);
+    }
+  }
+  await sleep(120);
+  await typeLine(term, `> Tip: Click 'Find & Play' to search Radio-Browser for streams and play in-page.`);
+}
+
+// Typing effect
+function typeLine(term, text){
+  return new Promise(resolve=>{
+    const line = document.createElement('div'); line.className='line';
+    term.appendChild(line);
+    let i=0;
+    const speed = 4 + Math.floor(Math.random()*8);
+    const t = setInterval(()=>{
+      line.textContent += text.charAt(i++);
+      term.scrollTop = term.scrollHeight;
+      if(i>=text.length){ clearInterval(t); resolve(); }
+    }, speed);
+  });
+}
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+// events
+map.on('moveend', ()=>{ if(document.getElementById('autoScan').checked) runScan(); });
+btnSearch.addEventListener('click', ()=>searchRadioByName());
+searchInput.addEventListener('keydown', (e)=>{ if(e.key==='Enter') searchRadioByName(); });
+countryFilter.addEventListener('keydown',(e)=>{ if(e.key==='Enter') searchRadioByName(); });
+minBitrate.addEventListener('keydown',(e)=>{ if(e.key==='Enter') searchRadioByName(); });
+showFavsCheckbox.addEventListener('change', ()=>{
+  favPanel.style.display = showFavsCheckbox.checked ? 'block' : 'none';
+  renderFavorites();
+});
+clearFavsBtn.addEventListener('click', ()=>{
+  if(confirm('Clear all favorites?')){ favorites=[]; localStorage.setItem('rf_favorites_v1','[]'); renderFavorites(); }
+});
+
+// try geolocation for nicer UX
+(async ()=>{ try{ await new Promise((res,rej)=>{ navigator.geolocation.getCurrentPosition(p=>{ map.setView([p.coords.latitude,p.coords.longitude], 10); res(); }, ()=>res(), {timeout:5000}); }); } catch(e){} })();
+
+// initial scan
+runScan().then(()=>renderCurrentView());
+
+// keep background audio lazy-start on first interaction
+window.addEventListener('click', ()=>{ document.getElementById('bg-music').play().catch(()=>{}); }, { once:true });
+
+// keyboard shortcuts
+window.addEventListener('keydown', (e)=>{
+  if(e.key === 'm' || e.key === 'M') setMode('map');
+  if(e.key === 'l' || e.key === 'L') setMode('list');
+  if(e.key === 'd' || e.key === 'D') setMode('dual');
+});
+
+/* small utilities */
+window.__rf_fetch = runScan;
+window.__rf_play = playStream;
+window.__rf_favs = ()=>favorites;
+window.__rf_last = ()=>lastElements;
+
+</script>
+</body>
+</html>

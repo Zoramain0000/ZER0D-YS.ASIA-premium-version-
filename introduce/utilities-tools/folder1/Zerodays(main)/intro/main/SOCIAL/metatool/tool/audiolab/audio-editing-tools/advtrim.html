@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Advanced Audio Trimmer & Effects</title>
+<style>
+  body {
+    font-family: 'Segoe UI', sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+    color: red;
+    margin: 0; padding: 0;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  header {
+    padding: 20px;
+    text-align: center;
+background: rgba(0, 0, 0, 0.5)
+    width: 100%;
+  }
+  h1 {
+    margin: 0;
+    font-size: 2rem;
+    color: red;
+  }
+  .uploader {
+    margin: 20px;
+    padding: 30px;
+    border: 2px dashed red;
+    border-radius: 10px;
+    text-align: center;
+    width: 90%;
+    max-width: 600px;
+    cursor: pointer;
+    background-color: #1e1e1e;
+  }
+  canvas {
+    width: 100%;
+    height: 100px;
+background: rgba(0, 0, 0, 0.5)
+    border-radius: 8px;
+  }
+  .controls {
+    margin-top: 20px;
+    text-align: center;
+  }
+  .controls input, .controls select {
+    margin: 5px;
+    padding: 6px;
+    border-radius: 6px;
+    border: none;
+    width: 100px;
+background: rgba(0, 0, 0, 0.5)
+    color: red;
+  }
+  button {
+    background-color: red;
+    color: green;
+    border: none;
+    padding: 10px 16px;
+    margin: 10px 5px 10px 5px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  button:hover {
+background: rgba(0, 0, 0, 0.5)
+  }
+  audio {
+    margin-top: 15px;
+    width: 100%;
+    max-width: 600px;
+  }
+  .zoom-controls {
+    margin-top: 10px;
+  }
+  .effects-section {
+    margin-top: 20px;
+    max-width: 600px;
+    width: 90%;
+background: rgba(0, 0, 0, 0.5)
+    padding: 15px;
+    border-radius: 10px;
+  }
+  .effects-section label {
+    display: block;
+    margin: 8px 0 4px;
+  }
+  .effects-section input[type=range] {
+    width: 100%;
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>🎧 Advanced Audio Trimmer & Effects</h1>
+</header>
+<div class="uploader" id="drop-area">
+  <p>Drag & Drop or Click to Upload Audio</p>
+  <input type="file" id="fileElem" accept="audio/*" style="display:none" />
+</div>
+<canvas id="waveform" height="100"></canvas>
+<div class="controls">
+  <input type="number" id="startTime" placeholder="Start (s)" step="0.1" min="0" />
+  <input type="number" id="endTime" placeholder="End (s)" step="0.1" min="0" />
+  <br />
+  <button id="previewBtn">▶️ Preview</button>
+  <button id="trimBtn">✂️ Trim & Download</button>
+  <button id="deleteBtn">🗑️ Delete Segment</button>
+  <button id="silenceBtn">🔇 Silence Segment</button>
+  <button id="fadeInBtn">🌫️ Fade In</button>
+  <button id="fadeOutBtn">🌫️ Fade Out</button>
+  <button id="copyBtn">📋 Copy Segment</button>
+  <button id="pasteBtn">📥 Paste Segment</button>
+  <button id="addSilenceBtn">➕ Add Silence</button>
+  <button id="loopBtn">🔁 Loop Playback</button>
+  <button id="reverseBtn">🔄 Reverse Segment</button>
+</div>
+<div class="zoom-controls">
+  <button id="zoomInBtn">🔍 Zoom In</button>
+  <button id="zoomOutBtn">🔍 Zoom Out</button>
+</div>
+<div class="effects-section">
+  <h3>Effects & Filters</h3>
+  <label for="volumeControl">Volume</label>
+  <input type="range" id="volumeControl" min="0" max="2" step="0.01" value="1" />
+  
+  <label for="pitchControl">Pitch (semitones)</label>
+  <input type="range" id="pitchControl" min="-12" max="12" step="0.1" value="0" />
+  
+  <label for="tempoControl">Tempo (%)</label>
+  <input type="range" id="tempoControl" min="50" max="150" step="1" value="100" />
+  
+  <label for="echoControl">Echo Delay (ms)</label>
+  <input type="range" id="echoControl" min="0" max="1000" step="10" value="0" />
+  
+  <label for="chorusControl">Chorus Depth</label>
+  <input type="range" id="chorusControl" min="0" max="1" step="0.01" value="0" />
+  
+  <label for="tremoloControl">Tremolo Depth</label>
+  <input type="range" id="tremoloControl" min="0" max="1" step="0.01" value="0" />
+  
+  <label for="vibratoControl">Vibrato Depth</label>
+  <input type="range" id="vibratoControl" min="0" max="1" step="0.01" value="0" />
+  
+  <label for="compressorControl">Compressor Threshold (dB)</label>
+  <input type="range" id="compressorControl" min="-100" max="0" step="1" value="-24" />
+  
+  <label for="equalizerControl">Equalizer (Bass Boost)</label>
+  <input type="range" id="equalizerControl" min="0" max="10" step="0.1" value="0" />
+  
+  <button id="applyEffectsBtn">Apply Effects & Download</button>
+</div>
+<audio id="audioPlayer" controls></audio>
+
+<script>
+  const dropArea = document.getElementById('drop-area');
+  const fileElem = document.getElementById('fileElem');
+  const canvas = document.getElementById('waveform');
+  const ctx = canvas.getContext('2d');
+  const audioPlayer = document.getElementById('audioPlayer');
+
+  let audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  let originalBuffer = null; // Original loaded audio buffer
+  let workingBuffer = null;  // Buffer we manipulate
+  let zoomLevel = 1;
+  let copiedSegment = null;
+  let loopPlayback = false;
+  let sourceNode = null;
+
+  dropArea.addEventListener('click', () => fileElem.click());
+  fileElem.addEventListener('change', handleFiles);
+  dropArea.addEventListener('dragover', e => {
+    e.preventDefault();
+    dropArea.style.borderColor = '#0e76a8';
+  });
+  dropArea.addEventListener('dragleave', () => {
+    dropArea.style.borderColor = '#888';
+  });
+  dropArea.addEventListener('drop', e => {
+    e.preventDefault();
+    dropArea.style.borderColor = '#888';
+    handleFiles({ target: { files: e.dataTransfer.files } });
+  });
+
+  async function handleFiles(e) {
+    const file = e.target.files[0];
+    if (!file || !file.type.startsWith('audio/')) return;
+
+    const arrayBuffer = await file.arrayBuffer();
+    originalBuffer = await audioContext.decodeAudioData(arrayBuffer);
+    workingBuffer = cloneAudioBuffer(originalBuffer);
+    drawWaveform(workingBuffer.getChannelData(0));
+    setTimeInputs(0, workingBuffer.duration);
+    updateAudioPlayer(workingBuffer);
+  }
+
+  function cloneAudioBuffer(buffer) {
+    const newBuffer = audioContext.createBuffer(
+      buffer.numberOfChannels,
+      buffer.length,
+      buffer.sampleRate
+    );
+    for (let i = 0; i < buffer.numberOfChannels; i++) {
+      newBuffer.getChannelData(i).set(buffer.getChannelData(i));
+    }
+    return newBuffer;
+  }
+
+  function drawWaveform(datafunction drawWaveform(data) {
+    const width = canvas.width = canvas.offsetWidth;
+    const height = canvas.height;
+    ctx.clearRect(0, 0, width, height);
+    ctx.fillStyle = "#0e76a8";
+
+    const step = Math.ceil(data.length / (width / zoomLevel));
+    for (let i = 0; i < width; i++) {
+      let min = 1.0;
+      let max = -1.0;
+      for (let j = 0; j < step; j++) {
+        const datum = data[(i * step) + j];
+        if (datum < min) min = datum;
+        if (datum > max) max = datum;
+      }
+      const y1 = (1 + min) * height / 2;
+      const y2 = (1 + max) * height / 2;
+      ctx.fillRect(i, y1, 1, y2 - y1);
+    }
+  }
+
+  function setTimeInputs(start, end) {
+    document.getElementById('startTime').value = start.toFixed(2);
+    document.getElementById('endTime').value = end.toFixed(2);
+  }
+
+  function updateAudioPlayer(buffer) {
+    if (sourceNode) {
+      sourceNode.stop();
+      sourceNode.disconnect();
+      sourceNode = null;
+    }
+    const wavBlob = bufferToWavBlob(buffer);
+    const url = URL.createObjectURL(wavBlob);
+    audioPlayer.src = url;
+  }
+
+  function bufferToWavBlob(buffer) {
+    const numChannels = buffer.numberOfChannels;
+    const sampleRate = buffer.sampleRate;
+    const format = 1; // PCM
+    const bitDepth = 16;
+
+    let samples;
+    if (numChannels === 2) {
+      const left = buffer.getChannelData(0);
+      const right = buffer.getChannelData(1);
+      samples = interleave(left, right);
+    } else {
+      samples = buffer.getChannelData(0);
+    }
+
+    const bufferLength = samples.length * 2 + 44;
+    const arrayBuffer = new ArrayBuffer(bufferLength);
+    const view = new DataView(arrayBuffer);
+
+    /* RIFF identifier */
+    writeString(view, 0, 'RIFF');
+    /* file length */
+    view.setUint32(4, 36 + samples.length * 2, true);
+    /* RIFF type */
+    writeString(view, 8, 'WAVE');
+    /* format chunk identifier */
+    writeString(view, 12, 'fmt ');
+    /* format chunk length */
+    view.setUint32(16, 16, true);
+    /* sample format (raw) */
+    view.setUint16(20, format, true);
+    /* channel count */
+    view.setUint16(22, numChannels, true);
+    /* sample rate */
+    view.setUint32(24, sampleRate, true);
+    /* byte rate (sample rate * block align) */
+    view.setUint32(28, sampleRate * numChannels * bitDepth / 8, true);
+    /* block align (channel count * bytes per sample) */
+    view.setUint16(32, numChannels * bitDepth / 8, true);
+    /* bits per sample */
+    view.setUint16(34, bitDepth, true);
+    /* data chunk identifier */
+    writeString(view, 36, 'data');
+    /* data chunk length */
+    view.setUint32(40, samples.length * 2, true);
+
+    // Write the PCM samples
+    let offset = 44;
+    for (let i = 0; i < samples.length; i++, offset += 2) {
+      let s = Math.max(-1, Math.min(1, samples[i]));
+      view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+    }
+
+    return new Blob([view], { type: 'audio/wav' });
+  }
+
+  function writeString(view, offset, string) {
+    for (let i = 0; i < string.length; i++) {
+      view.setUint8(offset + i, string.charCodeAt(i));
+    }
+  }
+
+  function interleave(left, right) {
+    const length = left.length + right.length;
+    const result = new Float32Array(length);
+    let index = 0, inputIndex = 0;
+    while (index < length) {
+      result[index++] = left[inputIndex];
+      result[index++] = right[inputIndex];
+      inputIndex++;
+    }
+    return result;
+  }
+
+  // Playback preview of selected segment
+  document.getElementById('previewBtn').onclick = () => {
+    if (!workingBuffer) return alert("Load audio first");
+    const start = parseFloat(document.getElementById('startTime').value);
+    const end = parseFloat(document.getElementById('endTime').value);
+    if (isNaN(start) || isNaN(end) || start >= end || end > workingBuffer.duration) {
+      return alert("Invalid start or end time");
+    }
+    if (sourceNode) {
+      sourceNode.stop();
+      sourceNode.disconnect();
+      sourceNode = null;
+    }
+    sourceNode = audioContext.createBufferSource();
+    sourceNode.buffer = workingBuffer;
+    sourceNode.connect(audioContext.destination);
+    sourceNode.start(0, start, end - start);
+  };
+
+  // Trim & Download selected segment
+  document.getElementById('trimBtn').onclick = () => {
+    if (!workingBuffer) return alert("Load audio first");
+    const start = parseFloat(document.getElementById('startTime').value);
+    const end = parseFloat(document.getElementById('endTime').value);
+    if (isNaN(start) || isNaN(end) || start >= end || end > workingBuffer.duration) {
+      return alert("Invalid start or end time");
+    }
+    workingBuffer = trimBuffer(workingBuffer, start, end);
+    drawWaveform(workingBuffer.getChannelData(0));
+    setTimeInputs(0, workingBuffer.duration);
+    updateAudioPlayer(workingBuffer);
+    downloadBuffer(workingBuffer, "trimmed-audio.wav");
+  };
+
+  // Delete segment from workingBuffer
+  document.getElementById('deleteBtn').onclick = () => {
+    if (!workingBuffer) return alert("Load audio first");
+    const start = parseFloat(document.getElementById('startTime').value);
+    const end = parseFloat(document.getElementById('endTime').value);
+    if (isNaN(start) || isNaN(end) || start >= end || end > workingBuffer.duration) {
+      return alert("Invalid start or end time");
+    }
+    workingBuffer = deleteSegment(workingBuffer, start, end);
+    drawWaveform(workingBuffer.getChannelData(0));
+    setTimeInputs(0, workingBuffer.duration);
+    updateAudioPlayer(workingBuffer);
+  };
+
+  // Silence segment in workingBuffer
+  document.getElementById('silenceBtn').onclick = () => {
+    if (!workingBuffer) return alert("Load audio first");
+    const start = parseFloat(document.getElementById('startTime').value);
+    const end = parseFloat(document.getElementById('endTime').value);
+    if (isNaN(start) || isNaN(end) || start >= end || end > workingBuffer.duration) {
+      return alert("Invalid start or end time");
+    }
+    silenceSegment(workingBuffer, start, end);
+    drawWaveform(workingBuffer.getChannelData(0));
+    updateAudioPlayer(workingBuffer);
+  };
+
+  // Fade In segment
+  document.getElementById('fadeInBtn').onclick = () => {
+    if (!workingBuffer) return alert("Load audio first");
+    const start = parseFloat(document.getElementById('startTime').value);
+    const end = parseFloat(document.getElementById('endTime').value);
+    if (isNaN(start) || isNaN(end) || start >= end || end > workingBuffer.duration) {
+      return alert("Invalid start or end time");
+    }
+    fadeSegment(workingBuffer, start, end, 'in');
+    drawWaveform(workingBuffer.getChannelData(0));
+    updateAudioPlayer(workingBuffer);
+  };
+
+  // Fade Out segment
+  document.getElementById('fadeOutBtn').onclick = () => {
+    if (!workingBuffer) return alert("Load audio first");
+    const start = parseFloat(document.getElementById('startTime').value);
+    const end = parseFloat(document.getElementById('endTime').value);
+    if (isNaN(start) || isNaN(end) || start >= end || end > workingBuffer.duration) {
+      return alert("Invalid start or end time");
+    }
+    fadeSegment(workingBuffer, start, end, 'out');
+    drawWaveform(workingBuffer.getChannelData(0));
+    updateAudioPlayer(workingBuffer);
+  };
+
+  // Copy segment
+  document.getElementById('copyBtn').onclick = () => {
+    if (!workingBuffer) return alert("Load audio first");
+    const start = parseFloat(document.getElementById('startTime').value);
+    const end = parseFloat(document.getElementById('endTime').value);
+    if (isNaN(start) || isNaN(end) || start >= end || end > workingBuffer.duration) {
+      return alert("Invalid start or end time");
+    }
+    copiedSegment = trimBuffer(workingBuffer, start, end);
+    alert("Segment copied");
+  };
+
+  // Paste segment at end
+  document.getElementById('pasteBtn').onclick =() => {
+    if (!workingBuffer) return alert("Load audio first");
+    if (!copiedSegment) return alert("No segment copied");
+    workingBuffer = appendBuffer(workingBuffer, copiedSegment);
+    drawWaveform(workingBuffer.getChannelData(0));
+    setTimeInputs(0, workingBuffer.duration);
+    updateAudioPlayer(workingBuffer);
+  };
+
+  // Add silence of specified duration at end
+  document.getElementById('addSilenceBtn').onclick = () => {
+    if (!workingBuffer) return alert("Load audio first");
+    const silenceDuration = prompt("Enter silence duration in seconds:", "1");
+    const duration = parseFloat(silenceDuration);
+    if (isNaN(duration) || duration <= 0) return alert("Invalid duration");
+    workingBuffer = appendSilence(workingBuffer, duration);
+    drawWaveform(workingBuffer.getChannelData(0));
+    setTimeInputs(0, workingBuffer.duration);
+    updateAudioPlayer(workingBuffer);
+  };
+
+  // Loop playback toggle
+  document.getElementById('loopBtn').onclick = () => {
+    if (!workingBuffer) return alert("Load audio first");
+    loopPlayback = !loopPlayback;
+    if (sourceNode) {
+      sourceNode.stop();
+      sourceNode.disconnect();
+      sourceNode = null;
+    }
+    if (loopPlayback) {
+      sourceNode = audioContext.createBufferSource();
+      sourceNode.buffer = workingBuffer;
+      sourceNode.loop = true;
+      sourceNode.connect(audioContext.destination);
+      sourceNode.start();
+      alert("Looping playback started");
+    } else {
+      alert("Looping playback stopped");
+    }
+  };
+
+  // Reverse segment
+  document.getElementById('reverseBtn').onclick = () => {
+    if (!workingBuffer) return alert("Load audio first");
+    const start = parseFloat(document.getElementById('startTime').value);
+    const end = parseFloat(document.getElementById('endTime').value);
+    if (isNaN(start) || isNaN(end) || start >= end || end > workingBuffer.duration) {
+      return alert("Invalid start or end time");
+    }
+    workingBuffer = reverseSegment(workingBuffer, start, end);
+    drawWaveform(workingBuffer.getChannelData(0));
+    updateAudioPlayer(workingBuffer);
+  };
+
+  // Apply effects and download
+  document.getElementById('applyEffectsBtn').onclick = async () => {
+    if (!workingBuffer) return alert("Load audio first");
+
+    // Create offline context for processing
+    const offlineCtx = new OfflineAudioContext(
+      workingBuffer.numberOfChannels,
+      workingBuffer.length,
+      workingBuffer.sampleRate
+    );
+
+    // Create buffer source
+    const source = offlineCtx.createBufferSource();
+    source.buffer = workingBuffer;
+
+    // Create nodes for effects
+    // Volume
+    const gainNode = offlineCtx.createGain();
+    gainNode.gain.value = parseFloat(document.getElementById('volumeControl').value);
+
+    // Pitch and tempo (using playbackRate)
+    // Tempo changes playbackRate, pitch requires more complex processing (not fully accurate here)
+    const pitchSemitones = parseFloat(document.getElementById('pitchControl').value);
+    const tempoPercent = parseFloat(document.getElementById('tempoControl').value);
+    // Calculate playbackRate for tempo and pitch combined
+    // pitch shift in semitones: rate = 2^(semitones/12)
+    // tempo is percentage: tempoPercent/100
+    const pitchRate = Math.pow(2, pitchSemitones / 12);
+    const tempoRate = tempoPercent / 100;
+    source.playbackRate.value = pitchRate * tempoRate;
+
+    // Echo
+    const echoDelayMs = parseFloat(document.getElementById('echoControl').value);
+    let echoNode;
+    if (echoDelayMs > 0) {
+      echoNode = offlineCtx.createDelay();
+      echoNode.delayTime.value = echoDelayMs / 1000;
+      const echoGain = offlineCtx.createGain();
+      echoGain.gain.value = 0.3;
+      source.connect(echoNode);
+      echoNode.connect(echoGain);
+      echoGain.connect(gainNode);
+    }
+
+    // Chorus (simple implementation using delay modulated by LFO)
+    const chorusDepth = parseFloat(document.getElementById('chorusControl').value);
+    let chorusNode;
+    if (chorusDepth > 0) {
+      chorusNode = offlineCtx.createDelay();
+      chorusNode.delayTime.value = 0.03; // base delay 30ms
+      const chorusGain = offlineCtx.createGain();
+      chorusGain.gain.value = chorusDepth * 0.01;
+      const lfo = offlineCtx.createOscillator();
+      lfo.frequency.value = 1.5; // 1.5 Hz
+      lfo.connect(chorusGain.gain);
+      chorusGain.connect(chorusNode.delayTime);
+      lfo.start();
+      source.connect(chorusNode);
+      chorusNode.connect(gainNode);
+    }
+
+    // Tremolo (amplitude modulation)
+    const tremoloDepth = parseFloat(document.getElementById('tremoloControl').value);
+    let tremoloGainNode;
+    if (tremoloDepth > 0) {
+      tremoloGainNode = offlineCtx.createGain();
+      tremoloGainNode.gain.value = 1 - tremoloDepth / 2;
+      const tremoloLFO = offlineCtx.createOscillator();
+      const tremoloLFOGain = offlineCtx.createGain();
+      tremoloLFO.frequency.value = 5; // 5 Hz tremolo
+      tremoloLFOGain.gain.value = tremoloDepth / 2;
+      tremoloLFO.connect(tremoloLFOGain);
+      tremoloLFOGain.connect(tremoloGainNode.gain);
+      tremoloLFO.start();
+      source.connect(tremoloGainNode);
+      tremoloGainNode.connect(gainNode);
+    }
+
+    // Vibrato (frequency modulation)
+    const vibratoDepth = parseFloat(document.getElementById('vibratoControl').value);
+    // Vibrato is complex to implement in Web Audio API without custom nodes, so we skip or approximate by pitch modulation
+
+    // Compressor
+    const compressorThreshold = parseFloat(document.getElementById('compressorControl').value);
+    const compressor = offlineCtx.createDynamicsCompressor();
+    compressor.threshold.setValueAtTime(compressorThreshold, offlineCtx.currentTime);
+    compressor.knee.setValueAtTime(30, offlineCtx.currentTime);
+    compressor.ratio.setValueAtTime(12, offlineCtx.currentTime);
+    compressor.attack.setValueAtTime(0.003, offlineCtx.currentTime);
+    compressor.release.setValueAtTime(0.25, offlineCtx.currentTime);
+
+    // Equalizer (simple bass boost using BiquadFilter)
+    const bassBoost = parseFloat(document.getElementById('equalizerControl').value);
+    const bassFilter = offlineCtx.createBiquadFilter();
+    bassFilter.type = "lowshelf";
+    bassFilter.frequency.value = 200;
+    bassFilter.gain.value = bassBoost;
+
+    // Connect nodes in chain
+    // Start with source
+    let lastNode = source;
+
+    // Connect echo if exists
+    if (echoNode) {
+      lastNode.connect(echoNode);
+      echoNode.connect(gainNode);
+    }
+
+    // Connect chorus if exists
+    if (chorusNode) {
+      lastNode.connect(chorusNode);
+      chorusNode.connect(gainNode);
+    }
+
+    // Connect tremolo if exists
+    if (tremoloGainNode) {
+      lastNode.connect(tremoloGainNode);
+      tremoloGainNode.connect(gainNode);
+    }
+
+    // If none of above effects, connect source directly to gainNode
+    if (!echoNode && !chorusNode && !tremoloGainNode) {
+      lastNode.connect(gainNode);
+    }
+
+    gainNode.connect(compressor);
+    compressor.connect(bassFilter);
+    bassFilter.connect(offlineCtx.destination);
+
+    source.start();
+
+    const renderedBuffer = await offlineCtx.startRendering();
+
+    // Download rendered buffer
+    downloadBuffer(renderedBuffer, "effected-audio.wav");
+  };
+
+  // Utility functions for buffer manipulation
+
+  function trimBuffer(buffer, start, end) {
+    const sampleRate = buffer.sampleRate;
+    const startSample = Math.floor(start * sampleRate);
+    const endSample = Math.floor(end * sampleRate);
+    const frameCount = endSample - startSample;
+    const newBuffer = audioContext.createBuffer(
+      buffer.numberOfChannels,
+      frameCount,
+      sampleRate
+    );
+    for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
+      const oldData = buffer.getChannelData(channel);
+      const newData = newBuffer.getChannelData(channel);
+      for (let i = 0; i < frameCount; i++) {
+        newData[i] = oldData[startSample + i];
+      }
+    }
+    return newBuffer;
+  }
+
+  function deleteSegment(buffer, start, end) {
+    const sampleRate = buffer.sampleRate;
+    const startSample = Math.floor(start * sampleRate);
+    const endSample = Math.floor(end * sampleRate);
+    const frameCount = buffer.length - (endSample - startSample);
+    const newBuffer = audioContext.createBuffer(
+      buffer.numberOfChannels,
+      frameCount,
+      sampleRate
+    );
+    for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
+      const oldData = buffer.getChannelData(channel);
+      const newData = newBuffer.getChannelData(channel);
+      // Copy before start
+      for (let i = 0; i < startSample; i++) {
+        newData[i] = oldData[i];
+      }
+      // Copy after end
+      for (let i = endSample; i < buffer.length; i++) {
+        newData[i - (endSample - startSample)] = oldData[i];
+      }
+    }
+    return newBuffer;
+  }
+
+  function silenceSegment(buffer, start, end) {
+    const sampleRate = buffer.sampleRate;
+    const startSample = Math.floor(start * sampleRate);
+    const endSample = Math.floor(end * sampleRate);
+    for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
+      const data = buffer.getChannelData(channel);
+      for (let i = startSample; i < endSample; i++) {
+        data[i] = 0;
+      }
+    }
+  }
+
+  function fadeSegment(buffer, start, end, type) {
+    const sampleRate = buffer.sampleRate;
+    const startSample = Math.floor(start * sampleRate);
+    const endSample = Math.floor(end * sampleRate);
+    const length = endSample - startSample;
+    for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
+      const data = buffer.getChannelData(channel);
+      for (let i = 0; i < length; i++) {
+        const pos = startSample + i;
+        let gain = 1;
+        if (type === 'in') {
+          gain = i / length;
+        } else if (type === 'out') {
+          gain = 1 - i / length;
+        }
+        data[pos] *= gain;
+      }
+    }
+  }
+
+  function appendBuffer(buffer1, buffer2) {
+    const numberOfChannels = Math.min(buffer1.numberOfChannels, buffer2.numberOfChannels);
+    const tmp = audioContext.createBuffer(
+      numberOfChannels,
+      buffer1.length + buffer2.length,
+      buffer1.sampleRate
+    );
+    for (let channel = 0; channel < numberOfChannels; channel++) {
+      const channelData = tmp.getChannelData(channel);
+      channelData.set(buffer1.getChannelData(channel), 0);
+      channelData.set(buffer2.getChannelData(channel), buffer1.length);
+    }
+    return tmp;
+  }
+
+  function appendSilence(buffer, duration) {
+    const sampleRate = buffer.sampleRate;
+    const silenceLength = Math.floor(duration * sampleRate);
+    const silenceBuffer = audioContext.createBuffer(
+      buffer.numberOfChannels,
+      silenceLength,
+      sampleRate
+    );
+    // silenceBuffer is zeroed by default
+    return appendBuffer(buffer, silenceBuffer);
+  }
+
+  function reverseSegment(buffer, start, end) {
+    const sampleRate = buffer.sampleRate;
+    const startSample = Math.floor(start * sampleRate);
+    const endSample = Math.floor(end * sampleRate);
+    const length = endSample - startSample;
+    const newBuffer = cloneAudioBuffer(buffer);
+    for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
+      const data = newBuffer.getChannelData(channel);
+      for (let i = 0; i < length; i++) {
+        data[startSample + i] = buffer.getChannelData(channel)[endSample - i - 1];
+      }
+    }
+    return newBuffer;
+  }
+
+  // Zoom controls
+  document.getElementById('zoomInBtn').onclick = () => {
+    zoomLevel = Math.min(zoomLevel * 2, 64);
+    if (workingBuffer) drawWaveform(workingBuffer.getChannelData(0));
+  };
+  document.getElementById('zoomOutBtn').onclick = () => {
+    zoomLevel = Math.max(zoomLevel / 2, 1);
+    if (workingBuffer) drawWaveform(workingBuffer.getChannelData(0));
+  };
+
+</script>
+</body>
+</html>

@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>STNCRYPT PRE 2 - Advanced Encryption Tool</title>
+<style>
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #121212;
+    color: #eee;
+    margin: 0; padding: 0;
+    display: flex; flex-direction: column; min-height: 100vh;
+  }
+  header {
+    background: #1f1f1f;
+    padding: 1rem;
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: bold;
+    letter-spacing: 2px;
+  }
+  main {
+    flex-grow: 1;
+    padding: 1rem;
+    max-width: 800px;
+    margin: 0 auto;
+    width: 90%;
+  }
+  section {
+    background: #222;
+    border-radius: 8px;
+    padding: 1rem 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  label {
+    display: block;
+    margin-top: 1rem;
+  }
+  textarea, input[type="file"], input[type="text"] {
+    width: 100%;
+    padding: 0.5rem;
+    margin-top: 0.5rem;
+    font-family: monospace;
+    font-size: 1rem;
+    border-radius: 5px;
+    border: none;
+    resize: vertical;
+  }
+  button {
+    background: #0d6efd;
+    border: none;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-top: 1rem;
+    transition: background 0.3s ease;
+  }
+  button:hover {
+    background: #084cd9;
+  }
+  .output {
+    margin-top: 1rem;
+    background: #000;
+    padding: 1rem;
+    border-radius: 5px;
+    font-family: monospace;
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+  .flex-row {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .flex-row > * {
+    flex: 1 1 200px;
+  }
+  small.warning {
+    color: #f44336;
+    display: block;
+    margin-bottom: 1rem;
+  }
+  footer {
+    text-align: center;
+    font-size: 0.9rem;
+    padding: 1rem;
+    background: #1f1f1f;
+    color: #888;
+  }
+</style>
+</head>
+<body>
+
+<header>STNCRYPT PRE 2 - Advanced Encryption Tool</header>
+
+<main>
+  <small class="warning">Warning: If you lose your key file, you won't be able to decrypt your encrypted messages!</small>
+
+  <section id="text-encrypt-section">
+    <h2>1) Encrypt Text</h2>
+    <label for="plain-text">Enter text to encrypt:</label>
+    <textarea id="plain-text" rows="5" placeholder="Type or paste your text here..."></textarea>
+
+    <button id="encrypt-text-btn">Encrypt Text</button>
+
+    <label for="key-file-name">Enter key file name to save:</label>
+    <input type="text" id="key-file-name" placeholder="e.g. mykey.json" />
+
+    <div id="encrypted-text-output" class="output" hidden></div>
+    <button id="download-key-btn" style="display:none;">Download Key File</button>
+  </section>
+
+  <section id="text-decrypt-section">
+    <h2>2) Decrypt Text</h2>
+    <label for="encrypted-text">Enter encrypted text:</label>
+    <textarea id="encrypted-text" rows="5" placeholder="Paste your encrypted text here..."></textarea>
+
+    <label for="key-file-input">Upload your key file:</label>
+    <input type="file" id="key-file-input" accept=".json" />
+
+    <button id="decrypt-text-btn">Decrypt Text</button>
+    <div id="decrypted-text-output" class="output" hidden></div>
+  </section>
+
+  <section id="file-encrypt-section">
+    <h2>3) Encrypt File</h2>
+    <label for="file-to-encrypt">Select a text file to encrypt:</label>
+    <input type="file" id="file-to-encrypt" accept=".txt" />
+
+    <label for="key-file-name-file">Enter key file name to save:</label>
+    <input type="text" id="key-file-name-file" placeholder="e.g. myfilekey.json" />
+
+    <button id="encrypt-file-btn">Encrypt File</button>
+
+    <a id="download-encrypted-file" href="#" download="" style="display:none; margin-top:1rem; color:#0d6efd;"></a>
+    <button id="download-file-key-btn" style="display:none;">Download File Key</button>
+  </section>
+
+  <section id="file-decrypt-section">
+    <h2>4) Decrypt File</h2>
+    <label for="file-to-decrypt">Select encrypted text file:</label>
+    <input type="file" id="file-to-decrypt" accept=".txt" />
+
+    <label for="key-file-input-file">Upload your key file:</label>
+    <input type="file" id="key-file-input-file" accept=".json" />
+
+    <button id="decrypt-file-btn">Decrypt File</button>
+
+    <a id="download-decrypted-file" href="#" download="" style="display:none; margin-top:1rem; color:#0d6efd;"></a>
+  </section>
+</main>
+
+<footer>© 2025 STNCRYPT</footer>
+
+<script>
+(() => {
+  function randomInt(max) {
+    return Math.floor(Math.random() * max);
+  }
+
+  // Encrypt text using random shifts per character, storing shifts in key array
+  function encryptText(text) {
+    const keyShifts = [];
+    let encrypted = "";
+
+    for (const ch of text) {
+      if (/[\wçğıöşüÇĞİÖŞÜ]/.test(ch)) { 
+        const shift = randomInt(10); // 0-9 shift
+        encrypted += String.fromCharCode(ch.charCodeAt(0) + shift);
+        keyShifts.push(shift);
+      } else {
+        encrypted += ch;
+        keyShifts.push(0);
+      }
+    }
+    return { encrypted, keyShifts };
+  }
+
+  // Decrypt text using stored key shifts
+  function decryptText(encrypted, keyShifts) {
+    let decrypted = "";
+    for (let i = 0; i < encrypted.length; i++) {
+      const ch = encrypted[i];
+      const shift = keyShifts[i] || 0;
+      decrypted += String.fromCharCode(ch.charCodeAt(0) - shift);
+    }
+    return decrypted;
+  }
+
+  // Helpers for file downloads
+  function downloadFile(content, filename, type = "application/json") {
+    const blob = new Blob([content], { type });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  // --- Text Encrypt Section ---
+  const encryptTextBtn = document.getElementById("encrypt-text-btn");
+  const plainTextArea = document.getElementById("plain-text");
+  const encryptedTextOutput = document.getElementById("encrypted-text-output");
+  const keyFileNameInput = document.getElementById("key-file-name");
+  const downloadKeyBtn = document.getElementById("download-key-btn");
+
+  let currentKeyShifts = [];
+
+  encryptTextBtn.addEventListener("click", () => {
+    const text = plainTextArea.value;
+    if (!text) {
+      alert("Please enter text to encrypt.");
+      return;
+    }
+    const keyFileName = keyFileNameInput.value.trim();
+    if (!keyFileName) {
+      alert("Please enter a name for the key file (e.g. mykey.json).");
+      return;
+    }
+
+    const { encrypted, keyShifts } = encryptText(text);
+    currentKeyShifts = keyShifts;
+    encryptedTextOutput.textContent = encrypted;
+    encryptedTextOutput.hidden = false;
+    downloadKeyBtn.style.display = "inline-block";
+
+    downloadKeyBtn.onclick = () => {
+      const keyJson = JSON.stringify(keyShifts);
+      downloadFile(keyJson, keyFileName, "application/json");
+    };
+  });
+
+  // --- Text Decrypt Section ---
+  const decryptTextBtn = document.getElementById("decrypt-text-btn");
+  const encryptedTextArea = document.getElementById("encrypted-text");
+  const decryptedTextOutput = document.getElementById("decrypted-text-output");
+  const keyFileInput = document.getElementById("key-file-input");
+
+  decryptTextBtn.addEventListener("click", () => {
+    const encrypted = encryptedTextArea.value;
+    if (!encrypted) {
+      alert("Please enter the encrypted text.");
+      return;
+    }
+    if (!keyFileInput.files.length) {
+      alert("Please upload your key file.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const keyShifts = JSON.parse(e.target.result);
+        if (!Array.isArray(keyShifts) || keyShifts.length !== encrypted.length) {
+          alert("Invalid or mismatched key file.");
+          return;
+        }
+        const decrypted = decryptText(encrypted, keyShifts);
+        decryptedTextOutput.textContent = decrypted;
+        decryptedTextOutput.hidden = false;
+      } catch {
+        alert("Failed to parse the key file.");
+      }
+    };
+    reader.readAsText(keyFileInput.files[0]);
+  });
+
+  // --- File Encrypt Section ---
+  const fileToEncryptInput = document.getElementById("file-to-encrypt");
+  const keyFileNameFileInput = document.getElementById("key-file-name-file");
+  const encryptFileBtn = document.getElementById("encrypt-file-btn");
+  const downloadEncryptedFileLink = document.getElementById("download-encrypted-file");
+  const downloadFileKeyBtn = document.getElementById("download-file-key-btn");
+
+  let encryptedFileContent = "";
+  let fileKeyShifts = [];
+
+  encryptFileBtn.addEventListener("click", () => {
+    if (!fileToEncryptInput.files.length) {
+      alert("Please select a text file to encrypt.");
+      return;
+    }
+    const keyFileName = keyFileNameFileInput.value.trim();
+    if (!keyFileName) {
+      alert("Please enter a name for the key file (e.g. myfilekey.json).");
+      return;
+    }
+
+    const file = fileToEncryptInput.files[0];
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target.result;
+      const { encrypted, keyShifts } = encryptText(text);
+      encryptedFileContent = encrypted;
+      fileKeyShifts = keyShifts;
+
+      // Prepare encrypted file download link
+      const blob = new Blob([encrypted], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      downloadEncryptedFileLink.href = url;
+      downloadEncryptedFileLink.download = file.name.replace(/\.(txt)?$/, "_encrypted.txt");
+      downloadEncryptedFileLink.textContent = `Download encrypted file: ${downloadEncryptedFileLink.download}`;
+      downloadEncryptedFileLink.style.display = "block";
+
+      // Show key file download button
+      downloadFileKeyBtn.style.display = "inline-block";
+      downloadFileKeyBtn.onclick = () => {
+        const keyJson = JSON.stringify(keyShifts);
+        downloadFile(keyJson, keyFileName, "application/json");
+      };
+    };
+    reader.readAsText(file);
+  });
+
+  // --- File Decrypt Section ---
+  const fileToDecryptInput = document.getElementById("file-to-decrypt");
+  const keyFileInputFile = document.getElementById("key-file-input-file");
+  const decryptFileBtn = document.getElementById("decrypt-file-btn");
+  const downloadDecryptedFileLink = document.getElementById("download-decrypted-file");
+
+  decryptFileBtn.addEventListener("click", () => {
+    if (!fileToDecryptInput.files.length) {
+      alert("Please select the encrypted text file.");
+      return;
+    }
+    if (!keyFileInputFile.files.length) {
+      alert("Please upload your key file.");
+      return;
+    }
+
+    const encryptedReader = new FileReader();
+    encryptedReader.onload = (e) => {
+      const encryptedText = e.target.result;
+
+      const keyReader = new FileReader();
+      keyReader.onload = (ev) => {
+        try {
+          const keyShifts = JSON.parse(ev.target.result);

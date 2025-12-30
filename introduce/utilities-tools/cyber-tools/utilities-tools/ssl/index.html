@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SSL/TLS Configuration Tester</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #000;
+      color: #c58b00;
+      overflow-x: hidden;
+    }
+
+    video#bg-video {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      min-width: 100vw;
+      min-height: 100vh;
+      object-fit: cover;
+      z-index: -2;
+      opacity: 0.25;
+    }
+
+    audio#bg-music {
+      position: fixed;
+      z-index: -1;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 50px auto;
+      padding: 25px;
+      border-radius: 12px;
+      background: rgba(0, 0, 0, 0.2);
+    }
+
+    h1, label {
+      color: #c58b00;
+      text-shadow: 1px 1px 3px black;
+    }
+
+    input[type="text"], textarea {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      background: rgba(0, 0, 0, 0.3);
+      color: #c58b00;
+      border: 1px solid #c58b00;
+      border-radius: 5px;
+      font-size: 1rem;
+    }
+
+    button {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid #c58b00;
+      color: #c58b00;
+      padding: 10px 15px;
+      margin: 5px 5px 15px 0;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+
+    button:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: red;
+    }
+
+    pre {
+      white-space: pre-wrap;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 10px;
+      border: 1px solid red;
+      color: #00ffcc;
+      margin: 10px 0;
+      border-radius: 5px;
+    }
+
+    .history {
+      margin-top: 20px;
+    }
+
+    .history-item {
+      border-bottom: 1px solid red;
+      padding: 5px;
+      font-size: 0.9rem;
+      color: #ff8800;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        margin: 20px 10px;
+        padding: 15px;
+      }
+
+      button {
+        width: 100%;
+        margin: 8px 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Background Video -->
+  <video id="bg-video" autoplay muted loop playsinline>
+    <source src="background/1761817527453041720p.mp4" type="video/mp4" />
+    Your browser does not support the video tag.
+  </video>
+
+  <!-- Background Music -->
+  <audio id="bg-music" loop>
+    <source src="background/Programming___Coding___Hacking_music_vol.18__ANONYMOUS_HEADQUARTERS_(48k).mp3" type="audio/mpeg" />
+    Your browser does not support the audio tag.
+  </audio>
+
+  <div class="container">
+    <h1>🔒 SSL/TLS Configuration Tester</h1>
+    <label>Domain / Host:</label>
+    <input type="text" id="domain" placeholder="example.com" />
+
+    <label>Port:</label>
+    <input type="text" id="port" placeholder="443" value="443" />
+
+    <div>
+      <button onclick="testCertificate()">Test SSL Certificate</button>
+      <button onclick="clearAll()">Clear</button>
+    </div>
+
+    <label>Result:</label>
+    <pre id="result-box">No result yet...</pre>
+    <button onclick="copyResult()">Copy Result</button>
+
+    <div class="history">
+      <h3>History</h3>
+      <div id="history-box"></div>
+    </div>
+  </div>
+
+  <script>
+    const music = document.getElementById("bg-music");
+    const resultBox = document.getElementById("result-box");
+    const historyBox = document.getElementById("history-box");
+    let history = [];
+
+    window.addEventListener('click', () => {
+      music.play().catch(() => {});
+    }, { once: true });
+
+    async function testCertificate() {
+      const domain = document.getElementById("domain").value.trim();
+      const port = document.getElementById("port").value.trim();
+
+      if (!domain) {
+        resultBox.textContent = "⚠️ Please enter a domain.";
+        return;
+      }
+
+      // ⚠️ Browsers can’t open raw TLS sockets, so we simulate a check
+      // by trying to fetch HTTPS and reading the result
+      try {
+        const url = `https://${domain}:${port}`;
+        resultBox.textContent = `🔍 Testing SSL/TLS for ${url} ...\n`;
+
+        const response = await fetch(url, { method: "HEAD", mode: "no-cors" });
+
+        // Browser hides TLS details, so we can’t see ciphers or full chain
+        // Instead, simulate a successful HTTPS check
+        resultBox.textContent += "✅ Connection established over HTTPS.\n";
+        resultBox.textContent += "⚠️ Detailed certificate/cipher info is not available in browser-only JS.\n";
+        logHistory(domain, "Connection OK (basic test)");
+      } catch (err) {
+        resultBox.textContent += "❌ Failed to connect securely.\n" + err;
+        logHistory(domain, "Connection FAILED");
+      }
+    }
+
+    function copyResult() {
+      const text = resultBox.textContent;
+      if (!text || text === "No result yet...") return alert("Nothing to copy!");
+      navigator.clipboard.writeText(text).then(() => alert("Result copied!"));
+    }
+
+    function clearAll() {
+      document.getElementById("domain").value = "";
+      document.getElementById("port").value = "443";
+      resultBox.textContent = "No result yet...";
+    }
+
+    function logHistory(target, snippet) {
+      const time = new Date().toLocaleTimeString();
+      const line = `${time} - ${target}: ${snippet}`;
+      history.unshift(line);
+      updateHistory();
+    }
+
+    function updateHistory() {
+      historyBox.innerHTML = "";
+      history.slice(0, 8).forEach(entry => {
+        const div = document.createElement("div");
+        div.className = "history-item";
+        div.textContent = entry;
+        historyBox.appendChild(div);
+      });
+    }
+  </script>
+</body>
+</html>

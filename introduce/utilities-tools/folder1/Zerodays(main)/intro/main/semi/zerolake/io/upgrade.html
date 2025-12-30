@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Advanced Business Finder (OpenStreetMap)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+    }
+    header {
+      background: rgba(0, 0, 0, 0.5);
+      padding: 15px;
+      text-align: center;
+    }
+    header h1 {
+      color: red;
+      margin: 0;
+    }
+    #controls {
+      padding: 10px;
+      text-align: center;
+      background: rgba(0, 0, 0, 0.5);
+    }
+    #map {
+      width: 100%;
+      height: 65vh;
+    }
+    input, button, select {
+      padding: 8px;
+      margin: 4px;
+      border-radius: 5px;
+      border: none;
+      font-size: 14px;
+    }
+    input[type="text"] {
+      width: 180px;
+    }
+    button {
+      background-color: red;
+      color: green;
+      cursor: pointer;
+    }
+    button:hover {
+      background: rgba(0, 0, 0, 0.5);
+    }
+    #categoryList {
+      max-height: 160px;
+      overflow-y: auto;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 10px;
+      border-radius: 5px;
+      margin: 10px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 6px;
+    }
+    #categoryList label {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 5px;
+      border-radius: 4px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    #categoryList input[type="checkbox"] {
+      transform: scale(1.2);
+    }
+    #resultsTable {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10px 0;
+      background: rgba(0, 0, 0, 0.5);
+    }
+    #resultsTable th, #resultsTable td {
+      padding: 8px;
+      border: 1px solid red;
+      text-align: left;
+    }
+    #resultsTable th {
+      background: rgba(0, 0, 0, 0.5);
+      color: red;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🌍 Advanced Business Finder</h1>
+</header>
+
+<div id="controls">
+  <input type="text" id="location" placeholder="Enter city (e.g., London)">
+  <input type="number" id="radius" placeholder="Radius (meters)" value="2000" min="100">
+  <button onclick="searchPlaces()">🔍 Search</button>
+  <button onclick="exportCSV()">⬇️ Export CSV</button>
+  <button onclick="exportPDF()">📄 Export PDF</button>
+  <p>💡 Or click or move the map to search nearby</p>
+</div>
+
+<div id="categoryList"></div>
+<div id="map"></div>
+<table id="resultsTable" style="display:none;">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Address</th>
+      <th>Latitude</th>
+      <th>Longitude</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+const categories = [
+    "restaurant", "cafe", "bar", "pub", "fast_food", "ice_cream",
+    "school", "college", "university", "library", "kindergarten",
+    "hospital", "clinic", "pharmacy", "doctors", "dentist",
+    "bank", "atm", "post_office", "bureau_de_change",
+    "supermarket", "convenience", "mall", "marketplace",
+    "clothes", "shoes", "electronics", "computer", "furniture",
+    "toys", "books", "stationery", "jewelry", "florist", "optician",
+    "car_repair", "car_rental", "car_wash", "bicycle_rental",
+    "hairdresser", "beauty", "spa", "massage", "dry_cleaning",
+    "laundry", "tailor", "travel_agency", "hotel", "motel", "hostel",
+    "theatre", "cinema", "museum", "gallery", "nightclub",
+    "gym", "sports_centre", "swimming_pool", "park",
+    "police", "fire_station", "courthouse", "townhall", "embassy",
+    "veterinary", "animal_shelter", "dog_park", "garden_centre",
+    "hardware", "doityourself", "paint", "carpet", "bakery", "butcher",
+    "seafood", "greengrocer", "beverages", "wine", "liquor",
+    "mobile_phone", "outdoor", "photo", "newsagent", "tattoo",
+    "music", "video", "second_hand", "charity", "erotic", "weapons",
+    "funeral_directors", "insurance", "internet_cafe", "coworking_space",
+    "recycling", "waste_basket", "toilets", "drinking_water",
+    "fuel", "charging_station", "parking", "taxi", "bus_station",
+    "train_station", "subway", "tram_stop", "ferry_terminal",
+    "airport", "helipad", "bike_parking", "hunting_stand", "picnic_site"
+  ];
+
+const map = L.map('map').setView([20, 0], 2);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 19,
+  attribution: '© OpenStreetMap contributors'
+}).addTo(map);
+
+let markers = L.markerClusterGroup();
+map.addLayer(markers);
+let results = [];
+
+const categoryList = document.getElementById("categoryList");
+categories.forEach(cat => {
+  const label = document.createElement("label");
+  label.innerHTML = `<input type="checkbox" value="${cat}"> ${cat.replace(/_/g, ' ')}`;
+  categoryList.appendChild(label);
+});
+
+function getSelectedCategories() {
+  return Array.from(categoryList.querySelectorAll('input[type=checkbox]:checked')).map(c => c.value);
+}
+
+async function searchPlaces() {
+  const location = document.getElementById("location").value.trim();
+  const radius = parseInt(document.getElementById("radius").value) || 2000;
+  const types = getSelectedCategories();
+  if (!location) return alert("Enter a location.");
+  if (types.length === 0) return alert("Select at least one category.");
+
+  const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location)}`);
+  const geoData = await geoRes.json();
+  if (!geoData.length) return alert("Location not found.");
+  const lat = parseFloat(geoData[0].lat);
+  const lon = parseFloat(geoData[0].lon);
+  map.setView([lat, lon], 14);
+  searchNearby(lat, lon, radius, types);
+}
+
+async function searchNearby(lat, lon, radius, types) {
+  markers.clearLayers();
+  results = [];
+  document.querySelector("#resultsTable").style.display = "none";
+  document.querySelector("#resultsTable tbody").innerHTML = "";
+
+  let query = `[out:json][timeout:25];(`;
+  types.forEach(type => {
+    query += `node["amenity"="${type}"](around:${radius},${lat},${lon});`;
+  });
+  query += `);out body;`;
+
+  const response = await fetch("https://overpass-api.de/api/interpreter", {
+    method: "POST",
+    body: query
+  });
+
+  const data = await response.json();
+  if (!data.elements.length) return alert("No results found.");
+
+  const tbody = document.querySelector("#resultsTable tbody");
+  data.elements.forEach(place => {
+    const name = place.tags.name || "(Unnamed)";
+    const addr = `${place.tags["addr:street"] || ""} ${place.tags["addr:housenumber"] || ""} ${place.tags["addr:city"] || ""}`.trim();
+    const marker = L.marker([place.lat, place.lon]);
+    marker.bindPopup(`<strong>${name}</strong><br>${addr}`);
+    markers.addLayer(marker);
+
+    results.push({ name, address: addr, lat: place.lat, lon: place.lon });
+
+    const row = document.createElement("tr");
+    row.innerHTML = `<td>${name}</td><td>${addr}</td><td>${place.lat}</td><td>${place.lon}</td>`;
+    tbody.appendChild(row);
+  });
+
+  document.querySelector("#resultsTable").style.display = "table";
+}
+
+map.on('click', function(e) {
+  const radius = parseInt(document.getElementById("radius").value) || 1000;
+  const types = getSelectedCategories();
+  if (types.length === 0) return alert("Select at least one category.");
+  searchNearby(e.latlng.lat, e.latlng.lng, radius, types);
+});
+
+map.on('moveend', function() {
+  const center = map.getCenter();
+  const radius = parseInt(document.getElementById("radius").value) || 1000;
+  const types = getSelectedCategories();
+  if (types.length === 0) return;
+  searchNearby(center.lat, center.lng, radius, types);
+});
+
+function exportCSV() {
+  if (!results.length) return alert("No results to export.");
+  let csv = "Name,Address,Latitude,Longitude\n";
+  results.forEach(r => {
+    csv += `"${r.name.replace(/"/g, '""')}","${r.address.replace(/"/g, '""')}",${r.lat},${r.lon}\n`;
+  });
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "business_results.csv";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+async function exportPDF() {
+  if (!results.length) return alert("No results to export.");
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  doc.setFontSize(12);
+  doc.text("Business Search Results", 14, 14);
+  let y = 24;
+  results.forEach((r, i) => {
+    doc.text(`${i + 1}. ${r.name}`, 14, y);
+    y += 6;
+    doc.text(`   Address: ${r.address}`, 14, y);
+    y += 6;
+    doc.text(`   Lat: ${r.lat}, Lon: ${r.lon}`, 14, y);
+    y += 8;
+    if (y > 280) {
+      doc.addPage();
+      y = 20;
+    }
+  });
+  doc.save("business_results.pdf");
+}
+</script>
+</body>
+</html>

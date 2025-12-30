@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>🚚 Live Product Delivery Tracker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #0f172a;
+      color: #f1f5f9;
+      padding: 1rem;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+    input, button {
+      padding: 10px;
+      margin: 5px;
+      font-size: 1rem;
+      border-radius: 6px;
+    }
+    button {
+      background: #2563eb;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    #map {
+      height: 400px;
+      margin-top: 1rem;
+      border-radius: 10px;
+    }
+    .tracker-box {
+      background: #1e293b;
+      padding: 1rem;
+      border-radius: 10px;
+      margin-bottom: 1rem;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>📦 Product ID - Driver Live Tracker</h1>
+
+  <div class="tracker-box">
+    <input type="text" id="productId" placeholder="Product ID (e.g. X12345)" />
+    <input type="text" id="driverName" placeholder="Driver Name (optional)" />
+    <button onclick="trackDriver()">📍 Track Driver</button>
+    <button onclick="exportJSON()">⬇ Export Data</button>
+  </div>
+
+  <div id="map"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    let map = L.map('map').setView([20, 0], 2);
+    let trackingData = JSON.parse(localStorage.getItem("tracking")) || [];
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap'
+    }).addTo(map);
+
+    function addMarker(entry) {
+      const marker = L.marker([entry.lat, entry.lon]).addTo(map);
+      marker.bindPopup(`
+        <strong>Product ID:</strong> ${entry.productId}<br>
+        <strong>Driver:</strong> ${entry.driverName || 'Unknown'}<br>
+        <strong>City:</strong> ${entry.city}, ${entry.country}<br>
+        <small>${new Date(entry.timestamp).toLocaleString()}</small>
+      `);
+      map.setView([entry.lat, entry.lon], 10);
+    }
+
+    function renderMarkers() {
+      trackingData.forEach(entry => addMarker(entry));
+    }
+
+    async function trackDriver() {
+      const productId = document.getElementById("productId").value.trim();
+      const driverName = document.getElementById("driverName").value.trim();
+
+      if (!productId) return alert("Enter Product ID");
+
+      try {
+        const res = await fetch("https://ip-api.com/json/");
+        const data = await res.json();
+
+        const entry = {
+          productId,
+          driverName,
+          lat: data.lat,
+          lon: data.lon,
+          city: data.city,
+          country: data.country,
+          timestamp: new Date().toISOString()
+        };
+
+        trackingData.push(entry);
+        localStorage.setItem("tracking", JSON.stringify(trackingData));
+        addMarker(entry);
+      } catch (err) {
+        alert("Failed to fetch driver location.");
+      }
+    }
+
+    function exportJSON() {
+      const blob = new Blob([JSON.stringify(trackingData, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "product-tracking.json";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    renderMarkers();
+  </script>
+</body>
+</html>

@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title> Universal Tracker </title>
+<style>
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+    color: red;
+    margin: 0;
+    padding: 0;
+  }
+  header {
+background: rgba(0, 0, 0, 0.5);
+    padding: 1rem;
+    text-align: center;
+    font-size: 1.8rem;
+    font-weight: bold;
+    letter-spacing: 1.5px;
+    border-bottom: 3px solid red;
+  }
+  main {
+    max-width: 900px;
+    margin: 2rem auto;
+    padding: 1rem 2rem 2rem 2rem;
+background: rgba(0, 0, 0, 0.5);
+    border-radius: 10px;
+    box-shadow: 0 0 20px red;
+  }
+  form {
+    display: grid;
+    grid-template-columns: 1fr 2fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  label {
+    font-weight: 600;
+    align-self: center;
+  }
+  select, input[type="text"] {
+    padding: 0.6rem;
+    font-size: 1rem;
+    border-radius: 6px;
+    border: none;
+background: rgba(0, 0, 0, 0.5);
+    color: red;
+  }
+  button {
+    padding: 0.75rem;
+    font-size: 1.1rem;
+    background: red;
+    border: none;
+    border-radius: 6px;
+    color: green;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s ease;
+  }
+  button:hover {
+background: rgba(0, 0, 0, 0.5);
+  }
+  #searchInput {
+    width: 100%;
+    padding: 0.6rem;
+    font-size: 1rem;
+    border-radius: 6px;
+    border: none;
+background: rgba(0, 0, 0, 0.5);
+    color: red;
+    margin-bottom: 1rem;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+background: rgba(0, 0, 0, 0.5);
+  }
+  th, td {
+    padding: 0.75rem;
+    border-bottom: 1px solid red;
+    text-align: left;
+  }
+  th {
+background: rgba(0, 0, 0, 0.5);
+  }
+  tr:hover {
+background: rgba(0, 0, 0, 0.5);
+  }
+  .no-data {
+    text-align: center;
+    padding: 1rem;
+    color: red;
+  }
+  .delete-btn {
+background: rgba(0, 0, 0, 0.5);
+    border: none;
+    color: green;
+    padding: 0.3rem 0.6rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background 0.3s ease;
+  }
+  .delete-btn:hover {
+background: rgba(0, 0, 0, 0.5);
+  }
+  td[contenteditable="true"] {
+background: rgba(0, 0, 0, 0.5);
+    border-radius: 4px;
+    padding: 0.3rem;
+    outline: none;
+    cursor: text;
+  }
+  .export-import {
+    margin-top: 1.5rem;
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .export-import button, .export-import input[type="file"] {
+    flex-grow: 1;
+    padding: 0.75rem;
+    font-size: 1rem;
+    border-radius: 6px;
+    border: none;
+background: rgba(0, 0, 0, 0.5);
+    color: green;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s ease;
+  }
+  .export-import button:hover {
+background: rgba(0, 0, 0, 0.5);
+  }
+  .export-import input[type="file"] {
+    cursor: pointer;
+    color: red;
+background: rgba(0, 0, 0, 0.5);
+  }
+</style>
+</head>
+<body>
+<header> Universal Tracker </header>
+<main>
+  <form id="addForm" autocomplete="off">
+    <label for="typeSelect">Type:</label>
+    <select id="typeSelect" name="typeSelect" required>
+      <option value="Full Name">Full Name</option>
+      <option value="Email">Email</option>
+      <option value="Username">Username</option>
+      <option value="IP Address">IP Address</option>
+      <option value="Phone Number">Phone Number</option>
+      <option value="Custom">Custom</option>
+    </select>
+    <input type="text" id="valueInput" name="valueInput" placeholder="Enter value to track" required />
+    <button type="submit">Add</button>
+  </form>
+
+  <input type="text" id="searchInput" placeholder="Search tracked data..." />
+
+  <table aria-label="Tracked data">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Type</th>
+        <th>Value</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="dataTableBody">
+      <tr class="no-data"><td colspan="4">No data tracked yet.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="export-import">
+    <button id="exportBtn" title="Export tracked data to JSON file">Export Data</button>
+    <input type="file" id="importInput" accept=".json" title="Import tracked data from JSON file" />
+  </div>
+</main>
+
+<script>
+  const addForm = document.getElementById('addForm');
+  const typeSelect = document.getElementById('typeSelect');
+  const valueInput = document.getElementById('valueInput');
+  const searchInput = document.getElementById('searchInput');
+  const dataTableBody = document.getElementById('dataTableBody');
+  const exportBtn = document.getElementById('exportBtn');
+  const importInput = document.getElementById('importInput');
+
+  let trackedData = [];
+
+  // Load from localStorage
+  function loadData() {
+    const stored = localStorage.getItem('trackedData');
+    if (stored) {
+      try {
+        trackedData = JSON.parse(stored);
+      } catch {
+        trackedData = [];
+      }
+    }
+  }
+
+  // Save to localStorage
+  function saveData() {
+    localStorage.setItem('trackedData', JSON.stringify(trackedData));
+  }
+
+  // Escape HTML to prevent XSS
+  function escapeHtml(text) {
+    return text.replace(/[&<>"']/g, function(m) {
+      return {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }[m];
+    });
+  }
+
+  // Render table rows
+  function renderTable(filter = '') {
+    dataTableBody.innerHTML = '';
+    const filtered = trackedData.filter(item =>
+      item.type.toLowerCase().includes(filter.toLowerCase()) ||
+      item.value.toLowerCase().includes(filter.toLowerCase())
+    );
+
+    if (filtered.length === 0) {
+      dataTableBody.innerHTML = '<tr class="no-data"><td colspan="4">No matching data found.</td></tr>';
+      return;
+    }
+
+    filtered.forEach((item, index) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${index + 1}</td>
+        <td>${escapeHtml(item.type)}</td>
+        <td contenteditable="true" data-index="${index}" data-field="value">${escapeHtml(item.value)}</td>
+        <td><button class="delete-btn" data-index="${index}">Delete</button></td>
+      `;
+      dataTableBody.appendChild(tr);
+    });
+  }
+
+  // Add data handler
+  addForm.addEventListener('submit', e => {
+    e.preventDefault();
+    const type = typeSelect.value.trim();
+    const value = valueInput.value.trim();
+    if (!type || !value) return;
+
+    // Avoid exact duplicates
+    if (trackedData.some(d => d.type.toLowerCase() === type.toLowerCase() && d.value.toLowerCase() === value.toLowerCase())) {
+      alert('This entry is already tracked.');
+      valueInput.value = '';
+      return;
+    }
+
+    trackedData.push({ type, value });
+    saveData();
+    renderTable(searchInput.value);
+    valueInput.value = '';
+  });
+
+  // Delete data handler
+  dataTableBody.addEventListener('click', e => {
+    if (e.target.classList.contains('delete-btn')) {
+      const index = parseInt(e.target.getAttribute('data-index'), 10);
+      if (!isNaN(index)) {
+        trackedData.splice(index, 1);
+        saveData();
+        renderTable(searchInput.value);
+      }
+    }
+  });
+
+  // Inline edit handler
+  dataTableBody.addEventListener('input', e => {
+    if (e.target.hasAttribute('contenteditable')) {
+      const index = parseInt(e.target.getAttribute('data-index'), 10);
+      const field = e.target.getAttribute('data-field');
+      if (!isNaN(index) && field === 'value') {
+        trackedData[index].value = e.target.textContent.trim();
+        saveData();
+      }
+    }
+  });
+
+  // Search input handler
+  searchInput.addEventListener('input', e => {
+    renderTable(e.target.value);
+  });
+
+  // Export data handler
+  exportBtn.addEventListener('click', () => {
+    if (trackedData.length === 0) {
+      alert('No data to export.');
+      return;
+    }
+    const dataStr = JSON.stringify(trackedData, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'tracked_data.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  // Import data handler
+  importInput.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = event => {
+      try {
+        const importedData = JSON.parse(event.target.result);
+        if (!Array.isArray(importedData)) throw new Error('Invalid format');
+        // Optional: Validate each item has type and value strings
+        for (const item of importedData) {
+          if (typeof item.type !== 'string' || typeof item.value !== 'string') {
+            throw new Error('Invalid data item');
+          }
+        }
+        trackedData = importedData;
+        saveData();
+        renderTable(searchInput.value);
+        alert('Data imported successfully.');
+      } catch (err) {
+        alert('Failed to import data: ' + err.message);
+      }
+    };
+    reader.readAsText(file);
+    // Reset input so same file can be re-imported if needed
+    e.target.value = '';
+  });
+
+  // Initial load
+  loadData();
+  renderTable();
+</script>
+</body>
+</html>

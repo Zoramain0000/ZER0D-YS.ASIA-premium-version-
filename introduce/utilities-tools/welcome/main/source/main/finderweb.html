@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Ultimate Website Finder</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+:root {
+  --bg:#0b1220;
+  --panel:#111827cc;
+  --border:#1f2937;
+  --accent:#c58b00;
+  --text:#e5e7eb;
+  --muted:#9ca3af;
+}
+*{box-sizing:border-box;font-family:system-ui}
+body{margin:0;background:var(--bg);color:var(--text);overflow-x:hidden}
+video.bg-video{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;opacity:.35;z-index:-2}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:-1}
+
+.container{max-width:1000px;margin:auto;padding:30px}
+h1{text-align:center;color:var(--accent)}
+.subtitle{text-align:center;color:var(--muted);margin-bottom:15px}
+
+input,select,button{padding:12px;background:var(--panel);border:1px solid var(--border);color:var(--text);border-radius:8px}
+button{background:var(--accent);color:#000;font-weight:700;cursor:pointer}
+button:hover{opacity:.9}
+
+.search-box{display:grid;grid-template-columns:1fr 120px 150px 150px;gap:10px;margin-bottom:15px}
+.controls{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-bottom:15px}
+
+.results{display:grid;gap:14px}
+.card{background:var(--panel);border:1px solid var(--border);padding:14px;border-radius:10px;transition:0.3s}
+.card a{color:#ffd27a;font-size:16px;font-weight:600;text-decoration:none}
+.url{font-size:12px;color:#f3c97a;margin-top:4px}
+.desc{color:var(--muted);margin-top:6px}
+.mark{background:#ffd27a;color:#000;font-weight:700}
+img.result-img{max-width:150px;border-radius:6px;margin:3px}
+.footer{text-align:center;margin-top:20px;font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<video class="bg-video" autoplay muted loop>
+  <source src="background/1761817527453041720p.mp4" type="video/mp4">
+</video>
+<div class="overlay"></div>
+
+<audio id="bgMusic" loop>
+  <source src="background/Programming___Coding___Hacking_music_vol.18__ANONYMOUS_HEADQUARTERS_(48k).Mp3">
+</audio>
+
+<div class="container">
+<h1>🌐 Ultimate Website Finder</h1>
+<p class="subtitle">Wikipedia + DuckDuckGo + Google Custom Search API · Multi-query · Infinite Scroll · Saved History</p>
+
+<div class="search-box">
+  <input id="query" placeholder="Search keywords (comma-separated)">
+  <input id="maxResults" type="number" placeholder="Max results" value="10" min="1">
+  <select id="source">
+    <option value="both">Wikipedia + DuckDuckGo + Google</option>
+    <option value="wiki">Wikipedia</option>
+    <option value="duck">DuckDuckGo</option>
+    <option value="google">Google API</option>
+  </select>
+  <button onclick="searchSites()">Search</button>
+</div>
+
+<div class="controls">
+  <button onclick="toggleMusic()">🎵 Music</button>
+  <button onclick="showHistory()">Saved Searches</button>
+  <button onclick="clearHistory()">Clear History</button>
+</div>
+
+<div id="results" class="results"></div>
+<div class="footer">Frontend Only · Pure HTML/CSS/JS · Wikipedia/DuckDuckGo/Google API</div>
+</div>
+
+<script>
+const music=document.getElementById("bgMusic");
+function toggleMusic(){ music.paused?music.play():music.pause(); }
+
+let allResults=[],visibleCount=0;
+const GOOGLE_API_KEY="AIzaSyCRoixQT9rx_2NIHRl3pjPpYeWn0PBW0eM"; // <-- Replace with your API key
+const GOOGLE_CX="677f74abe7ac746a9";           // <-- Replace with your CX ID
+
+function highlight(text,queries){
+  if(!queries) return text;
+  queries.forEach(q=>{
+    const re=new RegExp(q.trim(),"gi");
+    text=text.replace(re,m=>`<mark>${m}</mark>`);
+  });
+  return text;
+}
+
+// Wikipedia images
+async function fetchArticleImages(title){
+  try{
+    const res=await fetch(`https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(title)}&prop=images&format=json&origin=*`);
+    const data=await res.json();
+    const pages=Object.values(data.query.pages);
+    const imgs=[];
+    pages.forEach(p=>{
+      if(p.images) p.images.forEach(im=>{
+        const name=im.title.replace('File:','');
+        imgs.push(`https://en.wikipedia.org/wiki/Special:FilePath/${encodeURIComponent(name)}`);
+      });
+    });
+    return imgs.slice(0,3);
+  }catch{return [];}
+}
+
+// Main search
+async function searchSites(){
+  const query=document.getElementById("query").value.trim();
+  const maxResults=parseInt(document.getElementById("maxResults").value)||10;
+  const source=document.getElementById("source").value;
+  if(!query) return alert("Enter a search query.");
+  allResults=[];visibleCount=0;
+  document.getElementById("results").innerHTML="";
+  const queries=query.split(",").map(s=>s.trim());
+  saveHistory(queries);
+
+  // Wikipedia
+  if(source==="wiki"||source==="both"){
+    for(const q of queries){
+      try{
+        const url=`https://en.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(q)}&limit=${maxResults}&format=json&origin=*`;
+        const res=await fetch(url);
+        const data=await res.json();
+        for(let i=0;i<data[1].length;i++){
+          allResults.push({title:data[1][i],desc:data[2][i],link:data[3][i],query:q,type:"wiki"});
+        }
+      }catch(err){console.error(err);}
+    }
+  }
+
+  // DuckDuckGo (HTML scraping via AllOrigins)
+  if(source==="duck"||source==="both"){
+    for(const q of queries){
+      try{
+        const url=`https://api.allorigins.win/raw?url=${encodeURIComponent(`https://duckduckgo.com/html/?q=${encodeURIComponent(q)}`)}`;
+        const res=await fetch(url);
+        const text=await res.text();
+        const parser=new DOMParser();
+        const doc=parser.parseFromString(text,"text/html");
+        const links=[...doc.querySelectorAll('a')].filter(a=>a.href.startsWith("http")).slice(0,maxResults);
+        links.forEach(l=>{
+          allResults.push({title:l.textContent,desc:"",link:l.href,query:q,type:"duck"});
+        });
+      }catch(err){console.error(err);}
+    }
+  }
+
+  // Google Custom Search API
+  if(source==="google"||source==="both"){
+    if(!GOOGLE_API_KEY||!GOOGLE_CX) alert("Set your Google API Key and CX ID in the script.");
+    for(const q of queries){
+      try{
+        const url=`https://www.googleapis.com/customsearch/v1?key=${GOOGLE_API_KEY}&cx=${GOOGLE_CX}&q=${encodeURIComponent(q)}&num=${maxResults}`;
+        const res=await fetch(url);
+        const data=await res.json();
+        if(data.items) data.items.forEach(item=>{
+          allResults.push({title:item.title,desc:item.snippet,link:item.link,query:q,type:"google"});
+        });
+      }catch(err){console.error(err);}
+    }
+  }
+
+  renderNext();
+}
+
+// Render results in batches
+async function renderNext(){
+  const batch=5;
+  const slice=allResults.slice(visibleCount,visibleCount+batch);
+  visibleCount+=batch;
+  const resultsBox=document.getElementById("results");
+
+  for(const r of slice){
+    const div=document.createElement("div"); div.className="card";
+    let imgHtml="";
+    if(r.type==="wiki") imgHtml=(await fetchArticleImages(r.title)).map(i=>`<img class="result-img" src="${i}">`).join('');
+    const highlightedTitle=highlight(r.title,[r.query]);
+    const highlightedDesc=highlight(r.desc||"No description",[r.query]);
+    div.innerHTML=`
+      <a href="${r.link}" target="_blank">${highlightedTitle}</a>
+      <div class="url">${r.link}</div>
+      <div class="desc">${highlightedDesc}</div>
+      <div class="tab-content">${imgHtml}</div>
+    `;
+    resultsBox.appendChild(div);
+  }
+}
+
+// Infinite scroll
+window.addEventListener("scroll",()=>{
+  if(window.innerHeight+window.scrollY>document.body.offsetHeight-200){
+    renderNext();
+  }
+});
+
+// Saved Searches
+function saveHistory(queries){
+  let history=JSON.parse(localStorage.getItem("website_history")||"[]");
+  queries.forEach(q=>{if(!history.includes(q)) history.push(q)});
+  localStorage.setItem("website_history",JSON.stringify(history.slice(-20)));
+}
+
+function showHistory(){
+  const history=JSON.parse(localStorage.getItem("website_history")||"[]");
+  if(!history.length) return alert("No saved searches.");
+  const term=prompt("Saved searches:\n"+history.join("\n")+"\n\nEnter query to rerun:");
+  if(term) document.getElementById("query").value=term.trim();
+}
+
+function clearHistory(){localStorage.removeItem("website_history"); alert("Saved history cleared");}
+
+// Keyboard shortcuts
+document.addEventListener("keydown",e=>{
+  if(e.ctrlKey && e.key==="Enter") searchSites();
+  if(e.ctrlKey && e.key==="m") toggleMusic();
+});
+</script>
+</body>
+</html>

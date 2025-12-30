@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🔐 Encryption Tool – zerodays Web</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #0f172a;
+      color: #f1f5f9;
+      margin: 0;
+      padding: 2rem;
+    }
+    h1 {
+      color: #38bdf8;
+    }
+    textarea, input {
+      width: 100%;
+      padding: 1rem;
+      margin: 1rem 0;
+      border-radius: 0.5rem;
+      border: none;
+      background: #1e293b;
+      color: #f8fafc;
+      resize: vertical;
+    }
+    button {
+      padding: 1rem 2rem;
+      border: none;
+      border-radius: 0.5rem;
+      background-color: #38bdf8;
+      color: #0f172a;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0ea5e9;
+    }
+    .result {
+      background: #1e293b;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      margin-top: 1rem;
+      white-space: break-spaces;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔐 Advanced Web Encryption Tool</h1>
+
+  <label for="plaintext">Enter System Info Text:</label>
+  <textarea id="plaintext" rows="4">Windows-10-zerodays-osintVer-1.0.0-3.11.8-Chrome</textarea>
+
+  <button onclick="generateKeyAndEncrypt()">Generate Key & Encrypt</button>
+
+  <div class="result">
+    <strong>Encryption Key:</strong>
+    <pre id="keyOutput">...</pre>
+
+    <strong>Encrypted Text:</strong>
+    <pre id="encryptedOutput">...</pre>
+  </div>
+
+  <script>
+    async function generateKeyAndEncrypt() {
+      const text = document.getElementById("plaintext").value;
+
+      // Generate 32-byte key using crypto
+      const keyRaw = crypto.getRandomValues(new Uint8Array(32));
+      const keyB64 = btoa(String.fromCharCode(...keyRaw));
+      document.getElementById("keyOutput").innerText = keyB64;
+
+      // Encode text and key
+      const enc = new TextEncoder();
+      const encodedText = enc.encode(text);
+
+      const key = await crypto.subtle.importKey(
+        "raw",
+        keyRaw,
+        { name: "AES-GCM" },
+        false,
+        ["encrypt"]
+      );
+
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+
+      try {
+        const encrypted = await crypto.subtle.encrypt(
+          { name: "AES-GCM", iv },
+          key,
+          encodedText
+        );
+
+        const buffer = new Uint8Array(encrypted);
+        const ivHex = Array.from(iv).map(b => b.toString(16).padStart(2, '0')).join('');
+        const cipherHex = Array.from(buffer).map(b => b.toString(16).padStart(2, '0')).join('');
+
+        document.getElementById("encryptedOutput").innerText = `IV: ${ivHex}\nCipher: ${cipherHex}`;
+      } catch (err) {
+        alert("Encryption failed: " + err.message);
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>MAC Address Vendor Lookup</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:'Segoe UI',sans-serif; background:#000; color:#c58b00; overflow-x:hidden; }
+    video#bg-video { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+                     min-width:100vw; min-height:100vh; object-fit:cover; opacity:0.15; z-index:-1; }
+    .container { max-width:900px; margin:50px auto; padding:25px; border-radius:12px;
+                 box-shadow:0 0 25px rgba(0,0,0,0.2); }
+    h1,label { color:#c58b00; }
+    input, textarea { width:100%; padding:12px; margin:10px 0; background:rgba(0,0,0,0);
+                      color:red; border:1px solid #c58b00; border-radius:5px; font-size:1rem; }
+    button { background:rgba(0,0,0,0.6); border:1px solid #c58b00; color:#c58b00;
+             padding:10px 15px; margin:5px 5px 15px 0; border-radius:5px; cursor:pointer;
+             transition:0.2s; }
+    button:hover { background:rgba(0,0,0,0.7); color:red; }
+    .history { margin-top:20px; }
+    .history-item { border-bottom:1px solid red; padding:5px; font-size:0.9rem; color:#ff8800; }
+    @media(max-width:768px) { .container{margin:20px 10px; padding:15px;} button{width:100%; margin:8px 0;} }
+  </style>
+</head>
+<body>
+  <video id="bg-video" autoplay muted loop playsinline>
+    <source src="background/1761817527453041720p.mp4" type="video/mp4"/>
+  </video>
+  <audio id="bg-music" autoplay loop>
+    <source src="background/Programming___Coding___Hacking_music_vol.18__ANONYMOUS_HEADQUARTERS_(48k).mp3" type="audio/mpeg"/>
+  </audio>
+
+  <div class="container">
+    <h1>MAC Address Vendor Lookup</h1>
+    <label>Enter MAC Address:</label>
+    <input id="mac-input" placeholder="e.g. 00:11:22:33:44:55"/>
+
+    <div>
+      <button onclick="lookupMac()">Lookup</button>
+      <button onclick="clearAll()">Clear</button>
+    </div>
+
+    <label>Result:</label>
+    <textarea id="output" rows="8" readonly></textarea>
+    <button onclick="copyOutput()">Copy</button>
+    <button onclick="downloadOutput()">Download</button>
+
+    <div class="history">
+      <h3>History</h3>
+      <div id="history-box"></div>
+    </div>
+  </div>
+
+  <script>
+    const API_KEY = 'at_4denrjCDf0L5PFNkIrRIOsWJ1Rb26';  // Replace with your actual macaddress.io API key
+    const output = document.getElementById('output');
+    const historyBox = document.getElementById('history-box');
+    const historyLog = [];
+
+    async function lookupMac() {
+      const mac = document.getElementById('mac-input').value.trim();
+      if (!mac) return alert('Please enter a MAC address.');
+      output.value = `Looking up ${mac}...`;
+      const url = `https://api.macaddress.io/v1?apiKey=${API_KEY}&output=json&search=${encodeURIComponent(mac)}`;
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+        if (!data.vendorDetails) throw new Error(data.error || 'No vendor details found');
+        const vd = data.vendorDetails;
+        const result = `
+Company: ${vd.companyName}
+OUI: ${vd.oui}
+Address: ${vd.companyAddress}
+Country: ${vd.countryCode}`;
+        output.value = result.trim();
+        logHistory(mac, vd.companyName);
+      } catch (err) {
+        output.value = 'Error: ' + err.message;
+      }
+    }
+
+    function copyOutput() {
+      if (!output.value) return alert('Nothing to copy!');
+      navigator.clipboard.writeText(output.value).then(() => alert('Copied!'));
+    }
+
+    function downloadOutput() {
+      if (!output.value) return alert('Nothing to download');
+      const blob = new Blob([output.value], { type:'text/plain' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'mac_vendor_details.txt';
+      a.click();
+    }
+
+    function clearAll() {
+      document.getElementById('mac-input').value = '';
+      output.value = '';
+    }
+
+    function logHistory(mac, vendor) {
+      const t = new Date().toLocaleTimeString();
+      historyLog.unshift(`${t} – ${mac} → ${vendor}`);
+      updateHistory();
+    }
+
+    function updateHistory() {
+      historyBox.innerHTML = '';
+      historyLog.slice(0,8).forEach(h => {
+        const d = document.createElement('div');
+        d.className = 'history-item';
+        d.textContent = h;
+        historyBox.appendChild(d);
+      });
+    }
+
+    document.addEventListener('click', () => {
+      const bg = document.getElementById('bg-music');
+      if (bg && bg.paused) bg.play();
+    }, { once: true });
+  </script>
+</body>
+</html>

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>💀 Remote Device Access Simulator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    body {
+      margin: 0;
+      background-color: #000;
+      color: #00ff00;
+      font-family: monospace;
+      overflow-x: hidden;
+    }
+    header {
+      background: #111;
+      color: #0f0;
+      text-align: center;
+      padding: 15px;
+      font-size: 22px;
+      border-bottom: 1px solid #0f0;
+    }
+    #terminal {
+      padding: 20px;
+      white-space: pre-wrap;
+    }
+    input, button {
+      font-family: monospace;
+      font-size: 16px;
+      margin: 10px;
+      padding: 8px 12px;
+      background: #000;
+      color: #0f0;
+      border: 1px solid #0f0;
+    }
+    #map {
+      height: 400px;
+      width: 95%;
+      margin: 20px auto;
+      border: 1px solid #0f0;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body>
+  <header>💀 Remote Device Access Simulator</header>
+  <div style="padding: 15px;">
+    <input type="text" id="ipInput" placeholder="Target IP (e.g. 192.168.1.100)">
+    <button onclick="simulateAccess()">Connect</button>
+  </div>
+  <div id="terminal"></div>
+  <div id="map"></div>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    let map = L.map('map').setView([0, 0], 2);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    let marker;
+
+    const osList = ["Windows 10 Pro", "Ubuntu Server 20.04", "Android 12", "iOS 17", "macOS Ventura"];
+    const files = ["system32/", "Users/", "boot/", "home/", "camera/", "browser_cache/", "logs/", "wifi_keys.txt", "screenshots/"];
+    const browsers = ["Chrome", "Firefox", "Safari", "Edge", "Tor Browser"];
+    const isps = ["Comcast", "Globe", "Starlink", "PLDT", "AT&T", "Vodafone"];
+    const countries = ["USA", "Russia", "Germany", "Philippines", "China", "Brazil", "France", "India", "Japan", "Canada"];
+
+    function getRandom(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    function getRandomIP() {
+      return `${Math.floor(Math.random()*256)}.${Math.floor(Math.random()*256)}.${Math.floor(Math.random()*256)}.${Math.floor(Math.random()*256)}`;
+    }
+
+    function getRandomCoords() {
+      return {
+        lat: (Math.random() * 140 - 70).toFixed(5),
+        lon: (Math.random() * 360 - 180).toFixed(5)
+      };
+    }
+
+    function simulateAccess() {
+      const ip = document.getElementById('ipInput').value.trim() || getRandomIP();
+      const terminal = document.getElementById('terminal');
+      terminal.innerHTML = "";
+
+      const coords = getRandomCoords();
+      const os = getRandom(osList);
+      const isp = getRandom(isps);
+      const browser = getRandom(browsers);
+      const country = getRandom(countries);
+      const status = getRandom(["Active", "Idle", "Locked", "Remote Shell Active"]);
+
+      // Map update
+      if (marker) map.removeLayer(marker);
+      marker = L.marker([coords.lat, coords.lon]).addTo(map).bindPopup(`📍 ${ip}`).openPopup();
+      map.setView([coords.lat, coords.lon], 5);
+
+      const output = [
+        `Connecting to ${ip}...`,
+        `Bypassing firewall...`,
+        `Injecting payload...`,
+        `Access granted.`,
+        `Target Info:`,
+        ` ├─ IP: ${ip}`,
+        ` ├─ Location: ${country} [${coords.lat}, ${coords.lon}]`,
+        ` ├─ ISP: ${isp}`,
+        ` ├─ OS: ${os}`,
+        ` ├─ Browser: ${browser}`,
+        ` ├─ Status: ${status}`,
+        ` ├─ Open Ports: 22, 80, 443, 3389`,
+        `Scanning directories...`,
+        ...files.map(f => `   - /${f}`),
+        `Activating remote shell...`,
+        ` > whoami`,
+        ` > root`,
+        ` > dir`,
+        ` > /system32/drivers/etc/hosts`,
+        `Simulated screenshot saved.`,
+        `Remote webcam feed spoofed.`,
+        `Connection secure. Monitoring...`
+      ];
+
+      let i = 0;
+      const interval = setInterval(() => {
+        if (i >= output.length) {
+          clearInterval(interval);
+        } else {
+          terminal.innerHTML += output[i++] + "\n";
+          terminal.scrollTop = terminal.scrollHeight;
+        }
+      }, 200);
+    }
+  </script>
+</body>
+</html>

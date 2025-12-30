@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Sound Mastering Tool</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+/* CSS Reset and Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+    color: red;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Header */
+header {
+background: rgba(0, 0, 0, 0.5);
+    padding: 1.5rem 0;
+    text-align: center;
+    border-bottom: 2px solid red;
+}
+
+header h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: red;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Main Content */
+main {
+    flex: 1;
+    width: 90vw;
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 2rem;
+background: rgba(0, 0, 0, 0.5);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+/* Sections */
+section {
+    margin-bottom: 2.5rem;
+    padding: 1.5rem;
+background: rgba(0, 0, 0, 0.5);
+    border-radius: 8px;
+    border: 1px solid red;
+}
+
+section h3 {
+    color: red;
+    margin-bottom: 1rem;
+    font-size: 1.2rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Controls Section */
+.controls-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.file-upload {
+    position: relative;
+}
+
+.file-upload input[type="file"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.file-label {
+    display: inline-block;
+    background: red;
+    color: green;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.file-label:hover {
+background: rgba(0, 0, 0, 0.5);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.playback-controls {
+    display: flex;
+    gap: 1rem;
+}
+
+/* Buttons */
+button {
+    background:  red;
+    border: none;
+    color: green;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+button:hover:not(:disabled) {
+background: rgba(0, 0, 0, 0.5);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+button:disabled {
+    background: #555;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Audio Element */
+.audio-section {
+    padding: 1rem;
+}
+
+audio {
+    width: 100%;
+    border-radius: 6px;
+    background: #333;
+}
+
+/* Slider Containers */
+.slider-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.slider-container label {
+    font-weight: 600;
+    color: red;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Range Sliders */
+input[type="range"] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 8px;
+    border-radius: 4px;
+background: rgba(0, 0, 0, 0.5);
+    outline: none;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+input[type="range"]:hover {
+background: rgba(0, 0, 0, 0.5);
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+background: rgba(0, 0, 0, 0.5);
+    cursor: pointer;
+    border-radius: 50%;
+    border: 2px solid red;
+box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    transition: all 0.3s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+input[type="range"]::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+background: rgba(0, 0, 0, 0.5);
+    cursor: pointer;
+    border-radius: 50%;
+    border: 2px solid #fff;
+box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+/* Value Displays */
+.value-display {
+    color: #3a86ff;
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-align: center;
+    min-width: 60px;
+}
+
+/* Equalizer */
+.eq-controls {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1.5rem;
+}
+
+.eq-band {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem;
+    background: #333;
+    border-radius: 6px;
+    border: 1px solid #444;
+}
+
+.eq-band label {
+    font-weight: 700;
+    color: red;
+    font-size: 0.9rem;
+}
+
+.frequency {
+    color: #888;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+/* Effects Section */
+.effects-toggles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
+    justify-content: center;
+}
+
+.effect-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    cursor: pointer;
+    padding: 1rem;
+background: rgba(0, 0, 0, 0.5);
+    border-radius: 6px;
+    border: 1px solid red;
+    transition: all 0.3s ease;
+}
+
+.effect-toggle:hover {
+background: rgba(0, 0, 0, 0.5);
+    border-color: red;
+}
+
+.effect-toggle input[type="checkbox"] {
+    display: none;
+}
+
+.toggle-slider {
+    position: relative;
+    width: 50px;
+    height: 24px;
+background: rgba(0, 0, 0, 0.5);
+    border-radius: 12px;
+    transition: background 0.3s ease;
+}
+
+.toggle-slider::before {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+background: rgba(0, 0, 0, 0.5);
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+.effect-toggle input[type="checkbox"]:checked + .toggle-slider {
+background: rgba(0, 0, 0, 0.5);
+}
+
+.effect-toggle input[type="checkbox"]:checked + .toggle-slider::before {
+    transform: translateX(26px);
+background: rgba(0, 0, 0, 0.5);
+}
+
+.effect-name {
+    font-weight: 600;
+    color: red;
+    font-size: 0.95rem;
+}
+
+/* Bitcrusher Controls */
+.bitcrusher-controls {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+}
+
+/* Status Display */
+.status-display {
+background: rgba(0, 0, 0, 0.5);
+    padding: 1rem;
+    border-radius: 6px;
+    border: 1px solid red;
+    text-align: center;
+    font-weight: 500;
+    color: red;
+}
+
+/* Footer */
+footer {
+background: rgba(0, 0, 0, 0.5);
+    padding: 1rem;
+    text-align: center;
+    color: red;
+    font-size: 0.9rem;
+    border-top: 1px solid #333;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    main {
+        width: 95vw;
+        padding: 1rem;
+        margin: 1rem auto;
+    }
+    
+    header h1 {
+        font-size: 1.5rem;
+    }
+    
+    .controls-section {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .eq-controls {
+        grid-template-columns: 1fr;
+    }
+    
+    .effects-toggles {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .bitcrusher-controls {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    section {
+        padding: 1rem;
+    }
+    
+    .eq-band {
+        padding: 0.75rem;
+    }
+    
+    .effect-toggle {
+        padding: 0.75rem;
+    }
+}
+
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Advanced Sound Mastering Tool</h1>
+    </header>
+
+    <main>
+        <!-- File Upload and Playback Controls -->
+        <section class="controls-section">
+            <div class="file-upload">
+                <input type="file" id="audioFile" accept="audio/*" />
+                <label for="audioFile" class="file-label">Choose Audio File</label>
+            </div>
+            <div class="playback-controls">
+                <button id="playPause" disabled>Play</button>
+                <button id="saveBtn" disabled>Save Processed Audio</button>
+            </div>
+        </section>
+
+        <!-- Audio Element -->
+        <section class="audio-section">
+            <audio id="audio" controls></audio>
+        </section>
+
+        <!-- Volume Control -->
+        <section class="volume-section">
+            <h3>Volume Control</h3>
+            <div class="slider-container">
+                <label for="volume">Volume</label>
+                <input type="range" id="volume" min="0" max="2" step="0.01" value="1" />
+                <span class="value-display" id="volumeValue">100%</span>
+            </div>
+        </section>
+
+        <!-- Equalizer -->
+        <section class="equalizer-section">
+            <h3>5-Band Equalizer</h3>
+            <div class="eq-controls">
+                <div class="eq-band">
+                    <label for="eqBass">Bass</label>
+                    <span class="frequency">60Hz</span>
+                    <input type="range" id="eqBass" min="-30" max="30" step="0.1" value="0" />
+                    <span class="value-display" id="eqBassValue">0dB</span>
+                </div>
+                <div class="eq-band">
+                    <label for="eqLowMid">Low Mid</label>
+                    <span class="frequency">250Hz</span>
+                    <input type="range" id="eqLowMid" min="-30" max="30" step="0.1" value="0" />
+                    <span class="value-display" id="eqLowMidValue">0dB</span>
+                </div>
+                <div class="eq-band">
+                    <label for="eqMid">Mid</label>
+                    <span class="frequency">1kHz</span>
+                    <input type="range" id="eqMid" min="-30" max="30" step="0.1" value="0" />
+                    <span class="value-display" id="eqMidValue">0dB</span>
+                </div>
+                <div class="eq-band">
+                    <label for="eqHighMid">High Mid</label>
+                    <span class="frequency">4kHz</span>
+                    <input type="range" id="eqHighMid" min="-30" max="30" step="0.1" value="0" />
+                    <span class="value-display" id="eqHighMidValue">0dB</span>
+                </div>
+                <div class="eq-band">
+                    <label for="eqTreble">Treble</label>
+                    <span class="frequency">10kHz</span>
+                    <input type="range" id="eqTreble" min="-30" max="30" step="0.1" value="0" />
+                    <span class="value-display" id="eqTrebleValue">0dB</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Audio Effects -->
+        <section class="effects-section">
+            <h3>Audio Effects</h3>
+            <div class="effects-toggles">
+                <label class="effect-toggle">
+                    <input type="checkbox" id="compressorToggle" />
+                    <span class="toggle-slider"></span>
+                    <span class="effect-name">Compressor</span>
+                </label>
+                <label class="effect-toggle">
+                    <input type="checkbox" id="reverbToggle" />
+                    <span class="toggle-slider"></span>
+                    <span class="effect-name">Reverb</span>
+                </label>
+                <label class="effect-toggle">
+                    <input type="checkbox" id="bitcrusherToggle" />
+                    <span class="toggle-slider"></span>
+                    <span class="effect-name">Bitcrusher</span>
+                </label>
+            </div>
+        </section>
+
+        <!-- Bitcrusher Settings -->
+        <section class="bitcrusher-section">
+            <h3>Bitcrusher Settings</h3>
+            <div class="bitcrusher-controls">
+                <div class="slider-container">
+                    <label for="bitDepth">Bit Depth</label>
+                    <input type="range" id="bitDepth" min="1" max="16" step="1" value="8" />
+                    <span class="value-display" id="bitDepthValue">8 bits</span>
+                </div>
+                <div class="slider-container">
+                    <label for="frequencyReduction">Frequency Reduction</label>
+                    <input type="range" id="frequencyReduction" min="1" max="20" step="1" value="4" />
+                    <span class="value-display" id="frequencyReductionValue">4x</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Status Display -->
+        <section class="status-section">
+            <div class="status-display" id="statusDisplay">Ready to load audio file</div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 Sound Mastering Tool - Fully Client-Side Audio Processing</p>
+    </footer>
+
+    <script>
+        class AudioMasteringTool {
+            constructor() {
+                this.audioCtx = null;
+                this.sourceNode = null;
+                this.gainNode = null;
+                this.eqNodes = [];
+                this.compressorNode = null;
+                this.convolverNode = null;
+                this.bitcrusherNode = null;
+                this.audioBuffer = null;
+                this.isPlaying = false;
+
+                this.initializeElements();
+                this.attachEventListeners();
+                this.updateStatusDisplay('Ready to load audio file');
+            }
+
+            initializeElements() {
+                this.audioElement = document.getElementById('audio');
+                this.fileInput = document.getElementById('audioFile');
+                this.playPauseBtn = document.getElementById('playPause');
+                this.saveBtn = document.getElementById('saveBtn');
+                this.statusDisplay = document.getElementById('statusDisplay');
+
+                this.volumeSlider = document.getElementById('volume');
+                this.volumeValue = document.getElementById('volumeValue');
+
+                this.eqSliders = {
+                    bass: document.getElementById('eqBass'),
+                    lowMid: document.getElementById('eqLowMid'),
+                    mid: document.getElementById('eqMid'),
+                    highMid: document.getElementById('eqHighMid'),
+                    treble: document.getElementById('eqTreble'),
+                };
+
+                this.eqValues = {
+                    bass: document.getElementById('eqBassValue'),
+                    lowMid: document.getElementById('eqLowMidValue'),
+                    mid: document.getElementById('eqMidValue'),
+                    highMid: document.getElementById('eqHighMidValue'),
+                    treble: document.getElementById('eqTrebleValue'),
+                };
+
+                this.effectToggles = {
+                    compressor: document.getElementById('compressorToggle'),
+                    reverb: document.getElementById('reverbToggle'),
+                    bitcrusher: document.getElementById('bitcrusherToggle'),
+                };
+
+                this.bitDepthSlider = document.getElementById('bitDepth');
+                this.frequencyReductionSlider = document.getElementById('frequencyReduction');
+                this.bitDepthValue = document.getElementById('bitDepthValue');
+                this.frequencyReductionValue = document.getElementById('frequencyReductionValue');
+            }
+
+            attachEventListeners() {
+                this.fileInput.addEventListener('change', (e) => this.handleFileLoad(e));
+                this.playPauseBtn.addEventListener('click', () => this.togglePlay());
+                this.saveBtn.addEventListener('click', () => this.saveProcessedAudio());
+                this.volumeSlider.addEventListener('input', () => this.updateVolume());
+
+                Object.keys(this.eqSliders).forEach((key) => {
+                    this.eqSliders[key].addEventListener('input', () => this.updateEQ());
+                               });
+
+                this.effectToggles.compressor.addEventListener('change', () => this.updateEffects());
+                this.effectToggles.reverb.addEventListener('change', () => this.updateEffects());
+                this.effectToggles.bitcrusher.addEventListener('change', () => this.updateEffects());
+
+                this.bitDepthSlider.addEventListener('input', () => this.updateBitcrusherSettings());
+                this.frequencyReductionSlider.addEventListener('input', () => this.updateBitcrusherSettings());
+            }
+
+            updateStatusDisplay(message) {
+                this.statusDisplay.textContent = message;
+            }
+
+            async handleFileLoad(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                if (!this.audioCtx) {
+                    this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+
+                this.updateStatusDisplay('Loading audio file...');
+                this.playPauseBtn.disabled = true;
+                this.saveBtn.disabled = true;
+
+                const arrayBuffer = await file.arrayBuffer();
+                try {
+                    this.audioBuffer = await this.audioCtx.decodeAudioData(arrayBuffer);
+                } catch (e) {
+                    this.updateStatusDisplay('Error decoding audio file.');
+                    return;
+                }
+
+                this.setupAudioGraph();
+
+                // Set audio element source for playback
+                const blob = new Blob([arrayBuffer], { type: file.type });
+                const url = URL.createObjectURL(blob);
+                this.audioElement.src = url;
+                this.audioElement.load();
+
+                this.updateStatusDisplay('Audio file loaded. Ready to play.');
+                this.playPauseBtn.disabled = false;
+                this.saveBtn.disabled = false;
+                this.isPlaying = false;
+                this.playPauseBtn.textContent = 'Play';
+            }
+
+            setupAudioGraph() {
+                if (this.sourceNode) {
+                    this.sourceNode.disconnect();
+                }
+
+                this.sourceNode = this.audioCtx.createBufferSource();
+                this.sourceNode.buffer = this.audioBuffer;
+
+                // Gain node for volume control
+                this.gainNode = this.audioCtx.createGain();
+                this.gainNode.gain.value = parseFloat(this.volumeSlider.value);
+
+                // Equalizer nodes setup
+                const frequencies = [60, 250, 1000, 4000, 10000];
+                this.eqNodes = frequencies.map((freq, i) => {
+                    const filter = this.audioCtx.createBiquadFilter();
+                    filter.type = 'peaking';
+                    filter.frequency.value = freq;
+                    filter.Q.value = 1;
+                    filter.gain.value = parseFloat(Object.values(this.eqSliders)[i].value);
+                    return filter;
+                });
+
+                // Compressor node
+                this.compressorNode = this.audioCtx.createDynamicsCompressor();
+
+                // Convolver node for reverb
+                this.convolverNode = this.audioCtx.createConvolver();
+                if (!this.convolverNode.buffer) {
+                    this.loadReverbImpulseResponse();
+                }
+
+                // Bitcrusher node (ScriptProcessorNode)
+                this.bitcrusherNode = this.createBitcrusherNode();
+
+                // Connect nodes in order: source -> EQ -> compressor -> reverb -> bitcrusher -> gain -> destination
+                this.sourceNode.connect(this.eqNodes[0]);
+                for (let i = 0; i < this.eqNodes.length - 1; i++) {
+                    this.eqNodes[i].connect(this.eqNodes[i + 1]);
+                }
+
+                let lastNode = this.eqNodes[this.eqNodes.length - 1];
+
+                if (this.effectToggles.compressor.checked) {
+                    lastNode.connect(this.compressorNode);
+                    lastNode = this.compressorNode;
+                }
+
+                if (this.effectToggles.reverb.checked) {
+                    lastNode.connect(this.convolverNode);
+                    lastNode = this.convolverNode;
+                }
+
+                if (this.effectToggles.bitcrusher.checked) {
+                    lastNode.connect(this.bitcrusherNode);
+                    lastNode = this.bitcrusherNode;
+                }
+
+                lastNode.connect(this.gainNode);
+                this.gainNode.connect(this.audioCtx.destination);
+            }
+
+            loadReverbImpulseResponse() {
+                // Load a simple impulse response for reverb (small room)
+                // Using a small impulse response generated programmatically
+                const length = this.audioCtx.sampleRate * 2;
+                const impulse = this.audioCtx.createBuffer(2, length, this.audioCtx.sampleRate);
+                for (let channel = 0; channel < 2; channel++) {
+                    const channelData = impulse.getChannelData(channel);
+                    for (let i = 0; i < length; i++) {
+                        channelData[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, 2);
+                    }
+                }
+                this.convolverNode.buffer = impulse;
+            }
+
+            createBitcrusherNode() {
+                const bufferSize = 4096;
+                const node = this.audioCtx.createScriptProcessor(bufferSize, 1, 1);
+                let bitDepth = parseInt(this.bitDepthSlider.value);
+                let frequencyReduction = parseInt(this.frequencyReductionSlider.value);
+                let phaser = 0;
+                let lastSample = 0;
+
+                node.onaudioprocess = (e) => {
+                    const input = e.inputBuffer.getChannelData(0);
+                    const output = e.outputBuffer.getChannelData(0);
+                    for (let i = 0; i < input.length; i++) {
+                        phaser += frequencyReduction;
+                        if (phaser >= bufferSize) {
+                            phaser -= bufferSize;
+                            lastSample = this.quantizeSample(input[i], bitDepth);
+                        }
+                        output[i] = lastSample;
+                    }
+                };
+
+                this.bitcrusherNode = node;
+                return node;
+            }
+
+            quantizeSample(sample, bitDepth) {
+                const step = Math.pow(0.5, bitDepth);
+                return Math.round(sample / step) * step;
+            }
+
+            togglePlay() {
+                if (!this.audioBuffer) return;
+
+                if (!this.isPlaying) {
+                    this.playAudio();
+                } else {
+                    this.pauseAudio();
+                }
+            }
+
+            playAudio() {
+                if (!this.audioCtx) {
+                    this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+
+                this.setupAudioGraph();
+
+                this.sourceNode.start(0);
+                this.isPlaying = true;
+                this.playPauseBtn.textContent = 'Pause';
+
+                this.sourceNode.onended = () => {
+                    this.isPlaying = false;
+                    this.playPauseBtn.textContent = 'Play';
+                };
+            }
+
+            pauseAudio() {
+                if (this.sourceNode) {
+                    this.sourceNode.stop();
+                    this.isPlaying = false;
+                    this.playPauseBtn.textContent = 'Play';
+                }
+            }
+
+            updateVolume() {
+                const volume = parseFloat(this.volumeSlider.value);
+                this.volumeValue.textContent = `${Math.round(volume * 100)}%`;
+                if (this.gainNode) {
+                    this.gainNode.gain.value = volume;
+                }
+            }
+
+            updateEQ() {
+                Object.keys(this.eqSliders).forEach((key, i) => {
+                    const gain = parseFloat(this.eqSliders[key].value);
+                    this.eqValues[key].textContent = `${gain.toFixed(1)}dB`;
+                    if (this.eqNodes[i]) {
+                        this.eqNodes[i].gain.value = gain;
+                    }
+                });
+            }
+
+            updateEffects() {
+                if (this.isPlaying) {
+                    this.pauseAudio();
+                    this.playAudio();
+                }
+            }
+
+            updateBitcrusherSettings() {
+                const bitDepth = parseInt(this.bitDepthSlider.value);
+                const freqReduction = parseInt(this.frequencyReductionSlider.value);
+                this.bitDepthValue.textContent = `${bitDepth} bits`;
+                this.frequencyReductionValue.textContent = `${freqReduction}x`;
+
+                if (this.isPlaying) {
+                    this.pauseAudio();
+                    this.playAudio();
+                }
+            }
+
+            async saveProcessedAudio() {
+                if (!this.audioBuffer) return;
+
+                this.updateStatusDisplay('Rendering processed audio...');
+
+                // OfflineAudioContext for rendering processed audio
+                const offlineCtx = new OfflineAudioContext(
+                    this.audioBuffer.numberOfChannels,
+                    this.audioBuffer.length,
+                    this.audioBuffer.sampleRate
+                );
+
+                const source = offlineCtx.createBufferSource();
+                source.buffer = this.audioBuffer;
+
+                // Gain node
+                const gainNode = offlineCtx.createGain();
+                gainNode.gain.value = parseFloat(this.volumeSlider.value);
+
+                // EQ nodes
+                const frequencies = [60, 250, 1000, 4000, 10000];
+                const eqNodes = frequencies.map((freq, i) => {
+                    const filter = offlineCtx.createBiquadFilter();
+                    filter.type = 'peaking';
+                    filter.frequency.value = freq;
+                    filter.Q.value = 1;
+                    filter.gain.value = parseFloat(Object.values(this.eqSliders)[i].value);
+                    return filter;
+                });
+
+                // Compressor node
+                const compressorNode = offlineCtx.createDynamicsCompressor();
+
+                // Convolver node for reverb
+                const convolverNode = offlineCtx.createConvolver();
+                // Use same impulse response as live context
+                convolverNode.buffer = this.convolverNode.buffer;
+
+                // Bitcrusher node is not supported in OfflineAudioContext, so we skip it for saving
+
+                // Connect nodes in order: source -> EQ -> compressor -> reverb -> gain -> destination
+                source.connect(eqNodes[0]);
+                for (let i = 0; i < eqNodes.length - 1; i++) {
+                    eqNodes[i].connect(eqNodes[i + 1]);
+                }
+
+                let lastNode = eqNodes[eqNodes.length - 1];
+
+                if (this.effectToggles.compressor.checked) {
+                    lastNode.connect(compressorNode);
+                    lastNode.connect(compressorNode);
+                    lastNode = compressorNode;
+                }
+
+                if (this.effectToggles.reverb.checked) {
+                    lastNode.connect(convolverNode);
+                    lastNode = convolverNode;
+                }
+
+                lastNode.connect(gainNode);
+                gainNode.connect(offlineCtx.destination);
+
+                source.start(0);
+
+                try {
+                    const renderedBuffer = await offlineCtx.startRendering();
+                    this.exportWAV(renderedBuffer);
+                    this.updateStatusDisplay('Processed audio rendered and ready to save.');
+                } catch (e) {
+                    this.updateStatusDisplay('Error rendering audio.');
+                }
+            }
+
+            exportWAV(buffer) {
+                const numChannels = buffer.numberOfChannels;
+                const sampleRate = buffer.sampleRate;
+                const format = 1; // PCM
+                const bitDepth = 16;
+
+                let interleaved;
+                if (numChannels === 2) {
+                    interleaved = this.interleave(buffer.getChannelData(0), buffer.getChannelData(1));
+                } else {
+                    interleaved = buffer.getChannelData(0);
+                }
+
+                const bufferLength = interleaved.length * 2 + 44;
+                const arrayBuffer = new ArrayBuffer(bufferLength);
+                const view = new DataView(arrayBuffer);
+
+                // RIFF chunk descriptor
+                this.writeString(view, 0, 'RIFF');
+                view.setUint32(4, 36 + interleaved.length * 2, true);
+                this.writeString(view, 8, 'WAVE');
+
+                // FMT sub-chunk
+                this.writeString(view, 12, 'fmt ');
+                view.setUint32(16, 16, true); // SubChunk1Size
+                view.setUint16(20, format, true); // AudioFormat
+                view.setUint16(22, numChannels, true);
+                view.setUint32(24, sampleRate, true);
+                view.setUint32(28, sampleRate * numChannels * bitDepth / 8, true);
+                view.setUint16(32, numChannels * bitDepth / 8, true);
+                view.setUint16(34, bitDepth, true);
+
+                // Data sub-chunk
+                this.writeString(view, 36, 'data');
+                view.setUint32(40, interleaved.length * 2, true);
+
+                // Write PCM samples
+                let offset = 44;
+                for (let i = 0; i < interleaved.length; i++, offset += 2) {
+                    const s = Math.max(-1, Math.min(1, interleaved[i]));
+                    view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+                }
+
+                const blob = new Blob([view], { type: 'audio/wav' });
+                const url = URL.createObjectURL(blob);
+
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = 'processed_audio.wav';
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            }
+
+            writeString(view, offset, string) {
+                for (let i = 0; i < string.length; i++) {
+                    view.setUint8(offset + i, string.charCodeAt(i));
+                }
+            }
+
+            interleave(inputL, inputR) {
+                const length = inputL.length + inputR.length;
+                const result = new Float32Array(length);
+
+                let index = 0;
+                let inputIndex = 0;
+
+                while (index < length) {
+                    result[index++] = inputL[inputIndex];
+                    result[index++] = inputR[inputIndex];
+                    inputIndex++;
+                }
+                return result;
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            new AudioMasteringTool();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,53 @@
+add new feature Add music via URL input
+
+Playlist saved in localStorage (persists across reloads)
+
+Play/Pause, Next, Previous
+
+Playlist display & click to play
+
+Basic clean UI, Add drag-and-drop reordering to playlist?
+
+Enable download original sound files?
+
+Include visual waveform animation?, Search + Filter by tag
+
+Waveform display
+
+Audio preview
+
+Pagination
+
+Export to JSON / CSV
+
+Persistent Playlist (saved in browser), Add/remove sounds to a persistent playlist (stored using localStorage)
+
+🎧 View & play your saved sounds in a "My Playlist" section
+
+🔁 Playlist remains across page refreshes, :
+🔄 Pagination (Next/Previous results)
+
+📊 Waveform image display
+
+🎯 Category/tag filter
+
+📝 Export to JSON/CSV
+
+🎧 Audio preview with controlsSearch for sounds.
+
+Play audio previews.
+
+View metadata (duration, tags, downloads).
+
+Filter results.
+
+Export results as JSON or CSV., :
+🎚 BPM sliders or dropdowns
+
+🎛 Sort by downloads/rating
+
+🔊 Real waveform using waveform field
+
+📁 Download ZIP with samples
+
+🧠 Smart tags/categories 

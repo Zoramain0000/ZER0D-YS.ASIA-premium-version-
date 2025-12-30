@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Personal Target List Manager</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+      transition: background 0.3s, color 0.3s;
+    }
+    body.dark {
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+    }
+    header {
+background: rgba(0, 0, 0, 0.5);
+      color: red;
+      padding: 16px;
+      text-align: center;
+      font-size: 22px;
+      position: relative;
+    }
+    header button {
+      position: absolute;
+      right: 16px;
+      top: 16px;
+      background: none;
+      border: none;
+      color: red;
+      font-size: 18px;
+      cursor: pointer;
+    }
+    .container {
+      max-width: 1000px;
+      margin: 30px auto;
+      padding: 20px;
+background: rgba(0, 0, 0, 0.5);
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    body.dark .container {
+background: rgba(0, 0, 0, 0.5);
+    }
+    .flex {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    input, textarea, button {
+      padding: 10px;
+      font-size: 14px;
+      border-radius: 4px;
+      border: 1px solid red;
+background: rgba(0, 0, 0, 0.5);
+    }
+    button {
+      background: red;
+      color: green;
+      cursor: pointer;
+    }
+    button:hover {
+background: rgba(0, 0, 0, 0.5);
+    }
+    .target-card {
+      border: 1px solid red;
+      border-radius: 6px;
+      padding: 16px;
+      margin-top: 20px;
+background: rgba(0, 0, 0, 0.5);
+    }
+    body.dark .target-card {
+background: rgba(0, 0, 0, 0.5);
+      border-color: red;
+    }
+    .account-list {
+      margin-top: 10px;
+    }
+    .account-list li {
+      margin-bottom: 6px;
+    }
+    .actions {
+      margin-top: 10px;
+    }
+    .actions button {
+      margin-right: 8px;
+    }
+    .search-box {
+      margin-bottom: 20px;
+    }
+    .tags {
+      margin-top: 5px;
+      font-size: 13px;
+      color: red;
+    }
+    body.dark .tags {
+      color: red;
+    }
+    @media (max-width: 600px) {
+      .flex {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>🎯 Personal Target List Manager
+    <button onclick="toggleDarkMode()">🌓</button>
+  </header>
+  <div class="container">
+    <h2>Add New Target</h2>
+    <div class="flex">
+      <input type="text" id="targetName" placeholder="Target Name" />
+      <input type="text" id="targetTags" placeholder="Tags (comma-separated)" />
+      <input type="email" id="targetEmail" placeholder="Email" />
+      <input type="tel" id="targetPhone" placeholder="Phone Number" />
+      <input type="text" id="targetStatus" placeholder="Personal Status (e.g. VIP)" />
+      <textarea id="targetNotes" placeholder="Notes (optional)" rows="1"></textarea>
+      <button onclick="addTarget()">Add Target</button>
+    </div>
+
+    <div class="search-box">
+      <input type="text" id="search" placeholder="Search targets..." oninput="renderTargets()" style="width: 100%; margin-top: 20px;" />
+    </div>
+
+    <input type="file" onchange="importData(event)" />
+    <div id="targetList"></div>
+
+    <div class="actions">
+      <button onclick="exportData()">Export JSON</button>
+      <button onclick="exportPDF()">Export PDF</button>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+  <script>
+    let targets = JSON.parse(localStorage.getItem("targets") || "[]");
+
+    function saveTargets() {
+      localStorage.setItem("targets", JSON.stringify(targets));
+    }
+
+    function addTarget() {
+      const name = document.getElementById("targetName").value.trim();
+      const tags = document.getElementById("targetTags").value.trim().split(',').map(t => t.trim()).filter(t => t);
+      const email = document.getElementById("targetEmail").value.trim();
+      const phone = document.getElementById("targetPhone").value.trim();
+      const status = document.getElementById("targetStatus").value.trim();
+      const notes = document.getElementById("targetNotes").value.trim();
+      if (!name) return alert("Target name is required.");
+
+      targets.push({ id: Date.now(), name, notes, tags, email, phone, status, accounts: [] });
+      saveTargets();
+
+      ["targetName", "targetTags", "targetEmail", "targetPhone", "targetStatus", "targetNotes"].forEach(id => document.getElementById(id).value = "");
+      renderTargets();
+    }
+
+    function deleteTarget(id) {
+      if (!confirm("Delete this target?")) return;
+      targets = targets.filter(t => t.id !== id);
+      saveTargets();
+      renderTargets();
+    }
+
+    function addAccount(targetId, type, username) {
+      if (!type || !username) return;
+      const target = targets.find(t => t.id === targetId);
+      if (!target) return;
+      const url = autoLink(type, username);
+      target.accounts.push({ type, username, url });
+      saveTargets();
+      renderTargets();
+    }
+
+    function deleteAccount(targetId, index) {
+      const target = targets.find(t => t.id === targetId);
+      if (!target) return;
+      target.accounts.splice(index, 1);
+      saveTargets();
+      renderTargets();
+    }
+
+    function exportData() {
+      const data = JSON.stringify(targets, null, 2);
+      const blob = new Blob([data], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "targets.json";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function importData(event) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          targets = JSON.parse(e.target.result);
+          saveTargets();
+          renderTargets();
+        } catch (error) {
+          alert("Failed to import data. Please ensure the file is in valid JSON format.");
+        }
+      };
+      reader.readAsText(event.target.files[0]);
+    }
+
+    function autoLink(type, username) {
+      const base = {
+        twitter: "https://twitter.com/",
+        facebook: "https://facebook.com/",
+        instagram: "https://instagram.com/",
+        linkedin: "https://linkedin.com/in/",
+        github: "https://github.com/"
+      };
+      const key = type.toLowerCase();
+      return base[key] ? base[key] + username : "";
+    }
+
+    function exportPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      let y = 10;
+      targets.forEach(t => {
+        doc.text(`Name: ${t.name}`, 10, y); y += 6;
+        doc.text(`Tags: ${t.tags.join(', ')}`, 10, y); y += 6;
+        if (t.email) doc.text(`Email: ${t.email}`, 10, y), y += 6;
+        if (t.phone) doc.text(`Phone: ${t.phone}`, 10, y), y += 6;
+        if (t.status) doc.text(`Status: ${t.status}`, 10, y), y += 6;
+        if (t.notes) doc.text(`Notes: ${t.notes}`, 10, y), y += 6;
+        t.accounts.forEach(a => {
+          doc.text(`  ${a.type}: ${a.username}`, 10, y);
+          y += 6;
+        });
+        y += 10;
+      });
+      doc.save("targets.pdf");
+    }
+
+    function toggleDarkMode() {
+      document.body.classList.toggle("dark");
+    }
+
+    function renderTargets() {
+      const list = document.getElementById("targetList");
+      const search = document.getElementById("search").value.toLowerCase();
+      list.innerHTML = "";
+
+      targets
+        .filter(t => t.name.toLowerCase().includes(search))
+        .forEach(target => {
+          const card = document.createElement("div");
+          card.className = "target-card";
+
+          const name = document.createElement("h3");
+          name.textContent = target.name;
+
+          const tags = document.createElement("div");
+          tags.className = "tags";
+          tags.textContent = "Tags: " + target.tags.join(', ');
+
+          const details = document.createElement("p");
+          details.innerHTML = `
+            ${target.email ? `📧 Email: ${target.email}<br>` : ""}
+            ${target.phone ? `📱 Phone: ${target.phone}<br>` : ""}
+            ${target.status ? `💼 Status: ${target.status}<br>` : ""}
+            📝 ${target.notes || "No notes."}
+          `;
+
+          const accForm = document.createElement("div");
+          accForm.className = "flex";
+          accForm.innerHTML = `
+            <input type="text" placeholder="Account Type" id="type-${target.id}" />
+            <input type="text" placeholder="Username" id="username-${target.id}" />
+            <button onclick="addAccount(${target.id}, document.getElementById('type-${target.id}').value, document.getElementById('username-${target.id}').value)">Add Account</button>
+          `;
+
+          const accountList = document.createElement("ul");
+          accountList.className = "account-list";
+          target.accounts.forEach((acc, index) => {
+            const li = document.createElement("li");
+            const link = acc.url ? `<a href="${acc.url}" target="_blank">${acc.username}</a>` : acc.username;
+            li.innerHTML = `${acc.type}: ${link}`;
+            const delBtn = document.createElement("button");
+            delBtn.textContent = "X";
+            delBtn.style.marginLeft = "10px";
+            delBtn.onclick = () => deleteAccount(target.id, index);
+            li.appendChild(delBtn);
+            accountList.appendChild(li);
+          });
+
+          const qr = document.createElement("canvas");
+          QRCode.toCanvas(qr, JSON.stringify(target), { width: 100 });
+
+          const delBtn = document.createElement("button");
+          delBtn.textContent = "Delete Target";
+          delBtn.onclick = () => deleteTarget(target.id);
+
+          card.appendChild(name);
+          card.appendChild(tags);
+          card.appendChild(details);
+          card.appendChild(accForm);
+          card.appendChild(accountList);
+          card.appendChild(qr);
+          card.appendChild(delBtn);
+          list.appendChild(card);
+        });
+    }
+
+    renderTargets();
+  </script>
+</body>
+</html>

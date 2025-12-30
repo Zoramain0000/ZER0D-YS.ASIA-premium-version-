@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>🧪 Function Tester</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      background: #0f172a;
+      color: #f8fafc;
+      font-family: 'Courier New', monospace;
+      margin: 0;
+      padding: 2rem;
+    }
+
+    h1 {
+      color: #38bdf8;
+      text-align: center;
+    }
+
+    textarea, input, button {
+      width: 100%;
+      max-width: 800px;
+      margin: 1rem auto;
+      display: block;
+      padding: 0.8rem;
+      font-family: monospace;
+      font-size: 1rem;
+      background: #1e293b;
+      color: #f8fafc;
+      border: none;
+      border-radius: 6px;
+    }
+
+    button {
+      background: #38bdf8;
+      color: #0f172a;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    pre {
+      background: #1e293b;
+      color: #a5f3fc;
+      padding: 1rem;
+      border-radius: 6px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-width: 800px;
+      margin: 1rem auto;
+    }
+
+    .label {
+      text-align: center;
+      color: #94a3b8;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🧪 Function Tester</h1>
+
+  <div class="label">📄 Write your function (JavaScript only)</div>
+  <textarea id="codeArea" rows="8" placeholder="function add(a, b) { return a + b; }"></textarea>
+
+  <div class="label">📦 Run this call (e.g. <code>add(5, 10)</code>):</div>
+  <input type="text" id="runCall" placeholder="add(5, 10)" />
+
+  <button onclick="runFunction()">▶️ Run Function</button>
+
+  <h3 class="label">🧾 Result:</h3>
+  <pre id="output">Waiting for input...</pre>
+
+  <script>
+    function runFunction() {
+      const code = document.getElementById("codeArea").value;
+      const call = document.getElementById("runCall").value;
+      const output = document.getElementById("output");
+
+      try {
+        // Evaluate the function code
+        const func = new Function(code + '; return ' + call);
+        const result = func();
+        output.textContent = `✅ Output:\n${JSON.stringify(result, null, 2)}`;
+      } catch (err) {
+        output.textContent = `❌ Error:\n${err}`;
+      }
+    }
+  </script>
+
+</body>
+</html>

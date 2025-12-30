@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>🔊 Audio Capability Tester</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      margin: 0;
+background: #000 url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s') ;
+      font-family: 'Courier New', monospace;
+      color: red;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    header {
+      text-align: center;
+      padding: 20px;
+      font-size: 1.8em;
+      border-bottom: 2px solid red;
+      background: rgba(0, 0, 0, 0.6);
+    }
+
+    main {
+      flex: 1;
+      padding: 20px;
+    }
+
+    footer {
+      text-align: center;
+      font-size: 0.8em;
+      padding: 10px;
+      border-top: 1px solid red;
+      background: rgba(0, 0, 0, 0.6);
+    }
+
+    button {
+      background-color: red;
+      color: black;
+      border: none;
+      padding: 10px 20px;
+      cursor: pointer;
+      margin: 10px 0;
+      font-weight: bold;
+    }
+
+    select {
+      padding: 6px;
+      margin-top: 10px;
+      background-color: #222;
+      color: red;
+      border: 1px solid red;
+      font-family: inherit;
+    }
+
+    .meter {
+      height: 20px;
+      background: #222;
+      border: 1px solid red;
+      margin-top: 10px;
+      width: 100%;
+      position: relative;
+    }
+
+    .meter-fill {
+      height: 100%;
+      background-color: red;
+      width: 0%;
+    }
+
+    .section {
+      margin-bottom: 30px;
+    }
+
+    h2 {
+      margin-bottom: 10px;
+      color: red;
+      border-bottom: 1px solid red;
+      padding-bottom: 5px;
+    }
+
+    label {
+      display: block;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <header>🔊 Audio Capability Tester</header>
+  <main>
+    <div class="section">
+      <h2>🎤 Microphone Test</h2>
+      <button onclick="startMicTest()">Start Mic Test</button>
+      <div class="meter"><div id="micMeter" class="meter-fill"></div></div>
+      <label for="micSelect">Select Microphone:</label>
+      <select id="micSelect"></select>
+    </div>
+
+    <div class="section">
+      <h2>🔈 Speaker Test</h2>
+      <button onclick="playTestTone()">Play Test Tone</button>
+    </div>
+
+    <div class="section">
+      <h2>📋 Available Devices</h2>
+      <button onclick="listDevices()">Refresh Device List</button>
+      <pre id="deviceList"></pre>
+    </div>
+  </main>
+
+  <footer>© 2025 ZeroDayAI – Educational & Ethical Use Only</footer>
+
+  <script>
+    let audioContext;
+    let micStream;
+    let analyser;
+    let dataArray;
+
+    async function startMicTest() {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        alert("Microphone access is not supported in this browser.");
+        return;
+      }
+
+      const micId = document.getElementById("micSelect").value;
+      try {
+        micStream = await navigator.mediaDevices.getUserMedia({ audio: { deviceId: micId ? { exact: micId } : undefined } });
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const source = audioContext.createMediaStreamSource(micStream);
+        analyser = audioContext.createAnalyser();
+        analyser.fftSize = 256;
+        dataArray = new Uint8Array(analyser.frequencyBinCount);
+        source.connect(analyser);
+        drawMeter();
+      } catch (e) {
+        alert("Error accessing microphone: " + e.message);
+      }
+    }
+
+    function drawMeter() {
+      requestAnimationFrame(drawMeter);
+      if (!analyser) return;
+      analyser.getByteTimeDomainData(dataArray);
+      let sum = 0;
+      for (let i = 0; i < dataArray.length; i++) {
+        const v = (dataArray[i] - 128) / 128;
+        sum += v * v;
+      }
+      const volume = Math.sqrt(sum / dataArray.length);
+      const percent = Math.min(100, volume * 200).toFixed(1);
+      document.getElementById("micMeter").style.width = percent + "%";
+    }
+
+    function playTestTone() {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = ctx.createOscillator();
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(440, ctx.currentTime); // A4 note
+      oscillator.connect(ctx.destination);
+      oscillator.start();
+      setTimeout(() => oscillator.stop(), 1000); // Stop after 1 sec
+    }
+
+    async function listDevices() {
+      const list = document.getElementById("deviceList");
+      const micSelect = document.getElementById("micSelect");
+      list.textContent = "Loading...";
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      micSelect.innerHTML = "";
+      list.textContent = devices.map(d =>
+        `[${d.kind}] ${d.label || "Unnamed"} (id: ${d.deviceId})`
+      ).join("\n");
+      devices.filter(d => d.kind === "audioinput").forEach(d => {
+        const opt = document.createElement("option");
+        opt.value = d.deviceId;
+        opt.textContent = d.label || "Microphone";
+        micSelect.appendChild(opt);
+      });
+    }
+
+    // Initialize device list on load
+    listDevices();
+  </script>
+</body>
+</html>

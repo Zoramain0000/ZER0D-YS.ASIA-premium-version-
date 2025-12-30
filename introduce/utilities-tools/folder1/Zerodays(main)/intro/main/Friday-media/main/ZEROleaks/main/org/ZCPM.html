@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>zerodays Config & Plugin Manager</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0f172a;
+      color: #f1f5f9;
+      padding: 2rem;
+      margin: 0;
+    }
+    .container {
+      max-width: 900px;
+      margin: auto;
+      background: #1e293b;
+      padding: 2rem;
+      border-radius: 1rem;
+      box-shadow: 0 0 12px rgba(0,0,0,0.5);
+    }
+    h1 {
+      color: #38bdf8;
+    }
+    label, select, input[type="file"], button {
+      display: block;
+      margin: 1rem 0;
+      font-size: 1rem;
+    }
+    select, input, button {
+      padding: 0.5rem;
+      width: 100%;
+      border-radius: 0.5rem;
+      border: none;
+    }
+    button {
+      background: #2563eb;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #1d4ed8;
+    }
+    .output {
+      background: #0f172a;
+      border: 1px solid #334155;
+      padding: 1rem;
+      margin-top: 1rem;
+      border-radius: 0.5rem;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>⚙️ Tookie Config & Plugin Manager</h1>
+    <label for="configFile">Load Config File (.ini):</label>
+    <input type="file" id="configFile" accept=".ini">
+
+    <label for="pluginManifest">Load Plugin Manifest (.json):</label>
+    <input type="file" id="pluginManifest" accept=".json">
+
+    <button onclick="showConfig()">Show Config</button>
+    <button onclick="editConfig()">Edit Config</button>
+    <button onclick="runPlugins()">Run Plugins</button>
+
+    <div class="output" id="output">Status: Waiting...</div>
+  </div>
+
+  <script>
+    let configContent = "";
+    let plugins = [];
+
+    document.getElementById('configFile').addEventListener('change', e => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        configContent = reader.result;
+        document.getElementById('output').textContent = "✅ Config loaded.";
+      };
+      reader.readAsText(e.target.files[0]);
+    });
+
+    document.getElementById('pluginManifest').addEventListener('change', e => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          plugins = JSON.parse(reader.result);
+          document.getElementById('output').textContent = "✅ Plugins manifest loaded.";
+        } catch (err) {
+          document.getElementById('output').textContent = "❌ Error parsing plugin manifest.";
+        }
+      };
+      reader.readAsText(e.target.files[0]);
+    });
+
+    function showConfig() {
+      if (!configContent) {
+        document.getElementById('output').textContent = "⚠️ No config file loaded.";
+        return;
+      }
+      document.getElementById('output').textContent = configContent;
+    }
+
+    function editConfig() {
+      const key = prompt("Enter the config key to update:");
+      const value = prompt("Enter the new value for " + key + ":");
+      if (!key || !value || !configContent) return;
+      const regex = new RegExp(`${key} *= *.+`);
+      configContent = configContent.replace(regex, `${key} = ${value}`);
+      document.getElementById('output').textContent = `✅ Updated ${key} to ${value}`;
+    }
+
+    function runPlugins() {
+      if (!plugins || plugins.length === 0) {
+        document.getElementById('output').textContent = "⚠️ No plugins loaded.";
+        return;
+      }
+      const out = plugins.map(p => `Running plugin: ${p.name}\n${p.description || 'No description'}\n---`).join('\n');
+      document.getElementById('output').textContent = out;
+    }
+  </script>
+</body>
+</html>

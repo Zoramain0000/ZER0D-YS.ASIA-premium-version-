@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Voice Removal Tool - Client-side Vocal Remover</title>
+<style>
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+    color: red;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem;
+    min-height: 100vh;
+    margin: 0;
+  }
+  h1 {
+    margin-bottom: 1rem;
+    font-weight: 700;
+    text-align: center;
+    color: red;
+  }
+  label {
+background: rgba(0, 0, 0, 0.5)
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    user-select: none;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    display: inline-block;
+  }
+  input[type="file"] {
+    display: none;
+background: rgba(0, 0, 0, 0.5)
+  }
+  button {
+    background-color: red;
+    color: green;
+    font-weight: 700;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1rem;
+    margin: 1rem 0;
+    transition: background-color 0.3s ease;
+  }
+  button:disabled {
+background: rgba(0, 0, 0, 0.5)
+    cursor: not-allowed;
+  }
+  button:hover:not(:disabled) {
+background: rgba(0, 0, 0, 0.5)
+  }
+  audio {
+    margin-top: 1rem;
+    width: 100%;
+    max-width: 600px;
+  }
+  .info {
+    max-width: 600px;
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    color: red;
+  }
+</style>
+</head>
+<body>
+  <h1>Voice Removal Tool (Client-side)</h1>
+  <label for="audioFile">Select Audio File (Stereo)</label>
+  <input type="file" id="audioFile" accept="audio/*" />
+  <button id="processBtn" disabled>Process and Remove Vocals</button>
+  <button id="downloadBtn" disabled>Download Processed Audio</button>
+  <audio id="player" controls></audio>
+  <div class="info">
+    <p><strong>Note:</strong> This tool uses a basic vocal removal technique by subtracting stereo channels. Works best with stereo files with vocals in the center.</p>
+  </div>
+
+<script>
+  const fileInput = document.getElementById('audioFile');
+  const processBtn = document.getElementById('processBtn');
+  const downloadBtn = document.getElementById('downloadBtn');
+  const audioPlayer = document.getElementById('player');
+
+  let originalBuffer = null;
+  let processedBuffer = null;
+  let audioCtx = null;
+  let processedAudioBlob = null;
+
+  fileInput.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    processBtn.disabled = true;
+    downloadBtn.disabled = true;
+    audioPlayer.src = '';
+    processedAudioBlob = null;
+
+    if (audioCtx) {
+      audioCtx.close();
+      audioCtx = null;
+    }
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    const arrayBuffer = await file.arrayBuffer();
+    try {
+      originalBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+      if (originalBuffer.numberOfChannels < 2) {
+        alert('Please provide a stereo audio file for better vocal removal.');
+      }
+      processBtn.disabled = false;
+    } catch (err) {
+      alert('Error decoding audio file: ' + err.message);
+    }
+  });
+
+  processBtn.addEventListener('click', () => {
+    if (!originalBuffer) return;
+
+    processedBuffer = removeVocals(originalBuffer);
+    playProcessedBuffer(processedBuffer);
+    processedAudioBlob = bufferToWaveBlob(processedBuffer);
+    downloadBtn.disabled = false;
+  });
+
+  downloadBtn.addEventListener('click', () => {
+    if (!processedAudioBlob) return;
+
+    const url = URL.createObjectURL(processedAudioBlob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'processed_no_vocals.wav';
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  // Vocal removal logic using stereo channel subtraction
+  function removeVocals(buffer) {
+    const numChannels = buffer.numberOfChannels;
+    const length = buffer.length;
+    const sampleRate = buffer.sampleRate;
+
+    if (numChannels < 2) {
+      alert('Audio is not stereo. Vocal removal might not work as expected.');
+      return buffer;
+    }
+
+    const left = buffer.getChannelData(0);
+    const right = buffer.getChannelData(1);
+
+    // Create new buffer for output (mono)
+    const outputBuffer = audioCtx.createBuffer(1, length, sampleRate);
+    const output = outputBuffer.getChannelData(0);
+
+    for (let i = 0; i < length; i++) {
+      // Subtract right channel from left channel (center channel extraction)
+      // Basic vocal removal technique
+      output[i] = (left[i] - right[i]) * 0.5;
+    }
+    return outputBuffer;
+  }
+
+  // Convert AudioBuffer to WAV Blob for download
+  function bufferToWaveBlob(buffer) {
+    const numChannels = buffer.numberOfChannels;
+    const sampleRate = buffer.sampleRate;
+    const length = buffer.length * numChannels * 2 + 44; // 16-bit samples + header size
+
+    const bufferArray = new ArrayBuffer(length);
+    const view = new DataView(bufferArray);
+
+    function writeString(view, offset, string) {
+      for (let i = 0; i < string.length; i++) {
+        view.setUint8(offset + i, string.charCodeAt(i));
+      }
+    }
+
+    // RIFF chunk descriptor
+    writeString(view, 0, 'RIFF');
+    view.setUint32(4, length - 8, true);
+    writeString(view, 8, 'WAVE');
+    // FMT subchunk
+    writeString(view, 12, 'fmt ');
+    view.setUint32(16, 16, true); // Subchunk1Size (16 for PCM)
+    view.setUint16(20, 1, true); // AudioFormat PCM = 1
+    view.setUint16(22, 1, true); // NumChannels mono
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * 2, true); // ByteRate = SampleRate * NumChannels * BitsPerSample/8
+    view.setUint16(32, 2, true); // BlockAlign = NumChannels * BitsPerSample/8
+    view.setUint16(34, 16, true); // BitsPerSample
+    // data subchunk
+    writeString(view, 36, 'data');
+    view.setUint32(40, length - 44, true);
+
+    // Write PCM samples
+    let offset = 44;
+    const channelData = buffer.getChannelData(0);
+    for (let i = 0; i < buffer.length; i++) {
+      // Clamp sample
+      let s = Math.max(-1, Math.min(1, channelData[i]));
+      s = s < 0 ? s * 0x8000 : s * 0x7FFF;
+      view.setInt16(offset, s, true);
+      offset += 2;
+    }
+
+    return new Blob([view], { type: 'audio/wav' });
+  }
+
+  // Play the processed buffer via an Audio element
+  function playProcessedBuffer(buffer) {
+    if (!buffer) return;
+    const wavBlob = bufferToWaveBlob(buffer);
+    const url = URL.createObjectURL(wavBlob);
+    audioPlayer.src = url;
+    audioPlayer.play();
+  }
+</script>
+</body>
+</html>

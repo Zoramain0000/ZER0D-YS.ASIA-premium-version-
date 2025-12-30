@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cyber DNS Lookup</title>
+
+<style>
+:root{
+  --gold:#cfae55;
+  --gold-soft:#ffdc7a;
+  --bg:#0a0a0a;
+  --border:rgba(207,174,85,.45);
+  --green:#7cff9a;
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+
+body{
+  font-family:Segoe UI,system-ui;
+  background:var(--bg);
+  color:var(--gold);
+  overflow-x:hidden;
+}
+
+/* VIDEO */
+video.bg{
+  position:fixed;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  filter:brightness(.35);
+  z-index:-2;
+}
+
+/* NAVBAR */
+nav{
+  position:fixed;
+  top:0;
+  width:100%;
+  height:64px;
+  padding:0 24px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  background:rgba(0,0,0,.75);
+  backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+  z-index:20;
+}
+
+.brand{
+  font-size:1.4rem;
+  font-weight:700;
+}
+
+button{
+  background:transparent;
+  color:var(--gold);
+  border:1px solid var(--gold);
+  padding:10px 18px;
+  border-radius:10px;
+  cursor:pointer;
+  transition:.25s;
+}
+
+button:hover{
+  background:var(--gold);
+  color:black;
+}
+
+/* MAIN */
+.main{
+  padding:100px 30px 40px;
+  max-width:1100px;
+  margin:auto;
+}
+
+/* SECTION */
+.section{
+  background:linear-gradient(180deg,#161616,#0b0b0b);
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:26px;
+  box-shadow:0 0 25px rgba(0,0,0,.6);
+  margin-bottom:30px;
+}
+
+.section h2{
+  color:var(--gold-soft);
+  margin-bottom:16px;
+}
+
+/* INPUT */
+input, select{
+  width:100%;
+  padding:14px;
+  background:#111;
+  border:1px solid var(--border);
+  border-radius:12px;
+  color:white;
+  font-size:15px;
+  margin-bottom:12px;
+}
+
+/* OUTPUT */
+pre{
+  background:#000;
+  border-radius:14px;
+  padding:16px;
+  max-height:420px;
+  overflow:auto;
+  font-size:.92rem;
+  color:var(--green);
+  border:1px solid var(--border);
+  white-space:pre-wrap;
+}
+
+/* INFO BOX */
+.info{
+  background:rgba(0,0,0,.5);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:14px;
+  margin-top:12px;
+  line-height:1.6;
+}
+
+.info b{color:var(--gold-soft)}
+
+footer{
+  text-align:center;
+  padding:25px;
+  opacity:.7;
+}
+</style>
+</head>
+
+<body>
+
+<video class="bg" autoplay muted loop playsinline>
+  <source src="background/1761817527453041720p.mp4" type="video/mp4">
+</video>
+
+<nav>
+  <div class="brand">Cyber DNS Lookup</div>
+  <button onclick="location.reload()">Reload</button>
+</nav>
+
+<div class="main">
+
+  <div class="section">
+    <h2>🌐 Advanced DNS Lookup (Real API)</h2>
+
+    <input id="domain" placeholder="Enter domain (example.com)">
+
+    <select id="recordType">
+      <option value="A">A – IPv4</option>
+      <option value="AAAA">AAAA – IPv6</option>
+      <option value="MX">MX – Mail Servers</option>
+      <option value="NS">NS – Name Servers</option>
+      <option value="TXT">TXT – SPF / Verification</option>
+      <option value="CNAME">CNAME</option>
+      <option value="SOA">SOA</option>
+    </select>
+
+    <button onclick="lookupDNS()">Lookup DNS</button>
+
+    <pre id="output">Waiting for query...</pre>
+
+    <div class="info" id="infoBox">
+      <b>Status:</b> Idle<br>
+      <b>API:</b> Google DNS over HTTPS<br>
+      <b>Backend:</b> None (Frontend only)
+    </div>
+  </div>
+
+</div>
+
+<footer>
+© 2025 Cyber Tools Toolkit — DNS Lookup Module
+</footer>
+
+<script>
+async function lookupDNS(){
+  const domain = document.getElementById("domain").value.trim();
+  const type = document.getElementById("recordType").value;
+  const output = document.getElementById("output");
+  const info = document.getElementById("infoBox");
+
+  if(!domain){
+    output.textContent = "Please enter a domain name.";
+    return;
+  }
+
+  output.textContent = "Resolving DNS records...";
+  info.innerHTML = `
+    <b>Status:</b> Querying DNS<br>
+    <b>Domain:</b> ${domain}<br>
+    <b>Type:</b> ${type}
+  `;
+
+  try {
+    const url = `https://dns.google/resolve?name=${encodeURIComponent(domain)}&type=${type}`;
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (!data.Answer) {
+      output.textContent = JSON.stringify(data, null, 2);
+      info.innerHTML = "<b>Status:</b> No records found";
+      return;
+    }
+
+    let formatted = `;; DNS Lookup Result\n`;
+    formatted += `;; Domain: ${domain}\n`;
+    formatted += `;; Record Type: ${type}\n\n`;
+
+    data.Answer.forEach((r, i) => {
+      formatted += `#${i + 1}\n`;
+      formatted += `Name: ${r.name}\n`;
+      formatted += `Type: ${r.type}\n`;
+      formatted += `TTL : ${r.TTL}\n`;
+      formatted += `Data: ${r.data}\n\n`;
+    });
+
+    output.textContent = formatted;
+
+    info.innerHTML = `
+      <b>Status:</b> Success<br>
+      <b>Records Found:</b> ${data.Answer.length}<br>
+      <b>Resolver:</b> Google DNS (DoH)
+    `;
+
+  } catch (err) {
+    output.textContent = "Failed to fetch DNS data.";
+    info.innerHTML = "<b>Status:</b> Error connecting to DNS API";
+  }
+}
+</script>
+
+</body>
+</html>

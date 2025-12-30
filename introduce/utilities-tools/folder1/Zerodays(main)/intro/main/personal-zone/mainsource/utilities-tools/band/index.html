@@ -1,0 +1,295 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>🌍 Geo-Blocked Music Checker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #0f172a;
+      color: #f8fafc;
+      text-align: center;
+      padding: 2rem;
+    }
+    input, button {
+      padding: 0.6rem;
+      font-size: 1rem;
+      margin: 0.5rem;
+      border: none;
+      border-radius: 8px;
+    }
+    input {
+      width: 70%;
+    }
+    button {
+      background-color: #1d4ed8;
+      color: white;
+      cursor: pointer;
+    }
+    .results {
+      margin-top: 2rem;
+      text-align: left;
+      max-width: 700px;
+      margin-inline: auto;
+    }
+    .result-entry {
+      background: #1e293b;
+      border-radius: 8px;
+      padding: 1rem;
+      margin: 0.5rem 0;
+      display: flex;
+      justify-content: space-between;
+    }
+    .success { color: #10b981; }
+    .fail { color: #ef4444; }
+  </style>
+</head>
+<body>
+  <h1>🌍 Geo-Blocked Music Availability Checker</h1>
+  <p>Paste a public music/video/post URL to check regional availability</p>
+
+  <input type="text" id="urlInput" placeholder="https://bandlab.com/..." />
+  <button onclick="checkAvailability()">Check Availability</button>
+
+  <div class="results" id="results"></div>
+
+  <script>
+const countries = [
+    { name: "United States", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Germany", proxy: "https://de-cors-proxy.pages.dev/?url=" },
+    { name: "Singapore", proxy: "https://sg-cors-proxy.pages.dev/?url=" },
+    { name: "UK (London)", proxy: "https://uk-cors-proxy.pages.dev/?url=" },
+    { name: "Afghanistan", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Albania", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Algeria", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Andorra", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Angola", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Antigua and Barbuda", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Argentina", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Armenia", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Australia", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Austria", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Azerbaijan", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Bahamas", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Bahrain", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Bangladesh", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Barbados", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Belarus", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Belgium", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Belize", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Benin", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Bhutan", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Bolivia", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Bosnia and Herzegovina", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Botswana", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Brazil", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Brunei", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Bulgaria", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Burkina Faso", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Burundi", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Cabo Verde", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Cambodia", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Cameroon", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Canada", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Central African Republic", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Chad", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Chile", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "China", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Colombia", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Comoros", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Congo (Congo-Brazzaville)", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Costa Rica", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Croatia", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Cuba", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Cyprus", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Czech Republic", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Democratic Republic of the Congo", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Denmark", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Djibouti", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Dominica", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Dominican Republic", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Ecuador", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Egypt", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "El Salvador", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Equatorial Guinea", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Eritrea", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Estonia", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Eswatini", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Ethiopia", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Fiji", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Finland", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "France", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Gabon", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Gambia", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Georgia", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Germany", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Ghana", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Greece", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Grenada", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Guatemala", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Guinea", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Guinea-Bissau", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Guyana", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Haiti", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Honduras", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Hungary", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Iceland", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "India", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Indonesia", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Iran", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Iraq", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Ireland", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Israel", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Italy", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Jamaica", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Japan", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Jordan", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Kazakhstan", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Kenya", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Kiribati", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Kuwait", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Kyrgyzstan", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Laos", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Latvia", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Lebanon", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Lesotho", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Liberia", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Libya", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Liechtenstein", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Lithuania", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Luxembourg", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Madagascar", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Malawi", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Malaysia", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Maldives", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Mali", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Malta", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Marshall Islands", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Mauritania", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Mauritius", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Mexico", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Micronesia", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Moldova", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Monaco", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Mongolia", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Montenegro", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Morocco", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Mozambique", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Myanmar", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Namibia", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Nauru", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Nepal", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Netherlands", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "New Zealand", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Nicaragua", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Niger", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Nigeria", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "North Korea", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "North Macedonia", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Norway", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Oman", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Pakistan", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Palau", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Palestine", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Panama", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Papua New Guinea", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Paraguay", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Peru", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Philippines", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Poland", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Portugal", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Qatar", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Romania", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Russia", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Rwanda", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Saint Kitts and Nevis", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Saint Lucia", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Saint Vincent and the Grenadines", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Samoa", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "San Marino", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Sao Tome and Principe", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Saudi Arabia", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Senegal", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Serbia", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Seychelles", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Sierra Leone", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Singapore", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Slovakia", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Slovenia", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Solomon Islands", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Somalia", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "South Africa", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "South Korea", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "South Sudan", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Spain", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Sri Lanka", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Sudan", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Suriname", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Sweden", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Switzerland", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Syria", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Taiwan", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Tajikistan", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Tanzania", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Thailand", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Togo", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Tonga", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Trinidad and Tobago", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Tunisia", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Turkey", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Turkmenistan", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Tuvalu", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Uganda", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Ukraine", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "United Arab Emirates", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "United Kingdom", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "United Nations", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "United States", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Uruguay", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Uzbekistan", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Vanuatu", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Vatican City", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Venezuela", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Vietnam", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Yemen", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Zambia", proxy: "https://api.allorigins.win/raw?url=" },
+    { name: "Zimbabwe", proxy: "https://api.allorigins.win/raw?url=" }
+];
+
+    async function checkAvailability() {
+      const url = document.getElementById("urlInput").value.trim();
+      const resultsBox = document.getElementById("results");
+      resultsBox.innerHTML = '';
+
+      if (!url.startsWith("http")) {
+        alert("Please enter a valid URL starting with http or https.");
+        return;
+      }
+
+      for (const country of countries) {
+        const proxyUrl = country.proxy + encodeURIComponent(url);
+        const entry = document.createElement("div");
+        entry.className = "result-entry";
+        entry.innerHTML = `<strong>${country.name}</strong> <span>🔄 Checking...</span>`;
+        resultsBox.appendChild(entry);
+
+        try {
+          const res = await fetch(proxyUrl, {
+            method: 'GET',
+            mode: 'cors',
+          });
+          if (res.ok) {
+            entry.innerHTML = `<strong>${country.name}</strong> <span class="success">✅ Available</span>`;
+          } else {
+            entry.innerHTML = `<strong>${country.name}</strong> <span class="fail">❌ Blocked (status ${res.status})</span>`;
+          }
+        } catch (err) {
+          entry.innerHTML = `<strong>${country.name}</strong> <span class="fail">❌ Blocked or CORS Error</span>`;
+        }
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>🔍 Subdomain Finder</title>
+  <style>
+    body {
+      background: #0f172a;
+      color: #f8fafc;
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .input-group {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    input, button {
+      padding: 10px;
+      font-size: 1rem;
+      border-radius: 8px;
+      border: none;
+    }
+
+    input {
+      flex: 1;
+      max-width: 300px;
+    }
+
+    button {
+      background-color: #38bdf8;
+      color: #000;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #0ea5e9;
+    }
+
+    .results {
+      max-width: 1000px;
+      margin: 0 auto;
+      background: #1e293b;
+      border-radius: 10px;
+      padding: 20px;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    th, td {
+      border-bottom: 1px solid #334155;
+      padding: 10px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #334155;
+    }
+
+    .export {
+      text-align: center;
+      margin-top: 10px;
+    }
+
+    .count {
+      text-align: center;
+      margin-bottom: 10px;
+      font-weight: bold;
+    }
+
+    #cnameCanvas {
+      margin: 20px auto;
+      display: block;
+      border: 1px solid #334155;
+      background: #1e293b;
+    }
+
+    @media (max-width: 600px) {
+      .input-group {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      input {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>📡 Subdomain Finder</h1>
+  <div class="input-group">
+    <input type="text" id="domainInput" placeholder="Enter domain (e.g. example.com)" />
+    <button onclick="findSubdomains()">Search</button>
+  </div>
+
+  <div class="results" id="results" style="display:none;">
+    <div class="count" id="resultCount"></div>
+    <table>
+      <thead>
+        <tr>
+          <th>Subdomain</th>
+          <th>IP</th>
+          <th>CNAME</th>
+          <th>MX</th>
+          <th>TXT</th>
+          <th>Ping (ms)</th>
+          <th>Open Ports</th>
+        </tr>
+      </thead>
+      <tbody id="subdomainTable"></tbody>
+    </table>
+    <div class="export">
+      <button onclick="exportCSV()">📁 Export CSV</button>
+    </div>
+    <canvas id="cnameCanvas" width="800" height="400"></canvas>
+  </div>
+
+  <script>
+    async function findSubdomains() {
+      const domain = document.getElementById("domainInput").value.trim();
+      if (!domain) return alert("Please enter a domain.");
+      const url = `https://crt.sh/?q=%25.${domain}&output=json`;
+
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+        const seen = new Set();
+        const subdomains = [];
+
+        data.forEach(entry => {
+          const names = entry.name_value.split("\n");
+          names.forEach(name => {
+            if (name.includes(domain) && !seen.has(name)) {
+              seen.add(name);
+              subdomains.push(name.trim());
+            }
+          });
+        });
+
+        document.getElementById("resultCount").innerText = `${subdomains.length} subdomains found`;
+        document.getElementById("results").style.display = "block";
+
+        const table = document.getElementById("subdomainTable");
+        const ctx = document.getElementById("cnameCanvas").getContext("2d");
+        ctx.clearRect(0, 0, 800, 400);
+
+        table.innerHTML = "";
+        let yOffset = 30;
+
+        for (const sub of subdomains.slice(0, 50).sort()) {
+          const ip = await resolveDNS(sub, "A");
+          const cname = await resolveDNS(sub, "CNAME");
+          const mx = await resolveDNS(sub, "MX");
+          const txt = await resolveDNS(sub, "TXT");
+          const ping = await measurePing(sub);
+          const ports = await scanPorts(sub);
+
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${sub}</td>
+            <td>${ip || "-"}</td>
+            <td>${cname || "-"}</td>
+            <td>${mx || "-"}</td>
+            <td>${txt || "-"}</td>
+            <td>${ping} ms</td>
+            <td>${ports.join(", ") || "-"}</td>
+          `;
+          table.appendChild(row);
+
+          if (cname) {
+            drawCNAME(ctx, sub, cname.split(",")[0], yOffset);
+            yOffset += 40;
+          }
+        }
+      } catch (err) {
+        alert("Error fetching subdomains.");
+        console.error(err);
+      }
+    }
+
+    async function resolveDNS(domain, type) {
+      try {
+        const res = await fetch(`https://dns.google/resolve?name=${domain}&type=${type}`);
+        const data = await res.json();
+        if (!data.Answer) return null;
+        return data.Answer.map(r => r.data).join(", ");
+      } catch {
+        return null;
+      }
+    }
+
+    async function measurePing(host) {
+      const url = `https://${host}`;
+      const start = performance.now();
+      try {
+        await fetch(url, { mode: 'no-cors' });
+      } catch (e) {}
+      const end = performance.now();
+      return Math.round(end - start);
+    }
+
+    async function scanPorts(host) {
+      const ports = [21, 22, 80, 443, 8080];
+      const open = [];
+
+      await Promise.all(ports.map(async port => {
+        try {
+          const ws = new WebSocket(`wss://${host}:${port}`);
+          await new Promise((resolve, reject) => {
+            ws.onerror = reject;
+            ws.onopen = () => {
+              open.push(port);
+              ws.close();
+              resolve();
+            };
+            setTimeout(reject, 1000);
+          });
+        } catch {}
+      }));
+
+      return open;
+    }
+
+    function exportCSV() {
+      const rows = [["Subdomain", "IP", "CNAME", "MX", "TXT", "Ping (ms)", "Open Ports"]];
+      document.querySelectorAll("#subdomainTable tr").forEach(tr => {
+        const cols = Array.from(tr.children).map(td => td.textContent);
+        rows.push(cols);
+      });
+      const csv = rows.map(r => r.join(",")).join("\n");
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "subdomains_full.csv";
+      a.click();
+    }
+
+    function drawCNAME(ctx, from, to, y) {
+      ctx.fillStyle = "#38bdf8";
+      ctx.font = "14px Segoe UI";
+      ctx.fillText(from, 20, y);
+      ctx.fillText("→", 300, y);
+      ctx.fillText(to, 340, y);
+    }
+  </script>
+</body>
+</html>

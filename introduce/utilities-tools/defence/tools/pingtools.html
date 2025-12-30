@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cyber Ping Tool</title>
+
+<style>
+:root{
+  --gold:#cfae55;
+  --gold-soft:#ffdc7a;
+  --bg:#0a0a0a;
+  --border:rgba(207,174,85,.45);
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+
+body{
+  font-family:Segoe UI,system-ui;
+  background:var(--bg);
+  color:var(--gold);
+  overflow-x:hidden;
+}
+
+/* VIDEO BACKGROUND */
+video.bg{
+  position:fixed;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  filter:brightness(.35);
+  z-index:-2;
+}
+
+/* NAVBAR */
+nav{
+  position:fixed;
+  top:0;
+  width:100%;
+  height:64px;
+  padding:0 24px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  background:rgba(0,0,0,.75);
+  backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+  z-index:20;
+}
+
+.brand{
+  font-size:1.4rem;
+  font-weight:700;
+}
+
+button{
+  background:transparent;
+  color:var(--gold);
+  border:1px solid var(--gold);
+  padding:10px 18px;
+  border-radius:10px;
+  cursor:pointer;
+  transition:.25s;
+}
+
+button:hover{
+  background:var(--gold);
+  color:black;
+}
+
+/* MAIN */
+.main{
+  padding:100px 30px 40px;
+  max-width:1000px;
+  margin:auto;
+}
+
+/* SECTION */
+.section{
+  background:linear-gradient(180deg,#161616,#0b0b0b);
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:26px;
+  box-shadow:0 0 25px rgba(0,0,0,.6);
+  margin-bottom:30px;
+}
+
+.section h2{
+  color:var(--gold-soft);
+  margin-bottom:16px;
+}
+
+/* INPUT */
+input{
+  width:100%;
+  padding:14px;
+  background:#111;
+  border:1px solid var(--border);
+  border-radius:12px;
+  color:white;
+  font-size:15px;
+  margin-bottom:12px;
+}
+
+/* OUTPUT TERMINAL */
+pre{
+  background:#000;
+  border-radius:14px;
+  padding:16px;
+  max-height:420px;
+  overflow:auto;
+  font-size:.92rem;
+  color:#7CFF9E;
+  border:1px solid var(--border);
+  white-space:pre-wrap;
+}
+
+/* STATUS */
+.status{
+  margin-top:10px;
+  font-size:.9rem;
+  opacity:.85;
+}
+
+footer{
+  text-align:center;
+  padding:25px;
+  opacity:.7;
+}
+</style>
+</head>
+
+<body>
+
+<video class="bg" autoplay muted loop playsinline>
+  <source src="background/1761817527453041720p.mp4" type="video/mp4">
+</video>
+
+<nav>
+  <div class="brand">Cyber Ping Tool</div>
+  <button onclick="location.reload()">Reload</button>
+</nav>
+
+<div class="main">
+
+  <div class="section">
+    <h2>📡 Live Ping Tool (API-Based)</h2>
+
+    <input id="target" placeholder="Enter domain or IP (example.com / 8.8.8.8)">
+
+    <button onclick="runPing()">Run Ping</button>
+
+    <pre id="output">Waiting for input...</pre>
+
+    <div class="status" id="status">
+      Uses public API · No backend · Real ping results
+    </div>
+  </div>
+
+</div>
+
+<footer>
+© 2025 Cyber Tools Toolkit — Ping Module
+</footer>
+
+<script>
+async function runPing() {
+  const target = document.getElementById("target").value.trim();
+  const output = document.getElementById("output");
+  const status = document.getElementById("status");
+
+  if (!target) {
+    output.textContent = "Please enter a domain or IP address.";
+    return;
+  }
+
+  output.textContent = "Pinging target...\nPlease wait...";
+  status.textContent = "Connecting to ping API...";
+
+  const api =
+    "https://api.allorigins.win/raw?url=" +
+    encodeURIComponent("https://api.hackertarget.com/ping/?q=" + target);
+
+  try {
+    const res = await fetch(api);
+    const text = await res.text();
+
+    if (!text || text.toLowerCase().includes("error")) {
+      output.textContent = "Ping failed or blocked by API.";
+      status.textContent = "Ping error";
+      return;
+    }
+
+    output.textContent = text;
+    status.textContent = "Ping completed successfully.";
+
+  } catch (err) {
+    output.textContent = "Network error while contacting API.";
+    status.textContent = "Connection failed.";
+  }
+}
+</script>
+
+</body>
+</html>

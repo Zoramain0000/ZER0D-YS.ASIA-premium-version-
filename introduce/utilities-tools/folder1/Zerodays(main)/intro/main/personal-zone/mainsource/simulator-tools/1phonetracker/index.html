@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>📱 Phone Tracker Simulator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0f172a;
+      color: #fff;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background: #1e293b;
+      padding: 20px;
+      text-align: center;
+      font-size: 24px;
+      font-weight: bold;
+      color: #38bdf8;
+    }
+    #tracker {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+    input, button {
+      padding: 10px;
+      margin: 10px;
+      font-size: 16px;
+    }
+    button {
+      background: #38bdf8;
+      color: #000;
+      border: none;
+      cursor: pointer;
+      border-radius: 6px;
+    }
+    button:hover {
+      background: #0ea5e9;
+    }
+    #map {
+      height: 400px;
+      width: 90%;
+      margin: 20px auto;
+      border: 2px solid #38bdf8;
+      border-radius: 10px;
+    }
+    .info-card {
+      background: #1e293b;
+      padding: 15px;
+      margin: 10px;
+      border-radius: 8px;
+      width: 90%;
+      max-width: 600px;
+      border-left: 4px solid #38bdf8;
+    }
+  </style>
+</head>
+<body>
+  <header>📱 Phone Tracker Simulator</header>
+  <div id="tracker">
+    <input type="text" id="phone" placeholder="Enter phone number e.g. +639123456789" />
+    <button onclick="simulateTracking()">Track Phone</button>
+    <button onclick="exportToPDF()">Export as PDF</button>
+
+    <div class="info-card" id="details"></div>
+    <div id="map"></div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
+  <script>
+    let map = L.map('map').setView([14, 20], 2); // Default: Philippines
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 18,
+    }).addTo(map);
+    let marker;
+
+    function getRandomFloat(min, max) {
+      return (Math.random() * (max - min) + min).toFixed(5);
+    }
+
+    function simulateTracking() {
+      const phone = document.getElementById('phone').value.trim();
+      if (!phone) {
+        alert('Please enter a phone number.');
+        return;
+      }
+
+      const simulatedData = {
+        number: phone,
+        latitude: getRandomFloat(-90, 90),
+        longitude: getRandomFloat(-180, 180),
+        device: ['iPhone 14 Pro', 'Samsung Galaxy S23', 'Huawei Mate 50', 'Xiaomi 13', 'Google Pixel 7'][Math.floor(Math.random() * 5)],
+        carrier: ['Globe', 'Smart', 'DITO', 'Verizon', 'AT&T', 'Vodafone'][Math.floor(Math.random() * 6)],
+        country: ['Philippines', 'USA', 'Germany', 'Japan', 'Brazil', 'Canada'][Math.floor(Math.random() * 6)],
+        timezone: ['GMT+8', 'GMT-5', 'GMT+1', 'GMT+9', 'GMT-3', 'GMT-4'][Math.floor(Math.random() * 6)],
+        status: ['Online', 'Offline', 'Roaming'][Math.floor(Math.random() * 3)],
+        isp: ['PLDT', 'Globe Telecom', 'Starlink', 'Converge', 'Rogers', 'Telekom'][Math.floor(Math.random() * 6)]
+      };
+
+      // Update info
+      document.getElementById('details').innerHTML = `
+        <strong>📱 Number:</strong> ${simulatedData.number}<br>
+        <strong>🌍 Country:</strong> ${simulatedData.country}<br>
+        <strong>📡 Carrier:</strong> ${simulatedData.carrier}<br>
+        <strong>🌐 ISP:</strong> ${simulatedData.isp}<br>
+        <strong>⏰ Timezone:</strong> ${simulatedData.timezone}<br>
+        <strong>📶 Status:</strong> ${simulatedData.status}<br>
+        <strong>📱 Device:</strong> ${simulatedData.device}<br>
+        <strong>📍 Location:</strong> ${simulatedData.latitude}, ${simulatedData.longitude}
+      `;
+
+      // Update map
+      const latLng = [simulatedData.latitude, simulatedData.longitude];
+      map.setView(latLng, 9);
+      if (marker) map.removeLayer(marker);
+      marker = L.marker(latLng).addTo(map).bindPopup(`📍 ${simulatedData.device}`).openPopup();
+    }
+
+    function exportToPDF() {
+      html2pdf().from(document.getElementById('details')).save('phone-tracker-report.pdf');
+    }
+  </script>
+</body>
+</html>

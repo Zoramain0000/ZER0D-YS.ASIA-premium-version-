@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ZeroDays DNS+DoH Resolver Dashboard</title>
+<style>
+  /* Basic reset & dark theme */
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; font-family: sans-serif;
+    height: 100%; background: #121212; color: #eee; display: flex; flex-direction: column; }
+  header { background: #1e1e1e; padding: 1rem; text-align: center; font-size:1.5rem; }
+  .container { flex:1; overflow:auto; padding:1rem; max-width:1000px; margin:auto; }
+  select, input, button { padding:0.5rem; margin:0.5rem 0; border-radius:4px; border:none; width:100%; }
+  select, input { background:#2a2a2a; color:#eee; }
+  button { background:#4ea1ff; color:#fff; cursor:pointer; }
+  button:hover { background:#3b8cd1; }
+  .tabs { display:flex; margin-top:1rem; }
+  .tab { flex:1; padding:.75rem; text-align:center; cursor:pointer; background:#2a2a2a; }
+  .tab.active { background:#1e1e1e; border-bottom:2px solid #4ea1ff; }
+  .results, .log-panel { background:#1e1e1e; padding:1rem; border-radius:4px; margin-top:1rem; max-height:300px; overflow:auto; }
+  .history { list-style:none; padding:0; margin:1rem 0; }
+  .history li { background:#2a2a2a; padding:.5rem; margin:.25rem 0; border-radius:4px; cursor:pointer; }
+  .export-buttons { margin-top:0.5rem; }
+  .export-buttons button { width:auto; margin-right:0.5rem; }
+  @media (max-width:600px){ .tabs { flex-wrap:wrap; } }
+</style>
+</head>
+<body>
+
+<header>🛠️ ZeroDays DNS + DoH Resolver</header>
+<div class="container">
+  <input type="text" id="hostname" placeholder="Enter hostname (e.g. example.com)" />
+  <select id="recordType">
+    <option value="A">A</option>
+    <option value="AAAA">AAAA</option>
+    <option value="MX">MX</option>
+    <option value="TXT">TXT</option>
+    <option value="NS">NS</option>
+    <option value="CNAME">CNAME</option>
+  </select>
+  <button id="runBtn">Run Lookup</button>
+
+  <ul class="history" id="historyList"></ul>
+
+  <div class="tabs">
+    <div class="tab active" id="tab-doh">🔍 DoH Results</div>
+    <div class="tab" id="tab-log">📝 Log / Export</div>
+  </div>
+
+  <div class="results" id="dohResults"></div>
+  <div class="log-panel" id="logPanel" style="display:none;">
+    <div id="logContainer"></div>
+    <div class="export-buttons">
+      <button onclick="exportLog('txt')">Export TXT</button>
+      <button onclick="exportLog('json')">Export JSON</button>
+      <button onclick="exportLog('csv')">Export CSV</button>
+      <button onclick="clearLog()">Clear Log</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const dohServers = {
+  Google: 'https://dns.google/resolve?',
+  Cloudflare: 'https://cloudflare-dns.com/dns-query?ct=application/dns-json&',
+  AdGuard: 'https://dns.adguard.com/resolve?',
+  AliDNS: 'https://dns.alidns.com/resolve?'
+};
+
+const history = JSON.parse(localStorage.getItem('zd_history')||'[]');
+const logs = JSON.parse(localStorage.getItem('zd_logs')||'[]');
+const historyList = document.getElementById('historyList');
+const logContainer = document.getElementById('logContainer');
+const hostnameInput = document.getElementById('hostname');
+const recordType = document.getElementById('recordType');
+
+document.getElementById('runBtn').onclick = runLookup;
+function addToHistory(h){
+  if(!history.includes(h)){
+    history.unshift(h);
+    if(history.length>50) history.pop();
+    localStorage.setItem('zd_history', JSON.stringify(history));
+    renderHistory();
+  }
+}
+function renderHistory(){
+  historyList.innerHTML = '';
+  history.forEach(h=>{
+    const li = document.createElement('li');
+    li.textContent = h;
+    li.onclick = ()=> { hostnameInput.value=h; runLookup(); };
+    historyList.appendChild(li);
+  });
+}
+renderHistory();
+
+function switchTab(to){
+  document.getElementById('dohResults').style.display = to === 'doh' ? 'block' : 'none';
+  document.getElementById('logPanel').style.display = to === 'log' ? 'block' : 'none';
+  document.getElementById('tab-doh').classList.toggle('active', to==='doh');
+  document.getElementById('tab-log').classList.toggle('active', to==='log');
+}
+
+document.getElementById('tab-doh').onclick = ()=>switchTab('doh');
+document.getElementById('tab-log').onclick = ()=>switchTab('log');
+
+function appendLog(entry){
+  logs.unshift(entry);
+  localStorage.setItem('zd_logs', JSON.stringify(logs));
+  renderLog();
+}
+
+function renderLog(){
+  logContainer.innerHTML = '';
+  logs.forEach(e=>{
+    const div = document.createElement('div');
+    div.style.whiteSpace = 'pre-wrap';
+    div.style.marginBottom = '0.5rem';
+    div.textContent = e;
+    logContainer.appendChild(div);
+  });
+}
+renderLog();
+
+function clearLog(){
+  if(confirm('Clear all logs?')){
+    logs.length=0;
+    localStorage.setItem('zd_logs', '[]');
+    renderLog();
+  }
+}
+
+function exportLog(fmt){
+  if(logs.length===0){ alert('No log entries.'); return; }
+  let blob, filename='zd_logs.'+fmt;
+  if(fmt==='txt'){
+    blob=new Blob([logs.join('\n\n')], {type:'text/plain'});
+  } else if(fmt==='json'){
+    blob=new Blob([JSON.stringify(logs, null,2)], {type:'application/json'});
+  } else if(fmt==='csv'){
+    const rows = logs.map(l => `"${l.replace(/"/g,'""')}"`);
+    blob=new Blob([rows.join('\r\n')], {type:'text/csv'});
+  }
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=filename;
+  a.click();
+}
+
+async function runLookup(){
+  const h = hostnameInput.value.trim();
+  const t = recordType.value;
+  if(!h || !h.includes('.')){ alert('Enter a valid hostname.'); return; }
+  addToHistory(h);
+  const container = document.getElementById('dohResults');
+  container.innerHTML = `🔄 Looking up <b>${h}</b> (${t})...`;
+  let output = `📡 Lookup results for ${h} (${t}):\n`;
+  for(const [name, url] of Object.entries(dohServers)){
+    try{
+      const r = await fetch(`${url}name=${h}&type=${t}`, { headers:{accept:'application/dns-json'} });
+      const d = await r.json();
+      const ans = d.Answer ? d.Answer.map(a=>a.data).join(', ') : '[no records]';
+      output += `\n${name}: ${ans}`;
+    }catch(e){
+      output += `\n${name}: ❌ ${e.message}`;
+    }
+  }
+  container.innerHTML = `<pre>${output}</pre>`;
+  appendLog(`[${new Date().toLocaleString()}]\n${output}`);
+  switchTab('doh');
+}
+</script>
+
+</body>
+</html>

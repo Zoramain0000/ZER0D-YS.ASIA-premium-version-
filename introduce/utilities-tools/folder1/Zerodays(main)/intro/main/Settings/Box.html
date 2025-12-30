@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Settings Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      font-family: 'Courier New', monospace;
+      background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: #00ffcc;
+      overflow: hidden;
+    }
+
+    #sidebar {
+      width: 250px;
+      background: rgba(0, 0, 0, 0.5);
+      border-right: 2px solid red;
+      display: flex;
+      flex-direction: column;
+      transition: width 0.3s ease;
+    }
+
+    #sidebar.collapsed {
+      width: 60px;
+    }
+
+    #sidebar h2 {
+      text-align: center;
+      font-size: 1.2em;
+      margin: 10px 0;
+      color: red;
+    }
+
+    #sidebar .menu-item {
+      padding: 12px 20px;
+      cursor: pointer;
+      border-bottom: 1px solid #111;
+      color: red;
+      transition: background 0.2s;
+      white-space: nowrap;
+      text-decoration: none;
+    }
+
+    #sidebar .menu-item:hover {
+      background: rgba(0, 0, 0, 0.5);
+    }
+
+    #toggle-btn {
+      background-color: red;
+      color: #000;
+      border: none;
+      padding: 10px;
+      cursor: pointer;
+      font-weight: bold;
+      width: 100%;
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: rgba(0, 0, 0, 0.5);
+      color: red;
+      padding: 15px;
+      text-align: center;
+      font-size: 1.5em;
+      border-bottom: 2px solid red;
+    }
+
+    #content {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    footer {
+      background: rgba(0, 0, 0, 0.5);
+      color: red;
+      font-size: 0.8em;
+      text-align: center;
+      padding: 8px;
+      border-top: 1px solid;
+    }
+
+    .info-group {
+      margin-bottom: 12px;
+    }
+
+    .info-label {
+      color: #ff5555;
+      font-weight: bold;
+    }
+
+    .info-value {
+      margin-left: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div id="sidebar">
+    <button id="toggle-btn">☰</button>
+    <h2>Settings</h2>
+    <a class="menu-item" href="#" onclick="showSystemInfo()">System Information</a>
+  </div>
+
+  <main>
+    <header>Settings Dashboard</header>
+    <div id="content">
+      <p>Select a feature from the sidebar to view more information.</p>
+    </div>
+    <footer>
+      For educational and ethical use only. &copy; 2025 ZeroDayAI
+    </footer>
+  </main>
+
+  <script>
+    const sidebar = document.getElementById("sidebar");
+    const toggleBtn = document.getElementById("toggle-btn");
+    const content = document.getElementById("content");
+
+    toggleBtn.onclick = () => {
+      sidebar.classList.toggle("collapsed");
+    };
+
+    function signIn() {
+      alert("This feature is coming soon!");
+    }
+
+    function showSystemInfo() {
+      const info = {
+        "User Agent": navigator.userAgent,
+        "Platform": navigator.platform,
+        "Language": navigator.language,
+        "Screen Resolution": `${window.screen.width} x ${window.screen.height}`,
+        "Color Depth": `${screen.colorDepth}-bit`,
+        "Timezone": Intl.DateTimeFormat().resolvedOptions().timeZone,
+        "Online Status": navigator.onLine ? "Online" : "Offline",
+        "Cookies Enabled": navigator.cookieEnabled ? "Yes" : "No",
+        "JavaScript Enabled": "Yes",
+        "Hardware Threads": navigator.hardwareConcurrency || "Unavailable",
+        "Device Memory": navigator.deviceMemory ? navigator.deviceMemory + " GB" : "Unavailable"
+      };
+
+      let html = "<h2>System Information</h2>";
+      for (const key in info) {
+        html += `
+          <div class="info-group">
+            <span class="info-label">${key}:</span>
+            <span class="info-value">${info[key]}</span>
+          </div>`;
+      }
+      content.innerHTML = html;
+    }
+  </script>
+</body>
+</html>

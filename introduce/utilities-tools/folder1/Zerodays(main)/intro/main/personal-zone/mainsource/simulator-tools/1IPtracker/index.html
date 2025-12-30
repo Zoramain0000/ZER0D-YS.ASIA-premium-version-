@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>🛰️ Dynamic Simulated IP Tracker (Offline)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      background-color: #111;
+      color: #fff;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #00ffc3;
+    }
+    .container {
+      max-width: 800px;
+      margin: auto;
+      background: #1a1a2e;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px #00ffc3;
+    }
+    input {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+      margin-bottom: 10px;
+    }
+    button {
+      padding: 12px 20px;
+      font-size: 16px;
+      border: none;
+      background: #00ffc3;
+      color: #000;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 5px;
+    }
+    #results {
+      margin-top: 20px;
+      background: #0d0d1a;
+      padding: 15px;
+      border-radius: 10px;
+      white-space: pre-wrap;
+      font-family: monospace;
+    }
+    #map {
+      margin-top: 20px;
+      height: 300px;
+      border-radius: 10px;
+      border: 2px solid #00ffc3;
+    }
+    #exportBtn {
+      margin-top: 10px;
+      background: #0088ff;
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+  <h1>🛰️ Dynamic Simulated IP Tracker (Offline)</h1>
+  <div class="container">
+    <input type="text" id="ipInput" placeholder="Enter IP address (e.g. 8.8.8.8)" />
+    <button onclick="simulateIP()">Simulate IP Lookup</button>
+    <div id="results">IP info will appear here...</div>
+    <div id="map" style="display:none;"></div>
+    <button id="exportBtn" onclick="exportJSON()" style="display:none;">⬇ Export Simulated JSON</button>
+  </div>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    let map, marker, simulatedData;
+
+    function getRandomItem(list) {
+      return list[Math.floor(Math.random() * list.length)];
+    }
+
+    function randomFloat(min, max, decimals = 4) {
+      return parseFloat((Math.random() * (max - min) + min).toFixed(decimals));
+    }
+
+    function generateRandomIPData(ip) {
+      const cities = ["New York", "Tokyo", "Berlin", "Manila", "Toronto", "Paris", "Bangkok", "Dubai", "São Paulo", "Moscow"];
+const countries = [
+  "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda", "Argentina", "Armenia",
+  "Australia", "Austria", "Azerbaijan", "Bahamas", "Bahrain", "Bangladesh", "Barbados", "Belarus", "Belgium",
+  "Belize", "Benin", "Bhutan", "Bolivia", "Bosnia and Herzegovina", "Botswana", "Brazil", "Brunei", "Bulgaria",
+  "Burkina Faso", "Burundi", "Cabo Verde", "Cambodia", "Cameroon", "Canada", "Central African Republic", "Chad",
+  "Chile", "China", "Colombia", "Comoros", "Congo (Congo-Brazzaville)", "Costa Rica", "Croatia", "Cuba", "Cyprus",
+  "Czech Republic", "Democratic Republic of the Congo", "Denmark", "Djibouti", "Dominica", "Dominican Republic",
+  "Ecuador", "Egypt", "El Salvador", "Equatorial Guinea", "Eritrea", "Estonia", "Eswatini", "Ethiopia", "Fiji",
+  "Finland", "France", "Gabon", "Gambia", "Georgia", "Germany", "Ghana", "Greece", "Grenada", "Guatemala", "Guinea",
+  "Guinea-Bissau", "Guyana", "Haiti", "Honduras", "Hungary", "Iceland", "India", "Indonesia", "Iran", "Iraq",
+  "Ireland", "Israel", "Italy", "Ivory Coast", "Jamaica", "Japan", "Jordan", "Kazakhstan", "Kenya", "Kiribati",
+  "Kuwait", "Kyrgyzstan", "Laos", "Latvia", "Lebanon", "Lesotho", "Liberia", "Libya", "Liechtenstein", "Lithuania",
+  "Luxembourg", "Madagascar", "Malawi", "Malaysia", "Maldives", "Mali", "Malta", "Marshall Islands", "Mauritania",
+  "Mauritius", "Mexico", "Micronesia", "Moldova", "Monaco", "Mongolia", "Montenegro", "Morocco", "Mozambique",
+  "Myanmar (Burma)", "Namibia", "Nauru", "Nepal", "Netherlands", "New Zealand", "Nicaragua", "Niger", "Nigeria",
+  "North Korea", "North Macedonia", "Norway", "Oman", "Pakistan", "Palau", "Palestine State", "Panama",
+  "Papua New Guinea", "Paraguay", "Peru", "Philippines", "Poland", "Portugal", "Qatar", "Romania", "Russia",
+  "Rwanda", "Saint Kitts and Nevis", "Saint Lucia", "Saint Vincent and the Grenadines", "Samoa", "San Marino",
+  "Sao Tome and Principe", "Saudi Arabia", "Senegal", "Serbia", "Seychelles", "Sierra Leone", "Singapore",
+  "Slovakia", "Slovenia", "Solomon Islands", "Somalia", "South Africa", "South Korea", "South Sudan", "Spain",
+  "Sri Lanka", "Sudan", "Suriname", "Sweden", "Switzerland", "Syria", "Taiwan", "Tajikistan", "Tanzania",
+  "Thailand", "Timor-Leste", "Togo", "Tonga", "Trinidad and Tobago", "Tunisia", "Turkey", "Turkmenistan",
+  "Tuvalu", "Uganda", "Ukraine", "United Arab Emirates", "United Kingdom", "United States of America", "Uruguay",
+  "Uzbekistan", "Vanuatu", "Vatican City", "Venezuela", "Vietnam", "Yemen", "Zambia", "Zimbabwe"
+];
+
+      const isps = ["MockTel", "NetPhantom", "FiberGhost", "DarkLine", "GhostISP", "VirtualWave", "ProxyNet", "AnonLine"];
+      const hostTemplates = ["host-{city}.sim.net", "node-{city}.xnet", "{city}-core.sim", "vpn-{city}.anon"];
+
+      const index = Math.floor(Math.random() * cities.length);
+      const city = cities[index];
+      const country = countries[index];
+      const isp = getRandomItem(isps);
+      const hostname = getRandomItem(hostTemplates).replace("{city}", city.toLowerCase());
+
+      return {
+        ip,
+        type: ip.startsWith("192.") || ip.startsWith("10.") ? "Private" : "Public",
+        city,
+        country,
+        latitude: randomFloat(-90, 90),
+        longitude: randomFloat(-180, 180),
+        isp,
+        hostname,
+        timezone: `Simulated/Zone-${Math.floor(Math.random() * 24)}`,
+        asn: "AS" + Math.floor(Math.random() * 90000 + 10000),
+        currency: "SIM",
+        organization: "Simulated Organization"
+      };
+    }
+
+    function simulateIP() {
+      const ip = document.getElementById("ipInput").value.trim();
+      if (!ip) {
+        alert("Please enter a valid IP address.");
+        return;
+      }
+
+      simulatedData = generateRandomIPData(ip);
+
+      const output = `
+IP Address: ${simulatedData.ip}
+Type: ${simulatedData.type}
+City: ${simulatedData.city}
+Country: ${simulatedData.country}
+Latitude: ${simulatedData.latitude}
+Longitude: ${simulatedData.longitude}
+ISP: ${simulatedData.isp}
+Hostname: ${simulatedData.hostname}
+ASN: ${simulatedData.asn}
+Timezone: ${simulatedData.timezone}
+Currency: ${simulatedData.currency}
+Organization: ${simulatedData.organization}
+      `;
+
+      document.getElementById("results").textContent = output;
+      document.getElementById("exportBtn").style.display = "inline-block";
+      displayMap(simulatedData.latitude, simulatedData.longitude);
+    }
+
+    function displayMap(lat, lon) {
+      const mapDiv = document.getElementById("map");
+      mapDiv.style.display = "block";
+
+      if (!map) {
+        map = L.map('map').setView([lat, lon], 4);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+        marker = L.marker([lat, lon]).addTo(map);
+      } else {
+        map.setView([lat, lon], 4);
+        marker.setLatLng([lat, lon]);
+      }
+    }
+
+    function exportJSON() {
+      if (!simulatedData) return;
+      const blob = new Blob([JSON.stringify(simulatedData, null, 2)], { type: "application/json" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = `simulated-ip-${simulatedData.ip}.json`;
+      link.click();
+    }
+  </script>
+</body>
+</html>

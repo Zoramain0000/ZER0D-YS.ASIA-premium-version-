@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIEM Overview Dashboard</title>
+
+<style>
+:root {
+  --bg: #0b0b0f;
+  --panel: rgba(20,20,30,0.85);
+  --border: rgba(197,139,0,0.5);
+  --accent: #c58b00;
+  --critical: #dc3545;
+  --high: #fd7e14;
+  --medium: #ffc107;
+  --low: #17a2b8;
+  --info: #28a745;
+  --text: #f5f5f5;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: "Segoe UI", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+video.bg-video {
+  position: fixed; inset:0; width:100%; height:100%; object-fit: cover;
+  filter: brightness(0.25); z-index:-2;
+}
+
+nav {
+  position: fixed; top:0; left:0; width:100%; height:64px;
+  display:flex; justify-content:space-between; align-items:center;
+  padding:0 24px; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px);
+  border-bottom:1px solid var(--border); z-index:10;
+}
+
+.brand { font-size:1.5rem; font-weight:700; color: var(--accent); }
+button { background:transparent; border:1px solid var(--accent); color: var(--accent); padding:8px 16px; border-radius:10px; cursor:pointer; transition:.25s; }
+button:hover { background: var(--accent); color:#000; }
+
+.main { padding:100px 25px 40px; max-width:1200px; margin:auto; }
+
+.panel { background: var(--panel); border:1px solid var(--border); border-radius:16px; padding:20px; margin-bottom:22px; box-shadow:0 0 25px rgba(0,0,0,.6); }
+.panel h2 { color: var(--accent); margin-bottom:12px; }
+
+textarea { width:100%; min-height:140px; padding:10px; border-radius:10px; background:#0d0d0d; border:1px solid var(--border); color:#fff; resize:vertical; }
+
+.controls { display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; }
+
+.logs-view { background:#050505; border:1px solid var(--border); border-radius:12px; padding:14px; max-height:400px; overflow-y:auto; font-family: Consolas, monospace; font-size:13px; line-height:1.4; }
+.log-line { padding:4px 6px; border-left:4px solid transparent; white-space:pre-wrap; word-break:break-word; }
+.log-critical { color: var(--critical); border-left-color: var(--critical); }
+.log-high { color: var(--high); border-left-color: var(--high); }
+.log-medium { color: var(--medium); border-left-color: var(--medium); }
+.log-low { color: var(--low); border-left-color: var(--low); }
+.log-info { color: var(--info); border-left-color: var(--info); }
+
+.stats { margin-top:12px; font-size:0.95rem; color: var(--accent); display:flex; gap:12px; flex-wrap:wrap; }
+
+.stats span { padding:4px 8px; border-radius:6px; background:rgba(255,255,255,0.1); }
+
+footer { text-align:center; padding:25px; opacity:.8; color: var(--accent); }
+
+</style>
+</head>
+<body>
+
+<video class="bg-video" autoplay muted loop playsinline>
+  <source src="background/1761817527453041720p.mp4" type="video/mp4">
+</video>
+
+<nav>
+  <div class="brand">SIEM Overview Dashboard</div>
+  <button onclick="clearLogs()">Clear Logs</button>
+</nav>
+
+<div class="main">
+
+  <div class="panel">
+    <h2>📥 Paste Security Events / Logs</h2>
+    <textarea id="logsInput" placeholder="Paste log events here..."></textarea>
+    <div class="controls">
+      <input type="text" id="searchInput" placeholder="Search keyword / source / type">
+      <select id="severityFilter">
+        <option value="all">All Severities</option>
+        <option value="critical">Critical</option>
+        <option value="high">High</option>
+        <option value="medium">Medium</option>
+        <option value="low">Low</option>
+        <option value="info">Info</option>
+      </select>
+      <button onclick="loadLogs()">Analyze Logs</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>📊 Event Viewer</h2>
+    <div id="logsView" class="logs-view"></div>
+    <div id="stats" class="stats"></div>
+  </div>
+
+</div>
+
+<footer>
+© 2025 SIEM Overview Dashboard — Frontend Only • Security Events • Log Analysis
+</footer>
+
+<script>
+const logsView = document.getElementById("logsView");
+const logsInput = document.getElementById("logsInput");
+const searchInput = document.getElementById("searchInput");
+const severityFilter = document.getElementById("severityFilter");
+
+let events = [];
+
+function detectSeverity(line){
+  const l = line.toLowerCase();
+  if(l.includes("critical")) return "critical";
+  if(l.includes("high")) return "high";
+  if(l.includes("medium")) return "medium";
+  if(l.includes("low")) return "low";
+  return "info";
+}
+
+function loadLogs(){
+  const text = logsInput.value.trim();
+  if(!text) return;
+  const lines = text.split(/\r?\n/);
+  events = lines.map(line => ({ raw: line, severity: detectSeverity(line) }));
+  renderLogs();
+}
+
+function renderLogs(){
+  const keyword = searchInput.value.toLowerCase();
+  const filter = severityFilter.value;
+
+  logsView.innerHTML = "";
+  let counts = { critical:0, high:0, medium:0, low:0, info:0 };
+
+  events.forEach(e=>{
+    if(filter !== "all" && e.severity !== filter) return;
+    if(keyword && !e.raw.toLowerCase().includes(keyword)) return;
+
+    counts[e.severity]++;
+
+    const div = document.createElement("div");
+    div.className = `log-line log-${e.severity}`;
+    let content = e.raw;
+    if(keyword){
+      const regex = new RegExp(`(${keyword})`,"gi");
+      content = content.replace(regex, `<span class="highlight">$1</span>`);
+    }
+    div.innerHTML = content;
+    logsView.appendChild(div);
+  });
+
+  document.getElementById("stats").innerHTML = `
+    <span>Critical: ${counts.critical}</span>
+    <span>High: ${counts.high}</span>
+    <span>Medium: ${counts.medium}</span>
+    <span>Low: ${counts.low}</span>
+    <span>Info: ${counts.info}</span>
+  `;
+}
+
+searchInput.addEventListener("input", renderLogs);
+severityFilter.addEventListener("change", renderLogs);
+
+function clearLogs(){
+  events = [];
+  logsView.innerHTML = "";
+  logsInput.value = "";
+  document.getElementById("stats").innerHTML = "";
+}
+
+</script>
+</body>
+</html>

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Subdomain Enumeration</title>
+
+<style>
+:root {
+  --bg:#0a0a0f;
+  --panel:rgba(18,18,28,.9);
+  --accent:#c58b00;
+  --border:rgba(197,139,0,.5);
+  --text:#f1f1f1;
+}
+
+* { box-sizing:border-box; margin:0; padding:0; }
+
+body {
+  font-family: "Segoe UI", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* Background video */
+video.bg-video {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: brightness(.25);
+  z-index: -2;
+}
+
+.container {
+  max-width: 950px;
+  margin: auto;
+  padding: 100px 20px 40px;
+}
+
+h1 {
+  text-align: center;
+  color: var(--accent);
+  margin-bottom: 16px;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #0d0d0d;
+  color: white;
+  margin-bottom: 10px;
+}
+
+button {
+  background: var(--accent);
+  color: #000;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+button:hover {
+  opacity: 0.85;
+}
+
+.log {
+  background: #050505;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px;
+  max-height: 180px;
+  overflow-y: auto;
+  font-family: monospace;
+  font-size: 13px;
+  margin-top: 10px;
+}
+
+.log div { margin-bottom: 6px; }
+
+.results {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(260px,1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.card span {
+  display:block;
+  color: var(--accent);
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.sub {
+  word-break: break-all;
+  font-size: 14px;
+}
+</style>
+</head>
+
+<body>
+
+<video class="bg-video" autoplay muted loop playsinline>
+  <source src="background/1761817527453041720p.mp4" type="video/mp4">
+</video>
+
+<div class="container">
+
+  <h1>🔎 Subdomain Enumeration</h1>
+
+  <div class="panel">
+    <input id="domain" placeholder="example.com">
+    <button onclick="enumerate()">Enumerate Subdomains</button>
+
+    <div class="log" id="log"></div>
+  </div>
+
+  <div id="results" class="results"></div>
+
+</div>
+
+<script>
+const logBox = document.getElementById("log");
+const resultsBox = document.getElementById("results");
+
+function log(msg) {
+  const d = document.createElement("div");
+  d.textContent = msg;
+  logBox.appendChild(d);
+  logBox.scrollTop = logBox.scrollHeight;
+}
+
+async function enumerate() {
+  const domain = document.getElementById("domain").value.trim();
+  if (!domain) return alert("Enter a domain");
+
+  logBox.innerHTML = "";
+  resultsBox.innerHTML = "";
+
+  log("Connecting to Certificate Transparency logs...");
+  log("Querying crt.sh database...");
+
+  try {
+    const url = `https://crt.sh/?q=%25.${domain}&output=json`;
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (!data || data.length === 0) {
+      log("No certificates found.");
+      return;
+    }
+
+    log(`Certificates found: ${data.length}`);
+    log("Extracting subdomains...");
+
+    const set = new Set();
+
+    data.forEach(entry => {
+      if (entry.name_value) {
+        entry.name_value.split("\n").forEach(sub => {
+          sub = sub.trim().toLowerCase();
+          if (sub.endsWith(domain)) set.add(sub);
+        });
+      }
+    });
+
+    const subs = [...set].sort();
+
+    log(`Unique subdomains found: ${subs.length}`);
+
+    subs.forEach(s => {
+      const card = document.createElement("div");
+      card.className = "card";
+
+      const label = document.createElement("span");
+      label.textContent = "Subdomain";
+
+      const text = document.createElement("div");
+      text.className = "sub";
+      text.textContent = s;
+
+      card.appendChild(label);
+      card.appendChild(text);
+      resultsBox.appendChild(card);
+    });
+
+    log("✅ Enumeration completed.");
+
+  } catch (err) {
+    log("Error: " + err.message);
+  }
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Advanced URL Finder Tool</title>
+  <style>
+    body {
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      color: red;
+    }
+
+    textarea {
+      width: 100%;
+      height: 200px;
+background: rgba(0, 0, 0, 0.5);
+      color: red;
+      border: 1px solid red;
+      border-radius: 6px;
+      padding: 10px;
+      resize: vertical;
+    }
+
+    .controls {
+      margin-top: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    button, input[type="file"], input[type="text"] {
+      padding: 10px;
+      border: none;
+      border-radius: 5px;
+background: rgba(0, 0, 0, 0.5);
+      color: red;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    input[type="text"] {
+background: rgba(0, 0, 0, 0.5);
+      border: 1px solid red;
+      color: red;
+    }
+
+    button:hover {
+background: rgba(0, 0, 0, 0.5);
+    }
+
+    .results {
+      margin-top: 20px;
+    }
+
+    .url-list {
+background: rgba(0, 0, 0, 0.5);
+      padding: 10px;
+      border-radius: 6px;
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid red;
+    }
+
+    .url-card {
+      display: flex;
+      align-items: center;
+      padding: 6px;
+      border-bottom: 1px solid red;
+    }
+
+    .url-card img {
+      width: 16px;
+      height: 16px;
+      margin-right: 10px;
+    }
+
+    .url-card a {
+      color:red ;
+      word-break: break-all;
+      text-decoration: none;
+    }
+
+    .url-card a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🔗 Advanced URL Finder Tool</h1>
+
+  <textarea id="inputText" placeholder="Paste raw text or HTML content..."></textarea>
+
+  <div class="controls">
+    <button onclick="extractUrls()">Extract URLs</button>
+    <button onclick="copyUrls()">Copy URLs</button>
+    <button onclick="downloadTxt()">Export as TXT</button>
+    <button onclick="downloadCsv()">Export as CSV</button>
+    <input type="file" accept=".txt,.html" onchange="loadFile(event)">
+    <input type="text" id="domainFilter" placeholder="Filter by domain (optional)">
+  </div>
+
+  <div class="results" id="results"></div>
+
+  <script>
+    function cleanUrl(url) {
+      try {
+        let parsed = new URL(url);
+        parsed.searchParams.forEach((val, key) => {
+          if (key.startsWith('utm_') || key === 'fbclid') {
+            parsed.searchParams.delete(key);
+          }
+        });
+        return parsed.href;
+      } catch {
+        return url;
+      }
+    }
+
+    function extractUrls() {
+      const rawText = document.getElementById('inputText').value;
+      const urlRegex = /https?:\/\/[^\s"'<>]+/gi;
+      let matches = [...new Set(rawText.match(urlRegex))] || [];
+
+      const domainFilter = document.getElementById('domainFilter').value.trim().toLowerCase();
+      if (domainFilter) {
+        matches = matches.filter(url => {
+          try {
+            return new URL(url).hostname.includes(domainFilter);
+          } catch {
+            return false;
+          }
+        });
+      }
+
+      const cleaned = matches.map(cleanUrl);
+      document.getElementById('results').dataset.urls = JSON.stringify(cleaned);
+
+      renderResults(cleaned);
+    }
+
+    function renderResults(urls) {
+      const container = document.getElementById('results');
+      if (urls.length === 0) {
+        container.innerHTML = '<h3>No URLs found.</h3>';
+        return;
+      }
+
+      let html = '<h3>Found URLs:</h3><div class="url-list">';
+      urls.forEach(url => {
+        const favicon = new URL(url).origin + '/favicon.ico';
+        html += `
+          <div class="url-card">
+            <img src="${favicon}" onerror="this.style.display='none'" alt="icon">
+            <a href="${url}" target="_blank">${url}</a>
+          </div>
+        `;
+      });
+      html += '</div>';
+      container.innerHTML = html;
+    }
+
+    function copyUrls() {
+      const urls = JSON.parse(document.getElementById('results').dataset.urls || '[]');
+      if (!urls.length) return alert('No URLs to copy.');
+      navigator.clipboard.writeText(urls.join('\n')).then(() => alert('Copied to clipboard!'));
+    }
+
+    function downloadTxt() {
+      const urls = JSON.parse(document.getElementById('results').dataset.urls || '[]');
+      if (!urls.length) return alert('No URLs to export.');
+      const blob = new Blob([urls.join('\n')], { type: 'text/plain' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'urls.txt';
+      link.click();
+    }
+
+    function downloadCsv() {
+      const urls = JSON.parse(document.getElementById('results').dataset.urls || '[]');
+      if (!urls.length) return alert('No URLs to export.');
+      const rows = [['URL']];
+      urls.forEach(url => rows.push([url]));
+      const csv = rows.map(row => row.join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'urls.csv';
+      link.click();
+    }
+
+    function loadFile(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        document.getElementById('inputText').value = e.target.result;
+        extractUrls();
+      };
+      reader.readAsText(file);
+    }
+  </script>
+
+</body>
+</html>

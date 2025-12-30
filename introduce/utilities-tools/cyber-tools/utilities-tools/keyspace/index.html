@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Keyspace Calculator — Cyber Tools</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family: "Segoe UI", Roboto, system-ui, -apple-system;
+    background:black;
+    color:#c58b00;
+    min-height:100vh;
+    padding:28px;
+  }
+  video.bg-video{position:fixed;inset:0;width:100vw;height:100vh;object-fit:cover;z-index:-3;filter:brightness(.45) contrast(1.05)}
+  .container{
+    max-width:1000px;margin:40px auto;padding:20px;background:rgba(0,0,0,0.45);
+    border:1px solid #c58b00;border-radius:12px;backdrop-filter:blur(6px);
+    box-shadow:0 10px 30px rgba(0,0,0,0.6);
+  }
+  h1{color:#ffc107;text-align:center;margin-bottom:10px;text-shadow:0 0 8px #00d4ff}
+  .row{display:flex;gap:12px;align-items:center;margin-bottom:12px}
+  @media(max-width:820px){.row{flex-direction:column;align-items:stretch}}
+  .panel{background:rgba(0,0,0,0.35);padding:12px;border-radius:10px;border:1px solid #c58b00;color:#ffd77a}
+  label{display:block;color:#ffc107;font-weight:700;margin-bottom:6px}
+  input[type="number"], input[type="text"], textarea, select{
+    width:100%;padding:8px;border-radius:8px;border:1px solid #c58b00;background:#0b0b0b;color:#ffc107;margin-bottom:8px;
+  }
+  textarea{min-height:100px;resize:vertical;font-family:monospace}
+  .presets{display:flex;gap:8px;flex-wrap:wrap}
+  .chip{padding:8px 10px;border-radius:8px;background:rgba(0,0,0,0.5);border:1px solid #c58b00;color:#c58b00;cursor:pointer}
+  .chip.selected{background:#c58b00;color:black;box-shadow:0 0 12px #00d4ff}
+  .btn{display:inline-block;padding:10px 14px;border-radius:8px;border:1px solid #c58b00;background:rgba(0,0,0,0.55);color:#c58b00;font-weight:700;cursor:pointer;margin:6px}
+  .btn:hover{background:#c58b00;color:#000}
+  .results{margin-top:12px}
+  .result-line{padding:10px;border-radius:8px;background:rgba(0,0,0,0.3);border:1px dashed rgba(197,139,0,0.08);margin-bottom:8px;color:#dfffe8}
+  .small{font-size:13px;color:#ffd77a}
+  footer{text-align:center;padding:18px;color:#c58b00;margin-top:18px}
+
+  /* Music toggle button */
+  .music-toggle {
+    position: fixed;
+    right: 18px;
+    top: 18px;
+    z-index: 9999;
+    background: rgba(0,0,0,0.6);
+    border: 1px solid #c58b00;
+    color: #c58b00;
+    padding: 8px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 700;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.6);
+  }
+  .music-toggle.playing { background: linear-gradient(90deg,#00d4ff,#c58b00); color: #000; }
+</style>
+</head>
+<body>
+
+<video class="bg-video" autoplay loop muted playsinline>
+  <source src="background/1761817527453041720p.mp4" type="video/mp4">
+</video>
+
+<!-- MUSIC: added audio element -->
+<audio id="bg-music" loop>
+  <source src="background/Programming___Coding___Hacking_music_vol.18__ANONYMOUS_HEADQUARTERS_(48k).mp3" type="audio/mpeg">
+  Your browser does not support audio playback.
+</audio>
+
+<!-- Visible music control -->
+<button id="musicToggle" class="music-toggle" title="Toggle background music">Play Music</button>
+
+<div class="container">
+  <h1>🔢 Keyspace Calculator</h1>
+
+  <div class="panel">
+    <div class="row">
+      <div style="flex:1">
+        <label>Charset presets (click to toggle)</label>
+        <div class="presets" id="presetContainer">
+          <div class="chip" data-chars="abcdefghijklmnopqrstuvwxyz">lowercase (26)</div>
+          <div class="chip" data-chars="ABCDEFGHIJKLMNOPQRSTUVWXYZ">UPPERCASE (26)</div>
+          <div class="chip" data-chars="0123456789">digits (10)</div>
+          <div class="chip" data-chars="!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~">symbols (32)</div>
+          <div class="chip" id="selectAll">Toggle All</div>
+        </div>
+      </div>
+      <div style="width:260px">
+        <label>Custom characters (optional)</label>
+        <input type="text" id="customChars" placeholder="e.g. åäö or @#"/>
+        <div class="small">If custom set provided, it is added to selected presets (duplicates removed).</div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div style="width:200px">
+        <label>Min length</label>
+        <input type="number" id="minLen" value="8" min="1" max="10000"/>
+      </div>
+      <div style="width:200px">
+        <label>Max length</label>
+        <input type="number" id="maxLen" value="12" min="1" max="10000"/>
+      </div>
+      <div style="flex:1">
+        <label>Interpretation</label>
+        <select id="mode">
+          <option value="exact">Exact length (use Min only)</option>
+          <option value="range">Range (Min → Max)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="row">
+      <div style="flex:1">
+        <label>Attacker speeds (guesses per second) — comma separated</label>
+        <input id="speeds" type="text" value="1000,1000000,1000000000,1000000000000" />
+        <div class="small">Examples: 1,000 (thousand/s), 1e6, 1e9, 1e12</div>
+      </div>
+      <div style="width:160px">
+        <label>Show scientific?</label>
+        <select id="showSci"><option value="1">Yes</option><option value="0">No</option></select>
+      </div>
+    </div>
+
+    <div style="text-align:center;margin-top:10px">
+      <button class="btn" id="calcBtn">Calculate Keyspace</button>
+      <button class="btn" id="copyBtn">Copy Results</button>
+      <button class="btn" id="clearBtn">Clear</button>
+    </div>
+
+    <div class="results" id="results" aria-live="polite" style="margin-top:14px"></div>
+  </div>
+
+  <div class="panel" style="margin-top:12px">
+    <div class="small">Notes:</div>
+    <ul class="small">
+      <li>Keyspace = number of possible combinations. For exact length L: |charset|^L.</li>
+      <li>For ranges (min→max) we sum over lengths: Σ |charset|^L.</li>
+      <li>Entropy (bits) = log₂(keyspace). For exact lengths we compute it as L·log₂(|charset|). For ranges we compute exact bit-length using BigInt.</li>
+    </ul>
+  </div>
+
+  <div style="height:10px"></div>
+  <footer>© 2025 Cyber Tools Toolkit — Keyspace Calculator</footer>
+</div>
+
+<script>
+  // play audio on first user click (unmuted playback requires user gesture)
+  function tryAutoPlayOnce() {
+    const audio = document.getElementById('bg-music');
+    if(!audio) return;
+    audio.play().then(()=> {
+      updateMusicToggleUI(true);
+    }).catch(()=> {
+      // user gesture needed — we'll still bind the visible toggle for manual start
+    });
+  }
+  window.addEventListener('click', tryAutoPlayOnce, { once: true });
+
+  // music toggle button
+  const musicToggle = document.getElementById('musicToggle');
+  const bgAudio = document.getElementById('bg-music');
+
+  function updateMusicToggleUI(isPlaying) {
+    if(isPlaying){
+      musicToggle.classList.add('playing');
+      musicToggle.textContent = 'Pause Music';
+    } else {
+      musicToggle.classList.remove('playing');
+      musicToggle.textContent = 'Play Music';
+    }
+  }
+
+  musicToggle.addEventListener('click', async (e) => {
+    e.preventDefault();
+    if(!bgAudio) return;
+    if(bgAudio.paused){
+      try {
+        await bgAudio.play();
+        updateMusicToggleUI(true);
+      } catch(err) {
+        console.error('Playback failed', err);
+        updateMusicToggleUI(false);
+      }
+    } else {
+      bgAudio.pause();
+      updateMusicToggleUI(false);
+    }
+  });
+
+  // preset chips logic
+  const presetContainer = document.getElementById('presetContainer');
+  presetContainer.addEventListener('click', (ev)=>{
+    const chip = ev.target.closest('.chip');
+    if(!chip) return;
+    if(chip.id === 'selectAll'){
+      const allChips = presetContainer.querySelectorAll('.chip[data-chars]');
+      const anySelected = Array.from(allChips).some(c=>c.classList.contains('selected'));
+      allChips.forEach(c=> c.classList.toggle('selected', !anySelected));
+      return;
+    }
+    chip.classList.toggle('selected');
+  });
+
+  // helpers: unique charset builder
+  function buildCharset(){
+    const selected = Array.from(presetContainer.querySelectorAll('.chip.selected'))
+      .map(c => c.getAttribute('data-chars') || '')
+      .join('');
+    const custom = document.getElementById('customChars').value || '';
+    const combined = (selected + custom).split('');
+    const uniq = Array.from(new Set(combined)).join('');
+    return uniq;
+  }
+
+  // BigInt helpers
+  function powBigInt(base, exp){
+    base = BigInt(base);
+    let result = 1n;
+    for(let i=0;i<exp;i++) result *= base;
+    return result;
+  }
+
+  function formatBigInt(n, sci){
+    if(sci === '0'){
+      return n.toString();
+    }
+    // scientific-like formatting: show 3 significant digits + exponent
+    const s = n.toString();
+    if(s.length <= 15) return s;
+    const exp = s.length - 1;
+    const mant = s.slice(0, 3);
+    return mant + 'e+' + exp;
+  }
+
+  function humanDuration(seconds){
+    seconds = Number(seconds);
+    if(!isFinite(seconds) || seconds < 1) return 'less than 1 second';
+    const years = Math.floor(seconds / (3600*24*365));
+    seconds -= years * 3600*24*365;
+    const days = Math.floor(seconds / (3600*24));
+    seconds -= days * 3600*24;
+    const hours = Math.floor(seconds / 3600);
+    seconds -= hours*3600;
+    const minutes = Math.floor(seconds / 60);
+    seconds = Math.floor(seconds - minutes*60);
+    const parts = [];
+    if(years) parts.push(years + 'y');
+    if(days) parts.push(days + 'd');
+    if(hours) parts.push(hours + 'h');
+    if(minutes) parts.push(minutes + 'm');
+    if(seconds) parts.push(seconds + 's');
+    return parts.join(' ');
+  }
+
+  // main calculation
+  document.getElementById('calcBtn').addEventListener('click', ()=>{
+    const charset = buildCharset();
+    if(!charset || charset.length === 0){
+      alert('Select or provide at least one character in the charset.');
+      return;
+    }
+    const base = BigInt(charset.length);
+    const minL = Math.max(1, parseInt(document.getElementById('minLen').value || '1',10));
+    const maxL = Math.max(minL, parseInt(document.getElementById('maxLen').value || String(minL),10));
+    const mode = document.getElementById('mode').value;
+    const showSci = document.getElementById('showSci').value;
+    const speedsRaw = document.getElementById('speeds').value.split(',').map(s=>s.trim()).filter(Boolean);
+    const speeds = speedsRaw.map(s=>{
+      if(s.toLowerCase().includes('e')) return Number(s);
+      return Number(s.replace(/,/g,''));
+    }).filter(x=>isFinite(x) && x>0);
+
+    const resultsEl = document.getElementById('results');
+    resultsEl.innerHTML = '';
+
+    // compute keyspace (BigInt)
+    let keyspace = 0n;
+    if(mode === 'exact'){
+      keyspace = powBigInt(base, minL);
+    } else {
+      // sum base^L for L in [minL, maxL]
+      for(let L = minL; L <= maxL; L++){
+        keyspace += powBigInt(base, L);
+      }
+    }
+
+    // entropy (bits) approximate: log2(keyspace)
+    // For exact we can do L * log2(|charset|)
+    let entropyBits = 0;
+    if(mode === 'exact'){
+      entropyBits = (minL * Math.log2(Number(charset.length)));
+    } else {
+      entropyBits = Math.log2(Number(keyspace.toString()));
+    }
+
+    const keyspaceStr = formatBigInt(keyspace, showSci);
+    const entropyStr = entropyBits.toFixed(3);
+
+    const baseLine = document.createElement('div');
+    baseLine.className = 'result-line';
+    baseLine.innerHTML = `<strong>Charset size:</strong> ${charset.length} characters<br>
+      <strong>Charset sample (first 40 chars):</strong> ${charset.slice(0,40)}${charset.length>40?'...':''}<br>
+      <strong>Keyspace (${ mode==='exact' ? 'exact length ' + minL : 'range ' + minL + '→' + maxL } ): </strong> ${keyspaceStr}<br>
+      <strong>Entropy:</strong> ${entropyStr} bits`;
+    resultsEl.appendChild(baseLine);
+
+    // times to brute-force at supplied speeds (we'll show average/half-time = keyspace / (2*speed) as median)
+    if(speeds.length > 0){
+      speeds.forEach(sp => {
+        // sp might be very large (1e12) but it's a Number; convert to BigInt division where appropriate
+        const guessesPerSec = Number(sp);
+        // median attempts = keyspace / 2
+        // seconds = (keyspace / 2) / guessesPerSec
+        // perform division using BigInt if needed
+        const half = keyspace / 2n;
+        // convert half BigInt to Number if small, otherwise compute seconds as string using division by BigInt then to Number for humanDuration (approx)
+        let seconds;
+        try {
+          // attempt BigInt division to get integer seconds
+          const secBig = half / BigInt(Math.floor(guessesPerSec));
+          // fallback if too big: convert to scientific
+          if(secBig > 9_000_000_000_000_000_000n) {
+            // too big for safe Number, estimate using logarithms: seconds ≈ 0.5 * keyspace / sp
+            seconds = (Number(keyspace.toString().length) > 15) ? (Number(keyspace.toString().slice(0,15)) * Math.pow(10, keyspace.toString().length-15) / (2*guessesPerSec)) : (Number(half.toString()));
+            // rough fallback
+            seconds = Number(half.toString()) / guessesPerSec;
+          } else {
+            seconds = Number(secBig);
+          }
+        } catch(e) {
+          seconds = Number(half.toString()) / guessesPerSec;
+        }
+
+        const line = document.createElement('div');
+        line.className = 'result-line';
+        line.innerHTML = `<strong>Speed:</strong> ${sp.toLocaleString()} guesses/sec — <strong>Median time to crack:</strong> ${humanDuration(seconds)} (${Math.floor(seconds/3600/24/365)} years approx)`;
+        resultsEl.appendChild(line);
+      });
+    }
+
+    // offer copy quick summary
+    const copySummary = document.createElement('div');
+    copySummary.className = 'result-line';
+    copySummary.innerHTML = `<strong>Summary (copy):</strong><pre style="white-space:pre-wrap;background:#061214;padding:8px;border-radius:6px;color:#dfffe8">Charset size: ${charset.length}
+Keyspace: ${keyspaceStr}
+Entropy: ${entropyStr} bits
+Mode: ${mode==='exact' ? 'exact length ' + minL : 'range ' + minL + '→' + maxL}</pre>`;
+    resultsEl.appendChild(copySummary);
+  });
+
+  // copy results button
+  document.getElementById('copyBtn').addEventListener('click', ()=>{
+    const resultsEl = document.getElementById('results');
+    if(!resultsEl) return;
+    const text = resultsEl.innerText || resultsEl.textContent;
+    if(!text) return alert('No results to copy.');
+    navigator.clipboard.writeText(text).then(()=> alert('Results copied to clipboard.'));
+  });
+
+  // clear form
+  document.getElementById('clearBtn').addEventListener('click', ()=>{
+    document.getElementById('customChars').value = '';
+    document.getElementById('minLen').value = '8';
+    document.getElementById('maxLen').value = '12';
+    document.getElementById('speeds').value = '1000,1000000,1000000000,1000000000000';
+    document.getElementById('results').innerHTML = '';
+    Array.from(document.querySelectorAll('.chip.selected')).forEach(c=>c.classList.remove('selected'));
+  });
+
+</script>
+</body>
+</html>

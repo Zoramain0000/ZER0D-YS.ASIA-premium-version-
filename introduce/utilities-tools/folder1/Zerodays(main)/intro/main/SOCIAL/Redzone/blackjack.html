@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Blackjack Game - Full Version</title>
+<style>
+  body {
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+    color: red;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  h1 {
+    margin-bottom: 10px;
+    color: red;
+    text-shadow: 0 0 5px red;
+  }
+  #game {
+background: rgba(0, 0, 0, 0.5);
+    border-radius: 10px;
+    padding: 20px;
+    width: 380px;
+    box-shadow: 0 0 15px red;
+  }
+  .section {
+    margin-bottom: 15px;
+  }
+  .hand {
+background: rgba(0, 0, 0, 0.5);
+    border-radius: 8px;
+    padding: 10px;
+    min-height: 80px;
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .card {
+background: rgba(0, 0, 0, 0.9);
+    color: red;
+    border-radius: 6px;
+    width: 50px;
+    height: 70px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 5px;
+    box-shadow: 0 0 5px #000;
+    font-weight: bold;
+    user-select: none;
+  }
+  .card.red {
+    color: red;
+  }
+  button {
+    background: red;
+    color: green;
+    border: none;
+    border-radius: 5px;
+    padding: 8px 12px;
+    font-weight: bold;
+    margin: 0 4px 8px 0;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+  button:hover:not(:disabled) {
+background: rgba(0, 0, 0, 0.5);
+  }
+  button:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+  input[type=number] {
+    width: 70px;
+    font-weight: bold;
+    font-size: 1rem;
+    padding: 4px 6px;
+    border-radius: 5px;
+    border: none;
+    text-align: center;
+  }
+  #status {
+    min-height: 40px;
+    margin-top: 10px;
+    white-space: pre-line;
+  }
+  #balance {
+    font-weight: bold;
+    margin-bottom: 10px;
+  }
+  #history {
+    max-height: 140px;
+    overflow-y: auto;
+background: rgba(0, 0, 0, 0.5);
+    border-radius: 8px;
+    padding: 10px;
+    font-size: 0.9rem;
+  }
+  #split-section {
+    margin-top: 10px;
+    display: none;
+  }
+  #scores {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 10px;
+  }
+  #scores > div {
+    font-weight: bold;
+  }
+</style>
+</head>
+<body>
+
+<h1>Blackjack Game</h1>
+
+<div id="game">
+  <div id="balance">Balance: $1000</div>
+
+  <div class="section">
+    <label for="bet">Bet Amount ($10 min): </label>
+    <input type="number" id="bet" min="10" step="10" value="10" />
+    <button id="start-btn">Start Game</button>
+  </div>
+
+  <div id="scores">
+    <div id="dealer-score"></div>
+    <div id="player-score"></div>
+    <div id="split-score"></div>
+  </div>
+
+  <div class="section">
+    <strong>Dealer's Hand:</strong>
+    <div id="dealer-hand" class="hand"></div>
+  </div>
+
+  <div class="section">
+    <strong>Your Hand:</strong>
+    <div id="player-hand" class="hand"></div>
+  </div>
+
+  <div id="split-section" class="section">
+    <strong>Your Split Hand:</strong>
+    <div id="split-hand" class="hand"></div>
+  </div>
+
+  <div class="section">
+    <button id="hit-btn" disabled>Hit</button>
+    <button id="stand-btn" disabled>Stand</button>
+    <button id="double-btn" disabled>Double Down</button>
+    <button id="split-btn" disabled>Split</button>
+    <button id="restart-btn" disabled>Restart</button>
+  </div>
+
+  <div id="status" class="section"></div>
+
+  <div class="section">
+    <strong>Game History (Last 10 rounds):</strong>
+    <ul id="history"></ul>
+  </div>
+</div>
+
+<script>
+(() => {
+  // Cards and suits setup
+  const suits = ['♠', '♥', '♦', '♣'];
+  const values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+
+  // DOM Elements
+  const dealerHandEl = document.getElementById('dealer-hand');
+  const playerHandEl = document.getElementById('player-hand');
+  const splitHandEl = document.getElementById('split-hand');
+  const dealerScoreEl = document.getElementById('dealer-score');
+  const playerScoreEl = document.getElementById('player-score');
+  const splitScoreEl = document.getElementById('split-score');
+  const statusEl = document.getElementById('status');
+  const balanceEl = document.getElementById('balance');
+  const betInput = document.getElementById('bet');
+  const historyListEl = document.getElementById('history');
+  const splitSection = document.getElementById('split-section');
+
+  const btnStart = document.getElementById('start-btn');
+  const btnHit = document.getElementById('hit-btn');
+  const btnStand = document.getElementById('stand-btn');
+  const btnDouble = document.getElementById('double-btn');
+  const btnSplit = document.getElementById('split-btn');
+  const btnRestart = document.getElementById('restart-btn');
+
+  // Game state
+  let deck = [];
+  let playerHand = [];
+  let dealerHand = [];
+  let splitHand = [];
+  let inSplit = false;
+  let splitTurn = false; // false = first hand, true = split hand turn
+  let playerTurn = false;
+  let gameOver = false;
+  let currentBet = 0;
+  let balance = 1000;
+  let history = [];
+
+  // Utility Functions
+  function createDeck() {
+    const d = [];
+    for (const suit of suits) {
+      for (const val of values) {
+        d.push({ value: val, suit });
+      }
+    }
+    // Shuffle deck
+    for (let i = d.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [d[i], d[j]] = [d[j], d[i]];
+    }
+    return d;
+  }
+
+  function cardValue(card) {
+    if (['J','Q','K'].includes(card.value)) return 10;
+    if (card.value === 'A') return 11; // Initially 11, handle ace adjustment later
+    return Number(card.value);
+  }
+
+  function calculateScore(hand) {
+    let score = 0;
+    let aceCount = 0;
+    for (const card of hand) {
+      score += cardValue(card);
+      if (card.value === 'A') aceCount++;
+    }
+    // Adjust Aces from 11 to 1 if bust
+    while(score > 21 && aceCount > 0) {
+      score -= 10;
+      aceCount--;
+    }
+    return score;
+  }
+
+  function renderHand(hand, container, hideFirstCard = false) {
+    container.innerHTML = '';
+    hand.forEach((card, i) => {
+      const cardEl = document.createElement('div');
+      cardEl.classList.add('card');
+      if (card.suit === '♥' || card.suit === '♦') cardEl.classList.add('red');
+
+      if (hideFirstCard && i === 0) {
+        cardEl.textContent = '🂠'; // Hidden card back
+      } else {
+        cardEl.innerHTML = `<div>${card.value}</div><div style="text-align:right">${card.suit}</div>`;
+      }
+      container.appendChild(cardEl);
+    });
+  }
+
+  function updateUI() {
+    // Update scores
+    if (inSplit && splitTurn) {
+      dealerScoreEl.textContent = "Dealer's Visible Card";
+      playerScoreEl.textContent = `Hand 1 Score: ${calculateScore(playerHand)}`;
+      splitScoreEl.textContent = `Hand 2 Score: ${calculateScore(splitHand)}`;
+    } else if (inSplit) {
+      dealerScoreEl.textContent = "Dealer's Visible Card";
+      playerScoreEl.textContent = `Hand 1 Score: ${calculateScore(playerHand)}`;
+      splitScoreEl.textContent = `Hand 2 Score: ${calculateScore(splitHand)}`;
+    } else {
+      dealerScoreEl.textContent = gameOver ? `Dealer Score: ${calculateScore(dealerHand)}` : `Dealer Score: ${cardValue(dealerHand[1])}`;
+      playerScoreEl.textContent = `Your Score: ${calculateScore(playerHand)}`;
+      splitScoreEl.textContent = '';
+    }
+
+    balanceEl.textContent = `Balance: $${balance}`;
+  }
+
+  function canSplit() {
+    return playerHand.length === 2 &&
+           playerHand[0].value === playerHand[1].value &&
+           balance >= currentBet;
+  }
+
+  function setButtons(state) {
+    btnHit.disabled = !state.hit;
+    btnStand.disabled = !state.stand;
+    btnDouble.disabled = !state.double;
+    btnSplit.disabled = !state.split;
+    btnRestart.disabled = !state.restart;
+    btnStart.disabled = state.start;
+    betInput.disabled = !state.start;
+  }
+
+  // Game actions
+  function startGame() {
+    currentBet = parseInt(betInput.value);
+    if (isNaN(currentBet) || currentBet < 10) {
+      alert('Minimum bet is $10');
+      return;
+    }
+    if (currentBet > balance) {
+      alert('You do not have enough balance for that bet.');
+      return;
+    }
+    deck = createDeck();
+    playerHand = [];
+    dealerHand = [];
+    splitHand = [];
+    inSplit = false;
+    splitTurn = false;
+    gameOver = false;
+    playerTurn = true;
+
+    // Deduct bet from balance
+    balance -= currentBet;
+
+    // Deal initial cards
+    playerHand.push(deck.pop());
+    dealerHand.push(deck.pop());
+    playerHand.push(deck.pop());
+    dealerHand.push(deck.pop());
+
+    renderHand(dealerHand, dealerHandEl, true);
+    renderHand(playerHand, playerHandEl);
+    splitSection.style.display = 'none';
+    splitHandEl.innerHTML = '';
+
+    statusEl.textContent = 'Game started! Your turn.';
+    updateUI();
+
+    setButtons({
+      hit: true,
+      stand: true,
+      double: true,
+      split: canSplit(),
+      restart: false,
+      start: true,
+    });
+
+    // Check blackjack immediate
+    const playerScore = calculateScore(playerHand);
+    const dealerScore = calculateScore(dealerHand);
+    if (playerScore === 21) {
+      // Immediate blackjack!
+      playerTurn = false;
+      gameOver = true;
+      endGame();
+    }
+  }
+
+  function hit() {
+    if (!playerTurn) return;
+
+    if (inSplit) {
+      if (!splitTurn) {
+        playerHand.push(deck.pop());
+        renderHand(playerHand, playerHandEl);
+        const score = calculateScore(playerHand);
+        updateUI();
+        if (score > 21) {
+          statusEl.textContent = 'Bust on first hand! Moving to split hand.';
+          splitTurn = true;
+          updateUI();
+          setButtons({
+            hit: true,
+            stand: true,
+            double: false,
+            split: false,
+            restart: false,
+            start: true,
+          });
+          return;
+        }
+      } else {
+        splitHand.push(deck.pop());
+        renderHand(splitHand, splitHandEl);
+        const score = calculateScore(splitHand);
+        updateUI();
+        if (score > 21) {
+          statusEl.textContent = 'Bust on split hand! Dealer\'s turn.';
+          playerTurn = false;
+          gameOver = true;
+          endGame();
+          return;
+        }
+      }
+    } else {
+      playerHand.push(deck.pop());
+      renderHand(playerHand, playerHandEl);
+      const score = calculateScore(playerHand);
+      updateUI();
+      if (score > 21) {
+        statusEl.textContent = 'Bust! Dealer wins.';
+        playerTurn = false;
+        gameOver = true;
+        endGame();
+        return;
+      }
+    }
+  }
+
+  function stand() {
+    if (!playerTurn) return;
+
+    if (inSplit) {
+      if (!splitTurn) {
+        splitTurn = true;
+        statusEl.textContent = 'First hand stands. Playing split hand.';
+        updateUI();
+        setButtons({
+          hit: true,
+          stand: true,
+          double: false,
+          split: false,
+          restart: false,
+          start: true,
+        });
+      } else {
+        playerTurn = false;
+        gameOver = true;
+        statusEl.textContent = 'Both hands stood. Dealer\'s turn.';
+        updateUI();
+        dealerPlay();
+      }
+    } else {
+      playerTurn = false;
+      gameOver = true;
+      statusEl.textContent = 'You stand. Dealer\'s turn.';
+      updateUI();
+      dealerPlay();
+    }
+  }
+
+  function doubleDown() {
+    if (!playerTurn) return;
+    if (balance < currentBet) {
+      alert('Not enough balance to double down.');
+      return;
+    }
+
+    balance -= currentBet;
+    currentBet *= 2;
+
+    if (inSplit) {
+      if (!splitTurn) {
+        playerHand.push(deck.pop());
+        renderHand(playerHand, playerHandEl);
+        updateUI();
+        splitTurn = true;
+        setButtons({
+          hit: true,
+          stand: true,
+          double: false,
+          split: false,
+          restart: false,
+          start: true,
+        });
+        statusEl.textContent = 'Double down on first hand. Moving to split hand.';
+      } else {
+        splitHand.push(deck.pop());
+        renderHand(splitHand, splitHandEl);
+        updateUI();
+        playerTurn = false;
+        gameOver = true;
+        statusEl.textContent = 'Double down on split hand. Dealer\'s turn.';
+        dealerPlay();
+      }
+    } else {
+      playerHand.push(deck.pop());
+      renderHand(playerHand, playerHandEl);
+      updateUI();
+      playerTurn = false;
+      gameOver = true;
+      statusEl.textContent = 'Double down. Dealer\'s turn.';
+      dealerPlay();
+    }
+  }
+
+  function split() {
+    if (!canSplit()) return;
+
+    inSplit = true;
+    splitTurn = false;
+
+    // Remove one card from playerHand to splitHand
+    splitHand.push(playerHand.pop());
+
+    // Deal one card to each hand
+    playerHand.push(deck.pop());
+    splitHand.push(deck.pop());
+
+    splitSection.style.display = 'block';
+
+    renderHand(playerHand, playerHandEl);
+    renderHand(splitHand, splitHandEl);
+    renderHand(dealerHand, dealerHandEl, true);
+
+    balance -= currentBet;
+
+    statusEl.textContent = 'Hands split! Play first hand.';
+    updateUI();
+
+    setButtons({
+      hit: true,
+      stand: true,
+      double: true,
+      split: false,
+      restart: false,
+      start: true,
+    });
+  }
+
+  function dealerPlay() {
+    renderHand(dealerHand, dealerHandEl, false);
+    updateUI();
+
+    let dealerScore = calculateScore(dealerHand);
+    while(dealerScore < 17) {
+      dealerHand.push(deck.pop());
+      renderHand(dealerHand, dealerHandEl, false);
+      dealerScore = calculateScore(dealerHand);
+    }
+
+    updateUI();
+    determineWinner();
+  }
+
+  function determineWinner() {
+    const dealerScore = calculateScore(dealerHand);
+    let playerScore1 = calculateScore(playerHand);
+    let playerScore2 = inSplit ? calculateScore(splitHand) : null;
+
+    function handResult(playerScore, bet) {
+      if (playerScore > 21) return {result:'Bust', payout: 0};
+      if (dealerScore > 21) return {result:'Dealer Bust - You Win', payout: bet*2};
+      if (playerScore === 21 && playerHand.length === 2 && !inSplit) return {result:'Blackjack! You Win 1.5x', payout: bet*2.5};
+      if (playerScore === 21 && playerHand.length === 2 && inSplit && bet === currentBet) return {result:'Blackjack! You Win 1.5x', payout: bet*2.5};
+      if (playerScore > dealerScore) return {result:'You Win', payout: bet*2};
+      if (playerScore === dealerScore) return {result:'Push (Tie)', payout: bet};
+      return {result:'Dealer Wins', payout: 0};
+    }
+
+    let totalPayout = 0;
+    let resultText = '';
+
+    if (!inSplit) {
+      const res = handResult(playerScore1, currentBet);
+      totalPayout += res.payout;
+      resultText = res.result;
+    } else {
+      // Hand 1
+      const res1 = handResult(playerScore1, currentBet);
+      // Hand 2
+      const res2 = handResult(playerScore2, currentBet);
+      totalPayout = res1.payout + res2.payout;
+      resultText = `Hand 1: ${res1.result}\nHand 2: ${res2.result}`;
+    }
+
+    balance += totalPayout;
+
+    statusEl.textContent = resultText + `\nYou won $${totalPayout - currentBet * (inSplit ? 2 : 1)}`;
+
+    addHistory({
+      bet: currentBet * (inSplit ? 2 : 1),
+      result: resultText,
+      payout: totalPayout,
+      balanceAfter: balance,
+      timestamp: new Date().toLocaleTimeString()
+    });
+
+    updateUI();
+    setButtons({
+      hit: false,
+      stand: false,
+      double: false,
+      split: false,
+      restart: true,
+      start: false,
+    });
+  }
+
+  function addHistory(entry) {
+    history.unshift(entry);
+    if (history.length > 10) history.pop();
+    renderHistory();
+  }
+
+  function renderHistory() {
+    historyListEl.innerHTML = '';
+    for (const h of history) {
+      const li = document.createElement('li');
+      li.textContent = `[${h.timestamp}] Bet: $${h.bet} - Result: ${h.result} - Payout: $${h.payout} - Balance: $${h.balanceAfter}`;
+      historyListEl.appendChild(li);
+    }
+  }
+
+  function restart() {
+    playerHand = [];
+    dealerHand = [];
+    splitHand = [];
+    inSplit = false;
+    splitTurn = false;
+    gameOver = false;
+    playerTurn = false;
+    currentBet = 0;
+
+    dealerHandEl.innerHTML = '';
+    playerHandEl.innerHTML = '';
+    splitHandEl.innerHTML = '';
+    splitSection.style.display = 'none';
+    dealerScoreEl.textContent = '';
+    playerScoreEl.textContent = '';
+    splitScoreEl.textContent = '';
+    statusEl.textContent = '';
+    betInput.value = 10;
+
+    setButtons({
+      hit: false,
+      stand: false,
+      double: false,
+      split: false,
+      restart: false,
+      start: false,
+    });
+
+    btnStart.disabled = false;
+    betInput.disabled = false;
+  }
+
+  // Initialize
+  restart();
+
+  // Event listeners
+  btnStart.addEventListener('click', startGame);
+  btnHit.addEventListener('click', hit);
+  btnStand.addEventListener('click', stand);
+  btnDouble.addEventListener('click', doubleDown);
+  btnSplit.addEventListener('click', split);
+  btnRestart.addEventListener('click', restart);
+
+})();
+</script>
+
+</body>
+</html>

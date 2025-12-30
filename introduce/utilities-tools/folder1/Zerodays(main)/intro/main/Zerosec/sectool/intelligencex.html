@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>NFC Finder</title>
+<style>
+  body {
+    margin: 0; padding: 0;
+    background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+    color: red;
+    font-family: 'Consolas', monospace;
+    display: flex; flex-direction: column; height: 100vh;
+  }
+  header {
+    padding: 12px 20px;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  input[type=button], input[type=text] {
+    font-family: monospace;
+    font-size: 14px;
+    padding: 6px 12px;
+    border-radius: 4px;
+    border: none;
+    outline: none;
+    cursor: pointer;
+  }
+  input[type=button] {
+    background: red;
+    color: green;
+  }
+  input[type=button]:hover {
+    background: rgba(0,0,0,0.5);
+  }
+  input[type=text] {
+    flex-grow: 1;
+    min-width: 180px;
+    background: rgba(0,0,0,0.5);
+    color: red;
+  }
+  #logContainer {
+    flex-grow: 1;
+    overflow-y: auto;
+    background: rgba(0,0,0,0.5);
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  thead tr {
+    background: rgba(0,0,0,0.5);
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+  th, td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #333;
+    white-space: nowrap;
+    text-align: left;
+  }
+  tbody tr:hover {
+    background: #333;
+  }
+  #loadingIndicator {
+    padding: 10px 0;
+    text-align: center;
+    color: red;
+    font-style: italic;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <input type="button" id="toggleBtn" value="Stop Live Logs" aria-label="Toggle log generation" />
+  <input type="text" id="searchInput" placeholder="Search logs..." aria-label="Search logs" />
+  <input type="button" id="downloadBtn" value="Download Logs" aria-label="Download logs" />
+  <div style="color:lime; font-weight:bold">Live Count: <span id="liveCount">0</span></div>
+</header>
+
+<div id="logContainer" tabindex="0" aria-live="polite">
+  <table role="grid" aria-label="NFC logs">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Time</th>
+        <th>UID</th>
+        <th>Device</th>
+        <th>User-Agent</th>
+      </tr>
+    </thead>
+    <tbody id="logBody"></tbody>
+  </table>
+  <div id="loadingIndicator" hidden>Loading...</div>
+</div>
+
+<script>
+(() => {
+  const logBody = document.getElementById('logBody');
+  const liveCount = document.getElementById('liveCount');
+  const searchInput = document.getElementById('searchInput');
+  const downloadBtn = document.getElementById('downloadBtn');
+  const toggleBtn = document.getElementById('toggleBtn');
+
+  let logs = [];
+  let running = true;
+
+  const devices = ["NFC Reader A", "NFC Scanner Pro", "Mobile NFC Reader", "ContactlessPad v3"];
+
+  function randInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  function nowDate() {
+    const now = new Date();
+    return now.toISOString().split('T')[0];
+  }
+
+  function nowTime() {
+    const now = new Date();
+    return now.toTimeString().split(' ')[0];
+  }
+
+  function randUID() {
+    return '04:' + Array.from({length:6}, () => randInt(0,255).toString(16).padStart(2,'0')).join(':');
+  }
+
+  function randDevice() {
+    return devices[randInt(0, devices.length - 1)];
+  }
+
+  function userAgent() {
+    return navigator.userAgent;
+  }
+
+  function createRow(log) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${log.date}</td><td>${log.time}</td><td>${log.uid}</td><td>${log.device}</td><td>${log.agent}</td>`;
+    return tr;
+  }
+
+  function generateLog() {
+    const log = {
+      date: nowDate(),
+      time: nowTime(),
+      uid: randUID(),
+      device: randDevice(),
+      agent: userAgent()
+    };
+    logs.push(log);
+    liveCount.textContent = logs.length;
+    const tr = createRow(log);
+    logBody.appendChild(tr);
+  }
+
+  function autoGenerate() {
+    if (!running) return;
+    generateLog();
+    setTimeout(autoGenerate, 1000);
+  }
+
+  toggleBtn.addEventListener('click', () => {
+    running = !running;
+    toggleBtn.value = running ? 'Stop Live Logs' : 'Resume Live Logs';
+    if (running) autoGenerate();
+  });
+
+  searchInput.addEventListener('input', () => {
+    const q = searchInput.value.toLowerCase();
+    Array.from(logBody.children).forEach(tr => {
+      tr.style.display = tr.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  });
+
+  downloadBtn.addEventListener('click', () => {
+    const csv = "data:text/csv;charset=utf-8," +
+      "Date,Time,UID,Device,User-Agent\n" +
+      logs.map(l => `${l.date},${l.time},${l.uid},${l.device},${l.agent}`).join("\n");
+    const link = document.createElement('a');
+    link.href = encodeURI(csv);
+    link.download = "nfc_logs.csv";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  });
+
+  autoGenerate();
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>🌐 Global News</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    body {
+      margin: 0;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    h1 {
+      color: red;
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    input, select, button {
+      padding: 10px;
+      border: none;
+      border-radius: 4px;
+background: rgba(0,0,0,0.5);
+      color: red;
+    }
+    button {
+      background: red;
+      color: green;
+      cursor: pointer;
+    }
+    button:hover {
+background: rgba(0,0,0,0.5);
+    }
+    .stats {
+      margin: 10px 0;
+      font-size: 14px;
+      color: red;
+    }
+    .news-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 15px;
+    }
+    .news-card {
+background: rgba(0,0,0,0.5);
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: 0 0 5px red;
+      display: flex;
+      flex-direction: column;
+    }
+    .news-card img {
+      width: 100%;
+      height: 180px;
+      object-fit: cover;
+    }
+    .news-card-content {
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+    .news-card h3 {
+      margin: 0;
+      font-size: 18px;
+      color: red;
+    }
+    .news-card p {
+      font-size: 14px;
+      color: red;
+    }
+    .news-card a {
+      margin-top: auto;
+      color: red;
+      text-decoration: none;
+    }
+    #map {
+      height: 400px;
+      margin-top: 20px;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .offline-controls {
+      margin-top: 15px;
+    }
+    .keyword-history {
+      margin-top: 10px;
+      font-size: 14px;
+    }
+    .keyword-history span {
+background: rgba(0,0,0,0.5);
+      margin-right: 5px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .keyword-history span:hover {
+background: rgba(0,0,0,0.5);
+    }
+  </style>
+</head>
+<body>
+  <h1>🌐 Global News Aggregator</h1>
+
+  <div class="controls">
+    <input type="text" id="searchInput" placeholder="🔍 Search keyword..." />
+<select id="countrySelect">
+  <option value="">🌍 All Countries</option>
+  <option value="af">🇦🇫 Afghanistan</option>
+  <option value="al">🇦🇱 Albania</option>
+  <option value="dz">🇩🇿 Algeria</option>
+  <option value="as">🇦🇸 American Samoa</option>
+  <option value="ad">🇦🇩 Andorra</option>
+  <option value="ao">🇦🇴 Angola</option>
+  <option value="ai">🇦🇮 Anguilla</option>
+  <option value="aq">🇦🇶 Antarctica</option>
+  <option value="ag">🇦🇬 Antigua and Barbuda</option>
+  <option value="ar">🇦🇷 Argentina</option>
+  <option value="am">🇦🇲 Armenia</option>
+  <option value="aw">🇦🇼 Aruba</option>
+  <option value="au">🇦🇺 Australia</option>
+  <option value="at">🇦🇹 Austria</option>
+  <option value="az">🇦🇿 Azerbaijan</option>
+  <option value="bs">🇧🇸 Bahamas</option>
+  <option value="bh">🇧🇭 Bahrain</option>
+  <option value="bd">🇧🇩 Bangladesh</option>
+  <option value="bb">🇧🇧 Barbados</option>
+  <option value="by">🇧🇾 Belarus</option>
+  <option value="be">🇧🇪 Belgium</option>
+  <option value="bz">🇧🇿 Belize</option>
+  <option value="bj">🇧🇯 Benin</option>
+  <option value="bm">🇧🇲 Bermuda</option>
+  <option value="bt">🇧🇹 Bhutan</option>
+  <option value="bo">🇧🇴 Bolivia</option>
+  <option value="ba">🇧🇦 Bosnia and Herzegovina</option>
+  <option value="bw">🇧🇼 Botswana</option>
+  <option value="br">🇧🇷 Brazil</option>
+  <option value="bn">🇧🇳 Brunei</option>
+  <option value="bg">🇧🇬 Bulgaria</option>
+  <option value="bf">🇧🇫 Burkina Faso</option>
+  <option value="bi">🇧🇮 Burundi</option>
+  <option value="kh">🇰🇭 Cambodia</option>
+  <option value="cm">🇨🇲 Cameroon</option>
+  <option value="ca">🇨🇦 Canada</option>
+  <option value="cv">🇨🇻 Cape Verde</option>
+  <option value="cf">🇨🇫 Central African Republic</option>
+  <option value="td">🇹🇩 Chad</option>
+  <option value="cl">🇨🇱 Chile</option>
+  <option value="cn">🇨🇳 China</option>
+  <option value="co">🇨🇴 Colombia</option>
+  <option value="km">🇰🇲 Comoros</option>
+  <option value="cg">🇨🇬 Congo (Brazzaville)</option>
+  <option value="cd">🇨🇩 Congo (Kinshasa)</option>
+  <option value="cr">🇨🇷 Costa Rica</option>
+  <option value="ci">🇨🇮 Côte d’Ivoire</option>
+  <option value="hr">🇭🇷 Croatia</option>
+  <option value="cu">🇨🇺 Cuba</option>
+  <option value="cy">🇨🇾 Cyprus</option>
+  <option value="cz">🇨🇿 Czech Republic</option>
+  <option value="dk">🇩🇰 Denmark</option>
+  <option value="dj">🇩🇯 Djibouti</option>
+  <option value="dm">🇩🇲 Dominica</option>
+  <option value="do">🇩🇴 Dominican Republic</option>
+  <option value="ec">🇪🇨 Ecuador</option>
+  <option value="eg">🇪🇬 Egypt</option>
+  <option value="sv">🇸🇻 El Salvador</option>
+  <option value="gq">🇬🇶 Equatorial Guinea</option>
+  <option value="er">🇪🇷 Eritrea</option>
+  <option value="ee">🇪🇪 Estonia</option>
+  <option value="sz">🇸🇿 Eswatini</option>
+  <option value="et">🇪🇹 Ethiopia</option>
+  <option value="fj">🇫🇯 Fiji</option>
+  <option value="fi">🇫🇮 Finland</option>
+  <option value="fr">🇫🇷 France</option>
+  <option value="ga">🇬🇦 Gabon</option>
+  <option value="gm">🇬🇲 Gambia</option>
+  <option value="ge">🇬🇪 Georgia</option>
+  <option value="de">🇩🇪 Germany</option>
+  <option value="gh">🇬🇭 Ghana</option>
+  <option value="gr">🇬🇷 Greece</option>
+  <option value="gd">🇬🇩 Grenada</option>
+  <option value="gt">🇬🇹 Guatemala</option>
+  <option value="gn">🇬🇳 Guinea</option>
+  <option value="gw">🇬🇼 Guinea-Bissau</option>
+  <option value="gy">🇬🇾 Guyana</option>
+  <option value="ht">🇭🇹 Haiti</option>
+  <option value="hn">🇭🇳 Honduras</option>
+  <option value="hu">🇭🇺 Hungary</option>
+  <option value="is">🇮🇸 Iceland</option>
+  <option value="in">🇮🇳 India</option>
+  <option value="id">🇮🇩 Indonesia</option>
+  <option value="ir">🇮🇷 Iran</option>
+  <option value="iq">🇮🇶 Iraq</option>
+  <option value="ie">🇮🇪 Ireland</option>
+  <option value="il">🇮🇱 Israel</option>
+  <option value="it">🇮🇹 Italy</option>
+  <option value="jm">🇯🇲 Jamaica</option>
+  <option value="jp">🇯🇵 Japan</option>
+  <option value="jo">🇯🇴 Jordan</option>
+  <option value="kz">🇰🇿 Kazakhstan</option>
+  <option value="ke">🇰🇪 Kenya</option>
+  <option value="ki">🇰🇮 Kiribati</option>
+  <option value="kr">🇰🇷 South Korea</option>
+  <option value="kw">🇰🇼 Kuwait</option>
+  <option value="kg">🇰🇬 Kyrgyzstan</option>
+  <option value="la">🇱🇦 Laos</option>
+  <option value="lv">🇱🇻 Latvia</option>
+  <option value="lb">🇱🇧 Lebanon</option>
+  <option value="ls">🇱🇸 Lesotho</option>
+  <option value="lr">🇱🇷 Liberia</option>
+  <option value="ly">🇱🇾 Libya</option>
+  <option value="li">🇱🇮 Liechtenstein</option>
+  <option value="lt">🇱🇹 Lithuania</option>
+  <option value="lu">🇱🇺 Luxembourg</option>
+  <option value="mg">🇲🇬 Madagascar</option>
+  <option value="mw">🇲🇼 Malawi</option>
+  <option value="my">🇲🇾 Malaysia</option>
+  <option value="mv">🇲🇻 Maldives</option>
+  <option value="ml">🇲🇱 Mali</option>
+  <option value="mt">🇲🇹 Malta</option>
+  <option value="mh">🇲🇭 Marshall Islands</option>
+  <option value="mr">🇲🇷 Mauritania</option>
+  <option value="mu">🇲🇺 Mauritius</option>
+  <option value="mx">🇲🇽 Mexico</option>
+  <option value="fm">🇫🇲 Micronesia</option>
+  <option value="md">🇲🇩 Moldova</option>
+  <option value="mc">🇲🇨 Monaco</option>
+  <option value="mn">🇲🇳 Mongolia</option>
+  <option value="me">🇲🇪 Montenegro</option>
+  <option value="ma">🇲🇦 Morocco</option>
+  <option value="mz">🇲🇿 Mozambique</option>
+  <option value="mm">🇲🇲 Myanmar</option>
+  <option value="na">🇳🇦 Namibia</option>
+  <option value="nr">🇳🇷 Nauru</option>
+  <option value="np">🇳🇵 Nepal</option>
+  <option value="nl">🇳🇱 Netherlands</option>
+  <option value="nz">🇳🇿 New Zealand</option>
+  <option value="ni">🇳🇮 Nicaragua</option>
+  <option value="ne">🇳🇪 Niger</option>
+  <option value="ng">🇳🇬 Nigeria</option>
+  <option value="mk">🇲🇰 North Macedonia</option>
+  <option value="no">🇳🇴 Norway</option>
+  <option value="om">🇴🇲 Oman</option>
+  <option value="pk">🇵🇰 Pakistan</option>
+  <option value="pw">🇵🇼 Palau</option>
+  <option value="pa">🇵🇦 Panama</option>
+  <option value="pg">🇵🇬 Papua New Guinea</option>
+  <option value="py">🇵🇾 Paraguay</option>
+  <option value="pe">🇵🇪 Peru</option>
+  <option value="ph">🇵🇭 Philippines</option>
+  <option value="pl">🇵🇱 Poland</option>
+  <option value="pt">🇵🇹 Portugal</option>
+  <option value="qa">🇶🇦 Qatar</option>
+  <option value="ro">🇷🇴 Romania</option>
+  <option value="ru">🇷🇺 Russia</option>
+  <option value="rw">🇷🇼 Rwanda</option>
+  <option value="kn">🇰🇳 Saint Kitts and Nevis</option>
+  <option value="lc">🇱🇨 Saint Lucia</option>
+  <option value="vc">🇻🇨 Saint Vincent</option>
+  <option value="ws">🇼🇸 Samoa</option>
+  <option value="sm">🇸🇲 San Marino</option>
+  <option value="st">🇸🇹 São Tomé and Príncipe</option>
+  <option value="sa">🇸🇦 Saudi Arabia</option>
+  <option value="sn">🇸🇳 Senegal</option>
+  <option value="rs">🇷🇸 Serbia</option>
+  <option value="sc">🇸🇨 Seychelles</option>
+  <option value="sl">🇸🇱 Sierra Leone</option>
+  <option value="sg">🇸🇬 Singapore</option>
+  <option value="sk">🇸🇰 Slovakia</option>
+  <option value="si">🇸🇮 Slovenia</option>
+  <option value="sb">🇸🇧 Solomon Islands</option>
+  <option value="so">🇸🇴 Somalia</option>
+  <option value="za">🇿🇦 South Africa</option>
+  <option value="kr">🇰🇷 South Korea</option>
+  <option value="ss">🇸🇸 South Sudan</option>
+  <option value="es">🇪🇸 Spain</option>
+  <option value="lk">🇱🇰 Sri Lanka</option>
+  <option value="sd">🇸🇩 Sudan</option>
+  <option value="sr">🇸🇷 Suriname</option>
+  <option value="se">🇸🇪 Sweden</option>
+  <option value="ch">🇨🇭 Switzerland</option>
+  <option value="sy">🇸🇾 Syria</option>
+  <option value="tw">🇹🇼 Taiwan</option>
+  <option value="tj">🇹🇯 Tajikistan</option>
+  <option value="tz">🇹🇿 Tanzania</option>
+  <option value="th">🇹🇭 Thailand</option>
+  <option value="tg">🇹🇬 Togo</option>
+  <option value="to">🇹🇴 Tonga</option>
+  <option value="tt">🇹🇹 Trinidad and Tobago</option>
+  <option value="tn">🇹🇳 Tunisia</option>
+  <option value="tr">🇹🇷 Turkey</option>
+  <option value="tm">🇹🇲 Turkmenistan</option>
+  <option value="tv">🇹🇻 Tuvalu</option>
+  <option value="ug">🇺🇬 Uganda</option>
+  <option value="ua">🇺🇦 Ukraine</option>
+  <option value="ae">🇦🇪 United Arab Emirates</option>
+  <option value="gb">🇬🇧 United Kingdom</option>
+  <option value="us">🇺🇸 United States</option>
+  <option value="uy">🇺🇾 Uruguay</option>
+  <option value="uz">🇺🇿 Uzbekistan</option>
+  <option value="vu">🇻🇺 Vanuatu</option>
+  <option value="va">🇻🇦 Vatican City</option>
+  <option value="ve">🇻🇪 Venezuela</option>
+  <option value="vn">🇻🇳 Vietnam</option>
+  <option value="ye">🇾🇪 Yemen</option>
+  <option value="zm">🇿🇲 Zambia</option>
+  <option value="zw">🇿🇼 Zimbabwe</option>
+</select>
+
+    <select id="categorySelect">
+      <option value="">📁 All Categories</option>
+      <option value="general">🗞 General</option>
+      <option value="business">💼 Business</option>
+      <option value="technology">💻 Technology</option>
+      <option value="entertainment">🎬 Entertainment</option>
+      <option value="sports">🏆 Sports</option>
+      <option value="science">🔬 Science</option>
+      <option value="health">🩺 Health</option>
+    </select>
+    <button onclick="resetAndFetchNews()">📥 Fetch News</button>
+    <button onclick="exportCSV()">📤 Export CSV</button>
+  </div>
+
+  <div class="keyword-history">Recent: <span id="historyList"></span></div>
+  <div class="offline-controls">
+    <button onclick="saveOffline()">💾 Save Offline</button>
+    <button onclick="loadOffline()">📂 Load Offline</button>
+    <button onclick="clearOffline()">🗑 Clear Offline</button>
+  </div>
+<div id="map"></div>
+  <div class="stats">📰 Total Articles: <span id="newsCount">0</span></div>
+  <div class="news-grid" id="newsContainer"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  const apiKey = '5e3ff210baf79eda05936d60b70d7802';
+  const baseUrl = 'http://api.mediastack.com/v1/news';
+  const newsContainer = document.getElementById('newsContainer');
+  const newsCount = document.getElementById('newsCount');
+  const historyList = document.getElementById('historyList');
+  const csvRows = [["Title", "Source", "Published", "URL"]];
+
+  let currentPage = 1;
+  let isLoading = false;
+  let totalArticlesLoaded = 0;
+  let keyword = "", country = "", category = "";
+  let map, markersLayer;
+
+const countryCoords = {
+  af: [33.9391, 67.7100],
+  al: [41.1533, 20.1683],
+  dz: [28.0339, 1.6596],
+  as: [-14.2709, -170.1322],
+  ad: [42.5462, 1.6016],
+  ao: [-11.2027, 17.8739],
+  ag: [17.0608, -61.7964],
+  ar: [-38.4161, -63.6167],
+  am: [40.0691, 45.0382],
+  au: [-25.2744, 133.7751],
+  at: [47.5162, 14.5501],
+  az: [40.1431, 47.5769],
+  bd: [23.6850, 90.3563],
+  be: [50.5039, 4.4699],
+  bf: [12.2383, -1.5616],
+  bg: [42.7339, 25.4858],
+  bh: [25.9304, 50.6378],
+  bi: [-3.3731, 29.9189],
+  bj: [9.3077, 2.3158],
+  bn: [4.5353, 114.7277],
+  bo: [-16.2902, -63.5887],
+  br: [-14.2350, -51.9253],
+  bs: [25.0343, -77.3963],
+  bt: [27.5142, 90.4336],
+  bw: [-22.3285, 24.6849],
+  by: [53.7098, 27.9534],
+  bz: [17.1899, -88.4976],
+  ca: [56.1304, -106.3468],
+  cd: [-4.0383, 21.7587],
+  cf: [6.6111, 20.9394],
+  cg: [-0.2280, 15.8277],
+  ch: [46.8182, 8.2275],
+  ci: [7.5399, -5.5471],
+  cl: [-35.6751, -71.5430],
+  cm: [7.3697, 12.3547],
+  cn: [35.8617, 104.1954],
+  co: [4.5709, -74.2973],
+  cr: [9.7489, -83.7534],
+  cu: [21.5218, -77.7812],
+  cv: [16.5388, -23.0418],
+  cy: [35.1264, 33.4299],
+  cz: [49.8175, 15.4730],
+  de: [51.1657, 10.4515],
+  dk: [56.2639, 9.5018],
+  dj: [11.8251, 42.5903],
+  dm: [15.414999, -61.370976],
+  do: [18.7357, -70.1627],
+  dz: [28.0339, 1.6596],
+  ec: [-1.8312, -78.1834],
+  ee: [58.5953, 25.0136],
+  eg: [26.8206, 30.8025],
+  er: [15.1794, 39.7823],
+  es: [40.4637, -3.7492],
+  et: [9.1450, 40.4897],
+  fi: [61.9241, 25.7482],
+  fj: [-17.7134, 178.0650],
+  fr: [46.6034, 1.8883],
+  ga: [-0.8037, 11.6094],
+  gb: [55.3781, -3.4360],
+  ge: [42.3154, 43.3569],
+  gh: [7.9465, -1.0232],
+  gm: [13.4432, -15.3101],
+  gn: [9.9456, -9.6966],
+  gq: [1.6508, 10.2679],
+  gr: [39.0742, 21.8243],
+  gt: [15.7835, -90.2308],
+  gw: [11.8037, -15.1804],
+  gy: [4.8604, -58.9302],
+  hn: [13.7942, -88.8965],
+  hr: [45.1000, 15.2000],
+  ht: [18.9712, -72.2852],
+  hu: [47.1625, 19.5033],
+  id: [-0.7893, 113.9213],
+  ie: [53.4129, -8.2439],
+  il: [31.0461, 34.8516],
+  in: [20.5937, 78.9629],
+  iq: [33.2232, 43.6793],
+  ir: [32.4279, 53.6880],
+  is: [64.9631, -19.0208],
+  it: [41.8719, 12.5674],
+  jm: [18.1096, -77.2975],
+  jo: [30.5852, 36.2384],
+  jp: [36.2048, 138.2529],
+  ke: [-1.2921, 36.8219],
+  kg: [41.2044, 74.7661],
+  kh: [12.5657, 104.9910],
+  ki: [1.8709, -157.3630],
+  km: [-11.6455, 43.3333],
+  kn: [17.3578, -62.782998],
+  kp: [40.3399, 127.5101],
+  kr: [35.9078, 127.7669],
+  kw: [29.3759, 47.9774],
+  kz: [48.0196, 66.9237],
+  la: [19.8563, 102.4955],
+  lb: [33.8547, 35.8623],
+  lc: [13.9094, -60.9789],
+  li: [47.1660, 9.5554],
+  lk: [7.8731, 80.7718],
+  lr: [6.4281, -9.4295],
+  ls: [-29.6099, 28.2336],
+  lt: [55.1694, 23.8813],
+  lu: [49.8153, 6.1296],
+  lv: [56.8796, 24.6032],
+  ly: [26.3351, 17.2283],
+  ma: [31.7917, -7.0926],
+  mc: [43.7333, 7.4167],
+  md: [47.4116, 28.3699],
+  me: [42.7087, 19.3744],
+  mg: [-18.7669, 46.8691],
+  mh: [7.1315, 171.1845],
+  mk: [41.6086, 21.7453],
+  ml: [17.5707, -3.9962],
+  mm: [21.9162, 95.9560],
+  mn: [46.8625, 103.8467],
+  mr: [21.0079, -10.9408],
+  mt: [35.9375, 14.3754],
+  mu: [-20.3484, 57.5522],
+  mv: [3.2028, 73.2207],
+  mw: [-13.2543, 34.3015],
+  mx: [23.6345, -102.5528],
+  my: [4.2105, 101.9758],
+  mz: [-18.6657, 35.5296],
+  na: [-22.9576, 18.4904],
+  ne: [17.6078, 8.0817],
+  ng: [9.0820, 8.6753],
+  ni: [12.8654, -85.2072],
+  nl: [52.1326, 5.2913],
+  no: [60.4720, 8.4689],
+  np: [28.3949, 84.1240],
+  nr: [-0.5228, 166.9315],
+  nz: [-40.9006, 174.8860],
+  om: [21.4735, 55.9754],
+  pa: [8.5380, -80.7821],
+  pe: [-9.1900, -75.0152],
+  pg: [-6.3150, 143.9555],
+  ph: [13.41, 122.56],
+  pk: [30.3753, 69.3451],
+  pl: [51.9194, 19.1451],
+  pt: [39.3999, -8.2245],
+  pw: [7.5149, 134.5825],
+  py: [-23.4425, -58.4438],
+  qa: [25.3548, 51.1839],
+  ro: [45.9432, 24.9668],
+  rs: [44.0165, 21.0059],
+  ru: [61.5240, 105.3188],
+  rw: [-1.9403, 29.8739],
+  sa: [23.8859, 45.0792],
+  sb: [-9.6457, 160.1562],
+  sc: [-4.6796, 55.4920],
+  sd: [12.8628, 30.2176],
+  se: [60.1282, 18.6435],
+  sg: [1.3521, 103.8198],
+  si: [46.1512, 14.9955],
+  sk: [48.6690, 19.6990],
+  sl: [8.4606, -11.7799],
+  sm: [43.9333, 12.4500],
+  sn: [14.4974, -14.4524],
+  so: [5.1521, 46.1996],
+  sr: [3.9193, -56.0278],
+  ss: [6.8770, 31.3070],
+  st: [0.1864, 6.6131],
+  sv: [13.7942, -88.8965],
+  sy: [34.8021, 38.9968],
+  sz: [-26.5225, 31.4659],
+  td: [15.4542, 18.7322],
+  tg: [8.6195, 0.8248],
+  th: [15.8700, 100.9925],
+  tj: [38.8610, 71.2761],
+  tl: [-8.8742, 125.7275],
+  tm: [38.9697, 59.5563],
+  tn: [33.8869, 9.5375],
+  to: [-21.1789, -175.1982],
+  tr: [38.9637, 35.2433],
+  tt: [10.6918, -61.2225],
+  tv: [-7.1095, 177.6493],
+  tz: [-6.3690, 34.8888],
+  ua: [48.3794, 31.1656],
+  ug: [1.3733, 32.2903],
+  us: [37.0902, -95.7129],
+  uy: [-32.5228, -55.7658],
+  uz: [41.3775, 64.5853],
+  va: [41.9029, 12.4534],
+  vc: [13.2528, -61.1971],
+  ve: [6.4238, -66.5897],
+  vn: [14.0583, 108.2772],
+  vu: [-15.3767, 166.9592],
+  ws: [-13.7590, -172.1046],
+  ye: [15.5527, 48.5164],
+  za: [-30.5595, 22.9375],
+  zm: [-13.1339, 27.8493],
+  zw: [-19.0154, 29.1549]
+};
+
+
+  // Setup Leaflet map
+  map = L.map('map').setView([20, 0], 2);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors'
+  }).addTo(map);
+  markersLayer = L.layerGroup().addTo(map);
+
+  async function fetchNews(append = true) {
+    if (isLoading) return;
+    isLoading = true;
+
+    let url = `${baseUrl}?access_key=${apiKey}&languages=en&limit=10&offset=${(currentPage - 1) * 10}`;
+    if (keyword) url += `&keywords=${encodeURIComponent(keyword)}`;
+    if (country) url += `&countries=${country}`;
+    if (category) url += `&categories=${category}`;
+
+    if (!append) {
+      newsContainer.innerHTML = `<p>⏳ Loading news...</p>`;
+      csvRows.length = 1;
+      totalArticlesLoaded = 0;
+      markersLayer.clearLayers();
+    }
+
+    try {
+      const res = await fetch(url);
+      const data = await res.json();
+      if (!data.data || data.data.length === 0) {
+        if (!append) newsContainer.innerHTML = `<p>⚠️ No results found.</p>`;
+        return;
+      }
+
+      if (!append) newsContainer.innerHTML = '';
+      data.data.forEach(article => {
+        const card = document.createElement('div');
+        card.className = 'news-card';
+        card.innerHTML = `
+          <img src="${article.image || 'https://via.placeholder.com/300x180?text=No+Image'}" />
+          <div class="news-card-content">
+            <h3>${article.title}</h3>
+            <p>${article.description || ''}</p>
+            <p><strong>${article.source || 'Unknown'}</strong> • ${new Date(article.published_at).toLocaleString()}</p>
+            <a href="${article.url}" target="_blank">Read More →</a>
+          </div>
+        `;
+        newsContainer.appendChild(card);
+        csvRows.push([article.title, article.source, article.published_at, article.url]);
+        totalArticlesLoaded++;
+
+        if (country && countryCoords[country]) {
+          L.marker(countryCoords[country])
+            .bindPopup(`<b>${article.title}</b><br><a href="${article.url}" target="_blank">Open</a>`)
+            .addTo(markersLayer);
+        }
+      });
+
+      newsCount.textContent = totalArticlesLoaded;
+      currentPage++;
+    } catch (err) {
+      if (!append) newsContainer.innerHTML = `<p>⚠️ Failed to load news.</p>`;
+      console.error(err);
+    } finally {
+      isLoading = false;
+    }
+  }
+
+  function resetAndFetchNews() {
+    currentPage = 1;
+    keyword = document.getElementById('searchInput').value.trim();
+    country = document.getElementById('countrySelect').value;
+    category = document.getElementById('categorySelect').value;
+    updateHistory(keyword);
+    fetchNews(false);
+  }
+
+  function exportCSV() {
+    const blob = new Blob([csvRows.map(r => r.join(',')).join('\n')], { type: "text/csv" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "news_export.csv";
+    a.click();
+  }
+
+  // Infinite scroll
+  window.addEventListener("scroll", () => {
+    if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 500) {
+      fetchNews(true);
+    }
+  });
+
+  // 🔁 History Cache
+  function updateHistory(term) {
+    if (!term) return;
+    let history = JSON.parse(localStorage.getItem("keywordHistory") || "[]");
+    history = history.filter(k => k !== term);
+    history.unshift(term);
+    if (history.length > 5) history.pop();
+    localStorage.setItem("keywordHistory", JSON.stringify(history));
+    showHistory();
+  }
+
+  function showHistory() {
+    const history = JSON.parse(localStorage.getItem("keywordHistory") || "[]");
+    historyList.innerHTML = history.map(k => `<span onclick="useHistory('${k}')">${k}</span>`).join("");
+  }
+
+  function useHistory(term) {
+    document.getElementById('searchInput').value = term;
+    resetAndFetchNews();
+  }
+
+  // 📦 Offline Save/Load
+  function saveOffline() {
+    const cards = [...document.querySelectorAll('.news-card')];
+    const articles = cards.map(card => {
+      return {
+        title: card.querySelector('h3').textContent,
+        description: card.querySelector('p').textContent,
+        source: card.querySelector('strong')?.textContent || 'Unknown',
+        date: card.querySelectorAll('p')[1]?.textContent || '',
+        link: card.querySelector('a')?.href || '',
+        image: card.querySelector('img')?.src || ''
+      };
+    });
+    localStorage.setItem('offlineNews', JSON.stringify(articles));
+    alert("✅ News saved offline!");
+  }
+
+  function loadOffline() {
+    const articles = JSON.parse(localStorage.getItem('offlineNews') || "[]");
+    if (!articles.length) return alert("⚠️ No offline articles found.");
+    newsContainer.innerHTML = '';
+    articles.forEach(article => {
+      const card = document.createElement('div');
+      card.className = 'news-card';
+      card.innerHTML = `
+        <img src="${article.image}" />
+        <div class="news-card-content">
+          <h3>${article.title}</h3>
+          <p>${article.description}</p>
+          <p><strong>${article.source}</strong> • ${article.date}</p>
+          <a href="${article.link}" target="_blank">Read More →</a>
+        </div>
+      `;
+      newsContainer.appendChild(card);
+    });
+    newsCount.textContent = articles.length;
+    map.setView([20, 0], 2);
+    markersLayer.clearLayers();
+  }
+
+  function clearOffline() {
+    localStorage.removeItem('offlineNews');
+    alert("🗑 Offline articles cleared.");
+  }
+
+  // Start
+  showHistory();
+  resetAndFetchNews();
+</script>
+</body>
+</html>

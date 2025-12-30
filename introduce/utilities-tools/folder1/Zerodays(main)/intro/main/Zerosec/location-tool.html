@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Advanced Location & Geodata Tool</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+    }
+    header {
+background: rgba(0,0,0,0.5);
+      color: red;
+      padding: 1rem;
+      text-align: center;
+      font-size: 1.5em;
+    }
+    .container {
+      padding: 1rem;
+      max-width: 900px;
+      margin: auto;
+    }
+    .btn {
+      padding: 10px 20px;
+      background: red;
+      color: green;
+      border: none;
+      cursor: pointer;
+      border-radius: 6px;
+      margin: 10px 0;
+    }
+    .btn:hover {
+background: rgba(0,0,0,0.5);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+background: rgba(0,0,0,0.5);
+    }
+    th, td {
+      border: 1px solid red;
+      padding: 0.6rem;
+      text-align: left;
+    }
+    th {
+background: rgba(0,0,0,0.5);
+    }
+    #map {
+      height: 400px;
+      margin-top: 1rem;
+      border: 2px solid red;
+    }
+    footer {
+      text-align: center;
+      padding: 1rem;
+      font-size: 0.9rem;
+      color: red;
+    }
+  </style>
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
+  />
+</head>
+<body>
+  <header>🌍 Advanced Location & Geodata Tool</header>
+  <div class="container">
+    <button class="btn" onclick="getIPInfo()">🔍 Detect My IP Location</button>
+    <button class="btn" onclick="getLiveLocation()">📍 Use My Live GPS</button>
+    <button class="btn" onclick="exportData('json')">📤 Export JSON</button>
+    <button class="btn" onclick="exportData('csv')">📤 Export CSV</button>
+
+    <table id="infoTable"></table>
+    <div id="map"></div>
+  </div>
+  <footer>&copy; 2025 Location Tool | No backend required</footer>
+
+  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+  <script>
+    let map, marker, currentData = {};
+
+    function updateTable(data) {
+      currentData = data;
+      let table = `<tr><th>Field</th><th>Value</th></tr>`;
+      for (let key in data) {
+        table += `<tr><td>${key}</td><td>${data[key]}</td></tr>`;
+      }
+      document.getElementById('infoTable').innerHTML = table;
+    }
+
+    function setMap(lat, lon) {
+      if (!map) {
+        map = L.map('map').setView([lat, lon], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+      } else {
+        map.setView([lat, lon], 13);
+      }
+
+      if (marker) map.removeLayer(marker);
+      marker = L.marker([lat, lon]).addTo(map);
+    }
+
+    async function getIPInfo() {
+      try {
+        const res = await fetch("https://ipapi.co/json/");
+        const data = await res.json();
+        const formatted = {
+          IP: data.ip,
+          City: data.city,
+          Region: data.region,
+          Country: data.country_name,
+          Latitude: data.latitude,
+          Longitude: data.longitude,
+          Org: data.org,
+          ASN: data.asn,
+          Postal: data.postal,
+          Timezone: data.timezone
+        };
+        updateTable(formatted);
+        setMap(data.latitude, data.longitude);
+      } catch (err) {
+        alert("Failed to fetch IP location.");
+      }
+    }
+
+    function getLiveLocation() {
+      if (!navigator.geolocation) {
+        return alert("Geolocation not supported.");
+      }
+
+      navigator.geolocation.getCurrentPosition(async pos => {
+        const lat = pos.coords.latitude;
+        const lon = pos.coords.longitude;
+        const reverseURL = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`;
+        const res = await fetch(reverseURL);
+        const json = await res.json();
+        const addr = json.address || {};
+        const formatted = {
+          Source: "Live GPS",
+          Latitude: lat,
+          Longitude: lon,
+          Road: addr.road || '',
+          City: addr.city || addr.town || addr.village || '',
+          State: addr.state || '',
+          Country: addr.country || '',
+          Postcode: addr.postcode || ''
+        };
+        updateTable(formatted);
+        setMap(lat, lon);
+      }, err => {
+        alert("Failed to get location: " + err.message);
+      });
+    }
+
+    function exportData(type) {
+      if (Object.keys(currentData).length === 0) return alert("No data to export.");
+      let blob, filename;
+      if (type === "json") {
+        blob = new Blob([JSON.stringify(currentData, null, 2)], { type: "application/json" });
+        filename = "location.json";
+      } else {
+        const rows = Object.entries(currentData).map(([k, v]) => `${k},${v}`).join("\n");
+        blob = new Blob(["Key,Value\n" + rows], { type: "text/csv" });
+        filename = "location.csv";
+      }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+  </script>
+</body>
+</html>

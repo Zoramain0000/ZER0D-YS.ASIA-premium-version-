@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>🔍 Simple Search Engine</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #0f172a;
+      color: #f8fafc;
+      margin: 0;
+      padding: 2rem;
+    }
+    h1 {
+      color: #38bdf8;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 1rem;
+      font-size: 1.2rem;
+      border: none;
+      border-radius: 6px;
+      background: #1e293b;
+      color: #f8fafc;
+      margin-bottom: 1rem;
+    }
+    button {
+      padding: 0.8rem 1.5rem;
+      font-size: 1rem;
+      background: #38bdf8;
+      color: #0f172a;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-bottom: 2rem;
+    }
+    #results {
+      background: #1e293b;
+      padding: 1rem;
+      border-radius: 6px;
+    }
+    .result-title {
+      font-size: 1.2rem;
+      font-weight: bold;
+      margin-bottom: 0.3rem;
+      color: #fbbf24;
+    }
+    .result-snippet {
+      font-size: 1rem;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🔍 Simple Search Engine</h1>
+  <input type="text" id="query" placeholder="Enter your search term..." />
+  <button onclick="performSearch()">Search</button>
+
+  <div id="results">Results will appear here...</div>
+
+  <script>
+    async function performSearch() {
+      const query = document.getElementById('query').value.trim();
+      const resultsDiv = document.getElementById('results');
+      if (!query) {
+        resultsDiv.innerHTML = "<em>❗ Please enter a search term.</em>";
+        return;
+      }
+
+      resultsDiv.innerHTML = "🔄 Searching...";
+
+      try {
+        const response = await fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_redirect=1&no_html=1`);
+        const data = await response.json();
+
+        if (data.AbstractText) {
+          resultsDiv.innerHTML = `
+            <div class="result-title">${data.Heading}</div>
+            <div class="result-snippet">${data.AbstractText}</div>
+            <a href="${data.AbstractURL}" target="_blank">Read more</a>
+          `;
+        } else if (data.RelatedTopics && data.RelatedTopics.length > 0) {
+          resultsDiv.innerHTML = data.RelatedTopics.slice(0, 5).map(item => {
+            if (item.Text && item.FirstURL) {
+              return `<div class="result-title">${item.Text}</div><a href="${item.FirstURL}" target="_blank">${item.FirstURL}</a><br><br>`;
+            } else {
+              return "";
+            }
+          }).join("") || "<em>No detailed results found.</em>";
+        } else {
+          resultsDiv.innerHTML = "<em>No results found.</em>";
+        }
+      } catch (err) {
+        resultsDiv.innerHTML = `<span style="color:red;">❌ Error fetching results</span>`;
+        console.error(err);
+      }
+    }
+  </script>
+
+</body>
+</html>

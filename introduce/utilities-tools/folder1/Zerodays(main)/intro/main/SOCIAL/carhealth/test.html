@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title> carhealth Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .sidebar {
+      width: 260px;
+background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      flex-direction: column;
+      padding: 20px 0;
+      border-right: 2px solid red;
+      transition: transform 0.3s ease;
+    }
+
+    .sidebar h1 {
+      text-align: center;
+      font-size: 22px;
+      color: red;
+      margin-bottom: 30px;
+    }
+
+    .sidebar a {
+      padding: 14px 30px;
+      color: red;
+      text-decoration: none;
+      display: block;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    .sidebar a:hover,
+    .sidebar a.active {
+background: rgba(0, 0, 0, 0.5);
+      color: red;
+    }
+
+    .main {
+      flex-grow: 1;
+background: rgba(0, 0, 0, 0.5);
+      padding: 40px;
+      overflow-y: auto;
+    }
+
+    .main h2 {
+      font-size: 26px;
+      color: red;
+      margin-bottom: 20px;
+    }
+
+    .main .card {
+background: rgba(0, 0, 0, 0.5);
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      border: 1px solid #2c2c3c;
+      color: red;
+    }
+
+    .toggle-btn {
+      display: none;
+      position: absolute;
+      top: 20px;
+      left: 20px;
+background: red;
+      color: green;
+      border: none;
+      padding: 10px 14px;
+      font-size: 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      z-index: 100;
+    }
+
+    .toggle-btn:hover {
+background: rgba(0, 0, 0, 0.5);
+    }
+
+    @media (max-width: 768px) {
+      .sidebar {
+        position: absolute;
+        height: 100%;
+        z-index: 99;
+        transform: translateX(-100%);
+      }
+
+      .sidebar.show {
+        transform: translateX(0);
+      }
+
+      .toggle-btn {
+        display: block;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <button class="toggle-btn" onclick="toggleSidebar()">☰</button>
+
+<div class="sidebar" id="sidebar">
+  <h1>🧪 CarHealth</h1>
+  <a href="encryption.html">🔐 Advanced Encryptor v1</a>
+  <a href="encryption1.html">🔐 Advanced Encryptor v2</a>
+  <a href="encryptionmain.html">🛡️ Ultimate Encryptor</a>
+  <a href="ftool(fb).html">📘 Facebook Account Generator</a>
+  <a href="ftool(tiktok).html">🎭 Instagram Fake Account Generator</a>
+  <a href="ftool(Ig).html">🎵 TikTok Fake Account Generator</a>
+  <a href="ftool.html">🧠 Social Media Identity Generator</a>
+</div>
+
+
+  <div class="main" id="mainContent">
+    <h2>📊 Dashboard</h2>
+    <div class="card">Welcome to the  carhealth dashboard. Select any tools from the sidebar to preview a feature section.</div>
+  </div>
+
+  <script>
+    const sidebar = document.getElementById("sidebar");
+    const content = document.getElementById("mainContent");
+    const links = document.querySelectorAll(".sidebar a");
+
+    
+
+    links.forEach(link => {
+      link.addEventListener("click", function (e) {
+        e.preventDefault();
+        links.forEach(l => l.classList.remove("active"));
+        this.classList.add("active");
+
+        const key = this.getAttribute("href").substring(1);
+        const page = pages[key];
+        if (page) {
+          content.innerHTML = `<h2>${page.title}</h2><div class="card">${page.content}</div>`;
+        }
+
+        if (window.innerWidth <= 768) {
+          sidebar.classList.remove("show");
+        }
+      });
+    });
+
+    function toggleSidebar() {
+      sidebar.classList.toggle("show");
+    }
+  </script>
+
+</body>
+</html>

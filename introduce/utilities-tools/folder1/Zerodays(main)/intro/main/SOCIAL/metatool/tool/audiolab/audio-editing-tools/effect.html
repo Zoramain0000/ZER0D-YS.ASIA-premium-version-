@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title> Audio Effect ll57</title>
+<style>
+  body {
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+    color: red;
+    font-family: Arial, sans-serif;
+    padding: 1rem;
+    max-width: 600px;
+    margin: auto;
+  }
+  input, button, select {
+    width: 100%;
+    margin: 0.5rem 0;
+    padding: 0.5rem;
+    font-size: 1rem;
+background: rgba(0, 0, 0, 0.5);
+color: green;
+  }
+  audio {
+    width: 100%;
+    margin: 1rem 0;
+  }
+  #status {
+    margin-top: 1rem;
+    font-weight: bold;
+  }
+</style>
+</head>
+<body>
+
+<header>Advanced Audio Effects Tool</header>
+<main>
+  <input type="file" id="fileInput" accept="audio/*" />
+  <audio id="audioPlayer" controls></audio>
+
+  <label>Audio Effects</label>
+  <div class="effects-grid" id="effectsList">
+    <label><input type="radio" name="effect" value="original" checked /> Original Audio</label>
+    <label><input type="radio" name="effect" value="chorus" /> Chorus</label>
+    <label><input type="radio" name="effect" value="crystalizer" /> Crystalizer</label>
+    <label><input type="radio" name="effect" value="tremolo" /> Tremolo</label>
+    <label><input type="radio" name="effect" value="3deffect" /> 3D Effect</label>
+    <label><input type="radio" name="effect" value="compressor" /> Compressor</label>
+    <label><input type="radio" name="effect" value="limiter" /> Limiter</label>
+    <label><input type="radio" name="effect" value="equalizer" /> Equalizer (18 band)</label>
+    <label><input type="radio" name="effect" value="volume" /> Volume</label>
+    <label><input type="radio" name="effect" value="softclipping" /> Soft Clipping</label>
+    <label><input type="radio" name="effect" value="deesser" /> Deesser</label>
+    <label><input type="radio" name="effect" value="exciter" /> Exciter</label>
+    <label><input type="radio" name="effect" value="bassandtreble" /> Bass and Treble</label>
+    <label><input type="radio" name="effect" value="vibrato" /> Vibrato</label>
+    <label><input type="radio" name="effect" value="echo" /> Echo</label>
+    <label><input type="radio" name="effect" value="phaser" /> Phaser</label>
+    <label><input type="radio" name="effect" value="presetscompressexpander" /> Presets Compress/Expander</label>
+    <label><input type="radio" name="effect" value="stereowidening" /> Stereo Widening</label>
+    <label><input type="radio" name="effect" value="earwax" /> Earwax</label>
+    <label><input type="radio" name="effect" value="boostsubwoofer" /> Boost Subwoofer Frequencies</label>
+    <label><input type="radio" name="effect" value="addlowlevelnoise" /> Add Low-Level Noise</label>
+    <label><input type="radio" name="effect" value="bitcrusher" /> Bit Crusher</label>
+    <label><input type="radio" name="effect" value="speechnormalizer" /> Speech Normalizer</label>
+    <label><input type="radio" name="effect" value="bassboost" /> Bass Boost</label>
+    <label><input type="radio" name="effect" value="karaokeeffect" /> Karaoke Effect</label>
+    <label><input type="radio" name="effect" value="frequencyeffects" /> Frequency Effects</label>
+    <label><input type="radio" name="effect" value="cutsubwoofer" /> Cut Subwoofer Frequencies</label>
+    <label><input type="radio" name="effect" value="cutsuper" /> Cut Super Frequencies</label>
+    <label><input type="radio" name="effect" value="butterworthbandpass" /> Butterworth Band-Pass Filter</label>
+    <label><input type="radio" name="effect" value="butterworthbandstop" /> Butterworth Band-Stop Filter</label>
+    <label><input type="radio" name="effect" value="virtualbass" /> Virtual Bass</label>
+    <label><input type="radio" name="effect" value="extrastereo" /> Extra Stereo</label>
+    <label><input type="radio" name="effect" value="flanger" /> Flanger</label>
+    <label><input type="radio" name="effect" value="enhancedialogue" /> Enhance Dialogue</label>
+    <label><input type="radio" name="effect" value="enhancemusic" /> Enhance Music</label>
+  </div>
+
+  <label for="useAs">Use As</label>
+  <select id="useAs">
+    <option>Music</option>
+    <option>Podcast</option>
+    <option>Lecture</option>
+    <option>Other</option>
+  </select>
+
+  <button id="applyEffectBtn" disabled>Apply Effect</button>
+  <button id="exportBtn" disabled>Export as MP3</button>
+
+  <div id="status"></div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
+<script>
+  const { createFFmpeg, fetchFile } = FFmpeg;
+  const ffmpeg = createFFmpeg({ log: true });
+
+  const fileInput = document.getElementById('fileInput');
+  const effectSelect = document.querySelector('input[name="effect"]:checked');
+  const applyEffectBtn = document.getElementById('applyEffectBtn');
+  const exportBtn = document.getElementById('exportBtn');
+  const audioPlayer = document.getElementById('audioPlayer');
+  const status = document.getElementById('status');
+
+  let audioContext;
+  let originalBuffer;
+  let processedBuffer;
+  let currentFileName;
+
+  fileInput.addEventListener('change', async () => {
+    if (fileInput.files.length === 0) return;
+    currentFileName = fileInput.files[0].name;
+    status.textContent = 'Loading audio...';
+    if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+    const arrayBuffer = await fileInput.files[0].arrayBuffer();
+    originalBuffer = await audioContext.decodeAudioData(arrayBuffer);
+
+    audioPlayer.src = URL.createObjectURL(fileInput.files[0]);
+    applyEffectBtn.disabled = false;
+    exportBtn.disabled = true;
+    status.textContent = 'Audio loaded. Select effect and process.';
+  });
+
+  applyEffectBtn.addEventListener('click', () => {
+    if (!originalBuffer) return;
+    const effect = effectSelect.value;
+    processedBuffer = applyEffect(originalBuffer, effect);
+    playBuffer(processedBuffer);
+    exportBtn.disabled = false;
+    status.textContent = 'Effect applied. You can play or export.';
+  });
+
+  function applyEffect(buffer, effect) {
+    // Effect application logic goes here
+    return buffer; // Placeholder for actual effect application
+  }
+
+  function playBuffer(buffer) {
+    if (audioContext.state === 'suspended') audioContext.resume();
+
+    if (audioContext.source) {
+      audioContext.source.stop();
+      audioContext.source.disconnect();
+    }
+
+    const source = audioContext.createBufferSource();
+    source.buffer = buffer;
+    source.connect(audioContext.destination);
+    source.start();
+
+    audioContext.source = source;
+
+    // Create a WAV blob URL for audio element playback
+    bufferToWav(buffer).then(wavBlob => {
+      const url = URL.createObjectURL(wavBlob);
+      audioPlayer.src = url;
+    });
+  }
+
+  async function bufferToWav(buffer) {
+    // WAV conversion logic goes here
+    return new Blob(); // Placeholder for actual WAV blob
+  }
+
+  exportBtn.addEventListener('click', async () => {
+    if (!processedBuffer) return;
+    status.textContent = 'Loading FFmpeg...';
+    if (!ffmpeg.isLoaded()) await ffmpeg.load();
+
+    status.textContent = 'Encoding to MP3...';
+
+    // Convert processedBuffer to WAV blob
+    const wavBlob = await bufferToWav(processedBuffer);
+
+    // Write WAV to ffmpeg FS
+    ffmpeg.FS('writeFile', 'input.wav', await fetchFile(wavBlob));
+
+    // Run ffmpeg to convert WAV to MP3
+    await ffmpeg.run('-i', 'input.wav', '-codec:a', 'libmp3lame', '-qscale:a', '2', 'output.mp3');
+
+    // Read MP3 output
+    const mp3Data = ffmpeg.FS('readFile', 'output.mp3');
+
+    // Create blob and download link
+    const mp3Blob = new Blob([mp3Data.buffer], { type: 'audio/mp3' });
+    const url = URL.createObjectURL(mp3Blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = currentFileName.replace(/\.[^/.]+$/, '') + '_processed.mp3';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    status.textContent = 'MP3 exported successfully.';
+  });
+</script>
+
+</body>
+</html>

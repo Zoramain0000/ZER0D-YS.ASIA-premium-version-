@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Global Recipe Finder (Infinite Scroll)</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+    }
+    header {
+background: rgba(0, 0, 0, 0.5);
+      color: red;
+      padding: 1rem;
+      text-align: center;
+    }
+    .container {
+      max-width: 1200px;
+      margin: auto;
+      padding: 1rem;
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      justify-content: center;
+      margin-bottom: 1rem;
+    }
+    input, select, button {
+      padding: 0.5rem;
+      border-radius: 5px;
+      border: 1px solid red;
+      font-size: 1rem;
+      width: 250px;
+    }
+    button {
+      background: red;
+      color: green;
+      cursor: pointer;
+      width: auto;
+    } 
+    
+    button:hover {
+background: rgba(0, 0, 0, 0.5);
+    }
+    .recipes {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    }
+    .card {
+background: rgba(0, 0, 0, 0.5);
+      border-radius: 10px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    .card img {
+      width: 100%;
+      height: auto;
+    }
+    .card-content {
+      padding: 1rem;
+    }
+    .card h3 {
+      margin-top: 0;
+    }
+    .card p {
+      font-size: 0.9rem;
+      color: red;
+    }
+    .fav-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+background: rgba(0, 0, 0, 0.4);
+      border: none;
+      font-size: 1.2rem;
+      cursor: pointer;
+    }
+    footer {
+background: rgba(0, 0, 0, 0.5);
+      text-align: center;
+      padding: 1rem;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🌐 Global Recipe Finder</h1>
+    <p>Find delicious meals from around the world using TheMealDB API</p>
+  </header>
+
+  <div class="container">
+    <div class="controls">
+      <input type="text" id="searchInput" placeholder="Search meals...">
+      <select id="countrySelect">
+        <option value="">Filter by country</option>
+      </select>
+      <button onclick="showFavorites()">📌 Show Favorites</button>
+      <button onclick="exportCSV()">📄 Export CSV</button>
+      <button onclick="exportPDF()">🖨️ Export PDF</button>
+    </div>
+
+    <div id="recipes" class="recipes"></div>
+    <div id="loader" style="text-align:center; margin:20px; display:none;">Loading more recipes...</div>
+  </div>
+
+  <footer style="color:red;">
+    &copy; 2025 Global Recipe Finder | Powered by <a href="https://www.themealdb.com" target="_blank" rel="noopener noreferrer">TheMealDB API</a>
+  </footer>
+
+  <!-- jsPDF library for PDF export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <script>
+    const searchInput = document.getElementById('searchInput');
+    const countrySelect = document.getElementById('countrySelect');
+    const recipesContainer = document.getElementById('recipes');
+    const loader = document.getElementById('loader');
+
+    let allResults = [];
+    let currentMeals = [];
+    let loadedCount = 0;
+    const PAGE_SIZE = 10;
+    let query = '';
+    let country = '';
+    let favoritesView = false;
+
+    async function loadAreas() {
+      try {
+        const res = await fetch('https://www.themealdb.com/api/json/v1/1/list.php?a=list');
+        const data = await res.json();
+        data.meals.forEach(area => {
+          const opt = document.createElement('option');
+          opt.value = area.strArea;
+          opt.textContent = area.strArea;
+          countrySelect.appendChild(opt);
+        });
+      } catch(e) {
+        console.error("Failed to load areas:", e);
+      }
+    }
+
+    async function fetchRecipes(q = '', c = '') {
+      try {
+        let url = '';
+        if (q) {
+          url = `https://www.themealdb.com/api/json/v1/1/search.php?s=${encodeURIComponent(q)}`;
+        } else if (c) {
+          url = `https://www.themealdb.com/api/json/v1/1/filter.php?a=${encodeURIComponent(c)}`;
+        } else {
+          url = 'https://www.themealdb.com/api/json/v1/1/search.php?s=chicken';
+        }
+
+        const res = await fetch(url);
+        const data = await res.json();
+        if (!data.meals) return [];
+
+        if (c && !q) {
+          // get detailed info for each meal
+          const detailed = await Promise.all(data.meals.slice(0, 50).map(meal =>
+            fetch(`https://www.themealdb.com/api/json/v1/1/lookup.php?i=${meal.idMeal}`).then(r => r.json())
+          ));
+          return detailed.map(m => m.meals[0]);
+        }
+
+        return data.meals;
+      } catch(e) {
+        console.error("Failed to fetch recipes:", e);
+        return [];
+      }
+    }
+
+    async function loadRecipes(newSearch = false) {
+      if (newSearch) {
+        recipesContainer.innerHTML = '';
+        loader.style.display = 'block';
+        allResults = await fetchRecipes(query, country);
+        loadedCount = 0;
+        currentMeals = [];
+      }
+      loader.style.display = 'block';
+
+      const next = allResults.slice(loadedCount, loadedCount + PAGE_SIZE);
+      loadedCount += PAGE_SIZE;
+      currentMeals.push(...next);
+      displayMeals(currentMeals);
+
+      if (loadedCount >= allResults.length) {
+        loader.style.display = 'none';
+      }
+    }
+
+    function displayMeals(meals) {
+      if (!meals.length) {
+        recipesContainer.innerHTML = "<p>No recipes found.</p>";
+        return;
+      }
+      recipesContainer.innerHTML = '';
+      meals.forEach(meal => {
+        const isFav = getFavorites().some(f => f.idMeal === meal.idMeal);
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <button class="fav-btn" onclick="toggleFavorite('${meal.idMeal}')">
+            ${isFav ? '⭐' : '☆'}
+          </button>
+          <img src="${meal.strMealThumb}" alt="${meal.strMeal}">
+          <div class="card-content">
+            <h3>${meal.strMeal}</h3>
+            <p><strong>Country:</strong> ${getFlagIcon(meal.strArea)} ${meal.strArea}</p>
+            <p>${meal.strInstructions ? meal.strInstructions.substring(0, 150) + "..." : 'No instructions available.'}</p>
+          </div>
+        `;
+        recipesContainer.appendChild(card);
+      });
+    }
+
+function getFlagIcon(country) {
+const map = {
+    "American": "us", "British": "gb", "Canadian": "ca", "Chinese": "cn",
+    "Dutch": "nl", "Egyptian": "eg", "French": "fr", "Greek": "gr",
+    "Indian": "in", "Irish": "ie", "Italian": "it", "Jamaican": "jm",
+    "Japanese": "jp", "Kenyan": "ke", "Malaysian": "my", "Mexican": "mx",
+    "Moroccan": "ma", "Russian": "ru", "Spanish": "es", "Thai": "th",
+    "Tunisian": "tn", "Turkish": "tr", "Vietnamese": "vn",
+    "Afghan": "af", "Albanian": "al", "Algerian": "dz", "Andorran": "ad",
+    "Angolan": "ao", "Argentine": "ar", "Armenian": "am", "Australian": "au",
+    "Austrian": "at", "Azerbaijani": "az", "Bahamian": "bs", "Bahraini": "bh",
+    "Bangladeshi": "bd", "Barbadian": "bb", "Batswana": "bw", "Belarusian": "by",
+    "Belgian": "be", "Belizean": "bz", "Beninese": "bj", "Bhutanese": "bt",
+    "Bolivian": "bo", "Bosnian": "ba", "Brazilian": "br", "Bulgarian": "bg",
+    "Burkinabe": "bf", "Burundian": "bi", "Cabo Verdean": "cv", "Cambodian": "kh",
+    "Cameroonian": "cm", "Canadian": "ca", "Central African": "cf", "Chadian": "td",
+    "Chilean": "cl", "Colombian": "co", "Comorian": "km", "Congolese": "cg",
+    "Costa Rican": "cr", "Croatian": "hr", "Cuban": "cu", "Cypriot": "cy",
+    "Czech": "cz", "Danish": "dk", "Dominican": "do", "Dutch": "nl",
+    "Ecuadorian": "ec", "Egyptian": "eg", "Emirati": "ae", "Equatorial Guinean": "gq",
+    "Eritrean": "er", "Estonian": "ee", "Ethiopian": "et", "Fijian": "fj",
+    "Finnish": "fi", "Gabonese": "ga", "Gambian": "gm", "Georgian": "ge",
+    "German": "de", "Ghanaian": "gh", "Guyanese": "gy", "Haitian": "ht",
+    "Honduran": "hn", "Hungarian": "hu", "Icelander": "is", "Indonesian": "id",
+    "Iranian": "ir", "Iraqi": "iq", "Israeli": "il", "Italian": "it",
+    "Jamaican": "jm", "Japanese": "jp", "Jordanian": "jo", "Kazakh": "kz",
+    "Kenyan": "ke", "Kuwaiti": "kw", "Kyrgyz": "kg", "Laotian": "la",
+    "Latvian": "lv", "Lebanese": "lb", "Liberian": "lr", "Libyan": "ly",
+    "Lithuanian": "lt", "Luxembourger": "lu", "Malagasy": "mg", "Malawian": "mw",
+    "Malaysian": "my", "Malian": "ml", "Maltese": "mt", "Marshallese": "mh",
+    "Mauritian": "mu", "Mexican": "mx", "Micronesian": "fm", "Moldovan": "md",
+    "Monacan": "mc", "Mongolian": "mn", "Moroccan": "ma", "Mozambican": "mz",
+    "Namibian": "na", "Nauruan": "nr", "Nepalese": "np", "New Zealander": "nz",
+    "Nicaraguan": "ni", "Nigerien": "ne", "Nigerian": "ng", "North Korean": "kp",
+    "Norwegian": "no", "Omani": "om", "Pakistani": "pk", "Palauan": "pw",
+    "Panamanian": "pa", "Papua New Guinean": "pg", "Paraguayan": "py", "Peruvian": "pe",
+    "Philippine": "ph", "Polish": "pl", "Portuguese": "pt", "Qatari": "qa",
+    "Romanian": "ro", "Russian": "ru", "Rwandan": "rw", "Saint Lucian": "lc",
+    "Salvadoran": "sv", "Samoan": "ws", "San Marinese": "sm", "Sao Tomean": "st",
+    "Saudi": "sa", "Scottish": "gb", "Senegalese": "sn", "Serbian": "rs",
+    "Seychellois": "sc", "Sierra Leonean": "sl", "Singaporean": "sg", "Slovak": "sk",
+    "Slovenian": "si", "Somali": "so", "South African": "za", "South Korean": "kr",
+    "Spanish": "es", "Sri Lankan": "lk", "Sudanese": "sd", "Surinamese": "sr",
+    "Swedish": "se", "Swiss": "ch", "Syrian": "sy", "Tajik": "tj",
+    "Tanzanian": "tz", "Thai": "th", "Togolese": "tg", "Tongan": "to",
+    "Trinidadian": "tt", "Tunisian": "tn", "Turkish": "tr", "Ugandan": "ug",
+    "Ukrainian": "ua", "Uruguayan": "uy", "Uzbek": "uz", "Venezuelan": "ve",
+    "Vietnamese": "vn", "Yemeni": "ye", "Zambian": "zm", "Zimbabwean": "zw"
+};
+
+      const code = map[country] || "un";
+      return `<img src="https://flagcdn.com/24x18/${code}.png" alt="${country}" style="vertical-align:middle;">`;
+    }
+
+    function getFavorites() {
+      return JSON.parse(localStorage.getItem('favorites') || '[]');
+    }
+
+    function saveFavorites(favs) {
+      localStorage.setItem('favorites', JSON.stringify(favs));
+    }
+
+    function toggleFavorite(idMeal) {
+      const existing = getFavorites();
+      const found = currentMeals.find(m => m.idMeal === idMeal);
+      const index = existing.findIndex(m => m.idMeal === idMeal);
+      if (index > -1) {
+        existing.splice(index, 1);
+      } else if (found) {
+        existing.push(found);
+      }
+      saveFavorites(existing);
+      displayMeals(currentMeals);
+    }
+
+    function showFavorites() {
+      favoritesView = true;
+      const favs = getFavorites();
+      allResults = favs;
+      loadedCount = favs.length;
+      currentMeals = favs;
+      displayMeals(favs);
+    }
+
+    function exportCSV() {
+      if (!currentMeals.length) return alert("No recipes to export.");
+      const headers = ["Meal", "Country", "Instructions"];
+      const rows = currentMeals.map(m => [
+        `"${m.strMeal}"`,
+        `"${m.strArea}"`,
+        `"${(m.strInstructions || '').replace(/"/g, '""')}"`
+      ]);
+      const csvContent = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `recipes_export_${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    async function exportPDF() {
+      if (!currentMeals.length) return alert("No recipes to export.");
+
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF();
+
+      pdf.setFontSize(18);
+      pdf.text("Global Recipe Finder Export", 14, 22);
+      pdf.setFontSize(12);
+
+      let y = 32;
+      for (const meal of currentMeals) {
+        if (y > 270) {
+          pdf.addPage();
+          y = 20;
+        }
+        pdf.text(`Meal: ${meal.strMeal}`, 14, y);
+        y += 7;
+        pdf.text(`Country: ${meal.strArea}`, 14, y);
+        y += 7;
+
+        let instructions = meal.strInstructions || '';
+        if (instructions.length > 200) instructions = instructions.substring(0, 200) + "...";
+        const splitText = pdf.splitTextToSize(instructions, 180);
+        pdf.text(splitText, 14, y);
+        y += splitText.length * 7 + 5;
+      }
+
+      pdf.save(`recipes_export_${new Date().toISOString().slice(0,10)}.pdf`);
+    }
+
+    // Debounced input handling
+    let debounceTimer;
+    searchInput.addEventListener('input', () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        favoritesView = false;
+        query = searchInput.value.trim();
+        country = countrySelect.value;
+        loadRecipes(true);
+      }, 600);
+    });
+
+    countrySelect.addEventListener('change', () => {
+      favoritesView = false;
+      country = countrySelect.value;
+      query = searchInput.value.trim();
+      loadRecipes(true);
+    });
+
+    // Infinite scroll
+    window.addEventListener('scroll', () => {
+      if (favoritesView) return; // no infinite scroll on favorites
+      if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 300) {
+        if (loadedCount < allResults.length) {
+          loadRecipes();
+        }
+      }
+    });
+
+    // Initial load
+    (async () => {
+      await loadAreas();
+      await loadRecipes(true);
+    })();
+  </script>
+</body>
+</html>

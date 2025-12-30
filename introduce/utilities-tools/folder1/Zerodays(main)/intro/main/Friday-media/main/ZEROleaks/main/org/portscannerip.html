@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>🔎 ZeroTools Port Scanner</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0f172a;
+      color: #f8fafc;
+      padding: 2rem;
+    }
+
+    h1 {
+      color: #38bdf8;
+    }
+
+    input, button {
+      padding: 0.6rem;
+      font-size: 1rem;
+      margin: 0.4rem 0.5rem 0.4rem 0;
+      border-radius: 5px;
+      border: none;
+    }
+
+    button {
+      background-color: #38bdf8;
+      color: #0f172a;
+      cursor: pointer;
+    }
+
+    .log {
+      margin-top: 1rem;
+      background: #1e293b;
+      padding: 1rem;
+      border-radius: 8px;
+      max-height: 500px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+    }
+
+    .open { color: #10b981; }
+    .closed { color: #f87171; }
+    .scanning { color: #facc15; }
+  </style>
+</head>
+<body>
+  <h1>🔎 ZeroTools Port Scanner</h1>
+  <p>Scan open HTTP-based ports on any host (client-only, no backend).</p>
+
+  <input type="text" id="target" placeholder="Target (e.g. 192.168.1.1 or example.com)">
+  <input type="number" id="startPort" placeholder="Start Port" value="1" min="1" max="65535">
+  <input type="number" id="endPort" placeholder="End Port" value="1024" min="1" max="65535">
+  <button onclick="startScan()">Start Scan</button>
+
+  <div class="log" id="log"></div>
+
+  <script>
+    async function checkPort(host, port, timeout = 2000) {
+      const controller = new AbortController();
+      const signal = controller.signal;
+
+      const url = `http://${host}:${port}`;
+
+      const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+      try {
+        const response = await fetch(url, { method: 'GET', mode: 'no-cors', signal });
+        clearTimeout(timeoutId);
+        return true; // If no exception, assume it's open
+      } catch (err) {
+        clearTimeout(timeoutId);
+        return false; // Timeout or error = closed/unreachable
+      }
+    }
+
+    async function startScan() {
+      const target = document.getElementById('target').value.trim();
+      const start = parseInt(document.getElementById('startPort').value);
+      const end = parseInt(document.getElementById('endPort').value);
+      const log = document.getElementById('log');
+      log.innerHTML = '';
+
+      if (!target || isNaN(start) || isNaN(end) || start < 1 || end > 65535 || start > end) {
+        log.innerHTML = '<span class="closed">Invalid input. Please check fields.</span>';
+        return;
+      }
+
+      log.innerHTML = `<span class="scanning">Scanning ${target} from port ${start} to ${end}...</span>\n`;
+
+      for (let port = start; port <= end; port++) {
+        log.innerHTML += `Port ${port}: Scanning...\n`;
+        const isOpen = await checkPort(target, port);
+        if (isOpen) {
+          log.innerHTML += `<span class="open">Port ${port} is likely OPEN</span>\n`;
+        } else {
+          log.innerHTML += `<span class="closed">Port ${port} is CLOSED or FILTERED</span>\n`;
+        }
+      }
+
+      log.innerHTML += `\n✅ Scan complete.`;
+    }
+  </script>
+</body>
+</html>

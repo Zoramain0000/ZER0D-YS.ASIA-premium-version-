@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Social Media Style Username Generator</title>
+<style>
+  body {
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    max-width: 720px;
+    margin: 2rem auto;
+    padding: 1rem;
+    background: #f9f9fb;
+    color: #222;
+  }
+  h1 {
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+  label {
+    font-weight: 600;
+    margin-top: 1rem;
+    display: block;
+  }
+  select, input[type=number], input[type=text] {
+    width: 100%;
+    padding: 0.5rem;
+    font-size: 1rem;
+    margin-top: 0.25rem;
+    box-sizing: border-box;
+  }
+  button {
+    margin-top: 1.5rem;
+    padding: 0.7rem 1.3rem;
+    font-size: 1.1rem;
+    background-color: #0053ba;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  button:disabled {
+    background-color: #8a8a8a;
+    cursor: not-allowed;
+  }
+  button:hover:not(:disabled) {
+    background-color: #003f8a;
+  }
+  #progress-container {
+    margin-top: 1rem;
+    background: #ddd;
+    border-radius: 8px;
+    height: 24px;
+    overflow: hidden;
+  }
+  #progress-bar {
+    height: 100%;
+    width: 0%;
+    background: #28a745;
+    transition: width 0.2s ease;
+  }
+  #status {
+    margin-top: 0.5rem;
+    font-family: monospace;
+  }
+  footer {
+    margin-top: 3rem;
+    font-size: 0.85rem;
+    text-align: center;
+    color: #555;
+  }
+</style>
+</head>
+<body>
+
+<h1>Social Media Style Username Generator</h1>
+
+<form id="generator-form" autocomplete="off">
+  <label for="platform">Select Social Media Style:</label>
+<select id="platform" name="platform" required>
+  <!-- Mainstream Platforms -->
+  <option value="facebook">Facebook Style</option>
+  <option value="instagram">Instagram Style</option>
+  <option value="twitter">Twitter Style</option>
+  <option value="tiktok">TikTok Style</option>
+  <option value="youtube">YouTube Style</option>
+  <option value="linkedin">LinkedIn Style</option>
+  <option value="snapchat">Snapchat Style</option>
+  <option value="pinterest">Pinterest Style</option>
+  <option value="reddit">Reddit Style</option>
+  <option value="whatsapp">WhatsApp Style</option>
+  <option value="messenger">Messenger Style</option>
+  <option value="telegram">Telegram Style</option>
+
+  <!-- Regional Platforms -->
+  <option value="wechat">WeChat Style (China)</option>
+  <option value="qq">QQ Style (China)</option>
+  <option value="douyin">Douyin Style (China)</option>
+  <option value="kakaotalk">KakaoTalk Style (South Korea)</option>
+  <option value="line">LINE Style (Japan/Thailand)</option>
+  <option value="vk">VK Style (Russia)</option>
+  <option value="okru">Odnoklassniki Style (Russia)</option>
+  <option value="mixi">Mixi Style (Japan)</option>
+  <option value="kakaostory">KakaoStory Style (South Korea)</option>
+  <option value="zalo">Zalo Style (Vietnam)</option>
+  <option value="vkontakte">VKontakte Style (Russia)</option>
+
+  <!-- Creative & Portfolio Platforms -->
+  <option value="behance">Behance Style</option>
+  <option value="dribbble">Dribbble Style</option>
+  <option value="deviantart">DeviantArt Style</option>
+  <option value="artstation">ArtStation Style</option>
+  <option value="tumblr">Tumblr Style</option>
+  <option value="ello">Ello Style</option>
+  <option value="vsco">VSCO Style</option>
+  <option value="500px">500px Style</option>
+
+  <!-- Video & Streaming Platforms -->
+  <option value="vimeo">Vimeo Style</option>
+  <option value="twitch">Twitch Style</option>
+  <option value="dailymotion">Dailymotion Style</option>
+  <option value="bitchute">BitChute Style</option>
+  <option value="peertube">PeerTube Style</option>
+  <option value="caffeine">Caffeine Style</option>
+  <option value="rumble">Rumble Style</option>
+  <option value="clapper">Clapper Style</option>
+  <option value="triller">Triller Style</option>
+  <option value="zigazoo">Zigazoo Style</option>
+
+  <!-- Audio & Music Platforms -->
+  <option value="soundcloud">SoundCloud Style</option>
+  <option value="mixcloud">Mixcloud Style</option>
+  <option value="bandcamp">Bandcamp Style</option>
+  <option value="reverbnation">ReverbNation Style</option>
+  <option value="audiomack">Audiomack Style</option>
+  <option value="spotify">Spotify Style</option>
+
+  <!-- Decentralized & Alternative Platforms -->
+  <option value="mastodon">Mastodon Style</option>
+  <option value="diaspora">Diaspora Style</option>
+  <option value="minds">Minds Style</option>
+  <option value="steemit">Steemit Style</option>
+  <option value="gab">Gab Style</option>
+  <option value="parler">Parler Style</option>
+  <option value="bluesky">Bluesky Style</option>
+  <option value="truthsocial">Truth Social Style</option>
+
+  <!-- Professional & Academic Platforms -->
+  <option value="researchgate">ResearchGate Style</option>
+  <option value="academia">Academia.edu Style</option>
+  <option value="xing">XING Style</option>
+  <option value="quora">Quora Style</option>
+  <option value="medium">Medium Style</option>
+  <option value="substack">Substack Style</option>
+  <option value="ghost">Ghost Style</option>
+
+  <!-- Dating & Relationship Platforms -->
+  <option value="tinder">Tinder Style</option>
+  <option value="bumble">Bumble Style</option>
+  <option value="okcupid">OkCupid Style</option>
+  <option value="hinge">Hinge Style</option>
+  <option value="badoo">Badoo Style</option>
+  <option value="grindr">Grindr Style</option>
+  <option value="match">Match.com Style</option>
+  <option value="eharmony">eHarmony Style</option>
+
+  <!-- Hobby & Interest-Based Platforms -->
+  <option value="goodreads">Goodreads Style</option>
+  <option value="letterboxd">Letterboxd Style</option>
+  <option value="strava">Strava Style</option>
+  <option value="ravelry">Ravelry Style</option>
+  <option value="alltrails">AllTrails Style</option>
+  <option value="couchsurfing">Couchsurfing Style</option>
+  <option value="gaiaonline">Gaia Online Style</option>
+  <option value="depop">Depop Style</option>
+  <option value="poshmark">Poshmark Style</option>
+  <option value="wattpad">Wattpad Style</option>
+
+  <!-- Gaming Platforms -->
+  <option value="steam">Steam Style</option>
+  <option value="roblox">Roblox Style</option>
+  <option value="epicgames">Epic Games Style</option>
+  <option value="itchio">itch.io Style</option>
+  <option value="gamejolt">Game Jolt Style</option>
+  <option value="kongregate">Kongregate Style</option>
+  <option value="newgrounds">Newgrounds Style</option>
+
+  <!-- Other Platforms -->
+  <option value="nextdoor">Nextdoor Style</option>
+  <option value="yelp">Yelp Style</option>
+  <option value="foursquare">Foursquare Style</option>
+  <option value="houseparty">Houseparty Style</option>
+  <option value="clubhouse">Clubhouse Style</option>
+  <option value="onlyfans">OnlyFans Style</option>
+  <option value="myspace">Myspace Style</option>
+  <option value="simple">Simple Alphanumeric</option>
+</select>
+
+
+  <label for="count">Number of Usernames to Generate (max 100,000):</label>
+  <input type="number" id="count" name="count" min="1" max="100000" value="1000" required />
+
+  <button type="submit" id="generate-btn">Generate & Download</button>
+</form>
+
+<div id="progress-container" aria-label="Generation progress">
+  <div id="progress-bar"></div>
+</div>
+<div id="status" aria-live="polite" role="status"></div>
+
+<footer>
+  &copy; 2025 Username Generator Tool — Created by Zora
+</footer>
+
+<script>
+(() => {
+  const form = document.getElementById('generator-form');
+  const progressBar = document.getElementById('progress-bar');
+  const status = document.getElementById('status');
+  const generateBtn = document.getElementById('generate-btn');
+
+  // Sample word lists for realistic names
+const firstNames = [
+  "alex", "chris", "jordan", "taylor", "morgan", "casey", "drew", "sam", "jamie", "blake",
+  "devon", "logan", "harley", "ryan", "cameron", "dakota", "reese", "sasha", "quinn", "jules",
+  "riley", "skyler", "avery", "emery", "finley", "kendall", "parker", "river", "phoenix", "rowan",
+  "lex", "kai", "ari", "toby", "alexis", "kieran", "milan", "remy", "sage", "zephyr",
+  "nova", "oakley", "luca", "zen", "indigo", "storm", "echo", "lennox", "ash", "sol",
+  "ezra", "remi", "val", "art", "cleo", "kit", "ryder", "elias", "ember", "scout",
+  "asher", "cas", "blair", "nico", "soren", "elio", "mika", "tate", "niko", "isla",
+  "aiden", "bennett", "cyrus", "dante", "elijah", "finnegan", "gavin", "hayden", "isaiah", "jax",
+  "kaden", "lennon", "maddox", "nash", "owen", "pax", "quade", "rory", "silas", "tanner",
+  "ulric", "vance", "wade", "xander", "yale", "zane", "alani", "briar", "cypress", "dahlia",
+  "everest", "fable", "glen", "harlow", "iris", "juno", "kira", "lark", "mira", "nola",
+  "ophelia", "piper", "quinnley", "raven", "sage", "tansy", "uma", "vivi", "willow", "xena",
+  "yara", "zuri", "adley", "bexley", "charlie", "drew", "emery", "finn", "gale", "huxley",
+  "indie", "jett", "koda", "luca", "milo", "nova", "oak", "pax", "quill", "revel",
+  "sable", "tate", "uri", "vaughn", "wren", "xavi", "yoshi", "zara", "axton", "briar",
+  "cairo", "dorian", "elowen", "finnian", "gentry", "hollis", "isidore", "jovian", "kestrel", "lazlo",
+  "marlow", "niven", "ozzy", "pippin", "quillon", "riven", "soren", "tobias", "ulani", "vireo",
+  "wilder", "xenon", "yule", "zeb", "alba", "basil", "cypress", "dahlia", "elara", "fable",
+  "garnet", "halcyon", "isla", "jasmine", "kestrel", "lark", "mira", "nixie", "orion", "pax",
+  "quill", "raven", "sable", "tansy", "uma", "vivi", "willow", "xena", "yara", "zuri",
+  "aiden", "bennett", "cyrus", "dante", "elijah", "finnegan", "gavin", "hayden", "isaiah", "jax",
+  "kaden", "lennon", "maddox", "nash", "owen", "pax", "quade", "rory", "silas", "tanner",
+  "ulric", "vance", "wade", "xander", "yale", "zane", "alani", "briar", "cypress", "dahlia",
+  "everest", "fable", "glen", "harlow", "iris", "juno", "kira", "lark", "mira", "nola",
+  "ophelia", "piper", "quinnley", "raven", "sage", "tansy", "uma", "vivi", "willow", "xena",
+  "yara", "zuri", "adley", "bexley", "charlie", "drew", "emery", "finn", "gale", "huxley",
+  "indie", "jett", "koda", "luca", "milo", "nova", "oak", "pax", "quill", "revel",
+  "sable", "tate", "uri", "vaughn", "wren", "xavi", "yoshi", "zara", "axton", "briar",
+  "cairo", "dorian", "elowen", "finnian", "gentry", "hollis", "isidore", "jovian", "kestrel", "lazlo",
+  "marlow", "niven", "ozzy", "pippin", "quillon", "riven", "soren", "tobias", "ulani", "vireo",
+  "wilder", "xenon", "yule", "zeb", "alba", "basil", "cypress", "dahlia", "elara", "fable",
+  "garnet", "halcyon", "isla", "jasmine", "kestrel", "lark", "mira", "nixie", "orion", "pax",
+  "quill", "raven", "sable", "tansy", "uma", "vivi", "willow", "xena", "yara", "zuri",
+  "aiden", "bennett", "cyrus", "dante", "elijah", "finnegan", "gavin", "hayden", "isaiah", "jax",
+  "kaden", "lennon", "maddox", "nash", "owen", "pax", "quade", "rory", "silas", "tanner",
+  "ulric", "vance", "wade", "xander", "yale", "zane", "alani", "briar", "cypress", "dahlia",
+  "everest", "fable", "glen", "harlow", "iris", "juno", "kira", "lark", "mira", "nola",
+  "ophelia", "piper", "quinnley", "raven", "sage", "tansy", "uma", "vivi", "willow", "xena",
+  "yara", "zuri", "adley", "bexley", "charlie", "drew", "emery", "finn", "gale", "huxley",
+  "indie", "jett", "koda", "luca", "milo", "nova", "oak", "pax", "quill", "revel",
+  "sable", "tate", "uri", "vaughn", "wren", "xavi", "yoshi", "zara", "axton", "briar",
+  "cairo", "dorian", "elowen", "finnian", "gentry", "hollis", "isidore", "jovian", "kestrel", "lazlo",
+  "marlow", "niven", "ozzy", "pippin", "quillon", "riven", "soren", "tobias", "ulani", "vireo",
+  "wilder", "xenon", "yule", "zeb", "alba", "basil", "cypress", "dahlia", "elara", "fable",
+  "garnet", "halcyon", "isla", "jasmine", "kestrel", "lark", "mira", "nixie", "orion", "pax",
+  "quill", "raven", "sable", "tansy", "uma", "vivi", "willow", "xena", "yara", "zuri",
+  "aiden", "bennett", "cyrus", "dante", "elijah", "finnegan", "gavin", "hayden", "isaiah", "jax",
+  "kaden", "lennon", "maddox", "nash", "owen", "pax", "quade", "rory", "silas", "tanner",
+  "ulric", "vance", "wade", "xander", "yale", "zane", "alani", "briar", "cypress", "dahlia",
+  "everest", "fable", "glen", "harlow", "iris", "juno", "kira", "lark", "mira", "nola",
+  "ophelia", "piper", "quinnley", "raven", "sage", "tansy", "uma", "vivi", "willow", "xena",
+  "yara", "zuri", "adley", "bexley", "charlie", "drew", "emery", "finn", "gale", "huxley",
+  "indie", "jett", "koda", "luca", "milo", "nova", "oak", "pax", "quill", "revel",
+  "sable", "tate", "uri", "vaughn", "wren", "xavi", "yoshi", "zara", "axton", "briar",
+  "cairo", "dorian", "elowen", "finnian", "gentry", "hollis", "isidore", "jovian", "kestrel", "lazlo",
+  "marlow", "niven", "ozzy", "pippin", "quillon", "riven", "soren", "tobias", "ulani", "vireo",
+  "wilder", "xenon", "yule", "zeb", "alba", "basil", "cypress", "dahlia", "elara", "fable",
+  "garnet", "halcyon", "isla", "jasmine", "kestrel", "lark", "mira", "nixie", "orion", "pax",
+  "quill", "raven", "sable", "tansy", "uma", "vivi", "willow", "xena", "yara", "zuri"
+];
+
+
+
+  
+const lastNames = [
+  "smith", "johnson", "williams", "brown", "jones", "miller", "davis", "garcia", "rodriguez", "wilson",
+  "martinez", "anderson", "taylor", "thomas", "moore", "jackson", "white", "harris", "martin", "thompson",
+  "lee", "clark", "lewis", "walker", "hall", "allen", "young", "hernandez", "king", "wright",
+  "scott", "green", "adams", "baker", "nelson", "carter", "mitchell", "roberts", "campbell", "turner",
+  "wood", "shaw", "porter", "fox", "rose", "flores", "griffin", "richards", "ross", "banks",
+  "bishop", "hudson", "sanders", "mendoza", "ramos", "patel", "chang", "khan", "morales", "nguyen",
+  "black", "steele", "snow", "hunter", "knight", "wolfe", "cross", "ray", "fisher",
+  "coleman", "jenkins", "perry", "powell", "long", "patterson", "hughes", "flores", "washington", "butler",
+  "simmons", "foster", "gonzales", "bryant", "alexander", "russell", "griffith", "diaz", "hayes", "myers",
+  "ford", "hamilton", "graham", "sullivan", "wallace", "woods", "cole", "west", "jordan", "owens",
+  "reynolds", "fisher", "ellis", "harrison", "gibson", "mcdonald", "cruz", "marshall", "ortiz", "gomez",
+  "murray", "freeman", "wells", "webb", "simpson", "stevens", "tucker", "porter", "hunter", "hicks",
+  "crawford", "henry", "boyd", "mason", "morales", "kennedy", "warren", "dixon", "ramos", "reyes",
+  "burns", "gordon", "shaw", "holmes", "rice", "robertson", "hunt", "black", "daniels", "palmer",
+  "mills", "nichols", "grant", "knight", "ferguson", "rose", "stone", "hawkins", "dunn", "perkins",
+  "hudson", "spencer", "gardner", "stevenson", "payne", "pierce", "berry", "matthews", "arnold", "wagner",
+  "willis", "ray", "watkins", "olson", "carroll", "duncan", "snyder", "hart", "cunningham", "bradley",
+  "lane", "andrews", "ruiz", "harper", "fox", "riley", "armstrong", "carter", "weaver", "lin",
+  "marshall", "bishop", "mccarthy", "palmer", "lawrence", "goodwin", "beck", "hanson", "todd", "sutton",
+  "gregory", "medina", "farmer", "polk", "hammond", "shea", "contreras", "casey", "burnett", "hoffman",
+  "gilbert", "baldwin", "carlson", "park", "vargas", "sanders", "patton", "logan", "brady", "christensen",
+  "whitaker", "barker", "neal", "merritt", "hunter", "peters", "hodges", "wright", "marshall", "hansen",
+  "vaughn", "nicholson", "leonard", "johnston", "goodman", "cameron", "martin", "elliott", "nichols", "carson",
+  "petersen", "shaw", "martinez", "shields", "hunter", "cruz", "sampson", "christian", "raymond", "clark",
+  "shepherd", "knox", "oliver", "sherman", "hall", "fleming", "morris", "benson", "armstrong", "dean",
+  "nichols", "watson", "mckinney", "cole", "wells", "spencer", "hicks", "olson", "morgan", "guzman",
+  "rodriguez", "lambert", "greene", "reese", "hunt", "montgomery", "fox", "holt", "fuller", "bryant",
+  "chapman", "elliott", "lam", "warren", "marshall", "harrison", "holmes", "gilmore", "tate", "page",
+  "james", "poole", "brooks", "moss", "crawford", "brewer", "luna", "marsh", "powell", "gibbs",
+  "reynolds", "carr", "bradford", "perkins", "oliver", "bernal", "ellis", "rowe", "hudson", "mendoza",
+  "nelson", "little", "hahn", "lee", "carter", "fowler", "rice", "perry", "carson", "romero",
+  "jones", "todd", "long", "ross", "goodman", "mccormick", "hanson", "nicholson", "chavez", "glover",
+  "potter", "weber", "lee", "flynn", "schultz", "franklin", "cross", "rodriguez", "christensen", "hansen",
+  "fletcher", "lopez", "jacobs", "giles", "burke", "mason", "vazquez", "garrett", "tucker", "walsh",
+  "owens", "sloan", "white", "sims", "wood", "todd", "murray", "hodge", "mcdowell", "bennett",
+  "graves", "moreno", "riley", "henderson", "carter", "shaw", "connor", "soto", "arnold", "bishop",
+  "gillespie", "parker", "bennett", "holman", "reid", "webb", "mcdaniel", "lambert", "foster", "roberts",
+  "davenport", "ross", "tate", "freeman", "coleman", "garcia", "turner", "clark", "perkins", "schmidt",
+  "martinez", "young", "hernandez", "ellis", "bailey", "porter", "chavez", "cunningham", "olsen", "snyder",
+  "meyer", "jacobs", "gilbert", "olson", "rice", "mcdonald", "fisher", "sullivan", "hudson", "morris",
+  "sanders", "brooks", "wells", "patel", "hudson", "ross", "gonzales", "ruiz", "willis", "griffin",
+  "walters", "watson", "barnes", "daniels", "dixon", "cox", "barnett", "hunter", "richardson", "reed",
+  "lee", "baker", "montgomery", "warren", "kim", "long", "nichols", "hunter", "fuller", "carter",
+  "griffith", "watson", "allen", "christensen", "matthews", "snyder", "morgan", "ellis", "frazier", "reyes",
+  "craig", "barker", "boyd", "burns", "casey", "carroll", "coleman", "diaz", "ellis", "foster",
+  "gardner", "garza", "gray", "griffin", "hamilton", "harper", "hicks", "hill", "holmes", "hudson",
+  "hunt", "hunter", "jackson", "james", "jenkins", "johnson", "jones", "kelly", "king", "knight",
+  "lambert", "lane", "larson", "lawrence", "lewis", "lopez", "long", "lorenzo", "marsh", "mason",
+  "matthews", "mcdonald", "mendoza", "miller", "montgomery", "morales", "morgan", "morris", "murphy", "nelson",
+  "owens", "patterson", "perez", "perry", "peterson", "phillips", "powell", "price", "ramirez", "reyes",
+  "richardson", "robinson", "rodriguez", "ross", "ruiz", "russell", "ryan", "sanders", "scott", "shaffer",
+  "shaw", "simmons", "simpson", "smith", "stevens", "stewart", "taylor", "thomas", "thompson", "torres",
+  "turner", "walker", "wallace", "walsh", "watson", "weaver", "wells", "williams", "wilson", "wood",
+  "wright", "young"
+];
+
+ 
+  
+
+
+const adjectives = [
+  "cool", "fast", "fierce", "crazy", "wild", "silent", "lucky", "dark", "bright", "sharp",
+  "sneaky", "brave", "epic", "icy", "stormy", "mad", "noble", "grim", "stealthy", "flaming",
+  "frosty", "venomous", "vicious", "mighty", "legendary", "ancient", "reckless", "fearless", "twisted", "glitchy",
+  "electric", "volatile", "celestial", "chaotic", "phantom", "burning", "shattered", "radiant", "savage", "cursed",
+  "hollow", "ethereal", "prime", "rogue", "sinister", "ashen", "void", "galactic", "hyped", "wired",
+  "mystic", "shadowy", "arcane", "gritty", "unstable", "blazing", "serene", "silent", "jagged", "loyal",
+
+  // 1 - 100 (from previous two batches)
+  "abrupt", "abrasive", "abstract", "abundant", "adorable", "adventurous", "affectionate", "agile", "alarming", "alert",
+  "alluring", "aloof", "amazing", "ambiguous", "ambitious", "amiable", "angelic", "animated", "annoying",
+  "antique", "anxious", "arctic", "arrogant", "artistic", "assertive", "astonishing", "athletic", "attentive", "attractive",
+  "austere", "authentic", "automatic", "avaricious", "awesome", "awful", "awkward", "balanced", "barren", "bashful",
+  "beautiful", "beneficial", "bewildered", "bizarre", "bitter", "bland", "blissful", "blunt", "bold",
+  "bouncy", "brash", "brilliant", "broad", "broken", "brutal", "buoyant", "burly", "busy", "calm",
+  "capable", "carefree", "careful", "caring", "cautious", "charming", "cheerful", "chilly", "chivalrous",
+  "choppy", "circular", "classy", "clean", "clear", "clever", "clumsy", "coherent", "cold", "colossal",
+  "colorful", "combative", "comfortable", "common", "compassionate", "competent", "complex", "complicated", "composed",
+  "conceited", "concise", "confident", "confused", "conscientious", "considerate", "constant", "content", "convincing", "coolheaded",
+
+  // 101 - 200 (second batch)
+  "cooperative", "cordial", "courageous", "courteous", "coveted", "creative", "credible", "critical", "crisp",
+  "crooked", "crowded", "cruel", "cryptic", "cunning", "curious", "curly", "cute", "dazzling", "deadly",
+  "deafening", "decent", "decisive", "deep", "defiant", "definite", "delicate", "delightful", "demanding", "dense",
+  "dependent", "descriptive", "desperate", "determined", "devoted", "different", "difficult", "diligent", "dim", "dimpled",
+  "direct", "dirty", "discreet", "disgusting", "disruptive", "distant", "distinct", "disturbed", "diverse", "dizzy",
+  "dominant", "doubtful", "dramatic", "dreary", "drunk", "dry", "dual", "dull", "dusty", "dynamic",
+  "eager", "early", "earnest", "easy", "ecstatic", "edgy", "efficient", "elaborate", "elastic", "elated",
+  "elderly", "elegant", "elemental", "eloquent", "embarrassed", "emotional", "empirical", "empty", "enchanted",
+  "energetic", "enormous", "enthusiastic", "envious", "equal", "equatorial", "essential", "esteemed", "ethical", "euphoric",
+  "even", "evergreen", "evil", "exalted", "excellent", "exhausted", "exotic", "expensive",
+
+  // 201 - 300
+  "fabulous", "faint", "fair", "faithful", "fancy", "fantastic", "fastidious", "fat", "favorable", "fearful",
+  "feisty", "feline", "female", "fertile", "festive", "fierce", "filthy", "fine", "finished", "firm",
+  "flamboyant", "flat", "flawless", "flimsy", "flowery", "fluffy", "focused", "fond", "foolhardy", "foolish",
+  "forceful", "forked", "formal", "fortunate", "fragile", "frantic", "frayed", "fresh", "friendly", "frightened",
+  "frivolous", "frosty", "frugal", "fruitful", "fuming", "funny", "fussy", "futuristic", "fuzzy", "gallant",
+  "gargantuan", "gaudy", "gentle", "ghastly", "giant", "giddy", "gifted", "gigantic", "glamorous", "gleaming",
+  "glib", "glistening", "glorious", "glum", "golden", "good", "gorgeous", "graceful", "gracious", "grand",
+  "grandiose", "grateful", "grave", "gray", "great", "greedy", "green", "gregarious", "grim", "grimy",
+  "gripping", "grizzled", "gross", "grotesque", "grouchy", "grubby", "gruesome", "grumpy", "guarded", "guilty",
+  "gullible", "gusty", "hairy", "half", "handmade", "handsome", "handy", "happy", "hard", "harmful",
+
+  // 301 - 400
+  "harmonious", "harsh", "hasty", "hateful", "haunting", "healthy", "heartfelt", "hearty", "heavenly", "heavy",
+  "hellish", "helpful", "helpless", "hidden", "hideous", "high", "hilarious", "hoarse", "hollow", "homely",
+  "honest", "honorable", "hopeful", "hopeless", "hospitable", "hot", "huge", "humble", "humdrum", "humorous",
+  "hungry", "hurt", "husky", "icy", "ideal", "idealistic", "identical", "idiotic", "idle", "idyllic",
+  "ignorant", "ill", "illegal", "illiterate", "illustrious", "imaginary", "immense", "impartial", "imperfect", "impish",
+  "important", "impossible", "impractical", "impressive", "impulsive", "inborn", "incandescent", "incomparable", "incongruous", "incredible",
+  "indelible", "industrious", "inexpensive", "infallible", "infamous", "infantile", "infatuated", "infectious", "inferior", "infinite",
+  "informal", "innate", "innocent", "inquisitive", "insidious", "insistent", "instructive", "insubstantial", "intelligent", "intent",
+  "interesting", "internal", "international", "intrepid", "ironclad", "irritating", "itchy", "jaded", "jagged", "jazzy",
+
+  // 401 - 500
+  "jealous", "jittery", "jolly", "jovial", "joyful", "joyous", "jubilant", "judicious", "juicy", "jumbo",
+  "jumpy", "junior", "juvenile", "keen", "kind", "kindhearted", "kindly", "klutzy", "knobby", "knowing",
+  "knowledgeable", "known", "kooky", "kosher", "lame", "lanky", "large", "last", "lasting", "late",
+  "laughable", "lavish", "lazy", "leading", "lean", "left", "legal", "legitimate", "lethal", "level",
+  "lewd", "light", "lighthearted", "like", "likable", "likely", "limited", "limp", "limping", "linear",
+  "lined", "liquid", "literate", "little", "lively", "living", "lonely", "long", "long-term", "loose",
+  "lopsided", "lost", "loud", "lovely", "loving", "low", "loyal", "lucky", "luminous", "lumpy",
+  "lustrous", "luxurious", "mad", "made-up", "magenta", "magic", "magnificent", "majestic", "major", "male",
+  "mammoth", "maniacal", "many", "marked", "married", "marvelous", "massive", "material", "materialistic", "mature",
+
+  // 501 - 600
+  "mean", "measly", "meaty", "medical", "mediocre", "medium", "meek", "mellow", "melodic", "memorable",
+  "menacing", "merry", "messy", "metallic", "mild", "military", "mindless", "miniature", "minor", "miserable",
+  "miserly", "misguided", "misty", "mixed", "modern", "modest", "moist", "monstrous", "monthly", "monumental",
+  "moral", "mortified", "motherly", "motionless", "mountainous", "muddy", "muffled", "multicolored", "mundane", "murky",
+  "mushy", "musical", "musty", "muted", "mysterious", "naive", "narrow", "nasty", "natural", "naughty",
+  "navy", "neat", "nebulous", "necessary", "needy", "neighborly", "nervous", "new", "next", "nice",
+  "nifty", "nimble", "nippy", "nocturnal", "noisy", "nonstop", "normal", "nostalgic", "nosy", "notable",
+  "noted", "notorious", "novel", "noxious", "null", "numberless", "numerous", "nutritious", "nutty", "oafish",
+
+  // 601 - 700
+  "obedient", "obese", "obnoxious", "obscene", "obsequious", "observant", "obsolete", "obvious", "occasional", "odd",
+  "oddball", "offbeat", "offensive", "official", "oily", "old", "old-fashioned", "only", "open", "optimal",
+  "optimistic", "opulent", "orange", "orderly", "ordinary", "organic", "ornate", "ornery", "other", "our",
+  "outgoing", "outlandish", "outrageous", "outstanding", "oval", "overconfident", "overjoyed", "overrated", "overt", "overwrought",
+  "painful", "painstaking", "pale", "paltry", "panicky", "panoramic", "parallel", "parched", "partial", "passionate",
+  "passive", "past", "pastel", "pathetic", "peaceful", "peppery", "perfect", "periodic", "perky", "personal",
+  "pertinent", "pesky", "pessimistic", "petite", "petty", "phony", "physical", "piercing", "pink", "pitiful",
+  "plain", "plaintive", "plastic", "playful", "pleasant", "pleased", "pleasing", "plump", "plush", "pointless",
+
+  // 701 - 800
+  "poised", "polished", "polite", "political", "poor", "popular", "portly", "posh", "positive", "possible",
+  "potable", "powerful", "powerless", "practical", "precious", "present", "prestigious", "pretty", "previous", "pricey",
+  "prickly", "primary", "prime", "pristine", "private", "prize", "probable", "productive", "profitable", "profuse",
+  "proper", "proud", "prudent", "punctual", "pungent", "puny", "pure", "purple", "pushy", "putrid",
+  "puzzled", "puzzling", "quaint", "qualified", "quarrelsome", "quarterly", "queasy", "querulous", "questionable", "quick",
+  "quiet", "quintessential", "quirky", "quixotic", "quizzical", "radiant", "ragged", "rainy", "rapid", "rare",
+  "rash", "raw", "ready", "real", "realistic", "reasonable", "rebel", "receptive", "reckless", "rectangular",
+
+  // 801 - 900
+  "red", "redundant", "reflective", "regular", "relieved", "remarkable", "remorseful", "remote", "repentant", "repulsive",
+  "required", "respectful", "responsible", "restless", "rewarding", "rich", "right", "rigid", "ripe", "roasted",
+  "robust", "romantic", "roomy", "rotten", "rough", "round", "rowdy", "royal", "ruddy", "rude",
+  "runny", "rural", "rusty", "sad", "safe", "salty", "same", "sandy", "sane", "sarcastic",
+  "sassy", "satisfying", "scaly", "scarce", "scared", "scary", "scattered", "scrawny", "screeching", "second",
+  "secondary", "secret", "selfish", "self-reliant", "sentimental", "separate", "serene", "serious", "shabby", "shallow",
+
+  // 901 - 1000
+  "sharp", "shimmering", "shiny", "shocked", "shocking", "short", "showy", "shrill", "shy", "silly",
+  "silent", "silent", "silky", "silly", "silver", "similar", "simple", "sinful", "single", "sizzling",
+  "skeletal", "skinny", "sleepy", "slight", "slim", "slimy", "slippery", "slow", "small", "smart",
+  "smoggy", "smooth", "smug", "snappy", "snarling", "sneaky", "snobbish", "snowy", "soft", "soggy",
+  "solid", "somber", "some", "sore", "sour", "Spanish", "sparkling", "spicy", "spiffy", "spirited",
+  "spiteful", "splendid", "spotless", "spotted", "spry", "square", "squeaky", "sticky", "stiff", "stimulating",
+  "stingy", "stormy", "strange", "strict", "strident", "strong", "stubborn", "stunning", "subdued", "submissive",
+  "substantial", "successful", "succulent", "sudden", "sugary", "sunny", "super", "superb", "superficial", "supreme",
+  "swanky", "sweet", "sweltering", "swift", "sympathetic", "synonymous", "taboo", "tacky", "tall", "talkative",
+  "tame", "tan", "tangible", "tart", "tasty", "tattered", "tawdry", "tearful", "tedious", "teeny",
+  "teeny-tiny", "telling", "tender", "tense", "tepid", "terrible", "terrific", "testy", "thankful", "therapeutic",
+  "thick", "thin", "thinkable", "third", "thirsty", "thorny", "thorough", "thoughtful", "threadbare", "thrifty",
+  "thunderous", "tidy", "tight", "tiny", "tired", "torn", "total", "tough", "traumatic", "treasured",
+  "tremendous", "tricky", "trite", "troubled", "truculent", "true", "trusting", "trustworthy", "trusty", "truthful",
+  "tubby", "turbulent", "twin", "ugly", "ultimate", "unacceptable", "unaware", "uncomfortable", "uncommon", "unconscious",
+  "understated", "unequaled", "uneven", "unfinished", "unfit", "unfolded", "unfortunate", "unhappy", "unhealthy", "uniform",
+  "unimportant", "unique", "united", "unkempt", "unknown", "unlawful", "unlined", "unlucky", "unnatural", "unpleasant",
+  "unrealistic", "unripe", "unruly", "unselfish", "unsightly", "unsteady", "unsung", "untidy", "unusual", "unwelcome",
+  "unwieldy", "unwilling", "unwitting", "unwritten", "upbeat", "upright", "upset", "urban", "usable", "used",
+  "useful", "useless", "utilized", "utopian", "utter", "vacant", "vague", "vain", "valid", "valuable",
+  "vapid", "variable", "vast", "velvety", "venerated", "vengeful", "verifiable", "vibrant", "vicious", "victorious",
+  "vigilant", "vigorous", "villainous", "violent", "virtuous", "visible", "vital", "vivacious", "vivid", "voluminous",
+  "voracious", "vulnerable", "wacky", "waggish", "waiting", "wakeful", "wandering", "wanting", "warlike", "warm",
+  "wary", "wasteful", "watchful", "waterlogged", "watery", "wavy", "weak", "wealthy", "weary", "webbed",
+  "wee", "weekly", "weepy", "weighty", "weird", "welcome", "well-documented", "well-groomed", "well-informed", "well-lit",
+  "well-made", "well-off", "well-to-do", "well-worn", "wet", "whimsical", "whirlwind", "whispered", "white", "whole",
+  "wicked", "wide", "wide-eyed", "wild", "willing", "wilted", "windy", "winged", "wiry", "wise",
+  "wishful", "witty", "woebegone", "woeful", "wonderful", "wooden", "woozy", "workable", "worried", "worrisome",
+  "worried", "worse", "worst", "worthless", "worthy", "wrathful", "wretched", "wrong", "wry", "yawning",
+  "yearly", "yearning", "yellow", "yielding", "young", "youthful", "yummy", "zany", "zealous", "zesty",
+  "zigzag", "zippy", "zonal", "zany"
+];
+
+  
+
+  
+const gamingWords = [
+  "dragon", "shadow", "ninja", "ghost", "blade", "sniper", "hunter", "warrior", "king", "queen",
+  "assassin", "beast", "rider", "mage", "thief", "brawler", "reaper", "gamer", "wizard", "phoenix",
+  "demon", "samurai", "viper", "juggernaut", "rogue", "sorcerer", "banshee", "warden", "paladin", "titan",
+  "hacker", "cyber", "glitch", "sentinel", "outlaw", "oracle", "drifter", "monk", "lich", "knight",
+  "alchemist", "valkyrie", "golem", "scout", "spy", "hustler", "psion", "overlord", "relic", "archer",
+  "snare", "bomber", "healer", "engineer", "necromancer", "seer", "tank", "slinger", "barbarian", "champion",
+  "mercenary", "summoner", "illusionist", "berserker", "shaman", "priest", "invoker", "executioner", "witch",
+  "templar", "vanguard", "scavenger", "ranger", "spyder", "necrotech", "cyborg", "mechanic", "android",
+  "botmaster", "smuggler", "raider", "netrunner", "ronin", "construct", "synth",
+  "abomination", "ace", "agent", "aggro", "alpha", "ambusher", "anomaly", "archmage", "artificer", "asp",
+  "autoaim", "avenger", "azer", "balrog", "bane", "basilisk", "battlemage", "behemoth", "blackout", "blight",
+  "bloodhound", "bloodletter", "bloodmage", "bloodseeker", "bludgeoner", "bombardier", "brute", "cabal", "cadet", "cannon",
+  "captain", "catalyst", "champ", "charger", "charmer", "chaser", "colossus", "conjurer", "corruptor", "covenant",
+  "crusader", "crusher", "cybermage", "cyclone", "dagger", "darkling", "darkseer", "deathbringer", "deathmark", "deathwatch",
+  "deceiver", "defender", "demolisher", "desperado", "destroyer", "devastator", "diabolist", "diplomat", "disruptor", "diviner",
+  "doomblade", "doombringer", "dragonborn", "dreadnought", "duelist", "eclipse", "enforcer", "enigma", "exile", "exorcist",
+  "falcon", "feral", "firebrand", "firestarter", "flamecaller", "flamewielder", "fleetfoot", "flesheater", "forsaken", "fury",
+  "gargoyle", "ghostwalker", "gladiator", "glimmer", "gnome", "goliath", "gravekeeper", "grimreaper", "grinder", "gunslinger",
+  "harbinger", "harlequin", "headhunter", "hellion", "herald", "hexer", "highlander", "hound", "howler", "hunterkiller",
+  "illuminator", "immortal", "impaler", "infiltrator", "inflictor", "insurgent", "ironclad", "ironfist", "junglecat", "jugular",
+  "killer", "kingpin", "knave", "knightmare", "lancer", "legionnaire", "leviathan", "lightbringer", "lightspeed", "lionheart",
+  "lurker", "marauder", "marksman", "martyr", "merciless", "messenger", "mimic", "mischief", "monolith", "moonblade",
+  "moonshadow", "morph", "mystic", "nightblade", "nightstalker", "nomad", "noxious", "obliterator", "observer", "occultist",
+  "officer", "omega", "pacifier", "pathfinder", "pilgrim", "plaguebringer", "plunderer", "poisoner", "predator", "preacher",
+  "primal", "prophet", "prowler", "psyker", "pyromancer", "raptor", "ravager", "reclaimer", "recon", "redeemer",
+  "reforged", "renegade", "replicant", "reptile", "resonator", "ripper", "rocketeer", "runeblade", "runeweaver", "rusher",
+  "saboteur", "sailor", "sandstorm", "scourge", "seeker", "seraph", "shadowcaster", "shadowhunter", "shard", "shifter",
+  "shooter", "skirmisher", "slayer", "sparrow", "specter", "spellslinger", "spike", "spoilsport", "squadron", "stallion",
+  "stalker", "stormcaller", "stormrider", "striker", "sultan", "survivor", "swiftblade", "swiftspear", "tactician", "talon",
+  "tempest", "thunderbolt", "thunderclap", "thunderfury", "tracker", "trapper", "trickster", "trooper", "tundra", "tunnelrat",
+  "tyrant", "undead", "undertaker", "undying", "vengeance", "venom", "vindicator", "virtuoso", "vortex", "warlord",
+  "warlock", "warpath", "watcher", "whisper", "wildcard", "wilderness", "windwalker", "witchdoctor", "wolf", "wraith",
+  "zealot", "zero", "zombie",
+
+  // Fill up to 1000 entries with similar themed words if you want me to continue
+];
+
+  // Helper: random int in [min, max]
+  function randomInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  // Generate username for each style
+  function generateUsername(style) {
+    switch (style) {
+      case 'twitter': {
+        // pattern: first_last123 or first123
+        const useLast = Math.random() < 0.6;
+        const first = firstNames[randomInt(0, firstNames.length - 1)];
+        const last = lastNames[randomInt(0, lastNames.length - 1)];
+        const number = randomInt(0, 9999);
+        if (useLast) {
+          return `${first}_${last}${number > 0 ? number : ''}`;
+        } else {
+          return `${first}${number > 0 ? number : ''}`;
+        }
+      }
+      case 'instagram': {
+        // pattern: adjective.word.number or word.word
+        const adj = adjectives[randomInt(0, adjectives.length - 1)];
+        const first = firstNames[randomInt(0, firstNames.length - 1)];
+        const last = lastNames[randomInt(0, lastNames.length - 1)];
+        const number = randomInt(0, 9999);
+        const pattern = randomInt(1, 3);
+        if (pattern === 1) {
+          return `${adj}.${first}${number > 0 ? number : ''}`;
+        } else if (pattern === 2) {
+          return `${first}.${last}`;
+        } else {
+          return `${first}${last}${number > 0 ? number : ''}`;
+        }
+      }
+      case 'tiktok': {
+        // pattern: xXwordXx + number or word1234
+        const prefix = Math.random() < 0.5 ? 'xX' : '';
+        const suffix = Math.random() < 0.5 ? 'Xx' : '';
+        const word = adjectives[randomInt(0, adjectives.length - 1)] + gamingWords[randomInt(0, gamingWords.length - 1)];
+        const number = randomInt(0, 99999);
+        return `${prefix}${word}${suffix}${number > 0 ? number : ''}`;
+      }
+      case 'gaming': {
+        // pattern: adjective + gamingWord + number
+        const adj = adjectives[randomInt(0, adjectives.length - 1)];
+        const game = gamingWords[randomInt(0, gamingWords.length - 1)];
+        const number = randomInt(0, 9999);
+        const sep = ['_', '', '-'][randomInt(0, 2)];
+        return `${adj}${sep}${game}${number > 0 ? number : ''}`;
+      }
+      case 'simple':
+      default: {
+        // simple alphanumeric, length between 6 and 12
+        const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+        const length = randomInt(6, 12);
+        let name = '';
+        for (let i = 0; i < length; i++) {
+          name += chars.charAt(randomInt(0, chars.length - 1));
+        }
+        return name;
+      }
+    }
+  }
+
+  async function generateUsernames(style, count) {
+    const uniqueUsernames = new Set();
+    const chunkSize = 50000;
+    let generatedCount = 0;
+    const encoder = new TextEncoder();
+    const streamParts = [];
+
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    while (generatedCount < count) {
+      const currentBatchSize = Math.min(chunkSize, count - generatedCount);
+      const batch = [];
+
+      while (batch.length < currentBatchSize) {
+        const username = generateUsername(style);
+        if (!uniqueUsernames.has(username)) {
+          uniqueUsernames.add(username);
+          batch.push(username);
+        }
+      }
+
+      generatedCount += batch.length;
+
+      status.textContent = `Generated ${generatedCount.toLocaleString()} / ${count.toLocaleString()} usernames...`;
+      progressBar.style.width = ((generatedCount / count) * 100).toFixed(2) + '%';
+
+      streamParts.push(encoder.encode(batch.join('\n') + '\n'));
+
+      await sleep(10);
+    }
+
+    return new Blob(streamParts, { type: 'text/plain' });
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    generateBtn.disabled = true;
+    progressBar.style.width = '0%';
+    status.textContent = 'Starting generation...';
+
+    const style = form.platform.value;
+    let count = parseInt(form.count.value, 10);
+
+    if (isNaN(count) || count < 1 || count > 100000) {
+      alert('Count must be between 1 and 100,000.');
+      generateBtn.disabled = false;
+      return;
+    }
+
+    try {
+      const blob = await generateUsernames(style, count);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `usernames_${style}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      status.textContent = `Done! Download started. File name: usernames_${style}.txt`;
+      progressBar.style.width = '100%';
+    } catch (err) {
+      alert('Error: ' + err.message);
+      status.textContent = '';
+      progressBar.style.width = '0%';
+    }
+
+    generateBtn.disabled = false;
+  });
+})();
+</script>
+
+</body>
+</html>

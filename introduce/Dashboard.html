@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ZeroDays Premium Main</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: black;
+      color: #c58b00;
+      overflow-x: hidden;
+    }
+
+    video.bg-video {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      object-fit: cover;
+      z-index: -2;
+    }
+
+    nav {
+      width: 100%;
+      background: rgba(0,0,0,0.6);
+      border-bottom: 1px solid #c58b00;
+      padding: 0.8rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: fixed;
+      top: 0;
+      z-index: 10;
+    }
+
+    nav .brand {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #c58b00;
+    }
+
+    nav .nav-links {
+      display: flex;
+      gap: 1.5rem;
+    }
+
+    nav .nav-links .dropdown {
+      position: relative;
+    }
+
+    nav .nav-links .dropdown-content {
+      display: none;
+      position: absolute;
+      top: 2rem;
+      background: #111;
+      padding: 1rem;
+      border: 1px solid #c58b00;
+      border-radius: 8px;
+      z-index: 20;
+    }
+
+    nav .nav-links .dropdown:hover .dropdown-content {
+      display: block;
+    }
+
+    .dropdown-content a {
+      display: block;
+      color: #c58b00;
+      padding: 0.5rem 0;
+      text-decoration: none;
+    }
+
+    .sidebar {
+      width: 220px;
+      position: fixed;
+      top: 60px;
+      left: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.4);
+      border-right: 1px solid #c58b00;
+      padding: 1rem;
+      overflow-y: auto;
+      transition: transform 0.3s ease;
+      z-index: 9;
+    }
+
+    .sidebar.hidden {
+      transform: translateX(-100%);
+    }
+
+    .toggle-sidebar {
+      position: fixed;
+      top: 70px;
+      left: 10px;
+      background: rgba(0,0,0,0.5);
+      color: #ffc107;
+      border: 1px solid #c58b00;
+      padding: 6px 12px;
+      border-radius: 5px;
+      z-index: 15;
+      cursor: pointer;
+    }
+
+    .sidebar h3 {
+      font-size: 1.1rem;
+      margin: 1rem 0 0.5rem;
+    }
+
+    .sidebar ul {
+      list-style: none;
+    }
+
+    .sidebar li {
+      margin: 0.5rem 0;
+    }
+
+    .sidebar a {
+      color: #ffcc00;
+      text-decoration: none;
+      font-size: 0.95rem;
+    }
+
+    .main-content {
+      margin-left: 240px;
+      padding: 100px 30px 30px;
+      transition: margin-left 0.3s ease;
+    }
+
+    .main-content.full-width {
+      margin-left: 0;
+    }
+
+    .section {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid #c58b00;
+      padding: 1.5rem;
+      border-radius: 12px;
+      margin-bottom: 2rem;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+    }
+
+    .section h2, h3 {
+      color: #ffc107;
+      margin-bottom: 1rem;
+    }
+
+    .section p {
+      margin-bottom: 1rem;
+    }
+
+    input {
+      padding: 0.5rem;
+      width: 100%;
+      border-radius: 6px;
+      border: 1px solid #c58b00;
+      background: #111;
+      color: #ffc107;
+      margin-bottom: 1rem;
+    }
+
+    #map {
+      height: 400px;
+      width: 100%;
+      border: 1px solid #ffc107;
+      border-radius: 8px;
+    }
+
+    footer {
+      text-align: center;
+      padding: 2rem;
+      font-size: 0.9rem;
+      color: #c58b00;
+    }
+
+    .start-btn {
+      background: rgba(0,0,0,0.5);
+      color: #c58b00;
+      border: 1px solid #c58b00;
+      padding: 10px 18px;
+      font-size: 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    @media (max-width: 1024px) {
+      .sidebar {
+        transform: translateX(-100%);
+      }
+
+      .sidebar.show {
+        transform: translateX(0);
+      }
+
+      .main-content {
+        margin-left: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <video class="bg-video" autoplay loop muted playsinline>
+    <source src="utilities-tools/cyber-tools/background/1761817527453041720p.mp4" type="video/mp4">
+  </video>
+
+  <audio id="bg-music" loop>
+    <source src="utilities-tools/cyber-tools/background/Programming___Coding___Hacking_music_vol.18__ANONYMOUS_HEADQUARTERS_(48k).mp3" type="audio/mpeg">
+  </audio>
+
+  <nav>
+    <div class="brand">ZeroDays Premium</div>
+    <div class="nav-links">
+      <div class="dropdown">
+        <span>Resources ▼</span>
+        <div class="dropdown-content">
+          <a href="#news">Historical News</a>
+          <a href="#wiki">Wiki</a>
+          <a href="#googlenews">Google News</a>
+          <a href="#map">OpenStreetMap</a>
+        </div>
+      </div>
+      <button class="start-btn" onclick="window.location.href='utilities-tools/Dashboard.html'">Go to Dashboard</button>
+    </div>
+  </nav>
+
+  <div class="toggle-sidebar" onclick="toggleSidebar()">☰ Toggle Sidebar</div>
+
+  <div class="sidebar" id="sidebar">
+    <h3>Toolkits</h3>
+    <ul>
+      <li><a href="utilities-tools/Teams/Red/index.html">Red Team Toolkit</a></li>
+<br>
+      <li><a href="utilities-tools/Teams/Blue/index.html">Blue Team Monitor</a></li>
+<br>
+      <i><a href="utilities-tools/Securitytools/index.html"> Security tools</a></i>
+<br>
+      <i><a href="utilities-tools/defence/index.html"> Cyber Utility Suite </a></i>
+<br>
+      <li><a href="utilities-tools/whackingtools/index.html">Hacking tools</a></li>
+<br>
+      <li><a href="utilities-tools/welcome/main/source/main/index.html">ZeroDays Premium</a></li>
+<br>
+      <li><a href="utilities-tools/entertainment/index.html">ZeroDays Premium</a></li>
+    </ul>
+    <h3>Navigation</h3>
+    <ul>
+      <li><a href="#news">News Archive</a></li>
+      <li><a href="#wiki">Wiki</a></li>
+      <li><a href="#googlenews">Google News</a></li>
+    </ul>
+  </div>
+
+  <div class="main-content">
+
+    <!-- NEWS ARCHIVE -->
+    <div class="section" id="news">
+      <h2>Global News Archive (1000–2025)</h2>
+
+      <h3>🟢 Ethical Events</h3>
+      <ul>
+        <li><a href="#ethics1066">1066: Battle of Hastings</a></li>
+        <li><a href="#ethics1492">1492: Columbus Discovery</a></li>
+      </ul>
+
+      <h3>🟡 Unethical Events</h3>
+      <ul>
+        <li><a href="#unethics2001">2001: 9/11 Attacks</a></li>
+      </ul>
+
+      <h3>🔴 Illegal Events</h3>
+      <ul>
+        <li><a href="#illegal1945">1945: WWII War Crimes</a></li>
+        <li><a href="#illegal2020">2020: COVID-19 Cybercrime</a></li>
+        <li><a href="#illegal2025">2025: AI Security Surveillance</a></li>
+      </ul>
+    </div>
+
+    <!-- Event Sections -->
+    <div class="section" id="ethics1066">
+      <h2>Ethical History: Battle of Hastings (1066)</h2>
+      <p>Though politically motivated, it led to administrative reforms and long-term governance stability in England.</p>
+    </div>
+
+    <div class="section" id="ethics1492">
+      <h2>Ethical History: Columbus Discovery (1492)</h2>
+      <p>Ushered in global trade and communication through exploration, especially from a European standpoint.</p>
+    </div>
+
+    <div class="section" id="unethics2001">
+      <h2>Unethical History: 9/11 Attacks (2001)</h2>
+      <p>Global terrorism attack that reshaped civil liberties, global surveillance, and war policies.</p>
+    </div>
+
+    <div class="section" id="illegal1945">
+      <h2>Illegal History: WWII War Crimes (1945)</h2>
+      <p>Nuremberg Trials marked historical justice for crimes against humanity.</p>
+    </div>
+
+    <div class="section" id="illegal2020">
+      <h2>Illegal History: COVID-19 & Cybercrime (2020)</h2>
+      <p>Pandemic-driven misinformation, data hacks, and black market medical sales surged globally.</p>
+    </div>
+
+
+
+    <!-- Wikipedia Search -->
+    <div class="section" id="wiki">
+      <h2>Live Wikipedia Search</h2>
+      <input type="text" id="wikiSearch" placeholder="Type a topic (e.g. 'cybersecurity')..." />
+      <div id="wikiResult"></div>
+    </div>
+
+    <!-- Google News -->
+    <div class="section" id="googlenews">
+      <h2>Google News (Live via RSS)</h2>
+      <div id="newsFeed">Loading latest headlines...</div>
+    </div>
+
+    <!-- OpenStreetMap Section -->
+    <div class="section" id="map">
+      <h2>OpenStreetMap - Explore the World</h2>
+      <div id="map" style="height: 500px;"></div>
+    </div>
+  </div>
+
+  <footer>© 2025 ZeroDays Premium — Zorathedevdeveloper00</footer>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    // Start music once user interacts
+    window.addEventListener('click', () => {
+      document.getElementById("bg-music").play().catch(() => {});
+    }, { once: true });
+
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      sidebar.classList.toggle('show');
+    }
+
+    const map = L.map('map');
+    const isMobile = /iPhone|iPad|iPod|Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const mapZoom = isMobile ? 2 : 3;
+    map.setView([20, 0], mapZoom);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    let markers = [];
+    function clearMarkers() {
+      markers.forEach(m => map.removeLayer(m));
+      markers = [];
+    }
+
+    async function searchWikipediaAndCommons(lat, lon) {
+      clearMarkers();
+      const wikiUrl = `https://en.wikipedia.org/w/api.php?origin=*&action=query&list=geosearch&gscoord=${lat}|${lon}&gsradius=10000&gslimit=20&format=json`;
+      const wikiRes = await fetch(wikiUrl).then(r => r.json());
+      if (wikiRes?.query?.geosearch) {
+        wikiRes.query.geosearch.forEach(place => {
+          const marker = L.marker([place.lat, place.lon]).addTo(map);
+          marker.bindPopup(`<b><a href="https://en.wikipedia.org/wiki/${encodeURIComponent(place.title)}" target="_blank">${place.title}</a></b>`);
+          markers.push(marker);
+        });
+      }
+
+      const commonsUrl = `https://commons.wikimedia.org/w/api.php?origin=*&action=query&format=json&generator=geosearch&ggscoord=${lat}|${lon}&ggsradius=15000&ggslimit=15&prop=imageinfo|coordinates&iiprop=url`;
+      const commonsRes = await fetch(commonsUrl).then(r => r.json());
+      if (commonsRes?.query) {
+        Object.values(commonsRes.query.pages).forEach(img => {
+          if (img.imageinfo?.[0] && img.coordinates?.[0]) {
+            const ii = img.imageinfo[0];
+            const coords = img.coordinates[0];
+            const marker = L.marker([coords.lat, coords.lon]).addTo(map);
+            marker.bindPopup(`<div><a href="${ii.url}" target="_blank">${img.title}</a><br/><img src="${ii.url}" style="width:100%;max-width:200px;"></div>`);
+            markers.push(marker);
+          }
+        });
+      }
+    }
+
+    let moveTimer;
+    map.on("moveend", () => {
+      clearTimeout(moveTimer);
+      moveTimer = setTimeout(() => {
+        const center = map.getCenter();
+        searchWikipediaAndCommons(center.lat, center.lng);
+      }, 5);
+    });
+
+    // Wikipedia search input
+    document.getElementById("wikiSearch")?.addEventListener("input", async function () {
+      const query = this.value.trim();
+      const resultDiv = document.getElementById("wikiResult");
+      if (!query) return resultDiv.innerHTML = "";
+
+      try {
+        const res = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(query)}`);
+        const data = await res.json();
+
+        resultDiv.innerHTML = data.extract ? `
+          <h3>${data.title}</h3>
+          <p>${data.extract}</p>
+          <a href="${data.content_urls.desktop.page}" target="_blank" style="color:#ffc107;">Read more on Wikipedia</a>
+        ` : "No summary found.";
+
+        if (data.coordinates) {
+          const lat = data.coordinates.lat;
+          const lon = data.coordinates.lon;
+          L.marker([lat, lon]).addTo(map).bindPopup(`${data.title}`).openPopup();
+          map.setView([lat, lon], 6);
+        }
+      } catch {
+        resultDiv.innerHTML = "Failed to fetch Wikipedia.";
+      }
+    });
+
+    async function loadRSS() {
+      const feedUrl = "https://api.rss2json.com/v1/api.json?rss_url=https://news.google.com/news/rss";
+      try {
+        const res = await fetch(feedUrl);
+        const data = await res.json();
+        const container = document.getElementById("newsFeed");
+        container.innerHTML = data.items.slice(0, 5).map(item => `
+          <p><a href="${item.link}" target="_blank" style="color:#ffc107;">${item.title}</a></p>
+        `).join("");
+      } catch {
+        document.getElementById("newsFeed").innerText = "Failed to load news.";
+      }
+    }
+
+    loadRSS();
+    searchWikipediaAndCommons(20, 0); // initial marker load
+  </script>
+</body>
+</html>
+

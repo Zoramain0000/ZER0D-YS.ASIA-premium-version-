@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GraphQL Introspection Scanner</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #000;
+      color: #c58b00;
+      overflow-x: hidden;
+    }
+
+    video#bg-video {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      min-width: 100vw; min-height: 100vh;
+      object-fit: cover;
+      z-index: -2;
+      opacity: 0.25;
+    }
+
+    audio#bg-music {
+      position: fixed;
+      z-index: -1;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 50px auto;
+      padding: 25px;
+      border-radius: 12px;
+      background: rgba(0, 0, 0, 0.2);
+    }
+
+    h1, label {
+      color: #c58b00;
+      text-shadow: 1px 1px 3px black;
+    }
+
+    input[type="text"], textarea {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      background: rgba(0,0,0,0.3);
+      color: #c58b00;
+      border: 1px solid #c58b00;
+      border-radius: 5px;
+      font-size: 1rem;
+    }
+
+    button {
+      background: rgba(0,0,0,0.4);
+      border: 1px solid #c58b00;
+      color: #c58b00;
+      padding: 10px 15px;
+      margin: 5px 5px 15px 0;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+
+    button:hover {
+      background: rgba(255,255,255,0.1);
+      color: red;
+    }
+
+    pre {
+      white-space: pre-wrap;
+      background: rgba(0,0,0,0.3);
+      padding: 10px;
+      border: 1px solid red;
+      color: #00ffcc;
+      margin: 10px 0;
+      border-radius: 5px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .history {
+      margin-top: 20px;
+    }
+
+    .history-item {
+      border-bottom: 1px solid red;
+      padding: 5px;
+      font-size: 0.9rem;
+      color: #ff8800;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        margin: 20px 10px;
+        padding: 15px;
+      }
+      button {
+        width: 100%;
+        margin: 8px 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Background Video -->
+  <video id="bg-video" autoplay muted loop playsinline>
+    <source src="background/1761817527453041720p.mp4" type="video/mp4" />
+    Your browser does not support the video tag.
+  </video>
+
+  <!-- Background Music -->
+  <audio id="bg-music" loop>
+    <source src="background/Programming___Coding___Hacking_music_vol.18__ANONYMOUS_HEADQUARTERS_(48k).mp3" type="audio/mpeg" />
+    Your browser does not support the audio tag.
+  </audio>
+
+  <div class="container">
+    <h1>🛰 GraphQL Introspection Scanner</h1>
+
+    <label>GraphQL Endpoint (optional for reference):</label>
+    <input type="text" id="endpoint" placeholder="https://example.com/graphql" />
+
+    <label>Paste Introspection JSON Result:</label>
+    <textarea id="introspection" rows="10" placeholder="{ data: { __schema: { ... } } }"></textarea>
+
+    <div>
+      <button onclick="analyzeSchema()">Scan Schema</button>
+      <button onclick="clearAll()">Clear</button>
+    </div>
+
+    <label>Result:</label>
+    <pre id="result-box">No result yet...</pre>
+    <button onclick="copyResult()">Copy Result</button>
+
+    <div class="history">
+      <h3>History</h3>
+      <div id="history-box"></div>
+    </div>
+  </div>
+
+  <script>
+    const music = document.getElementById("bg-music");
+    const resultBox = document.getElementById("result-box");
+    const historyBox = document.getElementById("history-box");
+    let history = [];
+
+    window.addEventListener('click', () => {
+      music.play().catch(() => {});
+    }, { once: true });
+
+    function analyzeSchema() {
+      let raw;
+      try {
+        raw = JSON.parse(document.getElementById("introspection").value);
+      } catch (e) {
+        resultBox.textContent = "❌ Invalid JSON.";
+        return;
+      }
+
+      const schema = raw.data?.__schema;
+      if (!schema) {
+        resultBox.textContent = "❌ No __schema field found.";
+        return;
+      }
+
+      let out = "";
+
+      // Queries
+      const queryType = schema.queryType?.name;
+      if (queryType) {
+        const queries = schema.types.find(t => t.name === queryType)?.fields || [];
+        out += "📘 Queries:\n" + queries.map(q => ` - ${q.name}`).join("\n") + "\n\n";
+      }
+
+      // Mutations
+      const mutationType = schema.mutationType?.name;
+      if (mutationType) {
+        const mutations = schema.types.find(t => t.name === mutationType)?.fields || [];
+        out += "📝 Mutations:\n" + mutations.map(m => ` - ${m.name}`).join("\n") + "\n\n";
+      }
+
+      // Subscriptions
+      const subscriptionType = schema.subscriptionType?.name;
+      if (subscriptionType) {
+        const subs = schema.types.find(t => t.name === subscriptionType)?.fields || [];
+        out += "📡 Subscriptions:\n" + subs.map(s => ` - ${s.name}`).join("\n") + "\n\n";
+      }
+
+      // Types
+      out += "📦 Types:\n";
+      schema.types.forEach(type => {
+        if (type.fields) {
+          out += ` - ${type.name}\n`;
+        }
+      });
+
+      resultBox.textContent = out || "No results found.";
+      logHistory(document.getElementById("endpoint").value.trim() || "Local JSON", "Scan complete");
+    }
+
+    function copyResult() {
+      const text = resultBox.textContent;
+      if (!text || text === "No result yet...") return alert("Nothing to copy!");
+      navigator.clipboard.writeText(text).then(() => alert("Result copied!"));
+    }
+
+    function clearAll() {
+      document.getElementById("endpoint").value = "";
+      document.getElementById("introspection").value = "";
+      resultBox.textContent = "No result yet...";
+    }
+
+    function logHistory(target, snippet) {
+      const time = new Date().toLocaleTimeString();
+      const line = `${time} - ${target}: ${snippet}`;
+      history.unshift(line);
+      updateHistory();
+    }
+
+    function updateHistory() {
+      historyBox.innerHTML = "";
+      history.slice(0, 8).forEach(entry => {
+        const div = document.createElement("div");
+        div.className = "history-item";
+        div.textContent = entry;
+        historyBox.appendChild(div);
+      });
+    }
+  </script>
+</body>
+</html>

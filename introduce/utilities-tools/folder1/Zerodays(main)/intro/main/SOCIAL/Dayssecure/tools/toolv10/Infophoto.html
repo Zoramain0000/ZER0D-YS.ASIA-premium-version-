@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>📷 Advanced Photo Tracert Info Tool</title>
+<style>
+  body {
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+    color: red;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    max-width: 900px;
+    margin: 2rem auto;
+    padding: 1rem 2rem;
+  }
+  h1 {
+    text-align: center;
+    color: red;
+    margin-bottom: 1rem;
+  }
+  input[type="url"], input[type="file"] {
+    width: 100%;
+    padding: 12px;
+    margin: 10px 0 20px;
+    border-radius: 6px;
+    border: none;
+background: rgba(0, 0, 0, 0.5);
+    color: red;
+    font-size: 16px;
+  }
+  button {
+    background: red;
+    color: green;
+    font-weight: bold;
+    border: none;
+    border-radius: 6px;
+    width: 100%;
+    padding: 14px;
+    font-size: 18px;
+    cursor: pointer;
+  }
+  .preview {
+    margin-top: 1.5rem;
+    text-align: center;
+  }
+  img#photoPreview {
+    max-width: 100%;
+    border-radius: 10px;
+    box-shadow: 0 0 20px red;
+  }
+  .info-box {
+background: rgba(0, 0, 0, 0.5);
+    padding: 1rem;
+    margin-top: 2rem;
+    border-radius: 10px;
+    white-space: pre-wrap;
+    font-family: monospace;
+    max-height: 350px;
+    overflow-y: auto;
+  }
+  .error {
+    color:red;
+    font-weight: bold;
+    margin-top: 1rem;
+    text-align: center;
+  }
+  label {
+    font-weight: bold;
+    display: block;
+    margin-bottom: 0.3rem;
+    color:red;
+  }
+</style>
+</head>
+<body>
+  <h1>📷 Advanced Photo Tracert Info Tool</h1>
+
+  <label for="photoUrl">Enter Image URL</label>
+  <input type="url" id="photoUrl" placeholder="https://example.com/photo.jpg" />
+
+  <label for="photoUpload">Or Upload a Photo</label>
+  <input type="file" id="photoUpload" accept="image/*" />
+
+  <button onclick="processPhoto()">Get Photo Info & EXIF</button>
+
+  <div class="preview" id="preview"></div>
+
+  <div class="info-box" id="infoBox"></div>
+
+  <div class="error" id="errorBox"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/exif-js"></script>
+  <script>
+    const preview = document.getElementById('preview');
+    const infoBox = document.getElementById('infoBox');
+    const errorBox = document.getElementById('errorBox');
+    const photoUrlInput = document.getElementById('photoUrl');
+    const photoUploadInput = document.getElementById('photoUpload');
+
+    async function processPhoto() {
+      clearDisplay();
+
+      const url = photoUrlInput.value.trim();
+      const file = photoUploadInput.files[0];
+
+      if (!url && !file) {
+        showError('Please enter a valid image URL or upload a photo.');
+        return;
+      }
+
+      if (url && file) {
+        showError('Please provide either a URL or upload a photo, not both.');
+        return;
+      }
+
+      if (url) {
+        await processUrlImage(url);
+      } else {
+        processFileImage(file);
+      }
+    }
+
+    function clearDisplay() {
+      preview.innerHTML = '';
+      infoBox.textContent = '';
+      errorBox.textContent = '';
+    }
+
+    function showError(msg) {
+      errorBox.textContent = msg;
+    }
+
+    async function processUrlImage(url) {
+      try {
+        const response = await fetch(url, {mode: 'cors'});
+        if (!response.ok) throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
+
+        const blob = await response.blob();
+
+        if (!blob.type.startsWith('image/')) {
+          throw new Error('URL does not point to a valid image');
+        }
+
+        const imgUrl = URL.createObjectURL(blob);
+        showPreview(imgUrl);
+
+        const arrayBuffer = await blob.arrayBuffer();
+
+        extractExifFromArrayBuffer(arrayBuffer);
+
+        showBasicInfo(blob, imgUrl);
+
+      } catch (e) {
+        showError(`Error fetching or processing image: ${e.message}`);
+      }
+    }
+
+    function processFileImage(file) {
+      if (!file.type.startsWith('image/')) {
+        showError('Uploaded file is not an image.');
+        return;
+      }
+
+      const reader = new FileReader();
+
+      reader.onload = function(event) {
+        const arrayBuffer = event.target.result;
+        const imgUrl = URL.createObjectURL(file);
+        showPreview(imgUrl);
+        extractExifFromArrayBuffer(arrayBuffer);
+        showBasicInfo(file, imgUrl);
+      };
+
+      reader.onerror = () => showError('Failed to read the uploaded file.');
+
+      reader.readAsArrayBuffer(file);
+    }
+
+    function showPreview(imgUrl) {
+      preview.innerHTML = `<img id="photoPreview" src="${imgUrl}" alt="Photo Preview" />`;
+    }
+
+    function showBasicInfo(fileOrBlob, imgUrl) {
+      // Create an Image object to get naturalWidth/naturalHeight
+      const img = new Image();
+      img.onload = () => {
+        let infoText = `Filename/URL: ${fileOrBlob.name || imgUrl}\n`;
+        infoText += `File Size: ${(fileOrBlob.size / 1024).toFixed(2)} KB\n`;
+        infoText += `Image Dimensions: ${img.naturalWidth} x ${img.naturalHeight} pixels\n`;
+        infoBox.textContent = infoText;
+      };
+      img.onerror = () => showError('Failed to load image to get dimensions.');
+      img.src = imgUrl;
+    }
+
+    function extractExifFromArrayBuffer(arrayBuffer) {
+      try {
+        const exifData = EXIF.readFromBinaryFile(arrayBuffer);
+        if (exifData && Object.keys(exifData).length > 0) {
+          infoBox.textContent += '\n\n=== EXIF Metadata ===\n' + JSON.stringify(exifData, null, 2);
+        } else {
+          infoBox.textContent += '\n\nNo EXIF metadata found.';
+        }
+      } catch (e) {
+        infoBox.textContent += '\n\nFailed to extract EXIF metadata.';
+      }
+    }
+  </script>
+</body>
+</html>

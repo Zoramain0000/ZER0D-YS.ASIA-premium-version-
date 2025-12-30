@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>🌍 Worldwide Movie Finder</title>
+  <style>
+    body {
+     background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: #ff0000;
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 40px auto;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      color: #f70303;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 15px;
+      font-size: 18px;
+      border: none;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      background-color: #00000000;
+      color: rgb(255, 0, 0);
+    }
+
+    .filters {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .movie-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+    }
+
+    .movie-card {
+      background-color: #00000000;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 0 8px rgb(255, 0, 0);
+      transition: transform 0.2s;
+    }
+
+    .movie-card:hover {
+      transform: scale(1.03);
+    }
+
+    .movie-card img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .movie-content {
+      padding: 15px;
+    }
+
+    .movie-title {
+      font-size: 18px;
+      font-weight: bold;
+      color: #ff0000;
+      margin-bottom: 5px;
+    }
+
+    .movie-details {
+      font-size: 14px;
+      color: #ff0000;
+    }
+
+    .movie-overview {
+      margin-top: 10px;
+      font-size: 14px;
+      color: #ff0000;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🌍 Worldwide Movie Finder</h1>
+    <input type="text" id="searchInput" placeholder="Search any movie...">
+    <div class="filters">
+      <select id="genreSelect">
+        <option value="">All Genres</option>
+        <option value="Action">Action</option>
+        <option value="Adventure">Adventure</option>
+        <option value="Animation">Animation</option>
+        <option value="Biography">Biography</option>
+        <option value="Comedy">Comedy</option>
+        <option value="Crime">Crime</option>
+        <option value="Documentary">Documentary</option>
+        <option value="Drama">Drama</option>
+        <option value="Family">Family</option>
+        <option value="Fantasy">Fantasy</option>
+        <option value="History">History</option>
+        <option value="Horror">Horror</option>
+        <option value="Music">Music</option>
+        <option value="Musical">Musical</option>
+        <option value="Mystery">Mystery</option>
+        <option value="Romance">Romance</option>
+        <option value="Sci-Fi">Sci-Fi</option>
+        <option value="Sport">Sport</option>
+        <option value="Thriller">Thriller</option>
+        <option value="War">War</option>
+        <option value="Western">Western</option>
+      </select>
+      <select id="yearSelect">
+        <option value="">All Years</option>
+      </select>
+    </div>
+    <div class="movie-grid" id="movieResults"></div>
+  </div>
+
+  <script>
+    const apiKey = "21161b01";
+    const searchInput = document.getElementById("searchInput");
+    const genreSelect = document.getElementById("genreSelect");
+    const yearSelect = document.getElementById("yearSelect");
+    const movieResults = document.getElementById("movieResults");
+
+    let page = 1;
+    let query = "";
+    let totalResults = 0;
+    let isLoading = false;
+
+    function populateYears() {
+      const currentYear = new Date().getFullYear();
+      for (let y = currentYear; y >= 1900; y--) {
+        const option = document.createElement("option");
+        option.value = y;
+        option.textContent = y;
+        yearSelect.appendChild(option);
+      }
+    }
+
+    async function searchMovies(loadMore = false) {
+      if (isLoading) return;
+      isLoading = true;
+
+      if (!loadMore) {
+        movieResults.innerHTML = "";
+        page = 1;
+      }
+
+      const genre = genreSelect.value;
+      const year = yearSelect.value;
+      const url = `https://www.omdbapi.com/?apikey=${apiKey}&s=${encodeURIComponent(query)}&type=movie&page=${page}` + (year ? `&y=${year}` : "");
+
+      try {
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (data.Response === "True") {
+          totalResults = parseInt(data.totalResults);
+          displayMovies(data.Search, genre);
+        } else {
+          if (!loadMore) {
+            movieResults.innerHTML = "<p>No movies found.</p>";
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        isLoading = false;
+      }
+    }
+
+    async function displayMovies(movies, genreFilter) {
+      for (const movie of movies) {
+        const detailsUrl = `https://www.omdbapi.com/?apikey=${apiKey}&i=${movie.imdbID}&plot=short`;
+        try {
+          const response = await fetch(detailsUrl);
+          const details = await response.json();
+
+          if (genreFilter && !details.Genre.includes(genreFilter)) {
+            continue;
+          }
+
+          const poster = details.Poster !== "N/A" ? details.Poster : 'https://via.placeholder.com/500x750?text=No+Image';
+
+          const card = document.createElement("div");
+          card.className = "movie-card";
+          card.innerHTML = `
+            <img src="${poster}" alt="${details.Title}">
+            <div class="movie-content">
+              <div class="movie-title">${details.Title}</div>
+              <div class="movie-details">⭐ ${details.imdbRating} | 📅 ${details.Year}</div>
+              <div class="movie-overview">${details.Plot}</div>
+            </div>
+          `;
+          movieResults.appendChild(card);
+        } catch (error) {
+          console.error("Error fetching movie details:", error);
+        }
+      }
+    }
+
+    window.addEventListener("scroll", () => {
+      if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 100 && (page * 10) < totalResults) {
+        page++;
+        searchMovies(true);
+      }
+    });
+
+    searchInput.addEventListener("input", () => {
+      query = searchInput.value.trim();
+      if (query.length >= 2) searchMovies();
+      else movieResults.innerHTML = "";
+    });
+
+    genreSelect.addEventListener("change", () => { if (query) searchMovies(); });
+    yearSelect.addEventListener("change", () => { if (query) searchMovies(); });
+
+    populateYears();
+  </script>
+</body>
+</html>

@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Reddit OSINT Viewer Tool</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      margin: 0;
+      padding: 0;
+    }
+    header {
+background: rgba(0, 0, 0, 0.5)
+      color: red;
+      padding: 1rem;
+      text-align: center;
+    }
+    #controls {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      padding: 1rem;
+background: rgba(0, 0, 0, 0.5)
+      gap: 1rem;
+    }
+    input, select, button {
+      padding: 0.5rem;
+      font-size: 1rem;
+    }
+    #results {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1rem;
+      padding: 1rem;
+    }
+    .post {
+background: rgba(0, 0, 0, 0.5)
+      border-radius: 8px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.1);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .post img {
+      max-width: 100%;
+      object-fit: cover;
+    }
+    .content {
+      padding: 1rem;
+    }
+    .title {
+      font-weight: bold;
+      font-size: 1.1rem;
+    }
+    .meta {
+      font-size: 0.85rem;
+      color: red;
+      margin-top: 0.5rem;
+    }
+    .comments {
+      margin-top: 0.5rem;
+      font-size: 0.9rem;
+      color: red;
+      cursor: pointer;
+    }
+    .comment-box {
+background: rgba(0, 0, 0, 0.5)
+      margin: 0.5rem 0;
+      padding: 0.5rem;
+      border-radius: 6px;
+      font-size: 0.9rem;
+    }
+    .user-box {
+background: rgba(0, 0, 0, 0.5)
+      padding: 1rem;
+      border-radius: 8px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.1);
+      margin: 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+    .user-box img {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      margin-bottom: 1rem;
+      object-fit: cover;
+    }
+    .user-post {
+background: rgba(0, 0, 0, 0.5)
+      padding: 0.5rem;
+      border-radius: 6px;
+      margin-top: 0.5rem;
+      text-align: left;
+      width: 100%;
+    }
+    .user-post hr {
+      margin: 0.5rem 0;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1 style="color:red;">Reddit Viewer Tool + User Finder</h1>
+  </header>
+
+  <div id="controls">
+    <input type="text" id="subreddit" placeholder="Subreddit (e.g. javascript)" />
+    <select id="sort">
+      <option value="hot">Hot</option>
+      <option value="new">New</option>
+      <option value="top">Top</option>
+    </select>
+    <button onclick="startNewSearch()">Load Posts</button>
+    <button onclick="exportCSV()">Export CSV</button>
+    <input type="text" id="username" placeholder="Reddit Username" />
+    <button onclick="fetchUser()">Find User</button>
+  </div>
+
+  <div id="results"></div>
+
+  <script>
+    let after = null;
+    let isLoading = false;
+    let subreddit = 'all';
+    let sort = 'hot';
+
+    window.addEventListener('scroll', () => {
+      if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 200 && !isLoading) {
+        fetchPosts();
+      }
+    });
+
+    function startNewSearch() {
+      subreddit = document.getElementById('subreddit').value.trim() || 'all';
+      sort = document.getElementById('sort').value;
+      after = null;
+      document.getElementById('results').innerHTML = '';
+      fetchPosts();
+    }
+
+    async function fetchPosts() {
+      isLoading = true;
+      const results = document.getElementById('results');
+
+      try {
+        const res = await fetch(`https://www.reddit.com/r/${subreddit}/${sort}.json?limit=15&after=${after || ''}`);
+        const json = await res.json();
+        const posts = json.data.children;
+        after = json.data.after;
+
+        posts.forEach(postData => {
+          const post = postData.data;
+          const div = document.createElement('div');
+          div.className = 'post';
+
+          const image = post.thumbnail && post.thumbnail.startsWith('http') ? `<img src="${post.thumbnail}" alt="Thumbnail">` : '';
+          const content = `
+            ${image}
+            <div class="content">
+              <div class="title">${post.title}</div>
+              <div class="meta">👍 ${post.ups} | 💬 ${post.num_comments} | by u/${post.author}</div>
+              <div class="comments" onclick="loadComments('${post.permalink}', this)">View Comments</div>
+            </div>
+          `;
+          div.innerHTML = content;
+          results.appendChild(div);
+        });
+
+        if (!after) {
+          const endMsg = document.createElement('p');
+          endMsg.textContent = 'No more posts to load.';
+          results.appendChild(endMsg);
+        }
+      } catch (error) {
+        console.error(error);
+        results.innerHTML += '<p>Error loading posts.</p>';
+      }
+      isLoading = false;
+    }
+
+    async function loadComments(permalink, el) {
+      try {
+        const res = await fetch(`https://www.reddit.com${permalink}.json`);
+        const json = await res.json();
+        const comments = json[1].data.children.slice(0, 5);
+
+        const container = document.createElement('div');
+        comments.forEach(c => {
+          if (c.kind === 't1') {
+            const text = c.data.body;
+            const comment = document.createElement('div');
+            comment.className = 'comment-box';
+            comment.innerText = text;
+            container.appendChild(comment);
+          }
+        });
+
+        el.insertAdjacentElement('afterend', container);
+        el.style.display = 'none';
+      } catch (err) {
+        alert('Failed to load comments');
+      }
+    }
+
+    function exportCSV() {
+      const posts = document.querySelectorAll('.post');
+      if (!posts.length) return alert('No data to export');
+
+      let csv = 'Title,Author,Upvotes,Comments\n';
+      posts.forEach(post => {
+        const title = post.querySelector('.title')?.innerText.replace(/,/g, ' ');
+        const meta = post.querySelector('.meta')?.innerText;
+        const [, upvotes, , comments, , author] = meta.split(/👍 | \| 💬 | \| by u\//);
+        csv += `"${title}",${author},${upvotes},${comments}\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'reddit_posts.csv';
+      a.click();
+    }
+
+    async function fetchUser() {
+      const username = document.getElementById('username').value.trim();
+      const results = document.getElementById('results');
+      if (!username) return alert('Enter a Reddit username');
+
+      results.innerHTML = 'Loading user...';
+
+      try {
+        const aboutRes = await fetch(`https://www.reddit.com/user/${username}/about.json`);
+        if (!aboutRes.ok) throw new Error('User not found');
+        const about = await aboutRes.json().then(r => r.data);
+
+        const postsRes = await fetch(`https://www.reddit.com/user/${username}/submitted.json?limit=5`);
+        const posts = await postsRes.json().then(r => r.data.children);
+
+        const profileIcon = about.icon_img?.split('?')[0] || 'https://www.redditstatic.com/avatars/defaults/v2/avatar_default_1.png';
+
+        results.innerHTML = `
+          <div class="user-box">
+            <img src="${profileIcon}" alt="User Avatar">
+            <h2>u/${about.name}</h2>
+            <p>Karma: ${about.total_karma}</p>
+            <p>Created: ${new Date(about.created_utc * 1000).toLocaleDateString()}</p>
+            <h3>Recent Posts:</h3>
+            ${posts.map(p => `
+              <div class="user-post">
+                <strong>${p.data.title}</strong><br>
+                <small>👍 ${p.data.ups} in r/${p.data.subreddit}</small>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      } catch (e) {
+        results.innerHTML = `<div class="user-box">Error: ${e.message}</div>`;
+      }
+    }
+
+    window.onload = startNewSearch;
+  </script>
+</body>
+</html>

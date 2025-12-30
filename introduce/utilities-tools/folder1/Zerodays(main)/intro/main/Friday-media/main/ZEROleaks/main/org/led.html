@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Advanced LED Scroll Text Ticker</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap');
+
+  body {
+    background-color: #000;
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    font-family: 'Orbitron', monospace, sans-serif;
+    color: #0f0;
+    overflow: hidden;
+  }
+
+  header {
+    text-align: center;
+    padding: 1rem;
+    font-size: 1.8rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    user-select: none;
+  }
+
+  .ticker-container {
+    position: relative;
+    width: 100%;
+    height: 80px;
+    background: #001100;
+    overflow: hidden;
+    border-top: 4px solid #0f0;
+    border-bottom: 4px solid #0f0;
+    box-shadow: 0 0 20px #0f0;
+  }
+
+  .ticker {
+    white-space: nowrap;
+    display: inline-block;
+    will-change: transform;
+    font-size: 3rem;
+    padding-left: 100%;
+    animation: scroll-left linear infinite;
+    /* animation-duration will be set dynamically */
+  }
+
+  /* LED dot style */
+  .ticker span {
+    position: relative;
+    display: inline-block;
+    margin: 0 4px;
+    color: #0f0;
+    filter:
+      drop-shadow(0 0 2px #0f0)
+      drop-shadow(0 0 5px #0f0)
+      drop-shadow(0 0 10px #0f0);
+  }
+
+  /* Small "LED dot" after each character */
+  .ticker span::after {
+    content: '';
+    position: absolute;
+    bottom: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 4px;
+    background: #0f0;
+    border-radius: 50%;
+    box-shadow:
+      0 0 6px #0f0,
+      0 0 12px #0f0;
+    opacity: 0.7;
+  }
+
+  @keyframes scroll-left {
+    0% {
+      transform: translateX(0%);
+    }
+    100% {
+      transform: translateX(-100%);
+    }
+  }
+
+  /* Controls styling */
+  .controls {
+    margin: 1rem auto;
+    max-width: 700px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+    color: #0f0;
+  }
+  .controls label {
+    display: flex;
+    flex-direction: column;
+    font-size: 0.9rem;
+    width: 220px;
+  }
+  .controls input[type="text"], 
+  .controls input[type="number"] {
+    margin-top: 0.3rem;
+    font-size: 1.1rem;
+    padding: 0.4rem 0.6rem;
+    background: #002200;
+    border: 1px solid #0f0;
+    border-radius: 6px;
+    color: #0f0;
+    font-family: 'Orbitron', monospace, sans-serif;
+  }
+  .controls button {
+    background: #0f0;
+    border: none;
+    padding: 0.7rem 1.3rem;
+    font-weight: 700;
+    cursor: pointer;
+    border-radius: 6px;
+    color: #000;
+    font-family: 'Orbitron', monospace, sans-serif;
+    transition: background-color 0.3s ease;
+    user-select: none;
+  }
+  .controls button:hover {
+    background: #00cc00;
+  }
+  .controls button:focus {
+    outline: 2px solid #0f0;
+  }
+
+  @media (max-width: 480px) {
+    .ticker {
+      font-size: 2rem;
+      padding-left: 120%;
+    }
+    .controls label {
+      width: 100%;
+    }
+  }
+</style>
+</head>
+<body>
+
+<header>Advanced LED Scroll Text Ticker</header>
+
+<div class="ticker-container" aria-label="LED scrolling text ticker" role="region">
+  <div class="ticker" id="ticker" aria-live="off" aria-atomic="false" aria-relevant="additions"></div>
+</div>
+
+<div class="controls" role="region" aria-label="Ticker controls">
+  <label for="textInput">
+    Text to scroll:
+    <input type="text" id="textInput" aria-describedby="textDesc" value="Welcome to the Advanced LED Scroll Text Ticker!">
+  </label>
+  <label for="speedInput">
+    Scroll speed (pixels/second):
+    <input type="number" id="speedInput" min="10" max="300" step="5" value="100" aria-describedby="speedDesc">
+  </label>
+  <button id="pauseBtn" aria-pressed="false">Pause</button>
+  <button id="resumeBtn" aria-pressed="true" disabled>Resume</button>
+</div>
+
+<script>
+  (() => {
+    const ticker = document.getElementById('ticker');
+    const textInput = document.getElementById('textInput');
+    const speedInput = document.getElementById('speedInput');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const resumeBtn = document.getElementById('resumeBtn');
+
+    // Wrap each character in a span for LED effect
+    function renderText(text) {
+      return text.split('').map(char => `<span>${char}</span>`).join('');
+    }
+
+    // Calculate animation duration based on text width and speed (px/s)
+    function setAnimationDuration(speed) {
+      // width of the ticker container + width of the text element
+      const containerWidth = ticker.parentElement.offsetWidth;
+      const textWidth = ticker.scrollWidth;
+
+      // total distance to scroll is containerWidth + textWidth
+      const distance = containerWidth + textWidth;
+
+      // duration = distance / speed (seconds)
+      const duration = distance / speed;
+
+      ticker.style.animationDuration = `${duration}s`;
+    }
+
+    // Initialize ticker
+    function initTicker() {
+      ticker.innerHTML = renderText(textInput.value || 'Hello LED Ticker!');
+      setAnimationDuration(Number(speedInput.value));
+      ticker.style.animationPlayState = 'running';
+      pauseBtn.disabled = false;
+      resumeBtn.disabled = true;
+      pauseBtn.setAttribute('aria-pressed', 'false');
+      resumeBtn.setAttribute('aria-pressed', 'true');
+    }
+
+    // Pause / Resume handlers
+    pauseBtn.addEventListener('click', () => {
+      ticker.style.animationPlayState = 'paused';
+      pauseBtn.disabled = true;
+      resumeBtn.disabled = false;
+      pauseBtn.setAttribute('aria-pressed', 'true');
+      resumeBtn.setAttribute('aria-pressed', 'false');
+    });
+    resumeBtn.addEventListener('click', () => {
+      ticker.style.animationPlayState = 'running';
+      pauseBtn.disabled = false;
+      resumeBtn.disabled = true;
+      pauseBtn.setAttribute('aria-pressed', 'false');
+      resumeBtn.setAttribute('aria-pressed', 'true');
+    });
+
+    // Update text live on input change
+    textInput.addEventListener('input', () => {
+      initTicker();
+    });
+
+    // Update speed live on input change
+    speedInput.addEventListener('input', () => {
+      const speed = Number(speedInput.value);
+      if (speed >= 10 && speed <= 300) {
+        setAnimationDuration(speed);
+      }
+    });
+
+    // Initialize on page load
+    window.addEventListener('load', () => {
+      initTicker();
+    });
+
+    // Optional: re-calc on window resize to keep timing correct
+    window.addEventListener('resize', () => {
+      setAnimationDuration(Number(speedInput.value));
+    });
+  })();
+</script>
+
+</body>
+</html>

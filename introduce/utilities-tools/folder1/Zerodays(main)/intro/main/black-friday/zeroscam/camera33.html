@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>📡 CCTV IP & Tracker Finder </title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { 
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color:red; 
+      font-family:monospace; 
+      padding:20px; 
+      
+    }
+    h1,h3 { 
+      color:red; 
+      
+    }
+    button,input,select {
+      padding:10px; 
+      margin:5px;
+background: rgba(0,0,0,0.5);
+      border:none; 
+      border-radius:4px; 
+      color:red;
+    }
+    button { 
+      cursor:pointer; 
+background: rgba(0,0,0,0.5);
+      }
+    button:hover {
+background: rgba(0,0,0,0.5);
+      }
+    button[disabled] { 
+      opacity:0.5; cursor:not-allowed;
+      }
+    input,select { 
+      width:150px; 
+      
+    }
+    .log-table {
+      margin-top:20px;
+      width:100%; 
+      border-collapse:collapse; 
+      
+    }
+    .log-table th, .log-table td {
+      border:1px solid red;
+      padding:5px; 
+      text-align:left;
+      }
+    .log-table th {
+background: rgba(0,0,0,0.5);
+      color:red;
+      }
+    .map-container {
+      width:100%;
+      height:300px;
+      margin-top:20px;
+      border:1px 
+      solid red; 
+      
+    }
+    canvas { 
+background: rgba(0,0,0,0.5);
+      margin-top:20px; 
+      
+    }
+    .stats {
+      margin-top:10px;
+      color:red;
+      font-size:14px; }
+  </style>
+</head>
+<body>
+  <h1>📹 CCTV IP & Tracker Finder </h1>
+
+  <button id="startBtn" onclick="startScan()">▶️ Start Infinite Scan</button>
+  <button id="stopBtn" onclick="stopScan()" style="display:none">⏹ Stop Scan</button>
+  <button onclick="clearLog()">🧹 Clear Logs</button>
+  <button onclick="downloadCSV()">📥 Download CSV</button><br/>
+
+  <input type="text" id="latInput" placeholder="Latitude">
+  <input type="text" id="lonInput" placeholder="Longitude">
+  <button onclick="searchNearLocation()">📍 Search Near Location</button><br/>
+
+  <select id="countrySelect" multiple size="5"></select>
+  <button onclick="generateByCountry()">🌐 Generate by Country</button>
+
+  <div class="map-container" id="map"></div>
+  <canvas id="chart" width="600" height="200"></canvas>
+  <div class="stats">📊 Total Entries: <span id="counter">0</span></div>
+
+  <h3>🔍 Log Table</h3>
+  <table class="log-table" id="logTable">
+    <thead>
+      <tr><th>#</th><th>IP</th><th>Port</th><th>Service</th><th>Country</th><th>City</th><th>Lat</th><th>Lon</th><th>ISP</th><th>Stream</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+
+
+  <script>
+    const portServices = {
+      21:'FTP', 22:'SSH', 23:'Telnet', 25:'SMTP', 53:'DNS', 67:'DHCP', 69:'TFTP',
+      80:'HTTP', 110:'POP3', 123:'NTP', 137:'NetBIOS', 143:'IMAP', 161:'SNMP',
+      179:'BGP', 443:'HTTPS', 554:'RTSP (CCTV)', 587:'SMTP (TLS)',
+      990:'FTPS', 993:'IMAPS', 995:'POP3S'
+    };
+const countries = [
+  "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda", "Argentina", "Armenia",
+  "Australia", "Austria", "Azerbaijan", "Bahamas", "Bahrain", "Bangladesh", "Barbados", "Belarus", "Belgium",
+  "Belize", "Benin", "Bhutan", "Bolivia", "Bosnia and Herzegovina", "Botswana", "Brazil", "Brunei", "Bulgaria",
+  "Burkina Faso", "Burundi", "Cabo Verde", "Cambodia", "Cameroon", "Canada", "Central African Republic", "Chad",
+  "Chile", "China", "Colombia", "Comoros", "Congo (Congo-Brazzaville)", "Costa Rica", "Croatia", "Cuba", "Cyprus",
+  "Czech Republic", "Democratic Republic of the Congo", "Denmark", "Djibouti", "Dominica", "Dominican Republic",
+  "Ecuador", "Egypt", "El Salvador", "Equatorial Guinea", "Eritrea", "Estonia", "Eswatini", "Ethiopia", "Fiji",
+  "Finland", "France", "Gabon", "Gambia", "Georgia", "Germany", "Ghana", "Greece", "Grenada", "Guatemala",
+  "Guinea", "Guinea-Bissau", "Guyana", "Haiti", "Honduras", "Hungary", "Iceland", "India", "Indonesia", "Iran",
+  "Iraq", "Ireland", "Israel", "Italy", "Ivory Coast", "Jamaica", "Japan", "Jordan", "Kazakhstan", "Kenya",
+  "Kiribati", "Kuwait", "Kyrgyzstan", "Laos", "Latvia", "Lebanon", "Lesotho", "Liberia", "Libya", "Liechtenstein",
+  "Lithuania", "Luxembourg", "Madagascar", "Malawi", "Malaysia", "Maldives", "Mali", "Malta", "Marshall Islands",
+  "Mauritania", "Mauritius", "Mexico", "Micronesia", "Moldova", "Monaco", "Mongolia", "Montenegro", "Morocco",
+  "Mozambique", "Myanmar", "Namibia", "Nauru", "Nepal", "Netherlands", "New Zealand", "Nicaragua", "Niger",
+  "Nigeria", "North Korea", "North Macedonia", "Norway", "Oman", "Pakistan", "Palau", "Palestine", "Panama",
+  "Papua New Guinea", "Paraguay", "Peru", "Philippines", "Poland", "Portugal", "Qatar", "Romania", "Russia",
+  "Rwanda", "Saint Kitts and Nevis", "Saint Lucia", "Saint Vincent and the Grenadines", "Samoa", "San Marino",
+  "Sao Tome and Principe", "Saudi Arabia", "Senegal", "Serbia", "Seychelles", "Sierra Leone", "Singapore",
+  "Slovakia", "Slovenia", "Solomon Islands", "Somalia", "South Africa", "South Korea", "South Sudan", "Spain",
+  "Sri Lanka", "Sudan", "Suriname", "Sweden", "Switzerland", "Syria", "Taiwan", "Tajikistan", "Tanzania",
+  "Thailand", "Timor-Leste", "Togo", "Tonga", "Trinidad and Tobago", "Tunisia", "Turkey", "Turkmenistan",
+  "Tuvalu", "Uganda", "Ukraine", "United Arab Emirates", "United Kingdom", "United States", "Uruguay",
+  "Uzbekistan", "Vanuatu", "Vatican City", "Venezuela", "Vietnam", "Yemen", "Zambia", "Zimbabwe"
+];
+
+    const csv = [['IP','Port','Service','Country','City','Latitude','Longitude','ISP','URL']];
+    const tableBody = document.querySelector('#logTable tbody');
+    const counter = document.getElementById('counter');
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    let infiniteRunning = false;
+
+    countries.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c; opt.textContent = c;
+      document.getElementById('countrySelect').appendChild(opt);
+    });
+
+    function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+    function randIP() { return `${rand(1,223)}.${rand(0,255)}.${rand(0,255)}.${rand(1,254)}`; }
+    function getRandomPortAndService() {
+      const keys = Object.keys(portServices);
+      const port = keys[rand(0, keys.length-1)];
+      return { port, service: portServices[port] };
+    }
+
+    function clearLog() {
+      csv.length = 1;
+      tableBody.innerHTML = '';
+      counter.textContent = '0';
+      if (map) map.eachLayer(layer => { if (layer instanceof L.Marker) map.removeLayer(layer); });
+    }
+
+    function downloadCSV() {
+      const blob = new Blob([csv.map(r=>r.join(',')).join('\n')], {type:'text/csv'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'cctv_logs.csv';
+      a.click();
+    }
+
+    async function fetchAndLog(ip) {
+      try {
+        const res = await fetch(`https://ipwho.is/${ip}`);
+        const d = await res.json();
+        if (!d.success) return false;
+
+        const { port, service } = getRandomPortAndService();
+        const url = `http://${ip}:${port}`;
+        const row = [ip, port, service, d.country, d.city, d.latitude, d.longitude, d.isp, url];
+        csv.push(row);
+
+        const tr = document.createElement('tr');
+        row.forEach((val, i) => {
+          const td = document.createElement('td');
+          td.innerHTML = i === 8 ? `<a href='#' onclick="alert('⚠️ Demo only. No real access.')">Open</a>` : val;
+          tr.appendChild(td);
+        });
+        const index = tableBody.children.length + 1;
+        tr.insertAdjacentHTML('afterbegin', `<td>${index}</td>`);
+        tableBody.appendChild(tr);
+
+        plotOnMap(d.latitude, d.longitude);
+        updateChart();
+        counter.textContent = tableBody.children.length;
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    async function retryUntilValidIP() {
+      while (infiniteRunning) {
+        const ip = randIP();
+        const ok = await fetchAndLog(ip);
+        if (ok) break;
+        await new Promise(r => setTimeout(r, 100));
+      }
+    }
+
+    function startScan() {
+      infiniteRunning = true;
+      startBtn.disabled = true;
+      stopBtn.style.display = 'inline-block';
+      runInfiniteLoop();
+    }
+
+    function stopScan() {
+      infiniteRunning = false;
+      startBtn.disabled = false;
+      stopBtn.style.display = 'none';
+    }
+
+    function runInfiniteLoop() {
+      if (!infiniteRunning) return;
+      retryUntilValidIP().then(() => setTimeout(runInfiniteLoop, 400));
+    }
+
+    async function generateByCountry() {
+      const selected = [...document.getElementById('countrySelect').selectedOptions].map(o => o.value);
+      if (!selected.length) return startScan();
+      let count = 0;
+      while (count < 10) {
+        const ip = randIP();
+        const res = await fetch(`https://ipwho.is/${ip}`);
+        const d = await res.json();
+        if (d.success && selected.includes(d.country)) {
+          await fetchAndLog(ip);
+          count++;
+        }
+        await new Promise(r => setTimeout(r, 200));
+      }
+    }
+
+    async function searchNearLocation() {
+      const lat = parseFloat(document.getElementById('latInput').value);
+      const lon = parseFloat(document.getElementById('lonInput').value);
+      if (isNaN(lat) || isNaN(lon)) return alert('Invalid coordinates');
+      let count = 0;
+      while (count < 10) {
+        const ip = randIP();
+        const res = await fetch(`https://ipwho.is/${ip}`);
+        const d = await res.json();
+        if (d.success && getDistance(lat, lon, d.latitude, d.longitude) <= 200) {
+          await fetchAndLog(ip);
+          count++;
+        }
+        await new Promise(r => setTimeout(r, 200));
+      }
+    }
+
+    function getDistance(lat1, lon1, lat2, lon2) {
+      const R = 6371, dLat = (lat2-lat1)*Math.PI/180, dLon = (lon2-lon1)*Math.PI/180;
+      const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+      return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+    }
+
+    let map;
+    function plotOnMap(lat, lon) {
+      if (!window.L) return;
+      if (!map) {
+        map = L.map('map').setView([lat, lon], 2);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+      }
+      L.marker([lat, lon]).addTo(map);
+    }
+
+    const mapScript = document.createElement('script');
+    mapScript.src = 'https://unpkg.com/leaflet@1.9.3/dist/leaflet.js';
+    mapScript.onload = () => {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = 'https://unpkg.com/leaflet@1.9.3/dist/leaflet.css';
+      document.head.appendChild(link);
+    };
+    document.body.appendChild(mapScript);
+
+    const ctx = document.getElementById('chart').getContext('2d');
+    const chart = new Chart(ctx, {
+      type: 'bar',
+      data: { labels: [], datasets: [{ label: 'Port Count', data: [], backgroundColor: '#38bdf8' }] },
+      options: { responsive: true, scales: { y: { beginAtZero: true } } }
+    });
+
+    function updateChart() {
+      const count = {};
+      csv.slice(1).forEach(row => { count[row[2]] = (count[row[2]] || 0) + 1 });
+      chart.data.labels = Object.keys(count);
+      chart.data.datasets[0].data = Object.values(count);
+      chart.update();
+    }
+  </script>
+</body>
+</html>

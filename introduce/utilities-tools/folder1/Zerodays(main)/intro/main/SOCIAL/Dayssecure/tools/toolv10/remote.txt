@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Remote Device Pentest Dashboard</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #1f1f1f;
+      color: #f8d7da;
+    }
+    .sidebar {
+      width: 250px;
+      height: 100vh;
+      background-color: #8b0000;
+      position: fixed;
+      padding: 20px;
+    }
+    .sidebar h2 {
+      color: #fff;
+      margin-bottom: 20px;
+    }
+    .sidebar a {
+      display: block;
+      color: #f8d7da;
+      padding: 10px 0;
+      text-decoration: none;
+    }
+    .sidebar a:hover {
+      background-color: #a52a2a;
+    }
+    .main {
+      margin-left: 250px;
+      padding: 30px;
+    }
+    .card {
+      background-color: #2b2b2b;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-left: 5px solid #ff4c4c;
+      border-radius: 8px;
+    }
+    input, button, select {
+      padding: 10px;
+      margin-top: 10px;
+      width: 100%;
+      border: none;
+      border-radius: 5px;
+    }
+    button {
+      background-color: #ff4c4c;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #e60000;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+    table, th, td {
+      border: 1px solid #444;
+    }
+    th, td {
+      padding: 10px;
+      text-align: left;
+    }
+    th {
+      background-color: #8b0000;
+    }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <h2>OSINT Dashboard</h2>
+    <a href="#">Remote Device</a>
+    <a href="#">Scan History</a>
+    <a href="#">Export</a>
+    <a href="#">Settings</a>
+  </div>
+  <div class="main">
+    <div class="card">
+      <h3>Remote Device Simulation</h3>
+      <label for="ip">Target IP:</label>
+      <input type="text" id="ip" placeholder="192.168.0.1">
+
+      <label for="port">Port:</label>
+      <input type="text" id="port" placeholder="22, 80, 443, 3389">
+
+      <button onclick="scanDevice()">Simulate Scan</button>
+    </div>
+
+    <div class="card">
+      <h3>Scan Results</h3>
+      <table id="results">
+        <thead>
+          <tr>
+            <th>Port</th>
+            <th>Status</th>
+            <th>Service</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const commonPorts = {
+      22: "SSH",
+      80: "HTTP",
+      443: "HTTPS",
+      3389: "RDP"
+    };
+
+    function scanDevice() {
+      const ip = document.getElementById("ip").value;
+      const ports = document.getElementById("port").value.split(",").map(p => p.trim());
+      const tbody = document.querySelector("#results tbody");
+      tbody.innerHTML = "";
+
+      ports.forEach(port => {
+        const service = commonPorts[port] || "Unknown";
+        const status = Math.random() > 0.4 ? "Open" : "Closed";
+        const row = `
+          <tr>
+            <td>${port}</td>
+            <td style="color: ${status === 'Open' ? '#0f0' : '#f00'}">${status}</td>
+            <td>${service}</td>
+            <td><button ${status === 'Open' ? '' : 'disabled'} onclick="alert('Connecting to ${ip}:${port}')">Connect</button></td>
+          </tr>
+        `;
+        tbody.innerHTML += row;
+      });
+    }
+  </script>
+</body>
+</html>

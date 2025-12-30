@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Advanced Memory Match Game</title>
+  <style>
+    body {
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+      font-family: 'Segoe UI', sans-serif;
+      text-align: center;
+      padding: 20px;
+    }
+    h1 { font-size: 2.2rem; }
+    .info, .controls { margin-top: 15px; font-size: 1rem; }
+    .board {
+      margin: 20px auto;
+      display: grid;
+      gap: 15px;
+      justify-content: center;
+    }
+    .card {
+      width: 80px;
+      height: 80px;
+      perspective: 600px;
+    }
+    .card-inner {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.6s;
+      cursor: pointer;
+    }
+    .flipped .card-inner { transform: rotateY(180deg); }
+    .card-front, .card-back {
+      position: absolute;
+      width: 100%; height: 100%;
+      backface-visibility: hidden;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+    }
+    .card-front { background: red; }
+    .card-back {
+background: rgba(0, 0, 0, 0.5);
+      color: green;
+      transform: rotateY(180deg);
+    }
+    .matched .card-inner {
+      cursor: default;
+      animation: matchPulse 0.4s ease-in-out;
+    }
+    @keyframes matchPulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+    select, button {
+      padding: 5px 10px;
+      margin: 5px;
+      font-size: 1rem;
+    }
+    #message { font-size: 1.2rem; color: red; margin-top: 15px; }
+    #leaderboard {
+      margin-top: 15px;
+background: rgba(0, 0, 0, 0.5);
+      padding: 10px;
+      border-radius: 8px;
+    }
+    #leaderboard h3 { margin-bottom: 5px; }
+    #leaderboard ul { list-style: none; padding: 0; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+  <h1>🧠 Advanced Memory Match</h1>
+  <div class="info">
+    Moves: <span id="moves">0</span> | Time: <span id="timer">0</span>s
+  </div>
+
+  <div class="controls">
+    Difficulty:
+    <select id="difficulty" onchange="startGame()">
+      <option value="4">Easy (4x4)</option>
+      <option value="6">Medium (6x6)</option>
+      <option value="8">Hard (8x8)</option>
+    </select>
+    <button onclick="startGame()">🔁 Restart</button>
+  </div>
+
+  <div class="board" id="board"></div>
+  <div id="message"></div>
+
+  <div id="leaderboard">
+    <h3>🏆 Local Leaderboard</h3>
+    <ul id="scoresList"></ul>
+  </div>
+
+  <audio id="flipSound" src="https://freesound.org/data/previews/320/320181_5260877-lq.mp3"></audio>
+  <audio id="matchSound" src="https://freesound.org/data/previews/256/256113_3263906-lq.mp3"></audio>
+
+  <script>
+    const emojis = ['🍎','🍌','🍇','🍓','🍒','🍍','🥝','🥑','🍉','🍋','🍆','🥕','🌽','🌶','🥥','🥦','🍄','🥬','🧄','🧅','🥔','🥒','🫑','🧇','🍰','🍩','🍪','🍫'];
+    let board = document.getElementById('board');
+    let movesEl = document.getElementById('moves');
+    let timerEl = document.getElementById('timer');
+    let messageEl = document.getElementById('message');
+    let scoresList = document.getElementById('scoresList');
+    let difficultySelect = document.getElementById('difficulty');
+
+    let cards = [], flipped = [], matched = 0, moves = 0, timer = 0, interval;
+    const flipSound = document.getElementById('flipSound');
+    const matchSound = document.getElementById('matchSound');
+
+    function shuffle(array) {
+      for(let i = array.length - 1; i > 0; i--) {
+        let j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+    }
+
+    function startGame() {
+      clearInterval(interval);
+      flipped = [];
+      matched = 0;
+      moves = 0;
+      timer = 0;
+      timerEl.textContent = 0;
+      movesEl.textContent = 0;
+      messageEl.textContent = '';
+      let size = parseInt(difficultySelect.value);
+      let totalCards = size * size;
+      let symbols = [...emojis].slice(0, totalCards / 2);
+      cards = [...symbols, ...symbols];
+      shuffle(cards);
+      board.innerHTML = '';
+      board.style.gridTemplateColumns = `repeat(${size}, 80px)`;
+
+      for (let i = 0; i < totalCards; i++) {
+        let card = document.createElement('div');
+        card.classList.add('card');
+        card.dataset.symbol = cards[i];
+        card.innerHTML = `
+          <div class="card-inner">
+            <div class="card-front">❓</div>
+            <div class="card-back">${cards[i]}</div>
+          </div>`;
+        card.addEventListener('click', () => flipCard(card));
+        board.appendChild(card);
+      }
+
+      interval = setInterval(() => {
+        timer++;
+        timerEl.textContent = timer;
+      }, 1000);
+    }
+
+    function flipCard(card) {
+      if (flipped.length === 2 || card.classList.contains('flipped') || card.classList.contains('matched')) return;
+
+      flipSound.currentTime = 0;
+      flipSound.play();
+      card.classList.add('flipped');
+      flipped.push(card);
+
+      if (flipped.length === 2) {
+        moves++;
+        movesEl.textContent = moves;
+        const [card1, card2] = flipped;
+        if (card1.dataset.symbol === card2.dataset.symbol) {
+          card1.classList.add('matched');
+          card2.classList.add('matched');
+          flipped = [];
+          matched += 2;
+          matchSound.play();
+          if (matched === cards.length) {
+            clearInterval(interval);
+            let score = `${moves} moves in ${timer}s`;
+            messageEl.textContent = `🎉 You won in ${score}!`;
+            saveScore(difficultySelect.value, score);
+            loadLeaderboard();
+          }
+        } else {
+          setTimeout(() => {
+            card1.classList.remove('flipped');
+            card2.classList.remove('flipped');
+            flipped = [];
+          }, 800);
+        }
+      }
+    }
+
+    function saveScore(level, score) {
+      let key = `memory-scores-${level}`;
+      let scores = JSON.parse(localStorage.getItem(key)) || [];
+      scores.push(score);
+      if (scores.length > 5) scores = scores.slice(-5);
+      localStorage.setItem(key, JSON.stringify(scores));
+    }
+
+    function loadLeaderboard() {
+      let key = `memory-scores-${difficultySelect.value}`;
+      let scores = JSON.parse(localStorage.getItem(key)) || [];
+      scoresList.innerHTML = scores.map(s => `<li>${s}</li>`).join('');
+    }
+
+    difficultySelect.addEventListener('change', loadLeaderboard);
+    startGame();
+    loadLeaderboard();
+  </script>
+</body>
+</html>

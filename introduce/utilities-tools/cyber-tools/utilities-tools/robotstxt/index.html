@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Robots.txt Analyzer</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #000;
+      color: #c58b00;
+      overflow-x: hidden;
+    }
+
+    video#bg-video {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      min-width: 100vw;
+      min-height: 100vh;
+      object-fit: cover;
+      opacity: 0.2;
+      z-index: -2;
+    }
+
+    audio#bg-music {
+      position: fixed;
+      z-index: -1;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 50px auto;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 0 25px rgba(0, 0, 0, 0.7);
+    }
+
+    h1, label {
+      color: #c58b00;
+    }
+
+    input, textarea, pre {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      background: rgba(0, 0, 0, 0.5);
+      color: red;
+      border: 1px solid #c58b00;
+      border-radius: 5px;
+      font-size: 1rem;
+      white-space: pre-wrap;
+    }
+
+    button {
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid #c58b00;
+      color: #c58b00;
+      padding: 10px 15px;
+      margin: 5px 5px 15px 0;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+
+    button:hover {
+      background: #111;
+      color: red;
+    }
+
+    .section {
+      margin-top: 20px;
+    }
+
+    .history-item {
+      border-bottom: 1px solid red;
+      padding: 5px;
+      font-size: 0.9rem;
+      color: #ff8800;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        margin: 20px 10px;
+        padding: 15px;
+      }
+
+      button {
+        width: 100%;
+        margin: 8px 0;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Background Video -->
+  <video id="bg-video" autoplay muted loop playsinline>
+    <source src="background/1761817527453041720p.mp4" type="video/mp4">
+    Your browser does not support the video tag.
+  </video>
+
+  <!-- Background Music -->
+  <audio id="bg-music" loop>
+    <source src="background/Programming___Coding___Hacking_music_vol.18__ANONYMOUS_HEADQUARTERS_(48k).mp3" type="audio/mpeg">
+    Your browser does not support the audio tag.
+  </audio>
+
+  <div class="container">
+    <h1>Robots.txt Analyzer</h1>
+
+    <label for="url-input">Enter Website URL:</label>
+    <input id="url-input" placeholder="https://example.com/" />
+
+    <button onclick="analyze()">Fetch & Analyze</button>
+    <button onclick="clearAll()">Clear</button>
+
+    <div class="section">
+      <h3>robots.txt Content</h3>
+      <pre id="robots-content">Waiting for input...</pre>
+
+      <h3>Parsed Summary</h3>
+      <pre id="robots-summary">{}</pre>
+    </div>
+
+    <div class="section">
+      <h3>History</h3>
+      <div id="history-box"></div>
+    </div>
+  </div>
+
+  <script>
+    const music = document.getElementById("bg-music");
+    const robotsContent = document.getElementById("robots-content");
+    const robotsSummary = document.getElementById("robots-summary");
+    const historyBox = document.getElementById("history-box");
+    const history = [];
+
+    window.addEventListener('click', () => {
+      music.play().catch(() => {});
+    }, { once: true });
+
+    async function analyze() {
+      const input = document.getElementById("url-input").value.trim();
+      const url = input.endsWith('/') ? input : input + '/';
+      if (!url.startsWith("http")) return alert("Enter a valid URL (with http or https)");
+
+      const robotsUrl = url + "robots.txt";
+      robotsContent.textContent = `Fetching: ${robotsUrl}`;
+
+      try {
+        const res = await fetch(robotsUrl);
+        const text = await res.text();
+
+        robotsContent.textContent = text;
+
+        const summary = parseRobots(text);
+        robotsSummary.textContent = JSON.stringify(summary, null, 2);
+
+        const timestamp = new Date().toLocaleTimeString();
+        history.unshift(`${timestamp} - Analyzed: ${robotsUrl}`);
+        updateHistory();
+      } catch (e) {
+        robotsContent.textContent = "❌ Error fetching robots.txt.";
+        robotsSummary.textContent = "{}";
+      }
+    }
+
+    function parseRobots(text) {
+      const lines = text.split('\n');
+      const summary = { UserAgents: {}, Sitemaps: [] };
+
+      let currentUA = '';
+
+      for (let line of lines) {
+        line = line.trim();
+        if (!line || line.startsWith("#")) continue;
+
+        const [keyRaw, ...rest] = line.split(":");
+        const key = keyRaw.trim().toLowerCase();
+        const value = rest.join(":").trim();
+
+        if (key === 'user-agent') {
+          currentUA = value;
+          if (!summary.UserAgents[currentUA]) {
+            summary.UserAgents[currentUA] = { Allow: [], Disallow: [] };
+          }
+        } else if (key === 'allow' || key === 'disallow') {
+          if (currentUA) {
+            summary.UserAgents[currentUA][key.charAt(0).toUpperCase() + key.slice(1)].push(value);
+          }
+        } else if (key === 'sitemap') {
+          summary.Sitemaps.push(value);
+        }
+      }
+
+      return summary;
+    }
+
+    function clearAll() {
+      document.getElementById("url-input").value = "";
+      robotsContent.textContent = "Waiting for input...";
+      robotsSummary.textContent = "{}";
+    }
+
+    function updateHistory() {
+      historyBox.innerHTML = "";
+      history.slice(0, 10).forEach(item => {
+        const div = document.createElement("div");
+        div.className = "history-item";
+        div.textContent = item;
+        historyBox.appendChild(div);
+      });
+    }
+  </script>
+</body>
+</html>

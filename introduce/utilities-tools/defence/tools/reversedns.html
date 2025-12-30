@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cyber Reverse DNS Lookup</title>
+
+<style>
+:root {
+  --gold:#cfae55;
+  --gold-soft:#ffdc7a;
+  --bg:#0b0b0b;
+  --border:rgba(207,174,85,.45);
+  --green:#7cff9a;
+}
+
+* { box-sizing:border-box; margin:0; padding:0 }
+
+body {
+  font-family: "Segoe UI", system-ui;
+  background: var(--bg);
+  color: var(--gold);
+}
+
+/* Background video */
+video.bg {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: brightness(.35);
+  z-index: -2;
+}
+
+/* NAV */
+nav {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  background: rgba(0,0,0,.75);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+  position: fixed;
+  top: 0;
+  width: 100%;
+  z-index: 10;
+}
+
+.brand {
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+button {
+  background: transparent;
+  color: var(--gold);
+  border: 1px solid var(--gold);
+  padding: 10px 18px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: .25s;
+}
+
+button:hover {
+  background: var(--gold);
+  color: black;
+}
+
+/* MAIN */
+.main {
+  max-width: 1100px;
+  margin: auto;
+  padding: 100px 25px 40px;
+}
+
+/* PANEL */
+.section {
+  background: linear-gradient(180deg,#151515,#0a0a0a);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 26px;
+  box-shadow: 0 0 25px rgba(0,0,0,.6);
+}
+
+.section h2 {
+  color: var(--gold-soft);
+  margin-bottom: 18px;
+}
+
+/* INPUT */
+input {
+  width: 100%;
+  padding: 14px;
+  background: #111;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: white;
+  font-size: 15px;
+  margin-bottom: 12px;
+}
+
+/* OUTPUT */
+pre {
+  background: #000;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  max-height: 420px;
+  overflow: auto;
+  color: var(--green);
+  font-size: 0.92rem;
+  white-space: pre-wrap;
+}
+
+/* INFO BOX */
+.info {
+  margin-top: 12px;
+  padding: 14px;
+  border-radius: 12px;
+  background: rgba(0,0,0,.5);
+  border: 1px solid var(--border);
+  line-height: 1.6;
+}
+
+.info b {
+  color: var(--gold-soft);
+}
+
+footer {
+  text-align: center;
+  padding: 26px;
+  opacity: .7;
+}
+</style>
+</head>
+
+<body>
+
+<video class="bg" autoplay muted loop playsinline>
+  <source src="background/1761817527453041720p.mp4" type="video/mp4">
+</video>
+
+<nav>
+  <div class="brand">Cyber Reverse DNS</div>
+  <button onclick="location.reload()">Reload</button>
+</nav>
+
+<div class="main">
+
+  <div class="section">
+    <h2>🌐 Advanced Reverse DNS Lookup (Real API)</h2>
+
+    <input id="ipInput" placeholder="Enter IP address (IPv4 or IPv6)">
+
+    <button onclick="reverseDNS()">Run Reverse Lookup</button>
+
+    <pre id="output">Waiting for lookup...</pre>
+
+    <div class="info" id="infoBox">
+      <b>Status:</b> Idle<br>
+      <b>Lookup Type:</b> PTR (Reverse DNS)<br>
+      <b>Backend:</b> None — API Based
+    </div>
+  </div>
+
+</div>
+
+<footer>
+© 2025 Cyber Tools Toolkit — Frontend Only · API Powered
+</footer>
+
+<script>
+async function reverseDNS() {
+  const ip = document.getElementById("ipInput").value.trim();
+  const output = document.getElementById("output");
+  const info = document.getElementById("infoBox");
+
+  if (!ip) {
+    output.textContent = "Please enter an IP address.";
+    return;
+  }
+
+  output.textContent = "Resolving reverse DNS...";
+  info.innerHTML = `
+    <b>Status:</b> Querying<br>
+    <b>Target:</b> ${ip}<br>
+    <b>Query:</b> PTR
+  `;
+
+  try {
+    // Google DNS supports reverse lookup automatically
+    const url = `https://dns.google/resolve?name=${encodeURIComponent(ip)}&type=PTR`;
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (!data.Answer || data.Answer.length === 0) {
+      output.textContent = JSON.stringify(data, null, 2);
+      info.innerHTML = "<b>Status:</b> No PTR record found";
+      return;
+    }
+
+    let text = ";; Reverse DNS Lookup Result\n\n";
+    text += `Target IP: ${ip}\n`;
+    text += `Records Found: ${data.Answer.length}\n\n`;
+
+    data.Answer.forEach((r, i) => {
+      text += `#${i + 1}\n`;
+      text += `PTR Hostname: ${r.data}\n`;
+      text += `TTL: ${r.TTL}\n\n`;
+    });
+
+    output.textContent = text;
+
+    info.innerHTML = `
+      <b>Status:</b> Success<br>
+      <b>PTR Records:</b> ${data.Answer.length}<br>
+      <b>Resolver:</b> Google DNS (DoH)
+    `;
+
+  } catch (err) {
+    output.textContent = "Error: Unable to reach DNS API.";
+    info.innerHTML = "<b>Status:</b> Lookup failed";
+  }
+}
+</script>
+
+</body>
+</html>

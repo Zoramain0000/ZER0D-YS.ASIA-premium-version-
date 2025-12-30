@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>IP Version Generator (v1–v9)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+      font-family: 'Courier New', Courier, monospace;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      color: red;
+      margin-bottom: 20px;
+    }
+
+    .controls {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    select, input, button {
+background: rgba(0, 0, 0, 0.5);
+      color: red;
+      padding: 10px;
+      margin: 5px;
+      font-size: 16px;
+      border-radius: 6px;
+      border: 1px solid red;
+    }
+
+    button {
+background: rgba(0, 0, 0, 0.5);
+      cursor: pointer;
+    }
+
+    button:hover {
+background: rgba(0, 0, 0, 0.5);
+    }
+
+    #output {
+background: rgba(0, 0, 0, 0.5);
+      border: 1px solid red;
+      border-radius: 8px;
+      padding: 15px;
+      height: 350px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      font-size: 14px;
+    }
+
+    .ip {
+      color: red;
+    }
+
+    .tag {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+
+<h1>🚀 IP Version Generator (v1–v9)</h1>
+
+<div class="controls">
+  <label>IP Version:</label>
+  <select id="version">
+    <option value="1">IPv1</option>
+    <option value="2">IPv2</option>
+    <option value="3">IPv3</option>
+    <option value="4">IPv4</option>
+    <option value="5">IPv5</option>
+    <option value="6">IPv6</option>
+    <option value="7">IPv7</option>
+    <option value="8">IPv8</option>
+    <option value="9">IPv9</option>
+  </select>
+
+  <label>Count:</label>
+  <input type="number" id="count" value="5" min="1" max="100">
+
+  <br>
+  <button onclick="generateIPs()">Generate</button>
+  <button onclick="exportIPs()">Export</button>
+</div>
+
+<div id="output"></div>
+
+<script>
+  function getRandomByte() {
+    return Math.floor(Math.random() * 256);
+  }
+
+  function getRandomHexBlock(length = 4) {
+    return Math.floor(Math.random() * Math.pow(16, length)).toString(16).padStart(length, '0');
+  }
+
+  function generateIP(version) {
+    switch (parseInt(version)) {
+      case 1: // Simulated legacy IPv1
+        return `IPV1-${getRandomByte()}.${getRandomByte()}`;
+      case 2: // Simulated IPv2
+        return `IPV2-${getRandomByte()}.${getRandomByte()}.${getRandomByte()}`;
+      case 3: // Simulated IPv3
+        return `IPV3-${getRandomByte()}.${getRandomByte()}.${getRandomByte()}.${getRandomByte()}`;
+      case 4: // Real IPv4
+        return `${getRandomByte()}.${getRandomByte()}.${getRandomByte()}.${getRandomByte()}`;
+      case 5: // Experimental Stream Protocol
+        return `STRM-${getRandomByte()}.${getRandomByte()}.${getRandomByte()}.${getRandomByte()}`;
+      case 6: // Real IPv6
+        return Array.from({length: 8}, () => getRandomHexBlock(4)).join(":");
+      case 7: // Fictional IPv7 - Base64-like
+        return `7v:${btoa(String.fromCharCode(...Array(8).fill().map(() => getRandomByte()))).slice(0, 16)}`;
+      case 8: // Fictional IPv8 - Hexchain
+        return `8v:${Array.from({length: 10}, () => getRandomHexBlock(6)).join("-")}`;
+      case 9: // Fictional IPv9 - Emoji Format (fun)
+        const emojis = ['🛰️','🌐','📡','🧠','💻','🔒','🧬','👁️','🚀','🧪'];
+        return `9v:${Array.from({length: 6}, () => emojis[Math.floor(Math.random() * emojis.length)]).join('.')}`;
+      default:
+        return "Unknown Version";
+    }
+  }
+
+  function generateIPs() {
+    const version = document.getElementById("version").value;
+    const count = Math.min(parseInt(document.getElementById("count").value), 50);
+    const output = document.getElementById("output");
+    output.innerHTML = "";
+
+    for (let i = 0; i < count; i++) {
+      const ip = generateIP(version);
+      output.innerHTML += `<span class="tag">[IPv${version}]</span> <span class="ip">${ip}</span><br>`;
+    }
+
+    output.scrollTop = output.scrollHeight;
+  }
+
+  function exportIPs() {
+    const text = document.getElementById("output").innerText;
+    const blob = new Blob([text], {type: "text/plain"});
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "generated_ips.txt";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+</script>
+
+</body>
+</html>

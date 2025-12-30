@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ping & Traceroute </title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box }
+    body {
+      font-family:'Segoe UI', monospace;
+      background:#000; color:#c58b00;
+      overflow-x:hidden;
+    }
+    video#bg-video {
+      position:fixed; top:50%; left:50%;
+      transform:translate(-50%,-50%);
+      min-width:100vw; min-height:100vh;
+      object-fit:cover; z-index:-2; opacity:0.25;
+    }
+    audio#bg-music {
+      position:fixed; z-index:-1; opacity:0; pointer-events:none;
+    }
+    .container {
+      max-width:900px; margin:50px auto;
+      padding:25px; border-radius:12px;
+      background:rgba(0,0,0,0.2);
+    }
+    h1,label { color:#c58b00; text-shadow:1px 1px 3px black; }
+    input, button {
+      width:100%; padding:12px;
+      margin:8px 0; font-size:1rem;
+      background:rgba(0,0,0,0.3);
+      border:1px solid #c58b00;
+      border-radius:5px; color:#c58b00;
+    }
+    button:hover {
+      background:rgba(255,255,255,0.1); color:red; cursor:pointer;
+    }
+    pre {
+      background:rgba(0,0,0,0.3); padding:10px;
+      border:1px solid red; color:#00ffcc;
+      border-radius:5px; margin-top:10px;
+      white-space:pre-wrap; overflow-x:auto;
+      min-height:150px; max-height:600px;
+      overflow-y:auto;
+    }
+    .status {
+      text-align:center; margin:10px 0;
+      font-weight:bold; font-size:1.1rem;
+      padding:10px; border-radius:5px;
+      text-shadow:1px 1px black;
+    }
+    .status.positive { color:#00ff00; }
+    .status.warning { color:#ffcc00; }
+
+    @media(max-width:768px){
+      .container { margin:20px 10px; padding:15px }
+      input,button { margin:6px 0 }
+    }
+  </style>
+</head>
+<body>
+  <video id="bg-video" autoplay muted loop playsinline>
+    <source src="background/1761817527453041720p.mp4" type="video/mp4">
+  </video>
+  <audio id="bg-music" loop>
+    <source src="background/Programming___Coding___Hacking_music_vol.18__ANONYMOUS_HEADQUARTERS_(48k).mp3" type="audio/mpeg">
+  </audio>
+
+  <div class="container">
+    <h1>📡 Ping & Traceroute </h1>
+
+    <label>Target (hostname or IP):</label>
+    <input type="text" id="target" placeholder="e.g. google.com or 8.8.8.8" />
+
+    <button onclick="runPing()">▶️ Start Ping</button>
+    <button onclick="stopPing()">🛑 Stop Ping</button>
+    <button onclick="startTraceroute()">🧭 Start Traceroute</button>
+    <button onclick="stopTraceroute()">🛑 Stop Traceroute</button>
+    <button onclick="resetOutput()">🔄 Reset All</button>
+
+    <div class="status" id="status">👋 Ready to try. Start with Ping or Traceroute.
+    
+    if you try Traceroute the hop is unlimited(999999999999999999)
+    </div>
+    <pre id="output">Awaiting command...</pre>
+  </div>
+
+  <script>
+    const output = document.getElementById("output");
+    const music = document.getElementById("bg-music");
+    const status = document.getElementById("status");
+
+    window.addEventListener('click', () => music.play().catch(() => {}), { once: true });
+
+    let pingRunning = false;
+    let tracerouteRunning = false;
+
+    function getRandomLatency() {
+      return Math.floor(Math.random() * 100) + 10;
+    }
+
+    function getRandomIP() {
+      return Array.from({ length: 4 }, () => Math.floor(Math.random() * 256)).join('.');
+    }
+
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    function setStatus(msg, type = "") {
+      status.textContent = msg;
+      status.className = "status " + type;
+    }
+
+    function resetOutput() {
+      output.textContent = "Awaiting command...";
+      setStatus("ℹ️ Reset complete. Ready for new operation.");
+      pingRunning = false;
+      tracerouteRunning = false;
+    }
+
+    async function runPing() {
+      const target = document.getElementById("target").value.trim();
+      if (!target) {
+        setStatus("⚠️ Please enter a valid target!", "warning");
+        return;
+      }
+
+      if (pingRunning || tracerouteRunning) {
+        setStatus("⚠️ Please wait! Another operation is already running.", "warning");
+        return;
+      }
+
+      pingRunning = true;
+      setStatus("✅ Running ping...", "positive");
+      output.textContent = `▶️ ping to ${target} with 32 bytes of data:\n\n`;
+
+      let sent = 10;
+      let received = 0;
+      let min = 999;
+      let max = 0;
+      let total = 0;
+
+      for (let i = 1; i <= sent; i++) {
+        if (!pingRunning) {
+          output.textContent += `\n🛑 Ping stopped manually.\n`;
+          setStatus("⚠️ Ping stopped by user.", "warning");
+          return;
+        }
+
+        const time = getRandomLatency();
+        const lossChance = Math.random();
+
+        if (lossChance < 0.1) {
+          output.textContent += `Request timed out.\n`;
+        } else {
+          received++;
+          min = Math.min(min, time);
+          max = Math.max(max, time);
+          total += time;
+          output.textContent += `Reply from ${target}: bytes=32 time=${time}ms TTL=54\n`;
+        }
+
+        await sleep(300 + Math.random() * 200);
+      }
+
+      const lost = sent - received;
+      const lossPercent = Math.round((lost / sent) * 100);
+      const average = received > 0 ? Math.round(total / received) : 0;
+
+      output.textContent += `\nPing statistics for ${target}:\n` +
+        `    Packets: Sent = ${sent}, Received = ${received}, Lost = ${lost} (${lossPercent}% loss)\n` +
+        `Approximate round trip times in milliseconds:\n` +
+        `    Minimum = ${min}ms, Maximum = ${max}ms, Average = ${average}ms`;
+
+      setStatus("✅ Ping finished successfully.", "positive");
+      pingRunning = false;
+    }
+
+    async function startTraceroute() {
+      const target = document.getElementById("target").value.trim();
+      if (!target) {
+        setStatus("⚠️ Please enter a valid target!", "warning");
+        return;
+      }
+
+      if (pingRunning || tracerouteRunning) {
+        setStatus("⚠️ Please wait! Another operation is already running.", "warning");
+        return;
+      }
+
+      tracerouteRunning = true;
+      setStatus("✅ Traceroute started...", "positive");
+      output.textContent = `🧭 Traceroute to ${target}, hops unlimited:\n\n`;
+
+      let hop = 1;
+      while (tracerouteRunning && hop <= 999999999999999999) {
+        const ip = getRandomIP();
+        const time1 = getRandomLatency();
+        const time2 = getRandomLatency();
+        const time3 = getRandomLatency();
+        const line = `${hop.toString().padStart(3)}   ${ip}   ${time1} ms  ${time2} ms  ${time3} ms`;
+        output.textContent += line + '\n';
+        output.scrollTop = output.scrollHeight;
+
+        hop++;
+        await sleep(250);
+      }
+
+      if (!tracerouteRunning) {
+        output.textContent += `\n🛑 Traceroute stopped manually.\n`;
+        setStatus("⚠️ Traceroute stopped by user.", "warning");
+      } else {
+        output.textContent += `\n✅ Traceroute completed after 100 hops.\n`;
+        setStatus("✅ Traceroute completed successfully.", "positive");
+      }
+
+      tracerouteRunning = false;
+    }
+
+    function stopTraceroute() {
+      tracerouteRunning = false;
+    }
+
+    function stopPing() {
+      pingRunning = false;
+    }
+  </script>
+</body>
+</html>

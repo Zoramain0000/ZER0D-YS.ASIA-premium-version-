@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>🌐 IP User Info Tool</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: #0f172a;
+      color: #f8fafc;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    h1 {
+      color: #38bdf8;
+    }
+    button {
+      padding: 0.5rem 1rem;
+      margin: 1rem 0.25rem;
+      background: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #1d4ed8;
+    }
+    #output {
+      white-space: pre-wrap;
+      background: #1e293b;
+      padding: 1rem;
+      border-radius: 8px;
+      width: 100%;
+      max-width: 700px;
+      overflow-x: auto;
+    }
+    #controls {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    @media (max-width: 600px) {
+      body { padding: 1rem; }
+      #output { font-size: 0.9rem; }
+    }
+  </style>
+</head>
+<body>
+  <h1>🌐 IP User Info Tool</h1>
+  <div id="controls">
+    <button onclick="fetchInfo()">🔍 Get My IP Info</button>
+    <button onclick="exportData('json')">⬇️ Export JSON</button>
+    <button onclick="exportData('txt')">⬇️ Export TXT</button>
+    <button onclick="exportData('csv')">⬇️ Export CSV</button>
+  </div>
+  <div id="output">Click the button above to retrieve your IP data...</div>
+
+  <script>
+    let currentData = {};
+
+    async function fetchInfo() {
+      const output = document.getElementById('output');
+      output.textContent = '⏳ Fetching IP information...';
+
+      try {
+        const res = await fetch('https://ipwho.is/?lang=en'); // no key needed
+        if (!res.ok) throw new Error('Failed to retrieve IP info');
+
+        const data = await res.json();
+        currentData = data;
+
+        output.textContent = JSON.stringify(data, null, 2);
+      } catch (err) {
+        output.textContent = '❌ Error: ' + err.message;
+      }
+    }
+
+    function exportData(format) {
+      if (!currentData || Object.keys(currentData).length === 0) {
+        alert('No data to export. Fetch IP info first.');
+        return;
+      }
+
+      let content = '';
+      const fileName = `ipinfo_export.${format}`;
+      const blobOpts = { type: 'text/plain' };
+
+      if (format === 'json') {
+        content = JSON.stringify(currentData, null, 2);
+        blobOpts.type = 'application/json';
+      } else if (format === 'txt') {
+        content = Object.entries(currentData).map(([k, v]) => `${k}: ${v}`).join('\n');
+      } else if (format === 'csv') {
+        const keys = Object.keys(currentData);
+        const values = keys.map(k => `"${currentData[k]}"`);
+        content = keys.join(',') + '\n' + values.join(',');
+        blobOpts.type = 'text/csv';
+      }
+
+      const blob = new Blob([content], blobOpts);
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  </script>
+</body>
+</html>

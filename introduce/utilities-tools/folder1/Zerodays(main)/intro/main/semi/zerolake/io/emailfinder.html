@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Email Finder Pro - Infinite Generator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      position: relative;
+      padding-bottom: 2rem; /* space for fixed count if needed */
+    }
+    header {
+      width: 100%;
+      text-align: center;
+background: rgba(0, 0, 0, 0.5);
+      padding: 2rem 1rem;
+      user-select: none;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 2rem;
+    }
+    header p {
+      margin: 0.5rem auto;
+      max-width: 600px;
+      font-size: 1rem;
+    }
+    .container {
+background: rgba(0, 0, 0, 0.5);
+      padding: 2rem;
+      margin: 2rem 1rem;
+      border-radius: 10px;
+      max-width: 800px;
+      width: 100%;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
+      overflow-y: auto;
+      max-height: 70vh;
+      position: relative;
+      z-index: 1;
+    }
+    .mode-toggle {
+      text-align: center;
+      margin-bottom: 1rem;
+      
+    }
+    .mode-toggle button {
+background: rgba(0, 0, 0, 0.5);
+color: red;
+      border: none;
+      padding: 0.6rem 1.2rem;
+      font-size: 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      user-select: none;
+    }
+    .input-group {
+      display: none;
+      margin-bottom: 1rem;
+    }
+    .input-group.active {
+      display: block;
+    }
+    input, datalist {
+      width: 100%;
+      padding: 0.8rem;
+      margin-bottom: 0.5rem;
+      border: none;
+      border-radius: 5px;
+      font-size: 1rem;
+background: rgba(0, 0, 0, 0.5);
+      color: red;
+    }
+    input::placeholder {
+      color: red;
+    }
+    .actions button {
+      width: 100%;
+      padding: 0.8rem;
+      background: red;
+      color: green;
+      font-weight: bold;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1rem;
+      margin-bottom: 0.5rem;
+      user-select: none;
+      transition: background-color 0.3s ease;
+    }
+    .actions button:hover {
+background: rgba(0, 0, 0, 0.5);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+      table-layout: fixed;
+      word-wrap: break-word;
+    }
+    th, td {
+      padding: 0.7rem;
+      border-bottom: 1px solid red;
+      text-align: left;
+    }
+    th {
+background: rgba(0, 0, 0, 0.5);
+      color: red;
+    }
+    .copy-btn {
+      background: red;
+      border: none;
+      color: green;
+      font-size: 0.8rem;
+      padding: 0.4rem 0.6rem;
+      border-radius: 4px;
+      cursor: pointer;
+      user-select: none;
+      transition: background-color 0.3s ease;
+    }
+    .copy-btn:hover {
+background: rgba(0, 0, 0, 0.5);
+    }
+    .note {
+      color: red;
+      font-size: 0.85rem;
+      text-align: center;
+      margin-top: 1rem;
+    }
+    .timestamp {
+      font-size: 0.85rem;
+      text-align: center;
+      color: red;
+      margin-top: 0.8rem;
+    }
+    /* Fixed draggable total count container */
+    #totalCount {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+background: rgba(0, 0, 0, 0.5);
+      color: red;
+      font-weight: bold;
+      padding: 0.6rem 1rem;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+      cursor: move;
+      user-select: none;
+      z-index: 9999;
+      max-width: 220px;
+      text-align: center;
+      font-size: 1rem;
+      transition: background-color 0.3s ease;
+    }
+    #totalCount:active {
+background: rgba(0, 0, 0, 0.5);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
+    }
+    /* New styles for numeric input and counters */
+    #generateCountInput {
+      width: 60px;
+      padding: 0.3rem;
+      border-radius: 4px;
+      border: none;
+background: rgba(0, 0, 0, 0.5);
+      color: red;
+      font-size: 1rem;
+      text-align: center;
+    }
+    #generateCountContainer {
+      margin-bottom: 1rem;
+      text-align: center;
+      color: red;
+      font-weight: bold;
+    }
+    #generateClickCount, #uniqueDomainsCount {
+      color: red;
+      font-weight: bold;
+      margin: 0.5rem 0;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>📧 Email Finder Pro</h1>
+  <p>Generate unlimited smart email ideas with auto-suggested domains and timestamps.</p>
+</header>
+
+<div class="container">
+  <div class="mode-toggle">
+    <button onclick="toggleMode()">🔁 Toggle to Random Mode</button>
+  </div>
+
+  <div id="manualInputs" class="input-group active">
+    <input type="text" id="firstName" placeholder="First Name (e.g. John)" />
+    <input type="text" id="middleName" placeholder="Middle Name or Nickname (optional)" />
+    <input type="text" id="lastName" placeholder="Last Name (e.g. Doe)" />
+    <input type="text" id="domain" list="domainSuggestions" placeholder="Domain (e.g. example.com)" />
+    <datalist id="domainSuggestions">
+      <option value="gmail.com" />
+      <option value="yahoo.com" />
+      <option value="outlook.com" />
+      <option value="protonmail.com" />
+      <option value="company.io" />
+    </datalist>
+  </div>
+
+  <div id="randomInputs" class="input-group">
+    <input type="text" id="domainRand" list="domainSuggestions" placeholder="Domain (e.g. company.com)" />
+  </div>
+
+  <div id="generateCountContainer">
+    <label for="generateCountInput">Number of Emails to Generate:</label>
+    <input type="number" id="generateCountInput" min="1" max="1000" value="10" />
+    <button onclick="generateEmailsFromInput()" style="background:#00c9a7; border:none; padding:0.5rem 1rem; border-radius:5px; cursor:pointer; font-weight:bold; color:black; margin-left:0.5rem;">Generate</button>
+  </div>
+
+  <div id="generateClickCount">Generate Button Clicked: 0 times</div>
+  <div id="uniqueDomainsCount">Unique Domains Used: 0</div>
+
+  <div class="actions">
+    <button onclick="generateEmails(10)">✨ Generate 10 Emails</button>
+    <button onclick="generateEmails(50)">✨ Generate 50 Emails</button>
+    <button onclick="generateEmails(100)">✨ Generate 100 Emails</button>
+    <button onclick="exportCSV()">📤 Export to CSV</button>
+    <button onclick="clearSaved()">🗑️ Clear Saved</button>
+  </div>
+
+  <div class="timestamp" id="timestamp"></div>
+  <div class="results" id="results"></div>
+  <div class="note">* Generated email ideas are stored in your browser. No data is sent externally.</div>
+</div>
+
+<div id="totalCount" title="Drag me!">Total Emails Generated: 0</div>
+
+<script>
+let isManual = true;
+let generatedEmails = [];
+let generateClickCounter = 0;
+
+const firstNames = [
+    "Alex", "Jordan", "Taylor", "Morgan", "Casey", "Jamie", "Blake", "Skyler", "Riley", "Dakota", 
+    "Abby", "Abigail", "Ada", "Addie", "Addison", "Adelaide", "Adele", "Adora", "Adriana", "Ælfgifu", 
+    "Æthelburh", "Agnes", "Aileen", "Alaina", "Alanna", "Alberta", "Albina", "Aleana", "Alexa", 
+    "Alexandra", "Alexandria", "Alexis", "Alice", "Alicia", "Alisha", "Alison", "Allyson", "Alma", 
+    "Althea", "Alvina", "Alyson", "Amanda", "Amber", "Amberley", "Amelia", "Amy", "Ana", "Andrea", 
+    "Andrée", "Andy", "Angel", "Angela", "Angelica", "Angelina", "Angella", "Angie", "Anna", 
+    "Annabelle", "Annabeth", "Anne", "Annette", "Annie", "Antonia", "April", "Arabella", "Arda", 
+    "Ariana", "Ariel", "Arya", "Ash", "Ashley", "Astrid", "Aubrey", "Audra", "Audrey", "Aurora", 
+    "Autumn", "Averil", "Avis", "Azalea", "Babette", "Barb", "Barbara", "Beatrice", "Beatrix", 
+    "Beau", "Becca", "Becki", "Becky", "Belinda", "Bella", "Berenice", "Bertha", "Betsy", 
+    "Bettina", "Betty", "Beverly", "Bianca", "Blair", "Blake", "Blanche", "Blossom", "Bobbi", 
+    "Bobby", "Bonnie", "Braden", "Brandy", "Brenda", "Brianna", "Bridget", "Brielle", "Brilliana", 
+    "Brooklyn", "Brynlee", "Bryony", "Caden", "Calla", "Candy", "Cara", "Cari", "Carina", 
+    "Carissa", "Carlena", "Carlene", "Carlie", "Carly", "Carmelita", "Carol", "Carol Ann", 
+    "Carol Anne", "Carole", "Carolina", "Caroline", "Carolyn", "Carrie Ann", "Carrie Anne", 
+    "Carroll", "Carry", "Carson", "Cary", "Casey", "Cassandra", "Cassidy", "Cathleen", "Cathy", 
+    "Cecilia", "Cecily", "Celestia", "Celia", "Celinda", "Chara", "Charis", "Charisse", 
+    "Charity", "Charla", "Charle", "Charlee", "Charlene", "Charley", "Charli", "Charlie", 
+    "Charlotte", "Charly", "Charlyne", "Charmaine", "Chas", "Chelsea", "Cherry", "Cheryl", 
+    "Chloe", "Chris", "Christabel", "Christi", "Christina", "Christine", "Christy", "Cindy", 
+    "Claire", "Clara", "Clare", "Claribel", "Clarice", "Clarissa", "Claudia", "Clementine", 
+    "Clover", "Cody", "Colette", "Colleen", "Constance", "Cora", "Coral", "Coraline", 
+    "Cordelia", "Courtney", "Crystal", "Cynthia",
+    "Daenerys", "Daisy", "Dana", "Dani", "Danielle", "Danna", "Daphne", "Darla", "Darlene", 
+    "Davina", "Dawn", "Deanna", "D", "Deanne", "Deb", "Debbie", "Deborah", "Dede", "Deja", 
+    "Delaney", "Delia", "Demetria", "Demi", "Denise", "Destiny", "Devon", "Diamond", "Diana", 
+    "Diane", "Dimity", "Donna", "Dora", "Doreen", "Doris", "Dorothy", "Dottie", "Drew", 
+    "Dulcie", "E", "Eadgifu", "Ealdgyth", "Ebony", "Edburga", "Eden", "Edith", "Edna", 
+    "Edris", "Edwina", "Effie", "Eileen", "Elaine", "Eleanor", "Elektra", "Elisha", "Eliza", 
+    "Elizabeth", "Ella", "Elle", "Ellen", "Ellie", "Ellis", "Elora", "Ember", "Emerald", 
+    "Emily", "Emma", "Enid", "Erika", "Erin", "Estelle", "Esther", "Esty", "Ethel", 
+    "Etheldreda", "Etty", "Eudora", "Eva", "Evan", "Evangelina", "Eve", "Evelyn", "F", 
+    "Fabienne", "Faith", "Fancy", "Faye", "Felicity", "Fern", "Finn", "Fiona", "Fleur", 
+    "Florence", "Frances", "Francie", "Francine", "Frankie", "Frederica", "Frida", "G", 
+    "Gage", "Gail", "Gale", "Gemma", "Gene", "Genevieve", "Georgene", "Georgette", "Georgia", 
+    "Georgiana", "Georgina", "Gertie", "Gertrude", "Gia", "Gina", "Ginny", "Giselle", 
+    "Gladys", "Glenda", "Glenna", "Gloria", "Glynis", "Goldie", "Grace", "Gussie", "Gwen", 
+    "Gwenda", "Gwendolen", "Gwendoline", "Gwendolyn", "Gwyneth",
+    "Haisley", "Haley", "Hannah", "Harmony", "Harriet", "Hayden", "Hayley", "Hazel", 
+    "Heather", "Heidi", "Helen", "Helena", "Helene", "Henrietta", "Hero", "Hester", 
+    "Hilary", "Hilda", "Hodierna", "Holly", "Honor", "Hope", "Hunter", 
+    "Ida", "Ila", "Imelda", "Imogen", "Ingrid", "Iona", "Irene", "Iris", 
+    "Irma", "Isa", "Isabel", "Isabella", "Isla", "Ivy", 
+    "Jacinta", "Jack", "Jackie", "Jacqueline", "Jacqui", "Jade", "Jaime", "Jamie", 
+    "Jan", "Jana", "Jane", "Janee", "Janelle", "Janet", "Janey", "Janie", 
+    "January", "Jasmine", "Jay", "Jayda", "Jayden", "Jayne", "Jaynie", 
+    "Jean", "Jeanie", "Jeannie", "Jemima", "Jemma", "Jenna", "Jennifer", "Jenny", 
+    "Jensen", "Jerri", "Jerry", "Jess", "Jessica", "Jessie", "Jill", 
+    "Joan", "Joanna", "Joanne", "Jodi", "Jodie", "Jody", "Joelle", 
+    "Joey", "Johnny", "Jolie", "Jordan", 
+    "Josephine", "Josie", "Joy", "Joyce", "Judith", "Julia", "Julianne", 
+    "Julie", "Juliet", "June", "Juniper", "Juno", "Justine", 
+    "Kailey", "Kalla", "Kara", "Karen", "Karin", "Karlee", "Karlene", 
+    "Karli", "Karlie", "Karly", "Karolyn", "Karrie", "Karyn", "Karyne", 
+    "Kasey", "Kate", "Katey", "Kathleen", "Kathryn", "Kathy", "Katie", 
+    "Katina", "Katrina", "Katy", "Kay", "Kayla", "Kaylee", "Kelly", 
+    "Kelsey", "Kierra", "Kim", "Kimberly", "Kira", "Kirsteen", 
+    "Kirstin", "Kitty", "Krista", "Kristen", "Kristi", "Kristin", 
+    "Kristy", "Kylie", "Kyra",
+    "Lacey", "Lana", "Lanna", "Lara", "Larissa", "Laura", "Laurel", "Lauren", 
+    "Laurence", "Lauretta", "Laurie", "Lauryn", "Lavender", "Leah", "Leanne", 
+    "Lee", "Leila", "Leisha", "Lena", "Lenna", "Leona", "Leonora", "Leslie", 
+    "Lettice", "Lexi", "Lila", "Liliana", "Lilibet", "Lilibeth", "Lilla", 
+    "Lillian", "Lillie", "Lilly", "Lily", "Lina", "Linda", "Lindsay", 
+    "Lindy", "Lisa", "Liza", "Lizzie", "Lois", "Loraine", "Lorelei", 
+    "Lorena", "Loretta", "Lori", "Lorinda", "Lorna", "Lorraine", "Lottie", 
+    "Lotty", "Louella", "Louisa", "Louise", "Lucia", "Lucinda", "Lucy", 
+    "Lydia", "Lyndsay", "Lynnette", "Lysette", "Mabel", "Mable", "Macy", 
+    "Madelaine", "Madeleine", "Madelyn", "Madge", "Madison", "Madonna", 
+    "Mae", "Maggie", "Magnolia", "Mallory", "Mandy", "Mara", "Marcia", 
+    "Marcie", "Margaret", "Margie", "Margo", "Maria", "Mariah", "Marian", 
+    "Marianne", "Marie", "Marigold", "Marilyn", "Marina", "Marissa", 
+    "Marjorie", "Marlene", "Marsha", "Marta", "Martha", "Martina", 
+    "Mary", "Mary Belle", "Maryanne", "Mason", "Matilda", "Maud", 
+    "Maude", "Maura", "Maureen", "Mavis", "Maxine", "May", "Maya", 
+    "Mayola", "McKenna", "Meara", "Medea", "Megan", "Mehitable", 
+    "Mel", "Melanie", "Melina", "Melinda", "Melissa", "Melody", 
+    "Mercedes", "Meredith", "Merilyn", "Merle", "Merrilyn", "Mia", 
+    "Micah", "Michele", "Michelle", "Mila", "Mildred", "Miley", 
+    "Millicent", "Millie", "Mina", "Mindi", "Mindy", "Minerva", 
+    "Minnie", "Miranda", "Miriam", "Misty", "Moira", "Molly", 
+    "Morgan", "Muriel", "Myra", "Myrna", "Myrtle",
+    "Nadia", "Nadine", "Naila", "Nancy", "Naomi", "Narcissa", "Nathalie", 
+    "Nena", "Nettie", "Netty", "Nevaeh", "Nia", "Nicki", "Nicola", 
+    "Nicole", "Nina", "Noel", "Noella", "Noelle",
+    "Napoleon", "Nate", "Nathan", "Nathanael", "Nathaniel", "Ned", "Nehemiah", 
+    "Neil", "Nelson", "Nestor", "Newt", "Newton", "Niall", "Nicholas", 
+    "Nick", "Nicodemus", "Nicolas", "Nigel", "Niles", "Noah", "Noam", 
+    "Norm", "Norman", "Nowell",
+    "Obadiah", "Odin", "Oliver", "Ollie", "Orion", "Orlando", "Orville", 
+    "Osbert", "Osborne", "Oscar", "Osric", "Oswald", "Otis", "Otto", 
+    "Owen", "Ozzie",
+    "Paddy", "Palmer", "Paris", "Patrick", "Patsy", "Patty", "Paul", 
+    "Peleg", "Percival", "Percy", "Perry", "Pete", "Peter", "Philip", 
+    "Phillipps", "Phineas", "Pierse", "Poe", "Porter", "Posy", "Preston",
+    "Quentin", "Quincy", "Quinn",
+    "Race", "Rafe", "Raife", "Raleigh", "Ralph", "Ralphie", "Ramsey", 
+    "Randall", "Randi", "Randolph", "Randy", "Raphael", "Rathbone", 
+    "Ray", "Raymond", "Reese", "Reggie", "Reginald", "Rembrandt", 
+    "Rendell", "Renssalaer", "Reuben", "Rex", "Reynold", "Rhett", 
+    "Rich", "Richard", "Richie", "Rick", "Ricky", "Riley", "Ritchie", 
+    "Rob", "Robbie", "Robert", "Robin", "Roderick", "Rodger", 
+    "Rodney", "Roger", "Rogers", "Roland", "Roman", "Ron", "Ronald", 
+    "Ronnie", "Rory", "Roscoe", "Ross", "Roualeyn", "Rowland", 
+    "Roy", "Rudolph", "Rudy", "Rufus", "Rupert", "Russ", "Russell", 
+    "Ryan", "Ryder",
+    "Sam", "Sammy", "Samson", "Samuel", "Sandy", "Sanford", "Saul", 
+    "Sawyer", "Scott", "Sean", "Sebastian", "Seth", "Seymour", 
+    "Shane", "Shaun", "Shawn", "Shayne", "Sheldon", "Shepherd", 
+    "Sid", "Sidney", "Sigmund", "Simon", "Sky", "Skyler", 
+    "Sloane", "Smith", "Sol", "Solomon", "Spencer", "Stan", 
+    "Stanford", "Stanley", "Stefan", "Stephen", "Stetson", 
+    "Steve", "Stevie", "Stevland", "Stewart", "Storm", "Stuart", 
+    "Swaine", "Syd", "Sydney", "Sylvester",
+    "Tanner", "Taran", "Taylor", "Tazewell", "Ted", "Tedd", "Teddy", 
+    "Terence", "Terry", "Thaddeus", "Theo", "Theodore", "Thomas", 
+    "Thor", "Tim", "Timmy", "Timothy", "Tobias", "Toby", "Tod", 
+    "Todd", "Toddy", "Tom", "Tommie", "Tommy", "Tony", "Tracy", 
+    "Travis", "Tregonwell", "Trent", "Trevor", "Trey", "Tristan", 
+    "Troy", "Truman", "Tucker", "Tyler", "Tyson",
+    "Ultan", "Ulysses", "Uriah",
+    "Val", "Valentine", "Vernon", "Vic", "Vicary", "Victor", "Vince", 
+    "Vincent", "Vinny", "Vivian",
+    "Wade", "Wadsworth", "Walden", "Waldo", "Walker", "Wallace", 
+    "Wally", "Walt", "Walter", "Warren", "Waverly", "Waylon", 
+    "Wayne", "Wells", "Wes", "Wesley", "Whitney", "Wilber", 
+    "Wilbert", "Wilbur", "Wilf", "Wilfred", "Wilfried", "Wilhelm", 
+    "Will", "Willard", "William", "Willis", "Willy", "Wilmon", 
+    "Wilson", "Winnie", "Winston", "Wolfgang", "Woodrow", 
+    "Woodruff", "Woody", "Wyatt", "Wyndham",
+    "Xander", "Xavier",
+    "Yancy",
+    "Zabdiel", "Zach", "Zachary", "Zack", "Zadoc", "Zak", "Zane", 
+    "Zayden", "Zeb", "Zechariah", "Zedekiah", "Zeke", "Zeph", 
+    "Zephaniah", "Zion"
+];
+    
+const lastNames = [
+  "Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis", "Rodriguez", "Martinez",
+  "Hernandez", "Lopez", "Gonzalez", "Wilson", "Anderson", "Thomas", "Taylor", "Moore", "Jackson", "Martin",
+  "Lee", "Perez", "Thompson", "White", "Harris", "Sanchez", "Clark", "Ramirez", "Lewis", "Robinson",
+  "Walker", "Young", "Allen", "King", "Wright", "Scott", "Torres", "Nguyen", "Hill", "Flores",
+  "Green", "Adams", "Nelson", "Baker", "Hall", "Rivera", "Campbell", "Mitchell", "Carter", "Roberts",
+  "Gomez", "Phillips", "Evans", "Turner", "Diaz", "Parker", "Cruz", "Edwards", "Collins", "Reyes",
+  "Stewart", "Morris", "Morales", "Murphy", "Cook", "Rogers", "Gutierrez", "Ortiz", "Morgan", "Cooper",
+  "Peterson", "Bailey", "Reed", "Kelly", "Howard", "Ramos", "Kim", "Cox", "Ward", "Richardson",
+  "Watson", "Brooks", "Chavez", "Wood", "James", "Bennett", "Gray", "Mendoza", "Ruiz", "Hughes",
+  "Price", "Alvarez", "Castillo", "Sanders", "Patel", "Myers", "Long", "Ross", "Foster", "Jimenez",
+  "Powell", "Jenkins", "Perry", "Russell", "Sullivan", "Bell", "Coleman", "Butler", "Henderson", "Barnes",
+  "Gonzales", "Fisher", "Vasquez", "Simmons", "Romero", "Jordan", "Patterson", "Alexander", "Hamilton", "Graham",
+  "Reynolds", "Griffin", "Wallace", "Moreno", "West", "Cole", "Hayes", "Bryant", "Herrera", "Gibson",
+  "Ellis", "Tran", "Medina", "Aguilar", "Stevens", "Murray", "Ford", "Castro", "Marshall", "Owens",
+  "Harrison", "Fernandez", "Mcdonald", "Woods", "Washington", "Kennedy", "Wells", "Vargas", "Henry", "Chen",
+  "Freeman", "Webb", "Tucker", "Guzman", "Burns", "Crawford", "Olson", "Simpson", "Porter", "Hunter",
+  "Gordon", "Mendez", "Silva", "Shaw", "Snyder", "Mason", "Dixon", "Munoz", "Hunt", "Hicks",
+  "Holmes", "Palmer", "Wagner", "Black", "Robertson", "Boyd", "Rose", "Stone", "Salazar", "Fox",
+  "Warren", "Mills", "Meyer", "Rice", "Schmidt", "Garza", "Daniels", "Ferguson", "Nichols", "Stephens",
+  "Soto", "Weaver", "Ryan", "Gardner", "Payne", "Grant", "Dunn", "Kelley", "Spencer", "Hawkins",
+  "Arnold", "Pierce", "Vazquez", "Hansen", "Peters", "Santos", "Hart", "Bradley", "Knight", "Elliott",
+  "Cunningham", "Duncan", "Armstrong", "Hudson", "Carroll", "Lane", "Riley", "Andrews", "Alvarado", "Ray",
+  "Delgado", "Berry", "Perkins", "Hoffman", "Johnston", "Matthews", "Pena", "Richards", "Contreras", "Willis",
+  "Carpenter", "Lawrence", "Sandoval", "Guerrero", "George", "Chapman", "Rios", "Estrada", "Ortega", "Watkins",
+  "Greene", "Nunez", "Wheeler", "Valdez", "Harper", "Burke", "Larson", "Santiago", "Maldonado", "Morrison",
+  "Franklin", "Carlson", "Austin", "Dominguez", "Carr", "Lawson", "Jacobs", "Obrien", "Lynch", "Singh",
+  "Vega", "Bishop", "Montgomery", "Oliver", "Jensen", "Harvey", "Williamson", "Gilbert", "Dean", "Sims",
+  "Espinoza", "Howell", "Li", "Wong", "Reid", "Hanson", "Le", "Mccoy", "Garrett", "Burton",
+  "Fuller", "Wang", "Weber", "Welch", "Rojas", "Lucas", "Marquez", "Fields", "Park", "Yang",
+  "Little", "Banks", "Padilla", "Day", "Walsh", "Bowman", "Schultz", "Luna", "Fowler", "Mejia",
+  "Davidson", "Acosta", "Brewer", "May", "Holland", "Juarez", "Newman", "Pearson", "Curtis", "Cortez",
+  "Douglas", "Schneider", "Joseph", "Barrett", "Navarro", "Figueroa", "Keller", "Avila", "Wade", "Molina",
+  "Stanley", "Hopkins", "Campos", "Barnett", "Bates", "Chambers", "Caldwell", "Beck", "Lambert", "Miranda",
+  "Byrd", "Craig", "Ayala", "Lowe", "Frazier", "Powers", "Neal", "Leonard", "Gregory", "Carrillo",
+  "Sutton", "Fleming", "Rhodes", "Shelton", "Schwartz", "Norris", "Jennings", "Watts", "Duran", "Walters",
+  "Cohen", "Mcdaniel", "Moran", "Parks", "Steele", "Vaughn", "Becker", "Holt", "Deleon", "Barker",
+  "Terry", "Hale", "Leon", "Hail", "Baldwin", "Kirk", "Underwood", "Wilkins", "Gaines", "Madden"
+];
+
+const middleNames = [
+  "alex", "ray", "lynn", "jay", "max", "jo",
+  "lee", "sam", "kai", "ryan", "ash", "ben", "cam", "dan", "eve", "fay", "gia", "hal", "ian",
+  "jan", "kim", "liz", "mia", "ned", "oma", "pam", "quinn", "rae", "sid", "tia", "uma", "vic",
+  "wynn", "xan", "yael", "zoe", "zo", "zen", "rex", "kit", "tess", "noe",
+  "aaw", "ac", "ae", "aeqs", "af", "ag", "ahd", "ai", "aip", "aj",
+  "ako", "alv", "amp", "anr", "aop", "apt", "aq", "ara", "ark", "arm",
+  "asn", "ato", "avx", "awn", "ayl", "azo", "bak", "baz", "bek", "bex",
+  "biz", "bok", "bom", "bor", "brx", "bty", "buz", "caz", "cek", "cio",
+  "cix", "cob", "cox", "cyn", "dak", "danx", "dep", "dex", "div", "dok",
+  "dop", "dox", "dru", "dul", "dux", "dyn", "ean", "efr", "egt", "eiv",
+  "elf", "eln", "emb", "emy", "enz", "epx", "esq", "ety", "evo", "exi",
+  "fak", "fav", "fayx", "feb", "fex", "fig", "fik", "fol", "fom", "fox",
+  "fuz", "gak", "gex", "gim", "giz", "goz", "gyn", "hak", "han", "hax",
+  "hez", "hix", "hok", "hox", "hux", "ianx", "iex", "igo", "ikz", "ilx",
+  "ima", "imz", "inx", "ipo", "iqz", "irk", "isk", "ivy", "ixx", "jaz",
+  "jen", "jex", "jik", "jiv", "jox", "juz", "jyn", "kaz", "kex", "kiv",
+  "kiz", "klo", "koz", "kux", "kya", "lax", "lek", "lex", "lizx", "lok",
+  "lox", "luk", "lux", "lyn", "lyz", "mak", "mez", "mik", "miv", "miz",
+  "mok", "mux", "nax", "nek", "nez", "nik", "niz", "nox", "nuz", "oak",
+  "ofy", "opa", "orz", "osh", "oxx", "ozy", "pak", "pex", "pik", "piv",
+  "plu", "pob", "pox", "poz", "pux", "qaz", "qik", "qon", "quz", "rax",
+  "rek", "rexz", "rik", "riz", "rok", "rox", "ruk", "ruz", "ryx", "sak",
+  "sel", "sik", "siz", "sok", "soz", "sux", "syk", "syx", "tak", "tex",
+  "tik", "tiz", "tok", "tox", "tux", "tyn", "uak", "uez", "ugo", "uix",
+  "ukz", "ulx", "umaq", "und", "ura", "uto", "uxx", "vax", "vek", "vex",
+  "vik", "viz", "vox", "vyn", "wak", "wez", "wex", "wik", "wok", "wux",
+  "wynx", "xal", "xev", "xik", "xlo", "xoz", "xun", "xyr", "yak", "yez",
+  "yix", "yok", "yul", "yux", "zak", "zel", "zek", "zex", "zik", "ziv",
+  "zok", "zol", "zon", "zox", "zuk", "zux", "zyr"
+];
+
+
+function toggleMode() {
+  isManual = !isManual;
+  document.getElementById('manualInputs').classList.toggle('active', isManual);
+  document.getElementById('randomInputs').classList.toggle('active', !isManual);
+  document.querySelector('.mode-toggle button').innerText = isManual
+    ? '🔁 Toggle to Random Mode'
+    : '✍️ Toggle to Manual Mode';
+  document.getElementById('results').innerHTML = '';
+  document.getElementById('timestamp').innerText = '';
+}
+
+function updateTotalCount() {
+  const totalCountElem = document.getElementById('totalCount');
+  totalCountElem.innerText = `Total Emails Generated: ${generatedEmails.length}`;
+}
+
+function updateUniqueDomainsCount() {
+  const uniqueDomains = new Set(generatedEmails.map(e => {
+    const parts = e.email.split('@');
+    return parts.length > 1 ? parts[1] : '';
+  }));
+  document.getElementById('uniqueDomainsCount').innerText = `Unique Domains Used: ${uniqueDomains.size}`;
+}
+
+function generateEmailsFromInput() {
+  const countInput = document.getElementById('generateCountInput');
+  let count = parseInt(countInput.value);
+  if (isNaN(count) || count < 1) {
+    alert('Please enter a valid number greater than 0.');
+    return;
+  }
+  if (count > 999999999999999) {
+    alert('Please enter a number less than or equal to 999,999,999,999,999.');
+    return;
+  }
+  generateEmails(count);
+}
+
+function generateEmails(count = 10) {
+  generateClickCounter++;
+  document.getElementById('generateClickCount').innerText = `Generate Button Clicked: ${generateClickCounter} times`;
+
+  const timestamp = document.getElementById('timestamp');
+  const now = new Date();
+  const formatted = now.toLocaleString();
+  timestamp.innerText = `Generated: ${formatted}`;
+
+  let first, middle = "", last, domain;
+  let emails = [];
+
+  for (let i = 0; i < count; i++) {
+    if (isManual) {
+      first = document.getElementById('firstName').value.trim().toLowerCase();
+      last = document.getElementById('lastName').value.trim().toLowerCase();
+      middle = document.getElementById('middleName').value.trim().toLowerCase();
+      domain = document.getElementById('domain').value.trim().toLowerCase();
+      if (!first || !last || !domain) return alert('Please fill first, last name, and domain.');
+    } else {
+      domain = document.getElementById('domainRand').value.trim().toLowerCase();
+      if (!domain) return alert('Please enter a domain.');
+      first = firstNames[Math.floor(Math.random() * firstNames.length)];
+      middle = middleNames[Math.floor(Math.random() * middleNames.length)];
+      last = lastNames[Math.floor(Math.random() * lastNames.length)];
+    }
+
+    const formats = [
+      { email: `${first}.${last}@${domain}`, rank: "⭐⭐⭐" },
+      { email: `${first}@${domain}`, rank: "⭐" },
+      { email: `${first}${last}@${domain}`, rank: "⭐⭐" },
+      { email: `${first}_${last}@${domain}`, rank: "⭐⭐" },
+      { email: `${first[0]}${last}@${domain}`, rank: "⭐⭐⭐" },
+      { email: `${first[0]}.${last}@${domain}`, rank: "⭐⭐⭐" },
+      { email: `${last}.${first}@${domain}`, rank: "⭐" },
+      { email: `${first}-${last}@${domain}`, rank: "⭐" },
+      { email: `${first}${middle ? '.' + middle : ''}.${last}@${domain}`, rank: "⭐⭐⭐" },
+      { email: `${first[0]}${middle ? middle[0] : ''}${last}@${domain}`, rank: "⭐⭐" }
+    ];
+
+    emails.push(formats[Math.floor(Math.random() * formats.length)]);
+  }
+
+  generatedEmails = [...generatedEmails, ...emails];
+  localStorage.setItem("savedEmails", JSON.stringify(generatedEmails));
+  renderEmails(generatedEmails);
+  updateTotalCount();
+  updateUniqueDomainsCount();
+}
+
+function renderEmails(data) {
+  const results = document.getElementById('results');
+  results.innerHTML = '';
+  const table = document.createElement('table');
+  table.innerHTML = `<thead><tr><th>#</th><th>Email</th><th>Rank</th><th>Copy</th></tr></thead>`;
+  const tbody = document.createElement('tbody');
+
+  data.forEach((item, index) => {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td>${index + 1}</td>
+      <td>${item.email}</td>
+      <td>${item.rank}</td>
+      <td><button class="copy-btn" onclick="copyEmail('${item.email}')">📋 Copy</button></td>
+    `;
+    tbody.appendChild(row);
+  });
+
+  table.appendChild(tbody);
+  results.appendChild(table);
+}
+
+function copyEmail(email) {
+  navigator.clipboard.writeText(email).then(() => alert(`Copied: ${email}`));
+}
+
+function exportCSV() {
+  if (generatedEmails.length === 0) return alert("Generate some emails first!");
+  const csv = generatedEmails.map(e => e.email).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'email_ideas.csv';
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function clearSaved() {
+  localStorage.removeItem("savedEmails");
+  generatedEmails = [];
+  document.getElementById('results').innerHTML = '';
+  document.getElementById('timestamp').innerText = '';
+  updateTotalCount();
+  updateUniqueDomainsCount();
+  alert("🧹 Saved data cleared.");
+}
+
+// Load saved emails on page load
+window.onload = () => {
+  const saved = localStorage.getItem("savedEmails");
+  if (saved) {
+    generatedEmails = JSON.parse(saved);
+    renderEmails(generatedEmails);
+    updateTotalCount();
+    updateUniqueDomainsCount();
+  }
+};
+
+// Draggable totalCount container
+(function() {
+  const el = document.getElementById('totalCount');
+  let isDragging = false;
+  let offsetX, offsetY;
+
+  el.addEventListener('mousedown', (e) => {
+    isDragging = true;
+    offsetX = e.clientX - el.getBoundingClientRect().left;
+    offsetY = e.clientY - el.getBoundingClientRect().top;
+    el.style.transition = 'none';
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    let left = e.clientX - offsetX;
+    let top = e.clientY - offsetY;
+
+    // Keep inside viewport boundaries
+    const maxLeft = window.innerWidth - el.offsetWidth;
+    const maxTop = window.innerHeight - el.offsetHeight;
+    if (left < 0) left = 0;
+    if (top < 0) top = 0;
+    if (left > maxLeft) left = maxLeft;
+    if (top > maxTop) top = maxTop;
+
+    el.style.left = left + 'px';
+    el.style.top = top + 'px';
+    el.style.right = 'auto';
+    el.style.bottom = 'auto';
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (isDragging) {
+      isDragging = false;
+      el.style.transition = '';
+    }
+  });
+
+  // Initialize position from localStorage if saved
+  window.addEventListener('load', () => {
+    const pos = localStorage.getItem('totalCountPos');
+    if (pos) {
+      const { left, top } = JSON.parse(pos);
+      el.style.left = left + 'px';
+      el.style.top = top + 'px';
+      el.style.right = 'auto';
+      el.style.bottom = 'auto';
+    }
+  });
+
+  // Save position on drag end
+  document.addEventListener('mouseup', () => {
+    if (!isDragging) {
+      const rect = el.getBoundingClientRect();
+      localStorage.setItem('totalCountPos', JSON.stringify({ left: rect.left, top: rect.top }));
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>🌐 Advanced API Service Finder</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+    }
+    header {
+      text-align: center;
+      padding: 1rem;
+      font-size: 2rem;
+      border-bottom: 2px solid red;
+background: rgba(0, 0, 0, 0.5);
+    }
+    .controls {
+      padding: 1rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+    input, select, button {
+      padding: 0.6rem;
+      font-size: 1rem;
+      border: 1px solid red;
+background: rgba(0, 0, 0, 0.5);
+      color: red;
+    }
+    button {
+      cursor: pointer;
+    }
+    #results {
+      padding: 1rem;
+    }
+    .api-card {
+      border: 1px solid red;
+      padding: 1rem;
+      margin: 1rem 0;
+background: rgba(0, 0, 0, 0.5);
+    }
+    .api-card h3 {
+      margin: 0 0 0.5rem 0;
+    }
+    .api-card a {
+      color: red;
+      text-decoration: underline;
+    }
+    .test-area {
+      margin-top: 0.5rem;
+    }
+    .test-area input {
+      width: 80%;
+    }
+    pre {
+      white-space: pre-wrap;
+background: rgba(0, 0, 0, 0.5);
+      padding: 1rem;
+      border: 1px solid red;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+<body>
+  <header>🔍 Advanced API Service Finder Tool</header>
+
+  <div class="controls">
+    <select id="sourceSelect">
+      <option value="publicapis">Public APIs</option>
+      <option value="apisguru">APIs Guru</option>
+    </select>
+    <input type="text" id="searchInput" placeholder="Search APIs..." />
+    <select id="authSelect">
+      <option value="">Any Auth</option>
+      <option value="null">No Auth</option>
+      <option value="apiKey">API Key</option>
+      <option value="OAuth">OAuth</option>
+    </select>
+    <select id="httpsSelect">
+      <option value="">HTTPS Support</option>
+      <option value="true">Yes</option>
+      <option value="false">No</option>
+    </select>
+    <button onclick="findAPIs()">Find APIs</button>
+  </div>
+
+  <div id="results">Select source and enter search criteria to find APIs...</div>
+
+  <script>
+    let cache = {
+      publicapis: null,
+      apisguru: null
+    };
+
+    async function findAPIs() {
+      const source = document.getElementById('sourceSelect').value;
+      const search = document.getElementById('searchInput').value.toLowerCase();
+      const auth = document.getElementById('authSelect').value;
+      const https = document.getElementById('httpsSelect').value;
+      const resultsContainer = document.getElementById('results');
+      resultsContainer.innerHTML = '🔄 Loading...';
+
+      try {
+        if (!cache[source]) {
+          if (source === 'publicapis') {
+            const res = await fetch('https://api.publicapis.org/entries');
+            const data = await res.json();
+            cache[source] = data.entries;
+          } else if (source === 'apisguru') {
+            const res = await fetch('https://api.apis.guru/v2/list.json');
+            const data = await res.json();
+            cache[source] = Object.entries(data).map(([name, meta]) => ({
+              API: name,
+              Description: meta.info?.description || 'No description',
+              Link: meta.versions[meta.preferred].swaggerUrl,
+              HTTPS: true,
+              Auth: 'null',
+              Category: meta.info?.title || 'Unknown'
+            }));
+          }
+        }
+
+        const filtered = cache[source].filter(entry =>
+          (!search || entry.API.toLowerCase().includes(search) || entry.Description.toLowerCase().includes(search)) &&
+          (!auth || (entry.Auth || "null") === auth) &&
+          (!https || String(entry.HTTPS) === https)
+        );
+
+        if (filtered.length === 0) {
+          resultsContainer.innerHTML = '<p>❌ No matching APIs found.</p>';
+          return;
+        }
+
+        resultsContainer.innerHTML = `<p>✅ Found ${filtered.length} APIs:</p>`;
+        filtered.forEach(entry => {
+          const card = document.createElement('div');
+          card.className = 'api-card';
+          card.innerHTML = `
+            <h3>${entry.API}</h3>
+            <p>${entry.Description}</p>
+            <p><strong>Auth:</strong> ${entry.Auth || "None"}</p>
+            <p><strong>HTTPS:</strong> ${entry.HTTPS ? "Yes" : "No"}</p>
+            <p><strong>Category:</strong> ${entry.Category}</p>
+            <p><a href="${entry.Link}" target="_blank">🔗 API Docs</a></p>
+            <div class="test-area">
+              <input type="text" placeholder="Test URL (e.g. ${entry.Link.replace('swagger', 'api')})" />
+              <button onclick="testAPI(this)">⚡ Test</button>
+              <pre class="response-output"></pre>
+            </div>
+          `;
+          resultsContainer.appendChild(card);
+        });
+      } catch (err) {
+        resultsContainer.innerHTML = '<p>❌ Error loading API list.</p>';
+        console.error(err);
+      }
+    }
+
+    async function testAPI(button) {
+      const input = button.previousElementSibling;
+      const output = button.nextElementSibling;
+      const url = input.value.trim();
+      if (!url.startsWith("http")) {
+        output.textContent = "❌ Invalid URL";
+        return;
+      }
+      output.textContent = "🔄 Fetching...";
+      try {
+        const res = await fetch(url);
+        const json = await res.json();
+        output.textContent = JSON.stringify(json, null, 2);
+      } catch (e) {
+        output.textContent = `❌ Failed: ${e.message}`;
+      }
+    }
+  </script>
+</body>
+</html>

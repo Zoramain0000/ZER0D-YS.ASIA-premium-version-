@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Advanced Firebase Data Fetcher</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      --bg: #111827;
+      --text: #f9fafb;
+      --box: #1f2937;
+      --button: #10b981;
+      --button-hover: #059669;
+    }
+    [data-theme="light"] {
+      --bg: #f3f4f6;
+      --text: #111827;
+      --box: #ffffff;
+      --button: #2563eb;
+      --button-hover: #1d4ed8;
+    }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 0;
+      transition: background 0.3s, color 0.3s;
+    }
+    header {
+      background: var(--box);
+      padding: 20px;
+      text-align: center;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 24px;
+      color: var(--button);
+    }
+    .container {
+      max-width: 900px;
+      margin: 30px auto;
+      padding: 20px;
+      background: var(--box);
+      border-radius: 10px;
+      box-shadow: 0 0 10px #00000030;
+    }
+    input[type="text"], input[type="file"], #searchBox {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      margin: 10px 0;
+      border-radius: 5px;
+      border: 1px solid #374151;
+      background: var(--bg);
+      color: var(--text);
+    }
+    button {
+      background: var(--button);
+      color: white;
+      padding: 10px 20px;
+      margin: 10px 10px 10px 0;
+      border: none;
+      font-size: 16px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: var(--button-hover);
+    }
+    pre {
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: #0f172a;
+      padding: 15px;
+      border-radius: 5px;
+      max-height: 300px;
+      overflow-y: auto;
+      margin-top: 20px;
+    }
+    footer {
+      text-align: center;
+      color: #9ca3af;
+      margin-top: 40px;
+      font-size: 14px;
+    }
+    .theme-toggle {
+      float: right;
+      background: transparent;
+      color: var(--text);
+      font-size: 16px;
+      cursor: pointer;
+      border: 1px solid var(--text);
+      border-radius: 5px;
+      padding: 5px 10px;
+    }
+    ul.json-tree {
+      list-style: none;
+      padding-left: 20px;
+    }
+    .json-key {
+      color: #93c5fd;
+    }
+    .json-value {
+      color: #fca5a5;
+    }
+    .json-toggle {
+      cursor: pointer;
+      color: #fbbf24;
+    }
+    .collapsed > ul {
+      display: none;
+    }
+  </style>
+</head>
+<body data-theme="dark">
+  <header>
+    <button class="theme-toggle" onclick="toggleTheme()">🌙/☀️</button>
+    <h1>🔥 Advanced Firebase Data Fetcher Tool</h1>
+  </header>
+
+  <div class="container">
+    <input type="text" id="firebaseUrl" placeholder="Enter Firebase URL">
+    <input type="file" id="urlFile" accept=".txt">
+    <button onclick="fetchFirebaseData()">Fetch</button>
+    <button onclick="saveData()">Save</button>
+
+    <input type="text" id="searchBox" placeholder="Search data..." oninput="filterData()">
+
+    <pre id="output">Result will appear here...</pre>
+    <div id="treeView"></div>
+  </div>
+
+  <footer>&copy; 2025 Firebase Tool by Dev — Theme toggle, batch upload, filterable, tree view</footer>
+
+  <script>
+    let latestData = null;
+    let filteredJson = "";
+
+    function toggleTheme() {
+      const body = document.body;
+      const current = body.getAttribute("data-theme");
+      body.setAttribute("data-theme", current === "dark" ? "light" : "dark");
+    }
+
+    async function fetchFirebaseData() {
+      const urlInput = document.getElementById('firebaseUrl');
+      const fileInput = document.getElementById('urlFile');
+      const output = document.getElementById('output');
+      output.textContent = "Fetching...";
+      document.getElementById('treeView').innerHTML = "";
+
+      let urls = [];
+
+      if (fileInput.files.length > 0) {
+        const file = fileInput.files[0];
+        const text = await file.text();
+        urls = text.split(/\r?\n/).filter(Boolean);
+      } else {
+        const singleUrl = urlInput.value.trim();
+        if (!singleUrl) return alert("Enter or upload Firebase URLs.");
+        urls.push(singleUrl);
+      }
+
+      latestData = {};
+      for (const rawUrl of urls) {
+        let url = rawUrl;
+        if (!url.endsWith('/')) url += "/";
+        if (!url.endsWith(".json")) url += ".json";
+        try {
+          const res = await fetch(url);
+          if (!res.ok) throw new Error(`Fetch failed for: ${url}`);
+          const data = await res.json();
+          latestData[rawUrl] = data;
+        } catch (err) {
+          latestData[rawUrl] = { error: err.message };
+        }
+      }
+
+      filteredJson = JSON.stringify(latestData, null, 2);
+      output.textContent = filteredJson;
+      renderTreeView(latestData);
+    }
+
+    function saveData() {
+      if (!latestData) {
+        alert("No data to save. Please fetch first.");
+        return;
+      }
+      const blob = new Blob([JSON.stringify(latestData, null, 2)], { type: "application/json" });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = "firebase_data.json";
+      link.click();
+    }
+
+    function filterData() {
+      const query = document.getElementById("searchBox").value.toLowerCase();
+      const output = document.getElementById("output");
+
+      if (!query) {
+        output.textContent = filteredJson;
+        renderTreeView(latestData);
+        return;
+      }
+
+      const filtered = JSON.stringify(latestData, (key, value) => {
+        if (typeof value === "string" && value.toLowerCase().includes(query)) return value;
+        if (typeof value === "object" && value !== null) return value;
+        return undefined;
+      }, 2);
+
+      output.textContent = filtered;
+      try {
+        renderTreeView(JSON.parse(filtered));
+      } catch {
+        document.getElementById("treeView").innerHTML = "<p>Invalid filter result</p>";
+      }
+    }
+
+    function renderTreeView(json) {
+      const treeContainer = document.getElementById("treeView");
+      treeContainer.innerHTML = "";
+      treeContainer.appendChild(buildTree(json));
+    }
+
+    function buildTree(obj) {
+      const ul = document.createElement("ul");
+      ul.classList.add("json-tree");
+
+      for (const key in obj) {
+        const li = document.createElement("li");
+        const val = obj[key];
+        const type = typeof val;
+
+        if (type === "object" && val !== null) {
+          const span = document.createElement("span");
+          span.classList.add("json-toggle");
+          span.textContent = `▶ ${key}`;
+          span.onclick = () => li.classList.toggle("collapsed");
+
+          li.appendChild(span);
+          const childUl = buildTree(val);
+          li.appendChild(childUl);
+        } else {
+          li.innerHTML = `<span class="json-key">${key}</span>: <span class="json-value">${val}</span>`;
+        }
+
+        ul.appendChild(li);
+      }
+      return ul;
+    }
+  </script>
+</body>
+</html>

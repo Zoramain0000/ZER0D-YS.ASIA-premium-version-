@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>🌍 Geo Wiki + Image Explorer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    html, body, #map {
+      height: 100%; margin: 0; padding: 0;
+      font-family: Arial, sans-serif;
+    }
+    #search-container {
+      position: absolute;
+      top: 10px; left: 50%;
+      transform: translateX(-50%);
+      z-index: 1000;
+      background: rgba(255, 255, 255, 0.95);
+      padding: 10px 14px;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+    }
+    #search-input {
+      width: 240px;
+      padding: 6px 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 15px;
+    }
+    #search-btn {
+      padding: 6px 12px;
+      background: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      margin-left: 5px;
+      cursor: pointer;
+    }
+    .popup a {
+      color: #0645ad;
+      font-weight: bold;
+      text-decoration: none;
+    }
+    .popup img {
+      width: 100%;
+      max-width: 220px;
+      margin-top: 6px;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+
+<div id="search-container">
+  <input type="text" id="search-input" placeholder="Search place (e.g. Tokyo)" />
+  <button id="search-btn">Search</button>
+</div>
+
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  const map = L.map('map').setView([20, 0], 2);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 18,
+    attribution: '&copy; OpenStreetMap'
+  }).addTo(map);
+
+  let markers = [];
+
+  function clearMarkers() {
+    markers.forEach(m => map.removeLayer(m));
+    markers = [];
+  }
+
+  async function searchWikipediaAndCommons(lat, lon) {
+    clearMarkers();
+
+    // Wikipedia Geo articles
+    const wikiUrl = `https://en.wikipedia.org/w/api.php?origin=*&action=query&list=geosearch&gscoord=${lat}|${lon}&gsradius=10000&gslimit=20&format=json`;
+    const wikiRes = await fetch(wikiUrl).then(r => r.json());
+    if (wikiRes?.query?.geosearch) {
+      wikiRes.query.geosearch.forEach(place => {
+        const marker = L.marker([place.lat, place.lon]).addTo(map);
+        marker.bindPopup(`<div class="popup"><a href="https://en.wikipedia.org/wiki/${encodeURIComponent(place.title)}" target="_blank">${place.title}</a></div>`);
+        markers.push(marker);
+      });
+    }
+
+    // Wikimedia Commons images
+    const commonsUrl = `https://commons.wikimedia.org/w/api.php?origin=*&action=query&format=json&generator=geosearch&ggscoord=${lat}|${lon}&ggsradius=999999&ggslimit=999999&prop=imageinfo|coordinates&iiprop=url`;
+    const commonsRes = await fetch(commonsUrl).then(r => r.json());
+
+    if (commonsRes?.query) {
+      const images = Object.values(commonsRes.query.pages);
+      images.forEach(img => {
+        if (img.imageinfo?.[0] && img.coordinates?.[0]) {
+          const ii = img.imageinfo[0];
+          const coords = img.coordinates[0];
+          const marker = L.marker([coords.lat, coords.lon]).addTo(map);
+          marker.bindPopup(`
+            <div class="popup">
+              <a href="${ii.url}" target="_blank">${img.title}</a><br/>
+              <img src="${ii.url}" alt="Photo">
+            </div>
+          `);
+          markers.push(marker);
+        }
+      });
+    }
+  }
+
+  document.getElementById("search-btn").addEventListener("click", () => {
+    const query = document.getElementById("search-input").value.trim();
+    if (!query) return;
+
+    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`)
+      .then(res => res.json())
+      .then(data => {
+        if (!data.length) {
+          alert("❌ Place not found.");
+          return;
+        }
+        const { lat, lon, display_name } = data[0];
+        const latNum = parseFloat(lat);
+        const lonNum = parseFloat(lon);
+
+        map.setView([latNum, lonNum], 13);
+        searchWikipediaAndCommons(latNum, lonNum);
+
+        const searchMarker = L.marker([latNum, lonNum]).addTo(map)
+          .bindPopup(`<b>${display_name}</b>`).openPopup();
+        markers.push(searchMarker);
+      })
+      .catch(() => alert("❗ Error during place lookup."));
+  });
+
+  // Trigger Enter key
+  document.getElementById("search-input").addEventListener("keydown", e => {
+    if (e.key === "Enter") document.getElementById("search-btn").click();
+  });
+
+  // Auto-search when map stops moving
+  let moveTimer;
+  map.on("moveend", () => {
+    clearTimeout(moveTimer);
+    moveTimer = setTimeout(() => {
+      const center = map.getCenter();
+      searchWikipediaAndCommons(center.lat, center.lng);
+    }, 500); // slight delay to avoid spamming
+  });
+
+  // Initial load
+  searchWikipediaAndCommons(20, 0);
+</script>
+
+</body>
+</html>

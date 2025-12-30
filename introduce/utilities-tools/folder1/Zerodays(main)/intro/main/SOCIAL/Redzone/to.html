@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tic-Tac-Toe Advanced</title>
+  <style>
+    body {
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      font-family: 'Segoe UI', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      color: red;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h1 {
+      margin: 10px 0;
+      font-size: 32px;
+      color: red;
+    }
+
+    .scoreboard {
+      margin-bottom: 20px;
+      font-size: 18px;
+    }
+
+    .game {
+      display: grid;
+      grid-template-columns: repeat(3, 100px);
+      grid-template-rows: repeat(3, 100px);
+      gap: 5px;
+    }
+
+    .cell {
+background: rgba(0, 0, 0, 0.5);
+      border-radius: 10px;
+      font-size: 40px;
+      color: red;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .cell:hover {
+background: rgba(0, 0, 0, 0.5);
+    }
+
+    .cell.win {
+      background: red !important;
+      animation: pulse 0.8s infinite alternate;
+    }
+
+    @keyframes pulse {
+      from { transform: scale(1); }
+      to { transform: scale(1.05); }
+    }
+
+    .controls {
+      margin-top: 20px;
+      display: flex;
+      gap: 10px;
+    }
+
+    button {
+      padding: 10px 15px;
+      font-size: 16px;
+      background-color: red;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      color: green;
+      font-weight: bold;
+    }
+
+    button:hover {
+background: rgba(0, 0, 0, 0.5);
+    }
+  </style>
+</head>
+<body>
+  <h1>Advanced Tic-Tac-Toe</h1>
+  <div class="scoreboard">
+    X Wins: <span id="xWins">0</span> |
+    O Wins: <span id="oWins">0</span> |
+    Ties: <span id="ties">0</span>
+  </div>
+  <div class="game" id="game"></div>
+  <div class="controls">
+    <button onclick="resetBoard()">Reset Game</button>
+    <button onclick="toggleAI()">Toggle AI: <span id="aiStatus">ON</span></button>
+  </div>
+
+  <!-- Sound Effects -->
+  <audio id="moveSound" src="https://www.soundjay.com/buttons/sounds/button-3.mp3"></audio>
+  <audio id="winSound" src="https://www.soundjay.com/buttons/sounds/button-10.mp3"></audio>
+  <audio id="tieSound" src="https://www.soundjay.com/button/beep-07.wav"></audio>
+
+  <script>
+    const game = document.getElementById('game');
+    const xWinsEl = document.getElementById('xWins');
+    const oWinsEl = document.getElementById('oWins');
+    const tiesEl = document.getElementById('ties');
+    const aiStatus = document.getElementById('aiStatus');
+    const moveSound = document.getElementById('moveSound');
+    const winSound = document.getElementById('winSound');
+    const tieSound = document.getElementById('tieSound');
+
+    let board = Array(9).fill("");
+    let currentPlayer = "X";
+    let isGameOver = false;
+    let vsAI = true;
+    let xWins = 0, oWins = 0, ties = 0;
+
+    const winningCombos = [
+      [0,1,2], [3,4,5], [6,7,8],
+      [0,3,6], [1,4,7], [2,5,8],
+      [0,4,8], [2,4,6]
+    ];
+
+    function renderBoard() {
+      game.innerHTML = "";
+      board.forEach((cell, i) => {
+        const div = document.createElement("div");
+        div.className = "cell";
+        div.textContent = cell;
+        div.addEventListener("click", () => handleClick(i));
+        game.appendChild(div);
+      });
+    }
+
+    function handleClick(i) {
+      if (board[i] || isGameOver) return;
+
+      board[i] = currentPlayer;
+      playSound(moveSound);
+      renderBoard();
+
+      if (checkWinner(currentPlayer)) {
+        highlightWin(currentPlayer);
+        isGameOver = true;
+        currentPlayer === "X" ? xWins++ : oWins++;
+        updateScore();
+        playSound(winSound);
+        setTimeout(() => alert(currentPlayer + " wins!"), 100);
+        return;
+      }
+
+      if (board.every(cell => cell)) {
+        ties++;
+        updateScore();
+        isGameOver = true;
+        playSound(tieSound);
+        setTimeout(() => alert("It's a tie!"), 100);
+        return;
+      }
+
+      currentPlayer = currentPlayer === "X" ? "O" : "X";
+
+      if (vsAI && currentPlayer === "O") {
+        setTimeout(aiMove, 300);
+      }
+    }
+
+    function checkWinner(player) {
+      return winningCombos.some(combo => combo.every(i => board[i] === player));
+    }
+
+    function highlightWin(player) {
+      const cells = document.querySelectorAll(".cell");
+      winningCombos.forEach(combo => {
+        if (combo.every(i => board[i] === player)) {
+          combo.forEach(i => cells[i].classList.add("win"));
+        }
+      });
+    }
+
+    function updateScore() {
+      xWinsEl.textContent = xWins;
+      oWinsEl.textContent = oWins;
+      tiesEl.textContent = ties;
+    }
+
+    function resetBoard() {
+      board = Array(9).fill("");
+      currentPlayer = "X";
+      isGameOver = false;
+      renderBoard();
+    }
+
+    function toggleAI() {
+      vsAI = !vsAI;
+      aiStatus.textContent = vsAI ? "ON" : "OFF";
+      resetBoard();
+    }
+
+    function aiMove() {
+      const empty = board.map((v, i) => v === "" ? i : null).filter(i => i !== null);
+      let best = -Infinity, move;
+      for (let i of empty) {
+        board[i] = "O";
+        let score = minimax(board, 0, false);
+        board[i] = "";
+        if (score > best) {
+          best = score;
+          move = i;
+        }
+      }
+      board[move] = "O";
+      playSound(moveSound);
+      renderBoard();
+
+      if (checkWinner("O")) {
+        highlightWin("O");
+        isGameOver = true;
+        oWins++;
+        updateScore();
+        playSound(winSound);
+        setTimeout(() => alert("O (AI) wins!"), 100);
+        return;
+      }
+
+      if (board.every(cell => cell)) {
+        ties++;
+        updateScore();
+        isGameOver = true;
+        playSound(tieSound);
+        setTimeout(() => alert("It's a tie!"), 100);
+        return;
+      }
+
+      currentPlayer = "X";
+    }
+
+    function minimax(b, depth, isMax) {
+      if (checkWinner("O")) return 1;
+      if (checkWinner("X")) return -1;
+      if (b.every(cell => cell)) return 0;
+
+      if (isMax) {
+        let maxEval = -Infinity;
+        b.forEach((cell, i) => {
+          if (!cell) {
+            b[i] = "O";
+            maxEval = Math.max(maxEval, minimax(b, depth + 1, false));
+            b[i] = "";
+          }
+        });
+        return maxEval;
+      } else {
+        let minEval = Infinity;
+        b.forEach((cell, i) => {
+          if (!cell) {
+            b[i] = "X";
+            minEval = Math.min(minEval, minimax(b, depth + 1, true));
+            b[i] = "";
+          }
+        });
+        return minEval;
+      }
+    }
+
+    function playSound(audio) {
+      audio.currentTime = 0;
+      audio.play();
+    }
+
+    renderBoard();
+  </script>
+</body>
+</html>

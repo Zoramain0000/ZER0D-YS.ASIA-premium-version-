@@ -1,0 +1,325 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>🔮 Tarot Reading Tool</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    h1 {
+      margin-top: 2rem;
+      color: red;
+      text-align: center;
+    }
+
+    .tarot-container {
+      width: 90%;
+      max-width: 1000px;
+      margin-top: 1rem;
+      text-align: center;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 1rem;
+      font-size: 1rem;
+      border-radius: 8px;
+      border: none;
+      margin-bottom: 1rem;
+      outline: none;
+background: rgba(0, 0, 0, 0.5);
+      color: red;
+    }
+
+    .buttons {
+      margin-bottom: 1.5rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+
+    button {
+      padding: 0.8rem 1.2rem;
+      background: red;
+      border: none;
+      border-radius: 8px;
+      color: green;
+      font-weight: bold;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+background: rgba(0, 0, 0, 0.5);
+    }
+
+    .cards {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 2rem;
+      flex-wrap: wrap;
+    }
+
+    .card {
+      background: #1e293b;
+      border: 2px solid #334155;
+      border-radius: 12px;
+      padding: 1rem;
+      width: 260px;
+      margin: 1rem;
+      box-shadow: 0 0 10px rgba( 0, 0, 0, 0.05);
+      animation: flipIn 0.6s ease forwards;
+      position: relative;
+    }
+
+    @keyframes flipIn {
+      0% { transform: rotateY(90deg); opacity: 0; }
+      100% { transform: rotateY(0); opacity: 1; }
+    }
+
+    .card h2 {
+      color: red;
+      margin-bottom: 0.5rem;
+    }
+
+    .card p {
+      font-size: 0.95rem;
+      color: red;
+    }
+
+    .card img {
+      width: 100%;
+      height: auto;
+      border-radius: 8px;
+      margin-bottom: 0.5rem;
+      transform: rotate(0deg);
+      transition: transform 0.3s ease;
+      cursor: pointer;
+    }
+
+    .reversed img {
+      transform: rotate(180deg);
+    }
+
+    footer {
+      margin-top: 4rem;
+      padding: 1rem;
+      font-size: 0.9rem;
+      color: red;
+    }
+
+    /* Modal styles */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+background: rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-content {
+background: rgba(0, 0, 0, 0.5);
+      margin: 10% auto;
+      padding: 20px;
+      border-radius: 10px;
+      width: 90%;
+      max-width: 600px;
+      color: red;
+      box-shadow: 0 0 20px red;
+    }
+
+    .close {
+      float: right;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔮 Tarot Reading Tool</h1>
+  <div class="tarot-container">
+    <input type="text" id="userPrompt" placeholder="Think of your question or intention..." />
+    <div class="buttons">
+      <button onclick="drawReading(3)">Draw 3 Cards</button>
+      <button onclick="drawReading(1)">Daily Card</button>
+      <button onclick="drawReading(1, 'Weekly')">Weekly Card</button>
+      <button onclick="drawReading(1, 'Monthly')">Monthly Card</button>
+      <button onclick="exportReading('text')">Export to Text</button>
+      <button onclick="exportReading('pdf')">Export to PDF</button>
+    </div>
+
+    <div class="cards" id="cardsDisplay"></div>
+  </div>
+
+  <footer>
+    Built with zora
+  </footer>
+
+  <!-- Modal -->
+  <div id="tooltipModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal()">&times;</span>
+      <h2 id="modalTitle">Card Title</h2>
+      <p id="modalContent">Card Description</p>
+    </div>
+  </div>
+
+  <script>
+const tarotCards = [
+      { name: "The Fool", meaning: "New beginnings, spontaneity, free spirit" },
+      { name: "The Magician", meaning: "Manifestation, resourcefulness, power" },
+      { name: "The High Priestess", meaning: "Intuition, mystery, subconscious" },
+      { name: "The Empress", meaning: "Fertility, beauty, nature, nurturing" },
+      { name: "The Emperor", meaning: "Authority, structure, father figure" },
+      { name: "The Hierophant", meaning: "Spiritual wisdom, tradition, conformity" },
+      { name: "The Lovers", meaning: "Love, union, partnerships" },
+      { name: "The Chariot", meaning: "Control, willpower, success" },
+      { name: "Strength", meaning: "Courage, influence, inner strength" },
+      { name: "The Hermit", meaning: "Soul-searching, introspection, being alone" },
+      { name: "Wheel of Fortune", meaning: "Destiny, change, cycles" },
+      { name: "Justice", meaning: "Fairness, truth, law" },
+      { name: "The Hanged Man", meaning: "Pause, surrender, new perspective" },
+      { name: "Death", meaning: "Endings, transformation, transition" },
+      { name: "Temperance", meaning: "Balance, moderation, patience" },
+      { name: "The Devil", meaning: "Addiction, materialism, playfulness" },
+      { name: "The Tower", meaning: "Sudden change, chaos, upheaval" },
+      { name: "The Star", meaning: "Hope, inspiration, renewal" },
+      { name: "The Moon", meaning: "Illusion, fear, anxiety" },
+      { name: "The Sun", meaning: "Joy, success, vitality" },
+      { name: "Judgement", meaning: "Reflection, awakening, reckoning" },
+      { name: "The World", meaning: "Completion, accomplishment, travel" },
+      { name: "Ace of Cups", meaning: "Love, compassion, creativity" },
+      { name: "Two of Cups", meaning: "Partnership, harmony, attraction" },
+      { name: "Three of Cups", meaning: "Celebration, friendship, community" },
+      { name: "Four of Cups", meaning: "Meditation, apathy, contemplation" },
+      { name: "Five of Cups", meaning: "Regret, loss, grief" },
+      { name: "Six of Cups", meaning: "Nostalgia, innocence, joy" },
+      { name: "Seven of Cups", meaning: "Fantasy, illusion, choices" },
+      { name: "Eight of Cups", meaning: "Withdrawal, escape, abandonment" },
+      { name: "Nine of Cups", meaning: "Satisfaction, contentment, luxury" },
+      { name: "Ten of Cups", meaning: "Harmony, marriage, happiness" },
+      { name: "Ace of Swords", meaning: "Breakthrough, clarity, truth" },
+      { name: "Two of Swords", meaning: "Difficult decisions, stalemate" },
+      { name: "Three of Swords", meaning: "Heartbreak, sorrow, grief" },
+      { name: "Four of Swords", meaning: "Rest, recovery, contemplation" },
+      { name: "Five of Swords", meaning: "Conflict, defeat, sneakiness" },
+      { name: "Six of Swords", meaning: "Transition, moving on" },
+      { name: "Seven of Swords", meaning: "Deception, strategy" },
+      { name: "Eight of Swords", meaning: "Restriction, imprisonment" },
+      { name: "Nine of Swords", meaning: "Anxiety, worry, nightmares" },
+      { name: "Ten of Swords", meaning: "Painful endings, betrayal" },
+      { name: "Ace of Wands", meaning: "Inspiration, creation, potential" },
+      { name: "Two of Wands", meaning: "Planning, progress, decisions" },
+      { name: "Three of Wands", meaning: "Expansion, foresight" },
+      { name: "Four of Wands", meaning: "Celebration, home, joy" },
+      { name: "Five of Wands", meaning: "Competition, conflict" },
+      { name: "Six of Wands", meaning: "Victory, recognition" },
+      { name: "Seven of Wands", meaning: "Challenge, protection" },
+      { name: "Eight of Wands", meaning: "Speed, progress, movement" },
+      { name: "Nine of Wands", meaning: "Resilience, persistence" },
+      { name: "Ten of Wands", meaning: "Burden, stress, responsibility" },
+      { name: "Ace of Pentacles", meaning: "Opportunity, prosperity" },
+      { name: "Two of Pentacles", meaning: "Balance, adaptability" },
+      { name: "Three of Pentacles", meaning: "Teamwork, collaboration" },
+      { name: "Four of Pentacles", meaning: "Control, security, saving" },
+      { name: "Five of Pentacles", meaning: "Poverty, insecurity" },
+      { name: "Six of Pentacles", meaning: "Giving, receiving" },
+      { name: "Seven of Pentacles", meaning: "Patience, reward" },
+      { name: "Eight of Pentacles", meaning: "Skill, mastery" },
+      { name: "Nine of Pentacles", meaning: "Luxury, independence" },
+      { name: "Ten of Pentacles", meaning: "Wealth, legacy" }
+    ];
+
+    let currentReading = [];
+
+    function drawReading(count = 1, labelPrefix = "Daily") {
+      const shuffled = [...tarotCards].sort(() => 0.5 - Math.random());
+      const reading = shuffled.slice(0, count).map(card => ({
+        ...card,
+        reversed: Math.random() < 0.5
+      }));
+
+      currentReading = reading;
+      const cardsDisplay = document.getElementById("cardsDisplay");
+      cardsDisplay.innerHTML = "";
+
+      reading.forEach((card, index) => {
+        const cardDiv = document.createElement("div");
+        cardDiv.className = "card" + (card.reversed ? " reversed" : "");
+        const imageName = `cards/card-${card.name.toLowerCase().replace(/\s+/g, "-")}.jpg`;
+        const label = count === 3 ? ["Past", "Present", "Future"][index] : labelPrefix;
+
+        cardDiv.innerHTML = `
+          <img src="${imageName}" alt="${card.name}" onclick="showTooltip('${card.name}', '${card.reversed ? card.reversed : card.upright}')">
+          <h2>${label}: ${card.name} ${card.reversed ? "(Reversed)" : ""}</h2>
+          <p>${card.reversed ? card.reversed : card.upright}</p>
+        `;
+        cardsDisplay.appendChild(cardDiv);
+      });
+    }
+
+    function showTooltip(title, content) {
+      document.getElementById("modalTitle").innerText = title;
+      document.getElementById("modalContent").innerText = content;
+      document.getElementById("tooltipModal").style.display = "block";
+    }
+
+    function closeModal() {
+      document.getElementById("tooltipModal").style.display = "none";
+    }
+
+    window.onclick = function(event) {
+      const modal = document.getElementById("tooltipModal");
+      if (event.target === modal) {
+        closeModal();
+      }
+    }
+
+    function exportReading(format) {
+      if (!currentReading.length) {
+        alert("Please draw a reading first.");
+        return;
+      }
+
+      const prompt = document.getElementById("userPrompt").value.trim();
+      let output = `🔮 Tarot Reading\n${prompt ? "Question: " + prompt + "\n" : ""}\n`;
+
+      currentReading.forEach((card, i) => {
+        const label = currentReading.length === 3 ? ["Past", "Present", "Future"][i] : "Card";
+        output += `${label} - ${card.name} ${card.reversed ? "(Reversed)" : ""}: ${card.reversed ? card.reversed : card.upright}\n`;
+      });
+
+      if (format === "text") {
+        const blob = new Blob([output], { type: "text/plain" });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "tarot-reading.txt";
+        link.click();
+      } else if (format === "pdf") {
+        const win = window.open("", "", "width=600,height=700");
+        win.document.write(`<pre>${output}</pre>`);
+        win.document.close();
+        win.print();
+      }
+    }
+  </script>
+</body>
+</html>

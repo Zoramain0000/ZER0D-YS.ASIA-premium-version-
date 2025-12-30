@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Advanced Speed Tester</title>
+  <style>
+    body {
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+      font-family: 'Segoe UI', sans-serif;
+      text-align: center;
+      padding: 2rem;
+    }
+    h1 {
+      color: red;
+    }
+    .gauges {
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      margin: 2rem 0;
+      flex-wrap: wrap;
+    }
+    .gauge {
+      width: 140px;
+      height: 140px;
+      border-radius: 50%;
+background: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      font-weight: bold;
+      position: relative;
+    }
+    .gauge span {
+      position: absolute;
+      text-align: center;
+    }
+    canvas {
+background: rgba(0,0,0,0.5);
+      border-radius: 8px;
+      width: 100%;
+      max-width: 600px;
+      height: 250px;
+      margin-top: 2rem;
+    }
+    button {
+      margin: 1rem 0.5rem;
+      padding: 0.75rem 1.5rem;
+      background: red;
+      color: green;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+    button:hover {
+background: rgba(0,0,0,0.5);
+    }
+  </style>
+</head>
+<body>
+
+  <h1>⚡ Advanced Speed Tester</h1>
+
+  <div class="gauges">
+    <div class="gauge" id="downloadGauge"><span id="download">-- Mbps</span></div>
+    <div class="gauge" id="uploadGauge"><span id="upload">-- Mbps</span></div>
+    <div class="gauge" id="latencyGauge"><span id="latency">-- ms</span></div>
+  </div>
+
+  <canvas id="graph"></canvas>
+
+  <div>
+    <button onclick="startTest()">Start Test</button>
+    <button onclick="exportCSV()">Export CSV</button>
+    <button onclick="exportJSON()">Export JSON</button>
+    <button onclick="clearHistory()">Clear History</button>
+  </div>
+
+  <script>
+    const downloadSpan = document.getElementById("download");
+    const uploadSpan = document.getElementById("upload");
+    const latencySpan = document.getElementById("latency");
+
+    const downloadGauge = document.getElementById("downloadGauge");
+    const uploadGauge = document.getElementById("uploadGauge");
+    const latencyGauge = document.getElementById("latencyGauge");
+
+    const canvas = document.getElementById("graph");
+    const ctx = canvas.getContext("2d");
+    canvas.width = 600;
+    canvas.height = 250;
+
+    const historyData = JSON.parse(localStorage.getItem("speedHistory")) || [];
+
+    function updateGauge(gauge, value, max, unit) {
+      const percent = Math.min(100, (value / max) * 100);
+      gauge.style.background = `conic-gradient(#00ffc8 ${percent}%, #444 ${percent}%)`;
+      gauge.querySelector("span").textContent = `${value} ${unit}`;
+    }
+
+    async function measureDownloadSpeed() {
+      const size = 5 * 1024 * 1024;
+      const data = new Uint8Array(size).fill(1);
+      const blob = new Blob([data]);
+      const start = performance.now();
+      await blob.arrayBuffer();
+      const end = performance.now();
+      const duration = (end - start) / 1000;
+      return +(((size * 8) / duration) / 1e6).toFixed(2);
+    }
+
+    async function measureUploadSpeed() {
+      const size = 3 * 1024 * 1024;
+      const data = new Uint8Array(size).fill(1);
+      const start = performance.now();
+      await fetch("data:text/plain;base64,", { method: "POST", body: data });
+      const end = performance.now();
+      const duration = (end - start) / 1000;
+      return +(((size * 8) / duration) / 1e6).toFixed(2);
+    }
+
+    function measureLatency() {
+      return new Promise(resolve => {
+        const peer = new RTCPeerConnection();
+        const start = performance.now();
+        peer.createDataChannel("ping");
+        peer.createOffer().then(offer => peer.setLocalDescription(offer));
+        peer.onicecandidate = e => {
+          if (!e.candidate) {
+            const end = performance.now();
+            peer.close();
+            resolve(+(end - start).toFixed(2));
+          }
+        };
+      });
+    }
+
+    async function startTest() {
+      downloadSpan.textContent = uploadSpan.textContent = latencySpan.textContent = "Testing...";
+      const [download, upload, latency] = await Promise.all([
+        measureDownloadSpeed(),
+        measureUploadSpeed(),
+        measureLatency()
+      ]);
+
+      updateGauge(downloadGauge, download, 100, "Mbps");
+      updateGauge(uploadGauge, upload, 100, "Mbps");
+      updateGauge(latencyGauge, latency, 200, "ms");
+
+      downloadSpan.dataset.value = download;
+      uploadSpan.dataset.value = upload;
+      latencySpan.dataset.value = latency;
+
+      const timestamp = new Date().toLocaleString();
+      const entry = { timestamp, download, upload, latency };
+      historyData.push(entry);
+      localStorage.setItem("speedHistory", JSON.stringify(historyData));
+      drawGraph();
+    }
+
+    function drawGraph() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const maxSpeed = 100;
+      const maxLatency = 200;
+
+      ctx.beginPath();
+      ctx.strokeStyle = "#00ffc8";
+      ctx.lineWidth = 2;
+      historyData.forEach((d, i) => {
+        const x = (i / (historyData.length - 1)) * canvas.width;
+        const y = canvas.height - (d.download / maxSpeed) * canvas.height;
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+      ctx.fillStyle = "#00ffc8";
+      ctx.fillText("Download", 10, 10);
+
+      ctx.beginPath();
+      ctx.strokeStyle = "#ffc800";
+      historyData.forEach((d, i) => {
+        const x = (i / (historyData.length - 1)) * canvas.width;
+        const y = canvas.height - (d.upload / maxSpeed) * canvas.height;
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+      ctx.fillText("Upload", 10, 25);
+
+      ctx.beginPath();
+      ctx.strokeStyle = "#ff4081";
+      historyData.forEach((d, i) => {
+        const x = (i / (historyData.length - 1)) * canvas.width;
+        const y = canvas.height - (d.latency / maxLatency) * canvas.height;
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+      ctx.fillText("Latency", 10, 40);
+    }
+
+    function exportCSV() {
+      let csv = "Timestamp,Download,Upload,Latency\n";
+      historyData.forEach(d => {
+        csv += `${d.timestamp},${d.download},${d.upload},${d.latency}\n`;
+      });
+      const blob = new Blob([csv], { type: "text/csv" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "speed_test_history.csv";
+      a.click();
+    }
+  
+    function exportJSON() {
+      const blob = new Blob([JSON.stringify(historyData, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "speed_test_history.json";
+      a.click();
+    }
+
+    function clearHistory() {
+      localStorage.removeItem("speedHistory");
+      location.reload();
+    }
+
+    // Initial load
+    drawGraph();
+  </script>
+</body>
+</html>

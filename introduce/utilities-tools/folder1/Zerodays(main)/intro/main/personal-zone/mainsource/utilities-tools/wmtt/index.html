@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>🎥 Webcam & Mic Test Tool</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: sans-serif;
+      background: #0f172a;
+      color: #f8fafc;
+      text-align: center;
+    }
+    h1 {
+      color: #38bdf8;
+    }
+    video {
+      border: 2px solid #38bdf8;
+      width: 100%;
+      max-width: 480px;
+      border-radius: 8px;
+    }
+    canvas {
+      width: 100%;
+      max-width: 480px;
+      height: 100px;
+      background: #1e293b;
+      border: 2px solid #334155;
+      border-radius: 8px;
+      display: block;
+      margin: 10px auto;
+    }
+    select, button {
+      padding: 8px 12px;
+      margin: 10px 5px;
+      border: none;
+      border-radius: 6px;
+      background: #1e293b;
+      color: #f8fafc;
+    }
+    button:hover {
+      background: #2563eb;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🎥 Webcam & Microphone Test</h1>
+  <p>Select devices and monitor live video & audio levels</p>
+
+  <div>
+    <label>🎬 Camera:</label>
+    <select id="videoSource"></select>
+    <label>🎤 Microphone:</label>
+    <select id="audioSource"></select>
+    <button onclick="startTest()">▶️ Start</button>
+  </div>
+
+  <video id="video" autoplay muted playsinline></video>
+  <canvas id="audioCanvas"></canvas>
+
+  <script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('audioCanvas');
+    const ctx = canvas.getContext('2d');
+    const audioSelect = document.getElementById('audioSource');
+    const videoSelect = document.getElementById('videoSource');
+
+    async function getDevices() {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      audioSelect.innerHTML = '';
+      videoSelect.innerHTML = '';
+      devices.forEach(device => {
+        const option = document.createElement('option');
+        option.value = device.deviceId;
+        option.text = device.label || `${device.kind}`;
+        if (device.kind === 'audioinput') audioSelect.appendChild(option);
+        if (device.kind === 'videoinput') videoSelect.appendChild(option);
+      });
+    }
+
+    let stream;
+    async function startTest() {
+      if (stream) {
+        stream.getTracks().forEach(t => t.stop());
+      }
+      const audioSource = audioSelect.value;
+      const videoSource = videoSelect.value;
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { deviceId: videoSource ? { exact: videoSource } : undefined },
+        audio: { deviceId: audioSource ? { exact: audioSource } : undefined }
+      });
+      video.srcObject = stream;
+      drawAudio(stream);
+    }
+
+    function drawAudio(stream) {
+      const audioCtx = new AudioContext();
+      const source = audioCtx.createMediaStreamSource(stream);
+      const analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 256;
+      source.connect(analyser);
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+
+      function draw() {
+        requestAnimationFrame(draw);
+        analyser.getByteFrequencyData(dataArray);
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        const barWidth = (canvas.width / bufferLength) * 1.5;
+        let x = 0;
+        for (let i = 0; i < bufferLength; i++) {
+          const barHeight = dataArray[i];
+          ctx.fillStyle = `rgb(${barHeight+50},${100},${255})`;
+          ctx.fillRect(x, canvas.height - barHeight / 2, barWidth, barHeight / 2);
+          x += barWidth + 1;
+        }
+      }
+      draw();
+    }
+
+    getDevices();
+    navigator.mediaDevices.addEventListener('devicechange', getDevices);
+  </script>
+
+</body>
+</html>

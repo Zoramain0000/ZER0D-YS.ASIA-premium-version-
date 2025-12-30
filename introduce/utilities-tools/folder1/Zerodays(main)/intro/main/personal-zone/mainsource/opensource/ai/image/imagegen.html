@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title> Image gen list</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 0;
+      background: #000;
+      font-family: Arial, sans-serif;
+      overflow: hidden;
+    }
+
+    video {
+      width: 100vw;
+      height: 100vh;
+      object-fit: cover;
+    }
+
+    #menuButton {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 10;
+      padding: 15px 30px;
+      font-size: 1.2rem;
+      background: rgba(0, 0, 0, 0.6);
+      color: white;
+      border: 2px solid white;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    #menuButton:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    #menuList {
+      position: absolute;
+      top: 55%;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9;
+      background: rgba(0, 0, 0, 0.85);
+      padding: 10px 20px;
+      border-radius: 10px;
+      display: none;
+    }
+
+    #menuList a {
+      display: block;
+      color: #fff;
+      padding: 8px 0;
+      text-decoration: none;
+      font-size: 1rem;
+      border-bottom: 1px solid #333;
+    }
+
+    #menuList a:last-child {
+      border-bottom: none;
+    }
+
+    #menuList a:hover {
+      color: #00bcd4;
+    }
+  </style>
+</head>
+<body>
+
+  <video id="videoPlayer" autoplay loop muted playsinline>
+    <source src="1761817527453041720p.mp4" />
+    Your browser does not support HTML5 video.
+  </video>
+
+<button id="menuButton">🧰 Tool Menu</button>
+
+<div id="menuList">
+  <a href="https://perchance.org/ai-text-to-image-generator"> Image gen #1</a>
+  <a href="https://magicstudio.com/ai-art-generator/">Image gen #2</a>
+  <a href="https://n8n.io/tools/ai-image-generator/">Image gen #3</a>
+ <a href="https://raphaelai.org/">Image gen #4</a>
+ <a href="https://flatai.org/ai-image-generator-free-no-signup/">Image gen #5</a>
+ <a href="https://magichour.ai/products/ai-image-generator">Image gen #6</a>
+ <a href="https://redpandaai.com/tools/ai-image-generator">Image gen #7</a>
+ <a href="https://magichour.ai/tools/ai-photo-generator">Image gen #8</a>
+ <a href="https://www.neuralframes.com/tools/ai-cartoon-generator">Image gen #9</a>
+</div>
+
+
+  <script>
+    const menuBtn = document.getElementById('menuButton');
+    const menuList = document.getElementById('menuList');
+    const video = document.getElementById('videoPlayer');
+
+    menuBtn.addEventListener('click', () => {
+      menuList.style.display = menuList.style.display === 'block' ? 'none' : 'block';
+    });
+
+    menuList.querySelectorAll('a').forEach(link => {
+      link.addEventListener('click', e => {
+        e.preventDefault();
+        const newSrc = link.getAttribute('data-src');
+        video.querySelector('source').src = newSrc;
+        video.load();
+        video.play();
+        menuList.style.display = 'none';
+      });
+    });
+  </script>
+
+</body>
+</html>

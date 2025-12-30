@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Settings Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      font-family: 'Courier New', monospace;
+      background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+      overflow: hidden;
+    }
+
+    #sidebar {
+      width: 250px;
+      background: rgba(0, 0, 0, 0.5);
+      border-right: 2px solid red;
+      display: flex;
+      flex-direction: column;
+      transition: width 0.3s ease;
+    }
+
+    #sidebar.collapsed {
+      width: 60px;
+    }
+
+    #sidebar h2 {
+      text-align: center;
+      font-size: 1.2em;
+      margin: 10px 0;
+      color: red;
+    }
+
+    #sidebar .menu-item {
+      padding: 12px 20px;
+      cursor: pointer;
+      border-bottom: 1px solid #111;
+      color: red;
+      transition: background 0.2s;
+      white-space: nowrap;
+      text-decoration: none; /* Remove underline from links */
+    }
+
+    #sidebar .menu-item:hover {
+      background: rgba(0, 0, 0, 0.5);
+    }
+
+    #toggle-btn {
+      background-color: red;
+      color: #000;
+      border: none;
+      padding: 10px;
+      cursor: pointer;
+      font-weight: bold;
+      width: 100%;
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: rgba(0, 0, 0, 0.5);
+      color: red;
+      padding: 15px;
+      text-align: center;
+      font-size: 1.5em;
+      border-bottom: 2px solid red;
+    }
+
+    footer {
+      background: rgba(0, 0, 0, 0.5);
+      color: red;
+      font-size: 0.8em;
+      text-align: center;
+      padding: 8px;
+      border-top: 1px solid;
+    }
+  </style>
+</head>
+<body>
+  <div id="sidebar">
+    <button id="toggle-btn">☰</button>
+    <h2>Settings</h2>
+<a class="menu-item" href="settings/compatibility-check.html">🔮 Compatibility Check Wizard</a>
+
+<a class="menu-item" href="settings/audio-tester.html">🔊 Audio Capability Tester</a>
+
+<a class="menu-item" href="settings/entropy.html">🧬 Entropy Visualizer</a>
+<a class="menu-item" href="settings/optimization.html" onclick="signout()">🚀 Performance Optimizer</a>
+<a class="menu-item" href="settings/log-visualizer.html" onclick="signout()">📊 Activity Log Visualizer</a>
+<a class="menu-item" href="settings/ai-training.html" onclick="signout()">🧠 AI Personality Trainer</a>
+    <a class="menu-item" href="settings/system.html" onclick="signout()"> 🌐 System Information</a>
+  </div>
+
+  <main>
+    <header>Settings Dashboard</header>
+    <footer>
+      For educational and ethical use only. &copy; 2025 ZeroDayAI
+    </footer>
+  </main>
+
+  <script>
+    const sidebar = document.getElementById("sidebar");
+    const toggleBtn = document.getElementById("toggle-btn");
+
+    toggleBtn.onclick = () => {
+      sidebar.classList.toggle("collapsed");
+    };
+
+    function signIn() {
+      alert("This feature is coming soon!");
+    }
+  </script>
+</body>
+</html>

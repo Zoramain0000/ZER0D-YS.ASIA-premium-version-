@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Track Any Place Anywhere</title>
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet/dist/leaflet.css"
+  />
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    header {
+      background-color: #0066cc;
+      color: rgba(0, 0, 0, 0.384);
+      padding: 1rem 2rem;
+      text-align: center;
+      font-size: 1.8rem;
+      font-weight: bold;
+      user-select: none;
+    }
+    #searchContainer {
+      display: flex;
+      justify-content: center;
+      margin: 1rem 0;
+      gap: 0.5rem;
+      padding: 0 1rem;
+    }
+    #searchInput {
+      flex: 1 1 400px;
+      padding: 0.6rem 1rem;
+      font-size: 1rem;
+      border-radius: 4px;
+      border: 1px solid #ff0000;
+      transition: border-color 0.3s ease;
+    }
+    #searchInput:focus {
+      outline: none;
+      border-color: #ff0000;
+      box-shadow: 0 0 6px #ff0000;
+    }
+    #searchBtn {
+      background-color: #ff0000;
+      border: none;
+      color: rgb(14, 255, 14);
+      padding: 0 1.2rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: background-color 0.3s ease;
+    }
+    #searchBtn:hover {
+      background-color: #0000003b;
+    }
+    #errorMsg {
+      color: #cc0000;
+      text-align: center;
+      margin-bottom: 0.5rem;
+      min-height: 1.2rem;
+    }
+    #map {
+      flex-grow: 1;
+      margin: 0 1rem 1rem 1rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+    }
+    #locationsList {
+      max-width: 800px;
+      margin: 0 auto 1rem;
+      background: rgb(255, 0, 0);
+      border-radius: 8px;
+      padding: 1rem 1.5rem;
+      box-shadow: 0 0 6px rgba(0, 0, 0, 0.1);
+      font-size: 1rem;
+      overflow-y: auto;
+      max-height: 180px;
+    }
+    #locationsList h2 {
+      margin-top: 0;
+      font-size: 1.25rem;
+      border-bottom: 1px solid #ff0000;
+      padding-bottom: 0.3rem;
+      margin-bottom: 0.8rem;
+      color: #ff0606;
+    }
+    #locationsList ul {
+      list-style-type: none;
+      padding-left: 0;
+      margin: 0;
+    }
+    #locationsList li {
+      margin-bottom: 0.6rem;
+      padding-bottom: 0.6rem;
+      border-bottom: 1px solid #ff0000;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+    #locationsList li:hover {
+      background-color: #00000041;
+    }
+    #locationsList li span {
+      font-weight: 600;
+      color: #fc0000;
+    }
+  </style>
+</head>
+<body>
+  <header>Track Any Place Anywhere</header>
+
+  <div id="searchContainer">
+    <input
+      type="text"
+      id="searchInput"
+      placeholder="Enter any place, street, city, or landmark..."
+      aria-label="Location search"
+      autocomplete="off"
+    />
+    <button id="searchBtn" aria-label="Search location">Search</button>
+  </div>
+  <div id="errorMsg"></div>
+
+  <div id="locationsList" style="display:none;">
+    <h2>Tracked Locations</h2>
+    <ul id="locationsUl"></ul>
+  </div>
+
+  <div id="map"></div>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    // Initialize map centered at world view
+    const map = L.map('map').setView([20, 0], 2);
+
+    // OpenStreetMap tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution:
+        '&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    }).addTo(map);
+
+    const searchInput = document.getElementById('searchInput');
+    const searchBtn = document.getElementById('searchBtn');
+    const errorMsg = document.getElementById('errorMsg');
+    const locationsList = document.getElementById('locationsList');
+    const locationsUl = document.getElementById('locationsUl');
+
+    let markers = [];
+    let trackedLocations = [];
+
+    // Helper to create marker & popup, add to map & array
+    function addMarker(lat, lon, displayName) {
+      const marker = L.marker([lat, lon]).addTo(map);
+      marker.bindPopup(`<strong>${displayName}</strong>`).openPopup();
+      markers.push(marker);
+    }
+
+    // Clear all markers from map and array
+    function clearMarkers() {
+      markers.forEach(m => map.removeLayer(m));
+      markers = [];
+    }
+
+    // Add tracked location to list below map
+    function addLocationToList(location) {
+      const li = document.createElement('li');
+      li.innerHTML = `<span>${location.display_name}</span> (Lat: ${location.lat}, Lon: ${location.lon})`;
+      li.title = "Click to zoom here";
+      li.addEventListener('click', () => {
+        map.setView([location.lat, location.lon], 17);
+        markers.forEach(m => {
+          const pos = m.getLatLng();
+          if (pos.lat === +location.lat && pos.lng === +location.lon) {
+            m.openPopup();
+          }
+        });
+      });
+      locationsUl.appendChild(li);
+    }
+
+    // Search function using Nominatim API
+    async function searchLocation() {
+      const query = searchInput.value.trim();
+      errorMsg.textContent = '';
+
+      if (!query) {
+        errorMsg.textContent = 'Please enter a location to search.';
+        return;
+      }
+
+      try {
+        const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1&limit=3`;
+        const response = await fetch(url, {
+          headers: {
+            'Accept-Language': 'en',
+            'User-Agent': 'TrackAnyPlaceAnywhere/1.0 (your-email@example.com)', // Replace with your email for production
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch location data.');
+        }
+
+        const data = await response.json();
+
+        if (data.length === 0) {
+          errorMsg.textContent = 'No locations found. Try a different query.';
+          return;
+        }
+
+        // Add each found location
+        data.forEach(place => {
+          const lat = parseFloat(place.lat);
+          const lon = parseFloat(place.lon);
+          const displayName = place.display_name;
+
+          // Add to map markers
+          addMarker(lat, lon, displayName);
+
+          // Track location for list
+          trackedLocations.push({
+            lat,
+            lon,
+            display_name: displayName,
+          });
+
+          addLocationToList({
+            lat,
+            lon,
+            display_name: displayName,
+          });
+        });
+
+        // Zoom map to first location found
+        map.setView([parseFloat(data[0].lat), parseFloat(data[0].lon)], 14);
+
+        locationsList.style.display = 'block';
+        searchInput.value = '';
+      } catch (error) {
+        errorMsg.textContent = 'Error fetching location data. Try again later.';
+        console.error(error);
+      }
+    }
+
+    searchBtn.addEventListener('click', searchLocation);
+
+    searchInput.addEventListener('keyup', e => {
+      if (e.key === 'Enter') {
+        searchLocation();
+      }
+    });
+
+  </script>
+</body>
+</html>

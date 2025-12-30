@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>WhatWeb-Lite Pro+ Advanced</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #121212;
+      color: #f0f0f0;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 { color: #00ffc8; }
+    input, button {
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 4px;
+      border: none;
+    }
+    input {
+      width: 80%;
+      background: #1e1e1e;
+      color: #fff;
+    }
+    button {
+      background: #00ffc8;
+      color: #000;
+      cursor: pointer;
+    }
+    button:hover { background: #00cfa3; }
+    .results, .history {
+      background: #1a1a1a;
+      padding: 15px;
+      border-radius: 5px;
+      margin-top: 20px;
+    }
+    .key { color: #00bfff; font-weight: bold; }
+    .value { color: #fff; }
+    .export-buttons { margin-top: 10px; }
+    .favicon {
+      width: 32px;
+      vertical-align: middle;
+      margin-right: 10px;
+    }
+    .ai-score { font-size: 1.1em; color: #ff4081; margin-top: 10px; }
+    .cve-list { margin-top: 10px; color: #ffa726; }
+    #map {
+      height: 300px;
+      margin-top: 20px;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>WhatWeb-Lite Pro+ Advanced</h1>
+  <input type="text" id="urlInput" placeholder="https://example.com" />
+  <button onclick="scanWebsite()">Scan</button>
+  <button onclick="clearHistory()">Clear History</button>
+
+  <div class="results" id="results"></div>
+  <div class="export-buttons" id="exportButtons" style="display:none">
+    <button onclick="exportJSON()">Export JSON</button>
+    <button onclick="exportCSV()">Export CSV</button>
+  </div>
+
+  <div class="results">
+    <h3>Geolocation Map</h3>
+    <div id="map"></div>
+  </div>
+
+  <div class="history" id="history"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script>
+    const pluginDetectors = [
+      { name: 'WordPress', detect: html => html.includes('wp-content') },
+      { name: 'Joomla', detect: html => html.includes('joomla') },
+      { name: 'Drupal', detect: html => html.includes('drupal') },
+      { name: 'PrestaShop', detect: html => html.includes('prestashop') },
+      { name: 'Magento', detect: html => html.includes('magento') },
+      { name: 'jQuery', detect: html => html.includes('jquery') },
+      { name: 'Bootstrap', detect: html => html.includes('bootstrap') },
+      { name: 'React', detect: html => html.includes('react') },
+      { name: 'Vue.js', detect: html => html.includes('vue') },
+      { name: 'Google Analytics', detect: html => html.includes('google-analytics') }
+    ];
+
+    const cveDatabase = {
+      'WordPress': ['CVE-2024-4567', 'CVE-2023-8932'],
+      'jQuery': ['CVE-2020-11022'],
+      'Bootstrap': ['CVE-2018-14041'],
+      'React': ['CVE-2022-39238'],
+      'Vue.js': ['CVE-2022-25867']
+    };
+
+    let map, marker;
+
+    function initMap(lat = 0, lon = 0) {
+      if (!map) {
+        map = L.map('map').setView([lat, lon], 2);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+      } else {
+        map.setView([lat, lon], 10);
+      }
+      if (marker) map.removeLayer(marker);
+      marker = L.marker([lat, lon]).addTo(map);
+    }
+
+    function saveToHistory(scanData) {
+      let history = JSON.parse(localStorage.getItem('scanHistory') || '[]');
+      history.unshift(scanData);
+      localStorage.setItem('scanHistory', JSON.stringify(history.slice(0, 10)));
+      loadHistory();
+    }
+
+    function loadHistory() {
+      const history = JSON.parse(localStorage.getItem('scanHistory') || '[]');
+      const container = document.getElementById('history');
+      container.innerHTML = '<h3>Scan History</h3>' + history.map(entry => `
+        <div class="history-item">
+          <strong>${entry.url}</strong><br>
+          ${Object.keys(entry.techs).join(', ')}
+        </div>`).join('');
+    }
+
+    function clearHistory() {
+      localStorage.removeItem('scanHistory');
+      loadHistory();
+    }
+
+    async function scanWebsite() {
+      const url = document.getElementById('urlInput').value;
+      const hostname = new URL(url).hostname;
+      const resultsDiv = document.getElementById('results');
+      resultsDiv.innerHTML = 'Scanning...';
+
+      try {
+        const ipRes = await fetch(`https://dns.google/resolve?name=${hostname}&type=A`);
+        const ipJson = await ipRes.json();
+        const ip = ipJson.Answer?.find(a => a.type === 1)?.data;
+
+        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+        const response = await fetch(proxyUrl);
+        const { contents } = await response.json();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(contents, 'text/html');
+
+        const techs = {};
+        pluginDetectors.forEach(plugin => {
+          if (plugin.detect(contents)) techs[plugin.name] = true;
+        });
+
+        const generator = doc.querySelector('meta[name="generator"]');
+        if (generator) techs['Generator'] = generator.content;
+
+        const iconLink = doc.querySelector('link[rel~="icon"]');
+        let favicon = iconLink ? new URL(iconLink.getAttribute('href'), url).href : `${new URL(url).origin}/favicon.ico`;
+
+        resultsDiv.innerHTML = `<img class='favicon' src='${favicon}'> <strong>${url}</strong><br><br>`;
+
+        const favHash = await fetch(favicon).then(res => res.arrayBuffer())
+          .then(buf => crypto.subtle.digest('SHA-1', buf))
+          .then(hash => Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join(''));
+
+        resultsDiv.innerHTML += `<div><span class='key'>Favicon Hash</span>: ${favHash}</div>`;
+
+        Object.entries(techs).forEach(([key, value]) => {
+          resultsDiv.innerHTML += `<div><span class='key'>${key}</span>: <span class='value'>${value}</span></div>`;
+        });
+
+        const aiScore = generateAIScore(techs);
+        resultsDiv.innerHTML += `<div class='ai-score'><strong>AI Risk Score:</strong> ${aiScore}/10</div>`;
+
+        const cves = getCVEList(techs);
+        if (cves.length) {
+          resultsDiv.innerHTML += `<div class='cve-list'><strong>Related CVEs:</strong><br>${cves.join('<br>')}</div>`;
+        }
+
+        if (ip) {
+          const geoRes = await fetch(`https://ipapi.co/${ip}/json/`);
+          const geo = await geoRes.json();
+          if (geo.latitude) {
+            resultsDiv.innerHTML += `<h3>Location</h3>
+              <div><span class='key'>IP:</span> ${ip}</div>
+              <div><span class='key'>City:</span> ${geo.city}</div>
+              <div><span class='key'>Country:</span> ${geo.country_name}</div>`;
+            initMap(geo.latitude, geo.longitude);
+          } else initMap();
+        } else {
+          resultsDiv.innerHTML += `<div><span class='key'>IP:</span> <span style="color:red;">Not Found</span></div>`;
+          initMap();
+        }
+
+        window.scanResults = { url, techs, favicon, aiScore, cves, ip, faviconHash: favHash };
+        document.getElementById('exportButtons').style.display = 'block';
+        saveToHistory(window.scanResults);
+
+      } catch (e) {
+        resultsDiv.innerHTML = `<span style='color:red;'>Error: ${e.message}</span>`;
+        initMap();
+      }
+    }
+
+    function generateAIScore(techs) {
+      let score = 5;
+      if (techs['WordPress']) score += 2;
+      if (techs['jQuery']) score += 1;
+      if (techs['Generator'] && techs['Generator'].toLowerCase().includes('outdated')) score += 2;
+      return Math.min(score, 10);
+    }
+
+    function getCVEList(techs) {
+      const cves = [];
+      Object.keys(techs).forEach(tech => {
+        if (cveDatabase[tech]) {
+          cves.push(`${tech}: ${cveDatabase[tech].join(', ')}`);
+        }
+      });
+      return cves;
+    }
+
+    function exportJSON() {
+      const data = JSON.stringify(window.scanResults, null, 2);
+      const blob = new Blob([data], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'whatweb-lite.json';
+      a.click();
+    }
+
+    function exportCSV() {
+      const data = window.scanResults;
+      let csv = `Key,Value\n`;
+      csv += `URL,${data.url}\n`;
+      csv += `Favicon Hash,${data.faviconHash}\n`;
+      csv += `AI Score,${data.aiScore}/10\n`;
+      if (data.ip) csv += `IP,${data.ip}\n`;
+      Object.entries(data.techs).forEach(([key, val]) => {
+        csv += `${key},${val}\n`;
+      });
+      if (data.cves.length) {
+        csv += `CVEs,"${data.cves.join('; ')}"\n`;
+      }
+
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'whatweb-lite.csv';
+      a.click();
+    }
+
+    loadHistory();
+  </script>
+</body>
+</html>

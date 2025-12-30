@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>JWT Decoder</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #000;
+      color: #f0ad4e;
+      overflow-x: hidden;
+    }
+    video#bg-video, audio#bg-music {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      min-width: 100vw;
+      min-height: 100vh;
+      object-fit: cover;
+      opacity: 0.08;
+      z-index: -1;
+    }
+    .container {
+      max-width: 960px;
+      margin: 50px auto;
+      background: rgba(0,0,0,0.2);
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(255,165,0,0.2);
+    }
+    h1, h2, label {
+      color: #ffb700;
+      margin-bottom: 10px;
+    }
+    textarea {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 15px;
+      background: rgba(0,0,0,0.5);
+      color: #ff4444;
+      border: 1px solid #ffb700;
+      border-radius: 6px;
+      font-size: 1rem;
+    }
+    .section {
+      margin: 20px 0;
+    }
+    pre {
+      white-space: pre-wrap;
+      background: rgba(0,0,0,0.6);
+      padding: 10px;
+      border-left: 4px solid #ffb700;
+      color: #00ffcc;
+      border-radius: 4px;
+      overflow-x: auto;
+    }
+    button {
+      background: rgba(0, 0, 0, 0.6);
+      border: 1px solid #f0ad4e;
+      color: #f0ad4e;
+      padding: 10px 15px;
+      margin: 5px 5px 15px 0;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+    button:hover {
+      background: rgba(255,140,0,0.2);
+      color: red;
+    }
+    .history-item {
+      font-size: 0.85rem;
+      color: #ccc;
+      margin: 4px 0;
+      border-bottom: 1px solid #555;
+    }
+    @media (max-width: 768px) {
+      .container { margin: 20px 10px; padding: 20px; }
+      button { width: 100%; margin: 10px 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Background -->
+  <video id="bg-video" autoplay muted loop>
+    <source src="background/1761817527453041720p.mp4" type="video/mp4" />
+  </video>
+  <audio id="bg-music" autoplay loop>
+    <source src="background/Programming___Coding___Hacking_music_vol.18__ANONYMOUS_HEADQUARTERS_(48k).mp3" type="audio/mp3" />
+  </audio>
+
+  <div class="container">
+    <h1>JWT Decoder </h1>
+
+    <label>Paste JWT Token:</label>
+    <textarea id="jwt-input" rows="4" placeholder="Paste JWT token here..."></textarea>
+    <button onclick="decodeJWT()">Decode</button>
+    <button onclick="clearAll()">Clear</button>
+    <button onclick="toggleMusic()">Toggle Music</button>
+
+    <div class="section">
+      <h2>Header</h2>
+      <pre id="header-output">-</pre>
+    </div>
+    <div class="section">
+      <h2>Payload</h2>
+      <pre id="payload-output">-</pre>
+    </div>
+    <div class="section">
+      <h2>Signature</h2>
+      <pre id="signature-output">-</pre>
+    </div>
+
+    <div class="section">
+      <h2>History</h2>
+      <div id="history-box"></div>
+    </div>
+  </div>
+
+  <script>
+    const input = document.getElementById("jwt-input");
+    const headerOut = document.getElementById("header-output");
+    const payloadOut = document.getElementById("payload-output");
+    const signatureOut = document.getElementById("signature-output");
+    const historyBox = document.getElementById("history-box");
+    const music = document.getElementById("bg-music");
+
+    let history = JSON.parse(localStorage.getItem("jwthistory") || "[]");
+
+    function base64UrlDecode(str) {
+      str = str.replace(/-/g, '+').replace(/_/g, '/');
+      while (str.length % 4) str += '=';
+      try {
+        return decodeURIComponent(atob(str).split('').map(c =>
+          '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+        ).join(''));
+      } catch (e) {
+        return "Invalid Base64 encoding.";
+      }
+    }
+
+    function decodeJWT() {
+      const token = input.value.trim();
+      if (!token) return alert("Please paste a JWT.");
+      const parts = token.split(".");
+      if (parts.length !== 3) return alert("Invalid JWT format.");
+
+      const [header, payload, signature] = parts;
+
+      try {
+        const decodedHeader = JSON.parse(base64UrlDecode(header));
+        const decodedPayload = JSON.parse(base64UrlDecode(payload));
+
+        headerOut.textContent = JSON.stringify(decodedHeader, null, 2);
+        payloadOut.textContent = JSON.stringify(decodedPayload, null, 2);
+        signatureOut.textContent = signature;
+
+        logHistory(token.slice(0, 50));
+      } catch (e) {
+        alert("Error decoding JWT.");
+      }
+    }
+
+    function clearAll() {
+      input.value = "";
+      headerOut.textContent = "-";
+      payloadOut.textContent = "-";
+      signatureOut.textContent = "-";
+    }
+
+    function toggleMusic() {
+      if (music.paused) music.play();
+      else music.pause();
+    }
+
+    function logHistory(snippet) {
+      const time = new Date().toLocaleTimeString();
+      history.unshift(`${time}: ${snippet}...`);
+      history = history.slice(0, 10);
+      localStorage.setItem("jwthistory", JSON.stringify(history));
+      updateHistory();
+    }
+
+    function updateHistory() {
+      historyBox.innerHTML = "";
+      history.forEach(entry => {
+        const div = document.createElement("div");
+        div.className = "history-item";
+        div.textContent = entry;
+        historyBox.appendChild(div);
+      });
+    }
+
+    updateHistory();
+  </script>
+</body>
+</html>

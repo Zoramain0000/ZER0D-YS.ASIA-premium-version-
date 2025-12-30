@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>🎰 Slot Machine</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+      text-align: center;
+      padding: 2rem;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+    }
+
+    .slot-machine {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin: 2rem 0;
+      flex-wrap: wrap;
+    }
+
+    .reel {
+background: rgba(0, 0, 0, 0.5);
+      border: 4px solid red;
+      border-radius: 1rem;
+      width: 100px;
+      height: 100px;
+      font-size: 2.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 10px red, inset 0 0 10px #000;
+    }
+
+    .credits, .bet {
+      font-size: 1.2rem;
+      margin: 1rem 0;
+    }
+
+    .controls {
+      margin-top: 1rem;
+    }
+
+    button {
+      background: red;
+      color: green;
+      padding: 0.75rem 2rem;
+      font-size: 1.25rem;
+      font-weight: bold;
+      border: none;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      margin: 0.5rem;
+    }
+
+    button:hover {
+background: rgba(0, 0, 0, 0.5);
+    }
+
+    .message {
+      margin-top: 1.5rem;
+      font-size: 1.5rem;
+    }
+
+    .win {
+      color: red;
+      text-shadow: 0 0 10px red;
+    }
+
+    .lose {
+      color: red;
+    }
+
+    select {
+      padding: 0.4rem;
+      border-radius: 0.5rem;
+      font-size: 1rem;
+      background: #444;
+      color: #fff;
+      border: none;
+      margin-left: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎰 Slot Machine</h1>
+  <div class="credits">Credits: <span id="credits">0</span></div>
+
+  <div class="bet">
+    Bet: 
+    <select id="betSelect">
+<option value="2">2</option>
+<option value="3">3</option>
+<option value="4">4</option>
+      <option value="5">5</option>
+      <option value="10">10</option>
+      <option value="20">20</option>
+      <option value="50">50</option>
+<option value="1000">1000</option>
+<option value="10000">10000</option>
+<option value="100000">100000</option>
+    </select>
+
+    Mode:
+    <select id="modeSelect">
+      <option value="normal">Normal</option>
+      <option value="auto">Auto Win</option>
+      <option value="hard">Hard</option>
+      <option value="simple">Simple</option>
+    </select>
+  </div>
+
+  <div class="slot-machine" id="slotMachine"></div>
+
+  <div class="controls">
+    <button onclick="spin()">SPIN 🎲</button>
+    <button onclick="exportCSV()">📤 Export Win History</button>
+  </div>
+
+  <div class="message" id="message"></div>
+
+  <script>
+    const totalReels = 5;
+    const defaultSymbols = ['🍒', '7️⃣', '💎', '🍋', '🔔', '🍀'];
+    const simpleSymbols = ['🍒', '🍋', '🍀'];
+    const reels = [];
+    const history = [];
+
+    const slotMachine = document.getElementById('slotMachine');
+    const creditsDisplay = document.getElementById('credits');
+    const betSelect = document.getElementById('betSelect');
+    const modeSelect = document.getElementById('modeSelect');
+    const message = document.getElementById('message');
+
+    let credits = localStorage.getItem('slotCredits') 
+                  ? parseInt(localStorage.getItem('slotCredits')) 
+                  : 100;
+
+    function getSymbols() {
+      return modeSelect.value === 'simple' ? simpleSymbols : defaultSymbols;
+    }
+
+    function updateCredits() {
+      creditsDisplay.textContent = credits;
+      localStorage.setItem('slotCredits', credits);
+    }
+
+    // Create reels dynamically
+    for (let i = 0; i < totalReels; i++) {
+      const reel = document.createElement('div');
+      reel.className = 'reel';
+      reel.textContent = '❓';
+      slotMachine.appendChild(reel);
+      reels.push(reel);
+    }
+
+    updateCredits();
+
+    function spin() {
+      const bet = parseInt(betSelect.value);
+      const mode = modeSelect.value;
+
+      if (credits < bet) {
+        message.textContent = '❌ Not enough credits!';
+        message.className = 'message lose';
+        playSound('lose');
+        return;
+      }
+
+      credits -= bet;
+      updateCredits();
+      message.textContent = '';
+      message.className = 'message';
+      const results = [];
+      const symbols = getSymbols();
+
+      reels.forEach((reel, index) => {
+        let count = 0;
+        const spins = 20 + index * 5;
+        const interval = setInterval(() => {
+          const symbol = symbols[Math.floor(Math.random() * symbols.length)];
+          reel.textContent = symbol;
+          count++;
+          if (count >= spins) {
+            clearInterval(interval);
+
+            // Mode: Auto Win
+            if (mode === 'auto') {
+              reel.textContent = symbols[0];
+              results[index] = symbols[0];
+            }
+            // Mode: Hard - Force different symbols
+            else if (mode === 'hard') {
+              let hardSymbol;
+              do {
+                hardSymbol = symbols[Math.floor(Math.random() * symbols.length)];
+              } while (results.includes(hardSymbol));
+              reel.textContent = hardSymbol;
+              results[index] = hardSymbol;
+            }
+            // Normal/Simple
+            else {
+              results[index] = reel.textContent;
+            }
+
+            if (results.filter(Boolean).length === totalReels) {
+              evaluate(results, bet);
+            }
+          }
+        }, 80);
+      });
+    }
+
+    function evaluate(res, bet) {
+      const counts = {};
+      res.forEach(symbol => counts[symbol] = (counts[symbol] || 0) + 1);
+
+      const maxMatch = Math.max(...Object.values(counts));
+      const matchedSymbol = Object.keys(counts).find(key => counts[key] === maxMatch);
+      let win = 0;
+      let resultText = '';
+
+      if (maxMatch === totalReels) {
+        let multiplier = 5;
+        if (matchedSymbol === '7️⃣') multiplier = 10;
+        if (matchedSymbol === '💎') multiplier = 15;
+        win = bet * multiplier;
+        resultText = `🎉 JACKPOT! ${res.join(' ')} <br>You won ${win} credits!`;
+        message.className = 'message win';
+      } else if (maxMatch >= 2) {
+        win = Math.floor(bet * 1.5);
+        resultText = `✅ Small Win! ${res.join(' ')} <br>You won ${win} credits!`;
+        message.className = 'message win';
+      } else {
+        resultText = `😢 ${res.join(' ')} <br>You lost ${bet} credits.`;
+        message.className = 'message lose';
+      }
+
+      credits += win;
+      message.innerHTML = resultText;
+      updateCredits();
+
+      history.push({
+        time: new Date().toLocaleString(),
+        result: res.join(' '),
+        outcome: win > 0 ? 'Win' : 'Lose',
+        creditsWon: win,
+        creditsLeft: credits
+      });
+
+      playSound(win > 0 ? 'win' : 'lose');
+    }
+
+    function playSound(type) {
+      const winSound = new Audio('https://freesound.org/data/previews/341/341695_3248244-lq.mp3');
+      const loseSound = new Audio('https://freesound.org/data/previews/457/457018_719593-lq.mp3');
+      (type === 'win' ? winSound : loseSound).play().catch(() => {});
+    }
+
+    function exportCSV() {
+      if (history.length === 0) {
+        alert("No win history to export.");
+        return;
+      }
+
+      const headers = ['Time', 'Result', 'Outcome', 'Credits Won', 'Credits Left'];
+      const rows = history.map(h => [h.time, h.result, h.outcome, h.creditsWon, h.creditsLeft]);
+
+      const csvContent = [headers, ...rows].map(e => e.join(',')).join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = `slot_win_history_${new Date().toISOString().slice(0,10)}.csv`;
+      link.click();
+    }
+  </script>
+</body>
+</html>

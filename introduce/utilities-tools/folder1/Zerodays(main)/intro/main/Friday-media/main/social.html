@@ -1,0 +1,386 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Friday Media - Cybersecurity Tools</title>
+    <style>
+        /* Global Styles */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s') ;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            width: 250px;
+            background: rgba(0, 0, 0, 0.75);
+            color: white;
+            transition: width 0.3s ease;
+            overflow-y: auto;
+        }
+
+        .sidebar.hidden { width: 0; }
+
+        .sidebar h2 {
+            padding: 20px;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.5);
+            color: red;
+        }
+
+        .sidebar ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .sidebar ul li {
+            padding: 15px 20px;
+            border-bottom: 1px solid #444;
+        }
+
+        .sidebar ul li:hover {
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .sidebar a {
+            text-decoration: none;
+            color: red;
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Main Content Styles */
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .topnav {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            color: red;
+        }
+
+        .toggle-btn {
+            font-size: 24px;
+            cursor: pointer;
+            color: red;
+        }
+
+        .content {
+            padding: 20px;
+            overflow-y: auto;
+            flex: 1;
+            color: white;
+        }
+
+        /* Form Styles */
+        .form-box {
+            max-width: 600px;
+            margin: 30px auto;
+            padding: 30px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-box h2 {
+            margin-bottom: 20px;
+            text-align: center;
+            color: red; /* Title color */
+        }
+
+        .form-box input, .form-box textarea, .form-box select {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid red;
+            border-radius: 5px;
+        }
+
+        .form-box button {
+            width: 100%;
+            padding: 12px;
+            background: red; /* Button background color */
+            color: white; /* Button text color */
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .form-box button:hover {
+            background: rgba(0, 0, 0, 0.5); /* Lighter red on hover */
+        }
+
+        .hidden-section { display: none; }
+    </style>
+</head>
+<body>
+    <div class="sidebar" id="sidebar">
+        <h2 id="menuTitle">Friday Media</h2>
+        <ul id="menuList">
+            <li><a href="#" onclick="showLogin()">👤 Login</a></li>
+            <li><a href="#" onclick="showRegister()">📝 Register</a></li>
+        </ul>
+    </div>
+
+    <div class="main">
+        <div class="topnav">
+            <span class="toggle-btn" onclick="toggleSidebar()">&#9776;</span>
+            <h3>Welcome to Friday Media Tools</h3>
+        </div>
+        <div class="content" id="content">
+            <div class="form-box" id="loginBox" style="display:none;">
+                <h2>Login</h2>
+                <input type="text" placeholder="Username(demo)" id="loginUser" />
+                <input type="password" placeholder="Password(123)" id="loginPass" />
+                <button onclick="loginUser()">Login</button>
+            </div>
+
+            <div class="form-box" id="registerBox" style="display:none;">
+                <h2>Register</h2>
+                <input type="text" placeholder="Username(demo)" id="regUser" />
+                <input type="email" placeholder="Email" id="regEmail" />
+                <input type="password" placeholder="Password(123)" id="regPass" />
+                <button onclick="registerUser()">Register</button>
+            </div>
+
+            <div class="form-box hidden-section" id="fullAppBox">
+                <h2>Welcome, <span id="userWelcome"></span>!</h2>
+                <p>This is your personal cybersecurity toolbox.</p>
+                <nav>
+                    <a href="pingsource/ping.html">🔍 IP Ping</a>
+                    <br>
+                    <a href="IPtraceroute/IPtracert.html">🚀 IP Tracert</a>
+                    <br>
+                    <a href="iplookupsource/iplookup.html">📖 IP Lookup</a>
+                    <br>
+                    <a href="IPtrackersource/IPtracker.html">🔒 IP Tracker</a>
+                    <br>
+                    <a href="IPmaps/maps.html">🗺️ IP Maps</a>
+                    <br>
+                    <a href="IPkeylogger/IPStealing.html">🕵️‍♂️ IP Keylogger</a>
+                    <br>
+                    <a href="IPv6/IPv6.html">🌐 IPv6 Generator</a>
+                    <br>
+                    <a href="Card/Tools.html">🔧 IP Information</a>
+                    <br>
+                    <a href="searchengine(v2)/main.html">🔎 ZerodaysTools</a>
+                    <br>
+                    <a href="IPattacksource/Attak.html">⚔️ IP Attack</a>
+                    <br>
+                    <a href="IPscanner/Scanner.html">🔍 IP Scanner</a>
+                    <br>
+                    <a href="myIP/IPown.html">📌 IP Address</a>
+                    <br>
+                    <a href="iplookupsource/iplookup.html">🔎 Lookup Tools</a>
+                    <br>
+                    <a href="SPFrecord/SPFrecordlookup.html">📄 SPF Record Lookup</a>
+                    <br>
+                    <a href="dnschecker/checker.html">🛡️ DNS Check</a>
+                    <br>
+                    <a href="lookuptools/lookup.html">🔍 Lookup Tools v2</a>
+                    <br>
+                    <a href="domaincheck/health.html">💻 Domain Health</a>
+                    <br>
+                    <a href="ReverseDNS/DNS.html">🔄 Reverse DNS</a>
+                    <br>
+                    <a href="DNSQUEsources/DNS.html">🔎 DNS Queries</a>
+                    <br>
+                    <a href="Robot/Scanner.html">🤖 IP Robot Scanner</a>
+                    <br>
+                    <a href="IPgeneral/IPgenerator.html">💾 IP Generator</a>
+                    <br>
+                    <a href="PhonenumberTools/Pnumber.html">📞 AI Phone Number</a>
+                    <br>
+                    <a href="Godmode/Cheat.html">🔮 Godmode</a>
+                    <br>
+                    <a href="subnettoolssource/subnet.html">🔍 Subnet Lookup</a>
+                    <br>
+                    <a href="NGLlinks/NGL.html">📬 NGL Links</a>
+                    <br>
+                    <a href="Calculator/Cal.html">🧮 Calculator</a>
+                    <br>
+                    <a href="ipgeolocation/ipgeo.html">🌍 IP Geolocation Lookup</a>
+                    <br>
+                    <a href="macaddressgen/macaddress.html">🔗 MAC Address Gen</a>
+                    <br>
+                    <a href="maclookupsources/Macaddresslookup.html">🔍 MAC Address Lookup</a>
+                    <br>
+                    <a href="portcheckersource/port.html">🌐 Port Check</a>
+                    <br>
+                    <a href="sslcertificatechecker/sslchecker.html">🔒 SSL Certificate Check</a>
+                    <br>
+                    <a href="terms/rule.html">📜 Terms & Rules</a>
+                    <br>
+                    <a href="passwordencrypted.html">🔑 Password Encryption Utility</a>
+                    <br>
+                    <a href="passwordgen/passgen.html">🔐 Password Generator</a>
+                    <br>
+                    <a href="pass-strength/pass-strengthtest.html">🛡️ Password Strength Tester</a>
+                    <br>
+                    <a href="QRcodegen/qrcode.html">🆔 QR Code Generator</a>
+                    <br>
+                    <a href="QRcodescan/QRcodescan.html">📥 QR Scanner</a>
+                    <br>
+                    <a href="creditcardgen/creditcard.html">💳 Credit Card Generator</a>
+                    <br>
+                    <a href="socialfinders/userfinder.html">👤 Social Finder</a>
+                    <br>
+                    <a href="networkanalysis/inspector.html">🔍 Network Analysis</a>
+                    <br>
+                    <a href="networksniffersource/sniffer.html">👾 Network Sniffer</a>
+                    <br>
+                    <a href="secret/tooldet.html">🔎 IP Detector</a>
+                    <br>
+                    <a href="Dictionary/Chat.html">📖 Dictionary/chat box</a>
+                    <br>
+                    <a href="Translator/Google.html">🌐 Zero days Translator</a>
+                    <br>
+                    <a href="Notepad/note.html">📝 Zero days Notepad</a>
+                    <br>
+                    <a href="traceroute-cities/try.html">🌆 Traceroute City</a>
+                    <br>
+                    <a href="traceroute-country/try.html">🏞️ Traceroute Country</a>
+                    <br>
+                    <a href="Live-tracker/test.html">🌍 Zero days Live Tracker</a>
+                    <br>
+                    <a href="CAL/dark.html">🗓️ Zero days Calendar</a>
+                    <br>
+                    <a href="Notecode/test32.html">📝 Zero days Notes</a>
+                    <br>
+                    <a href="Blue/test34.html">💻 Zero days Code Analysis</a>
+                    <br>
+                    <a href="Radio-station/Worldwide.html">📻 Global Radio</a>
+                    <br>
+                    <a href="Regular/player.html">🎵 Zero days Emulator</a>
+                    <br>
+                    <a href="Grammar/bot.html">✏️ Zero days Grammarly</a>
+                    <br>
+                    <a href="iptools/token.html">🔑 ZeroDays Advanced Tool Suite 1</a>
+                    <br>
+                    <a href="iptools/token2.html">🛠️ ZeroDays Advanced Tool Suite 2</a>
+                    <br>
+                    <a href="Runnerup/R.html">🖥️ System Info Checker</a>
+                    <br>
+                    <a href="builder/projector.html">⏰ Zero Days Alarm Clock</a>
+                    <br>
+                    <a href="Wordtest/General.html">🖼️ Zero Picture Editor</a>
+                    <br>
+                    <a href="Alien-eyes/see.html">👁️ Alien Eyes</a>
+                    <br>
+                    <a href="Sherlock/ip.html">🔍 Sherlock Tools</a>
+                    <br>
+                    <a href="https://www.quotev.com">📝 quotev.com</a>
+                    <br>
+                    <a href="Manager/passwordhistory.html">🗂️ Zero Days Manager</a>
+                    <br>
+                    <a href="games/Chess.html">♟️ Zero Days Chess</a>
+                    <br>
+                    <a href="games/Snake.html">🐍 Zero Days Snake</a>
+                    <br>
+                    <a href="games/XANDO.html">❌ Zero Days Tic-Tac-Toe</a>
+                    <br>
+                    <a href="games/Number.html">🔢 Zero Days Number Guessing</a>
+                    <br>
+                    <a href="Weather/Map.html">☀️ Zero Days Weather Tools</a>
+                    <br>
+                    <a href="Gallery/Album.html">📸 Zero Days Gallery Tools</a>
+                    <br>
+                    <a href="Money/Converter.html">💱 Zero Days Money Converter</a>
+                    <br>
+                    <a href="audio/audio.html">🎶 Zero Days Regular Music Player</a>
+                    <br>
+                    <a href="ZERO-PLAYER/Music-player.html">🎵 Zero Days Ultimate Music Player</a>
+                    <br>
+                    <a href="Files/store.html">📁 Zero Days Files Explorer</a>
+                    <br>
+                    <a href="hash/generator.html">🔑 Type of Hash</a>
+                    <br>
+                    <a href="ZEROleaks/zero">❌ Zero Leaks(coming soon) </a>
+
+                </nav>
+            </div>
+        </div>
+    </div>
+
+<script>
+    function toggleSidebar() {
+        document.getElementById("sidebar").classList.toggle("hidden");
+    }
+
+    function showLogin() {
+        hideAllSections();
+        document.getElementById("loginBox").style.display = "block";
+    }
+
+    function showRegister() {
+        hideAllSections();
+        document.getElementById("registerBox").style.display = "block";
+    }
+
+    function registerUser() {
+        const username = document.getElementById("regUser").value;
+        const email = document.getElementById("regEmail").value;
+        const password = document.getElementById("regPass").value;
+
+        if (!username || !email || !password) {
+            alert("Please fill in all fields.");
+            return;
+        }
+
+        // Register user and save to localStorage
+        const user = { username, email, password };
+        localStorage.setItem("user", JSON.stringify(user));
+        alert("Registration successful! You can now log in.");
+        showLogin(); // Show login after registration
+    }
+
+    function loginUser() {
+        const inputUser = document.getElementById("loginUser").value;
+        const inputPass = document.getElementById("loginPass").value;
+        const storedUser = JSON.parse(localStorage.getItem("user"));
+
+        if (storedUser && inputUser === storedUser.username && inputPass === storedUser.password) {
+            document.getElementById("userWelcome").textContent = inputUser;
+            showFullApp(inputUser);
+            logUserAction("User logged in: " + inputUser);
+        } else {
+            alert("Incorrect username or password.");
+        }
+    }
+
+    function showFullApp(user) {
+        hideAllSections();
+        document.getElementById("fullAppBox").style.display = "block";
+        logUserAction("User accessed the full app.");
+    }
+
+    function hideAllSections() {
+        const sections = document.querySelectorAll(".form-box, .hidden-section");
+        sections.forEach(section => section.style.display = "none");
+    }
+
+    function logUserAction(action) {
+        const userHistory = JSON.parse(localStorage.getItem("userHistory")) || [];
+        userHistory.push({ action, timestamp: new Date().toISOString() });
+        localStorage.setItem("userHistory", JSON.stringify(userHistory));
+        console.log(userHistory); // Log to console for debugging
+    }
+</script>
+
+</body>
+</html>

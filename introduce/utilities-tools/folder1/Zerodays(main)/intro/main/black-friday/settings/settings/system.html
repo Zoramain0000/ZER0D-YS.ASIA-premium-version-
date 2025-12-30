@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Settings Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      font-family: 'Courier New', monospace;
+      background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: #00ffcc;
+      overflow: hidden;
+    }
+
+    #sidebar {
+      width: 250px;
+      background: rgba(0, 0, 0, 0.5);
+      border-right: 2px solid red;
+      display: flex;
+      flex-direction: column;
+      transition: width 0.3s ease;
+    }
+
+    #sidebar.collapsed {
+      width: 60px;
+    }
+
+    #sidebar h2 {
+      text-align: center;
+      font-size: 1.2em;
+      margin: 10px 0;
+      color: red;
+    }
+
+    #sidebar .menu-item {
+      padding: 12px 20px;
+      cursor: pointer;
+      border-bottom: 1px solid #111;
+      color: red;
+      transition: background 0.2s;
+      white-space: nowrap;
+      text-decoration: none;
+      display: block;
+    }
+
+    #sidebar .menu-item:hover {
+      background: rgba(0, 0, 0, 0.5);
+    }
+
+    #toggle-btn {
+      background-color: red;
+      color: #000;
+      border: none;
+      padding: 10px;
+      cursor: pointer;
+      font-weight: bold;
+      width: 100%;
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    header {
+      background: rgba(0, 0, 0, 0.5);
+      color: red;
+      padding: 15px;
+      text-align: center;
+      font-size: 1.5em;
+      border-bottom: 2px solid red;
+      user-select: none;
+    }
+
+    footer {
+      background: rgba(0, 0, 0, 0.5);
+      color: red;
+      font-size: 0.8em;
+      text-align: center;
+      padding: 8px;
+      border-top: 1px solid;
+      user-select: none;
+    }
+
+    h3 {
+      color: #ff5555;
+      margin-top: 30px;
+      margin-bottom: 10px;
+      border-bottom: 1px solid #ff5555;
+      padding-bottom: 5px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+      color: #00ffcc;
+      font-size: 0.9em;
+    }
+
+    th, td {
+      padding: 8px 10px;
+      border: 1px solid #ff5555;
+      text-align: left;
+    }
+
+    th {
+      background-color: rgba(255, 85, 85, 0.2);
+    }
+
+    .info-section {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    #geoStatus {
+      margin-top: 10px;
+      font-style: italic;
+      color: #ff9999;
+    }
+
+    .loading {
+      color: #ff9999;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+  <div id="sidebar">
+    <button id="toggle-btn">☰</button>
+    <h2>Settings</h2>
+    <a class="menu-item" href="#" onclick="showSystemInfo()">System Information</a>
+  </div>
+
+  <main>
+    <header>Settings Dashboard</header>
+    <section id="content" class="info-section">
+      <p>Welcome to the Settings Dashboard. Select an option from the sidebar.</p>
+    </section>
+    <footer>
+      For educational and ethical use only. &copy; 2025 ZeroDayAI
+    </footer>
+  </main>
+
+  <script>
+    const sidebar = document.getElementById("sidebar");
+    const toggleBtn = document.getElementById("toggle-btn");
+    const content = document.getElementById("content");
+    const header = document.querySelector("header");
+
+    toggleBtn.onclick = () => {
+      sidebar.classList.toggle("collapsed");
+    };
+
+    function escapeHTML(text) {
+      return text.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    }
+
+    function showSystemInfo() {
+      header.textContent = "System Information";
+      content.innerHTML = `<p class="loading">Loading system information, please wait...</p>`;
+
+      Promise.all([
+        navigator.getBattery ? navigator.getBattery() : Promise.resolve(null),
+        navigator.connection || navigator.connection ? Promise.resolve(navigator.connection) : Promise.resolve(null),
+        navigator.mediaDevices ? navigator.mediaDevices.enumerateDevices() : Promise.resolve(null),
+        new Promise(resolve => {
+          if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+              pos => resolve({ coords: pos.coords }),
+              err => resolve({ error: err.message }),
+              { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+            );
+          } else {
+            resolve({ error: "Geolocation not supported" });
+          }
+        })
+      ]).then(([battery, network, mediaDevices, geo]) => {
+        const ua = navigator.userAgent;
+        const platform = navigator.platform;
+        const cores = navigator.hardwareConcurrency || 'N/A';
+        const memory = navigator.deviceMemory ? navigator.deviceMemory + " GB" : 'N/A';
+        const language = navigator.language || 'N/A';
+        const languages = navigator.languages ? navigator.languages.join(", ") : 'N/A';
+        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'N/A';
+        const screenSize = `${window.screen.width} x ${window.screen.height}`;
+        const windowSize = `${window.innerWidth} x ${window.innerHeight}`;
+        const cookieEnabled = navigator.cookieEnabled ? "Yes" : "No";
+        const onlineStatus = navigator.onLine ? "Online" : "Offline";
+
+        let os = "Unknown OS";
+        if (/Windows NT 10.0/.test(ua)) os = "Windows 10+";
+        else if (/Windows NT 6.3/.test(ua)) os = "Windows 8.1";
+        else if (/Windows NT 6.2/.test(ua)) os = "Windows 8";
+        else if (/Windows NT 6.1/.test(ua)) os = "Windows 7";
+        else if (/Mac OS X/.test(ua)) os = "Mac OS X";
+        else if (/Android/.test(ua)) os = "Android";
+        else if (/iPhone|iPad|iPod/.test(ua)) os = "iOS";
+        else if (/Linux/.test(ua)) os = "Linux";
+
+        let browser = "Unknown Browser";
+        if (/Edg\/\d+/.test(ua)) browser = "Microsoft Edge";
+        else if (/Chrome\/\d+/.test(ua)) browser = "Google Chrome";
+        else if (/Safari\/\d+/.test(ua) && !/Chrome/.test(ua)) browser = "Safari";
+        else if (/Firefox\/\d+/.test(ua)) browser = "Mozilla Firefox";
+        else if (/OPR\/\d+/.test(ua)) browser = "Opera";
+
+        const batteryHtml = battery ? `
+          <tr><th>Charging</th><td>${battery.charging ? "Yes" : "No"}</td></tr>
+          <tr><th>Level</th><td>${(battery.level * 100).toFixed(0)}%</td></tr>
+        ` : `<tr><td colspan="2">Battery info not available</td></tr>`;
+
+        const networkHtml = network ? `
+          <tr><th>Effective Type</th><td>${network.effectiveType}</td></tr>
+          <tr><th>Downlink</th><td>${network.downlink} Mbps</td></tr>
+          <tr><th>RTT</th><td>${network.rtt} ms</td></tr>
+          <tr><th>Save Data</th><td>${network.saveData ? "Yes" : "No"}</td></tr>
+        ` : `<tr><td colspan="2">Network info not available</td></tr>`;
+
+        const mediaHtml = mediaDevices && mediaDevices.length ? mediaDevices.map(d => `
+          <tr><td>${escapeHTML(d.kind)}</td><td>${escapeHTML(d.label || "N/A")}</td></tr>
+        `).join('') : `<tr><td colspan="2">No media devices found</td></tr>`;
+
+        const geoHtml = geo.coords ? `
+          <tr><th>Latitude</th><td>${geo.coords.latitude.toFixed(5)}</td></tr>
+          <tr><th>Longitude</th><td>${geo.coords.longitude.toFixed(5)}</td></tr>
+          <tr><th>Accuracy</th><td>${geo.coords.accuracy} meters</td></tr>
+        ` : `<tr><td colspan="2">${geo.error || "Geolocation unavailable"}</td></tr>`;
+
+        content.innerHTML = `
+          <h3>Basic Info</h3>
+          <table>
+            <tr><th>User Agent</th><td>${escapeHTML(ua)}</td></tr>
+            <tr><th>Platform</th><td>${escapeHTML(platform)}</td></tr>
+            <tr><th>OS</th><td>${os}</td></tr>
+            <tr><th>Browser</th><td>${browser}</td></tr>
+            <tr><th>Language</th><td>${escapeHTML(language)}</td></tr>
+            <tr><th>Languages</th><td>${escapeHTML(languages)}</td></tr>
+            <tr><th>Timezone</th><td>${escapeHTML(timezone)}</td></tr>
+            <tr><th>Screen Size</th><td>${screenSize}</td></tr>
+            <tr><th>Window Size</th><td>${windowSize}</td></tr>
+            <tr><th>Logical Cores</th><td>${cores}</td></tr>
+            <tr><th>Memory</th><td>${memory}</td></tr>
+            <tr><th>Cookies Enabled</th><td>${cookieEnabled}</td></tr>
+            <tr><th>Online</th><td>${onlineStatus}</td></tr>
+          </table>
+
+          <h3>Battery Info</h3><table>${batteryHtml}</table>
+          <h3>Network Info</h3><table>${networkHtml}</table>
+          <h3>Media Devices</h3><table><tr><th>Type</th><th>Label</th></tr>${mediaHtml}</table>
+          <h3>Geolocation</h3><table>${geoHtml}</table>
+        `;
+      });
+    }
+  </script>
+</body>
+</html>

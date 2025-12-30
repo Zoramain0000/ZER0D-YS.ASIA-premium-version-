@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Advanced Audio Speed Changer</title>
+<style>
+  body {
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+    color: red;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0; padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+  }
+  h1 {
+    color: red;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+  .container {
+background: rgba(0, 0, 0, 0.5);
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 0 15px red;
+    max-width: 500px;
+    width: 100%;
+  }
+  input[type="file"] {
+    display: block;
+    margin-bottom: 20px;
+    color: red;
+background: rgba(0, 0, 0, 0.5);
+  }
+  audio {
+    width: 100%;
+    margin-bottom: 15px;
+    outline: none;
+  }
+  label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+background: rgba(0, 0, 0, 0.5);
+  }
+  .speed-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+background: rgba(0, 0, 0, 0.5);
+  }
+  .speed-controls > * {
+    flex: 1;
+  }
+  .speed-slider {
+    margin: 0 10px;
+    flex: 3;
+  }
+  button {
+    background: red;
+    border: none;
+    border-radius: 8px;
+    color: green;
+    font-weight: bold;
+    padding: 10px 15px;
+    margin: 0 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  button:hover {
+background: rgba(0, 0, 0, 0.5);
+  }
+  .time-display {
+    text-align: center;
+    font-size: 14px;
+    color: red;
+    margin-top: 10px;
+  }
+  .preset-speeds {
+    display: flex;
+    justify-content: space-between;
+  }
+  .preset-speeds button {
+    flex: 1;
+    margin: 5px 5px 0;
+    font-size: 14px;
+    padding: 8px 0;
+  }
+</style>
+</head>
+<body>
+
+<h1>🎵 Advanced Audio Speed Changer</h1>
+
+<div class="container">
+  <label for="audioFile">Upload Audio File</label>
+  <input type="file" id="audioFile" accept="audio/*" />
+
+  <audio id="audioPlayer" controls></audio>
+
+  <div class="speed-controls">
+    <button id="btnPlay">▶️ Play</button>
+    <button id="btnPause">⏸️ Pause</button>
+    <button id="btnStop">⏹️ Stop</button>
+  </div>
+
+  <label for="speedRange">Playback Speed: <span id="speedValue">1.0x</span></label>
+  <input type="range" id="speedRange" class="speed-slider" min="0.25" max="3" step="0.05" value="1" />
+
+  <div class="preset-speeds">
+    <button data-speed="0.5">0.5x</button>
+    <button data-speed="0.75">0.75x</button>
+    <button data-speed="1">1x</button>
+    <button data-speed="1.25">1.25x</button>
+    <button data-speed="1.5">1.5x</button>
+    <button data-speed="2">2x</button>
+  </div>
+
+  <div class="time-display" id="timeDisplay">00:00 / 00:00</div>
+</div>
+
+<script>
+  const audioPlayer = document.getElementById('audioPlayer');
+  const audioFileInput = document.getElementById('audioFile');
+  const speedRange = document.getElementById('speedRange');
+  const speedValue = document.getElementById('speedValue');
+  const btnPlay = document.getElementById('btnPlay');
+  const btnPause = document.getElementById('btnPause');
+  const btnStop = document.getElementById('btnStop');
+  const timeDisplay = document.getElementById('timeDisplay');
+  const presetButtons = document.querySelectorAll('.preset-speeds button');
+
+  // Format seconds as mm:ss
+  function formatTime(seconds) {
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  }
+
+  audioFileInput.addEventListener('change', () => {
+    const file = audioFileInput.files[0];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    audioPlayer.src = url;
+    audioPlayer.playbackRate = speedRange.value;
+    speedValue.textContent = speedRange.value + 'x';
+  });
+
+  speedRange.addEventListener('input', () => {
+    audioPlayer.playbackRate = speedRange.value;
+    speedValue.textContent = speedRange.value + 'x';
+  });
+
+  presetButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const speed = btn.getAttribute('data-speed');
+      speedRange.value = speed;
+      speedValue.textContent = speed + 'x';
+      audioPlayer.playbackRate = speed;
+    });
+  });
+
+  btnPlay.addEventListener('click', () => {
+    if (!audioPlayer.src) {
+      alert('Please upload an audio file first.');
+      return;
+    }
+    audioPlayer.play();
+  });
+
+  btnPause.addEventListener('click', () => {
+    audioPlayer.pause();
+  });
+
+  btnStop.addEventListener('click', () => {
+    audioPlayer.pause();
+    audioPlayer.currentTime = 0;
+  });
+
+  audioPlayer.addEventListener('timeupdate', () => {
+    timeDisplay.textContent = `${formatTime(audioPlayer.currentTime)} / ${formatTime(audioPlayer.duration || 0)}`;
+  });
+</script>
+
+</body>
+</html>

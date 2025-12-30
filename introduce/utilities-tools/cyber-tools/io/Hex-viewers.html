@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hex Viewer Tool</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #000;
+      color: #c58b00;
+      overflow-x: hidden;
+    }
+
+    video#bg-video {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      min-width: 100vw;
+      min-height: 100vh;
+      object-fit: cover;
+      opacity: 0.2;
+      z-index: -2;
+    }
+
+    audio#bg-music {
+      position: fixed;
+      z-index: -1;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 50px auto;
+      background: rgba(0, 0, 0, 0.2);
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 0 25px rgba(0, 0, 0, 0.7);
+    }
+
+    h1, label { color: #c58b00; }
+
+    textarea, input[type="text"] {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      background: rgba(0, 0, 0, 0.5);
+      color: red;
+      border: 1px solid #c58b00;
+      border-radius: 5px;
+      font-size: 1rem;
+    }
+
+    input[type="file"] {
+      margin: 10px 0;
+      color: #c58b00;
+    }
+
+    button {
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid #c58b00;
+      color: #c58b00;
+      padding: 10px 15px;
+      margin: 5px 5px 15px 0;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+
+    button:hover {
+      background: #111;
+      color: red;
+    }
+
+    .preview img, .preview video {
+      max-width: 100%;
+      margin: 10px 0;
+      border: 1px solid red;
+    }
+
+    .history-item {
+      border-bottom: 1px solid red;
+      padding: 5px;
+      font-size: 0.9rem;
+      color: #ff8800;
+    }
+  </style>
+</head>
+<body>
+  <video id="bg-video" autoplay muted loop playsinline>
+    <source src="background/1761817527453041720p.mp4" type="video/mp4">
+  </video>
+
+  <audio id="bg-music" loop>
+    <source src="background/Programming___Coding___Hacking_music_vol.18__ANONYMOUS_HEADQUARTERS_(48k).mp3" type="audio/mpeg">
+  </audio>
+
+  <div class="container">
+    <h1>Hex Viewer Tool</h1>
+
+    <label>Enter Text:</label>
+    <input type="text" id="text-input" placeholder="Enter text to convert to hex...">
+
+    <label>Select File:</label>
+    <input type="file" id="file-input" />
+
+    <div>
+      <button onclick="encodeText()">Encode Text to Hex</button>
+      <button onclick="encodeFile()">Encode File to Hex</button>
+      <button onclick="clearAll()">Clear</button>
+    </div>
+
+    <label>Output (Hexadecimal):</label>
+    <textarea id="output" rows="10" readonly></textarea>
+    <button onclick="copyOutput()">Copy</button>
+    <button onclick="downloadOutput()">Download</button>
+
+    <div class="preview" id="preview-area"></div>
+
+    <h3>History</h3>
+    <div id="history-box"></div>
+  </div>
+
+  <script>
+    const output = document.getElementById("output");
+    const preview = document.getElementById("preview-area");
+    const historyBox = document.getElementById("history-box");
+    const music = document.getElementById("bg-music");
+    const history = [];
+
+    // Autoplay workaround for background music
+    window.addEventListener('click', () => {
+      music.play().catch(() => console.log("Autoplay blocked"));
+    }, { once: true });
+
+    function textToHex(str) {
+      return Array.from(str).map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join(" ");
+    }
+
+    function encodeText() {
+      const input = document.getElementById("text-input").value;
+      if (!input) return alert("Enter some text.");
+      const hex = textToHex(input);
+      output.value = hex;
+      preview.innerHTML = "";
+      logHistory("Text", input, hex.slice(0, 60));
+    }
+
+    function encodeFile() {
+      const file = document.getElementById("file-input").files[0];
+      if (!file) return alert("Please select a file.");
+      const reader = new FileReader();
+      reader.onload = () => {
+        const bytes = new Uint8Array(reader.result);
+        const hex = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join(" ");
+        output.value = hex;
+
+        if (file.type.startsWith("image")) {
+          preview.innerHTML = `<img src="${URL.createObjectURL(file)}" alt="Image Preview">`;
+        } else if (file.type.startsWith("video")) {
+          preview.innerHTML = `<video controls src="${URL.createObjectURL(file)}"></video>`;
+        } else {
+          preview.innerHTML = "<p>Preview not available for this file type.</p>";
+        }
+
+        logHistory("File", file.name, hex.slice(0, 60));
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function copyOutput() {
+      if (!output.value) return alert("Nothing to copy!");
+      navigator.clipboard.writeText(output.value).then(() => alert("Hex copied to clipboard!"));
+    }
+
+    function downloadOutput() {
+      if (!output.value) return alert("Nothing to download!");
+      const blob = new Blob([output.value], { type: "text/plain" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "hex_output.txt";
+      link.click();
+    }
+
+    function clearAll() {
+      document.getElementById("text-input").value = "";
+      document.getElementById("file-input").value = "";
+      output.value = "";
+      preview.innerHTML = "";
+    }
+
+    function logHistory(type, input, snippet) {
+      const time = new Date().toLocaleTimeString();
+      history.unshift(`${time} - ${type}: ${input} → ${snippet}...`);
+      updateHistory();
+    }
+
+    function updateHistory() {
+      historyBox.innerHTML = "";
+      history.slice(0, 8).forEach(entry => {
+        const div = document.createElement("div");
+        div.className = "history-item";
+        div.textContent = entry;
+        historyBox.appendChild(div);
+      });
+    }
+  </script>
+</body>
+</html>

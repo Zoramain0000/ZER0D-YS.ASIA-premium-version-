@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>🔎 Social Media Post Finder</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+      padding: 30px;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: auto;
+background: rgba(0, 0, 0, 0.5)
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: red;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 15px;
+      font-size: 1em;
+      border: 2px solid red;
+      border-radius: 8px;
+      margin-top: 10px;
+background: rgba(0, 0, 0, 0.5)
+color: red;
+    }
+
+    button {
+      margin-top: 15px;
+      padding: 12px 20px;
+      font-size: 1em;
+      background: red;
+      color: green;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    button:hover {
+background: rgba(0, 0, 0, 0.5)
+    }
+
+    .results {
+      margin-top: 30px;
+background: rgba(0, 0, 0, 0.5)
+    }
+
+    .results h2 {
+      margin-bottom: 10px;
+background: rgba(0, 0, 0, 0.5)
+    }
+
+    .results a {
+      display: block;
+      margin: 6px 0;
+      color: red;
+      font-weight: bold;
+      text-decoration: none;
+    }
+
+    .results a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔎 Social Media Post Finder</h1>
+
+    <input type="text" id="keywordInput" placeholder="Enter a hashtag, name, or topic (e.g. elon musk, #ai, nasa)">
+    <button onclick="generateLinks()">Find Posts</button>
+
+    <div class="results" id="resultsBox" style="display:none;">
+      <h2>🔗 Public Search Links</h2>
+      <div id="links"></div>
+    </div>
+  </div>
+
+  <script>
+    function generateLinks() {
+      const kw = document.getElementById('keywordInput').value.trim();
+      if (!kw) return alert("Please enter a search keyword.");
+
+      const encoded = encodeURIComponent(kw.replace("#", ""));
+
+      const platforms = [
+        { name: "Facebook", url: `https://www.facebook.com/search/top?q=${encoded}` },
+        { name: "Instagram", url: `https://www.instagram.com/explore/tags/${encoded}/` },
+        { name: "Twitter/X", url: `https://twitter.com/search?q=${encoded}&src=typed_query` },
+        { name: "YouTube", url: `https://www.youtube.com/results?search_query=${encoded}` },
+        { name: "TikTok", url: `https://www.tiktok.com/search?q=${encoded}` }
+      ];
+
+      const linkBox = document.getElementById("links");
+      linkBox.innerHTML = "";
+      platforms.forEach(p => {
+        const a = document.createElement("a");
+        a.href = p.url;
+        a.target = "_blank";
+        a.textContent = `🔗 ${p.name}`;
+        linkBox.appendChild(a);
+      });
+
+      document.getElementById("resultsBox").style.display = "block";
+    }
+  </script>
+</body>
+</html>

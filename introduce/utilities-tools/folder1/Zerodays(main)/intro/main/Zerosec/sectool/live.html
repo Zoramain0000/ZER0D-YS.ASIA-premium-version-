@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>🌐  Global News</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+     background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+    }
+    header {
+      background: #00000000;
+      color: rgb(255, 0, 0);
+      padding: 1rem;
+      text-align: center;
+    }
+    #controls {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      padding: 1rem;
+      gap: 10px;
+      background: #00000000;
+    }
+    select, input {
+      padding: 0.6rem;
+      font-size: 1rem;
+      border-radius: 5px;
+      border: 1px solid #ff0000;
+    }
+    #news-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1rem;
+      padding: 1rem;
+    }
+    .news-card {
+      background: rgba(0, 0, 0, 0);
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .news-card img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+    }
+    .news-card .content {
+      padding: 1rem;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .news-card h3 {
+      font-size: 1.1rem;
+      margin: 0 0 0.5rem;
+    }
+    .news-card p {
+      flex-grow: 1;
+      font-size: 0.95rem;
+      color: #ff0000;
+    }
+    .news-card a {
+      margin-top: 0.5rem;
+      color: #ff0000;
+      font-weight: bold;
+      text-decoration: none;
+    }
+    .loading {
+      text-align: center;
+      font-size: 1.2rem;
+      padding: 1.5rem;
+      color: #ff0000;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🌍 Infinite Global News</h1>
+  <p>Powered by WorldNewsAPI – Frontend Only</p>
+</header>
+
+<div id="controls">
+  <select id="countrySelect"></select>
+  <input type="text" id="searchInput" placeholder="Search news..." />
+</div>
+
+<div id="news-container"></div>
+<div class="loading" id="loading">Loading news...</div>
+
+<script>
+  const apiKey = '931535b2c26344f990abd1d71853748e';
+const countries = {
+    "us": "United States", "ph": "Philippines", "gb": "United Kingdom", "in": "India", "jp": "Japan", "fr": "France",
+    "de": "Germany", "it": "Italy", "ru": "Russia", "cn": "China", "au": "Australia", "br": "Brazil",
+    "ca": "Canada", "za": "South Africa", "ng": "Nigeria", "eg": "Egypt", "mx": "Mexico", "kr": "South Korea",
+    "ae": "UAE", "ar": "Argentina", "nl": "Netherlands", "es": "Spain", "se": "Sweden", "no": "Norway", 
+    "tr": "Turkey", "at": "Austria", "be": "Belgium", "bg": "Bulgaria", "hr": "Croatia", "cy": "Cyprus", 
+    "cz": "Czech Republic", "dk": "Denmark", "ee": "Estonia", "fi": "Finland", "fr": "France", 
+    "ge": "Georgia", "gr": "Greece", "hu": "Hungary", "is": "Iceland", "ie": "Ireland", "il": "Israel", 
+    "it": "Italy", "jp": "Japan", "lv": "Latvia", "lt": "Lithuania", "lu": "Luxembourg", "mt": "Malta", 
+    "md": "Moldova", "mc": "Monaco", "me": "Montenegro", "nl": "Netherlands", "nz": "New Zealand", 
+    "no": "Norway", "pl": "Poland", "pt": "Portugal", "ro": "Romania", "ru": "Russia", "sk": "Slovakia", 
+    "si": "Slovenia", "za": "South Africa", "kr": "South Korea", "es": "Spain", "sw": "Sweden", 
+    "ch": "Switzerland", "sy": "Syria", "tw": "Taiwan", "tz": "Tanzania", "th": "Thailand", "ug": "Uganda", 
+    "ua": "Ukraine", "ae": "United Arab Emirates", "gb": "United Kingdom", "us": "United States", 
+    "uy": "Uruguay", "ve": "Venezuela", "vn": "Vietnam", "am": "Armenia", "az": "Azerbaijan", 
+    "bh": "Bahrain", "bd": "Bangladesh", "bt": "Bhutan", "bn": "Brunei", "kh": "Cambodia", 
+    "cn": "China", "cy": "Cyprus", "ge": "Georgia", "hk": "Hong Kong", "in": "India", 
+    "id": "Indonesia", "jp": "Japan", "jo": "Jordan", "kz": "Kazakhstan", "kw": "Kuwait", 
+    "kg": "Kyrgyzstan", "la": "Laos", "lb": "Lebanon", "mo": "Macau", "my": "Malaysia", 
+    "mv": "Maldives", "mn": "Mongolia", "mm": "Myanmar", "np": "Nepal", "om": "Oman", 
+    "pk": "Pakistan", "ph": "Philippines", "qa": "Qatar", "sa": "Saudi Arabia", "sg": "Singapore", 
+    "lk": "Sri Lanka", "tj": "Tajikistan", "th": "Thailand", "tl": "Timor-Leste", "tm": "Turkmenistan", 
+    "ae": "United Arab Emirates", "uz": "Uzbekistan", "vn": "Vietnam", "ye": "Yemen", 
+    "dz": "Algeria", "ao": "Angola", "bj": "Benin", "bw": "Botswana", "bf": "Burkina Faso", 
+    "bi": "Burundi", "cm": "Cameroon", "cv": "Cape Verde", "cf": "Central African Republic", 
+    "td": "Chad", "cl": "Chile", "cm": "Cameroon", "co": "Colombia", "dj": "Djibouti", 
+    "eg": "Egypt", "gq": "Equatorial Guinea", "er": "Eritrea", "et": "Ethiopia", "ga": "Gabon", 
+    "gm": "Gambia", "gh": "Ghana", "gn": "Guinea", "gw": "Guinea-Bissau", "ke": "Kenya", 
+    "ls": "Lesotho", "lr": "Liberia", "ly": "Libya", "mg": "Madagascar", "mw": "Malawi", 
+    "ml": "Mali", "mr": "Mauritania", "mu": "Mauritius", "ma": "Morocco", "mz": "Mozambique", 
+    "na": "Namibia", "ne": "Niger", "ng": "Nigeria", "rw": "Rwanda", "st": "Sao Tome and Principe", 
+    "sn": "Senegal", "sc": "Seychelles", "sl": "Sierra Leone", "so": "Somalia", "za": "South Africa", 
+    "ss": "South Sudan", "sd": "Sudan", "tz": "Tanzania", "tg": "Togo", "tn": "Tunisia", 
+    "ug": "Uganda", "zm": "Zambia", "zw": "Zimbabwe"
+};
+
+
+  let page = 1;
+  let loading = false;
+  let currentCountry = 'us';
+  let currentSearch = '';
+  const countrySelect = document.getElementById('countrySelect');
+  const searchInput = document.getElementById('searchInput');
+  const newsContainer = document.getElementById('news-container');
+  const loadingDiv = document.getElementById('loading');
+
+  for (let [code, name] of Object.entries(countries)) {
+    const opt = document.createElement('option');
+    opt.value = code;
+    opt.textContent = name;
+    countrySelect.appendChild(opt);
+  }
+
+  countrySelect.value = currentCountry;
+
+  async function fetchNews(reset = false) {
+    if (loading) return;
+    loading = true;
+    loadingDiv.style.display = 'block';
+
+    if (reset) {
+      newsContainer.innerHTML = '';
+      page = 1;
+    }
+
+    let url = `https://api.worldnewsapi.com/search-news?api-key=${apiKey}&source-countries=${currentCountry}&number=10&page=${page}`;
+    if (currentSearch.trim()) {
+      url += `&text=${encodeURIComponent(currentSearch)}`;
+    }
+
+    try {
+      const res = await fetch(url);
+      const data = await res.json();
+
+      (data.news || []).forEach(article => {
+        const card = document.createElement('div');
+        card.className = 'news-card';
+        card.innerHTML = `
+          ${article.image ? `<img src="${article.image}" alt="Image">` : ''}
+          <div class="content">
+            <h3>${article.title}</h3>
+            <p>${article.text || ''}</p>
+            <a href="${article.url}" target="_blank">Read More</a>
+          </div>
+        `;
+        newsContainer.appendChild(card);
+      });
+
+      if (!data.news || data.news.length === 0) {
+        if (page === 1) {
+          newsContainer.innerHTML = `<p style="text-align:center;color:#888;">No news found.</p>`;
+        }
+        loadingDiv.textContent = "No more news.";
+      } else {
+        page++;
+      }
+    } catch (err) {
+      console.error('Error:', err);
+      loadingDiv.textContent = "Failed to load news.";
+    } finally {
+      loading = false;
+      loadingDiv.style.display = 'none';
+    }
+  }
+
+  // Infinite scroll
+  window.addEventListener('scroll', () => {
+    if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 100 && !loading) {
+      fetchNews();
+    }
+  });
+
+  countrySelect.addEventListener('change', () => {
+    currentCountry = countrySelect.value;
+    fetchNews(true);
+  });
+
+  searchInput.addEventListener('input', () => {
+    clearTimeout(window.searchDebounce);
+    window.searchDebounce = setTimeout(() => {
+      currentSearch = searchInput.value;
+      fetchNews(true);
+    }, 600);
+  });
+
+  // Initial load
+  fetchNews(true);
+</script>
+
+</body>
+</html>

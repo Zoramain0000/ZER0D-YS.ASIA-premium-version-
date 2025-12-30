@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>📥 YouTube Thumbnail Downloader</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      margin: 0;
+      padding: 2rem;
+      font-family: Arial, sans-serif;
+      background-color: #0f172a;
+      color: #f8fafc;
+      text-align: center;
+    }
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+    }
+    input[type="text"] {
+      width: 90%;
+      max-width: 500px;
+      padding: 12px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 6px;
+      margin-bottom: 1rem;
+    }
+    button {
+      padding: 12px 24px;
+      font-size: 1rem;
+      border: none;
+      background-color: #3b82f6;
+      color: white;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #2563eb;
+    }
+    .thumb-container {
+      display: grid;
+      gap: 20px;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      margin-top: 2rem;
+    }
+    .thumb {
+      background: #1e293b;
+      padding: 10px;
+      border-radius: 10px;
+    }
+    .thumb img {
+      width: 100%;
+      border-radius: 8px;
+    }
+    .thumb a {
+      display: block;
+      margin-top: 10px;
+      color: #38bdf8;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>📥 YouTube Thumbnail Downloader</h1>
+  <input type="text" id="youtubeURL" placeholder="Paste YouTube video URL or ID..." />
+  <br>
+  <button onclick="generateThumbnails()">Get Thumbnails</button>
+
+  <div class="thumb-container" id="thumbnailResults"></div>
+
+  <script>
+    function extractVideoID(url) {
+      const regex = /(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?|shorts)\/|.*[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+      const match = url.match(regex);
+      return match ? match[1] : (url.length === 11 ? url : null);
+    }
+
+    function generateThumbnails() {
+      const input = document.getElementById("youtubeURL").value.trim();
+      const videoID = extractVideoID(input);
+      const container = document.getElementById("thumbnailResults");
+      container.innerHTML = "";
+
+      if (!videoID) {
+        alert("Invalid YouTube URL or ID.");
+        return;
+      }
+
+      const sizes = {
+        "maxresdefault": "Max Resolution",
+        "hqdefault": "High Quality",
+        "mqdefault": "Medium Quality",
+        "sddefault": "Standard Definition",
+        "default": "Default"
+      };
+
+      for (let size in sizes) {
+        const url = `https://img.youtube.com/vi/${videoID}/${size}.jpg`;
+        const thumb = document.createElement("div");
+        thumb.className = "thumb";
+        thumb.innerHTML = `
+          <h4>${sizes[size]}</h4>
+          <img src="${url}" alt="${size}">
+          <a href="${url}" download="yt-${videoID}-${size}.jpg">Download ${size}</a>
+        `;
+        container.appendChild(thumb);
+      }
+    }
+  </script>
+</body>
+</html>

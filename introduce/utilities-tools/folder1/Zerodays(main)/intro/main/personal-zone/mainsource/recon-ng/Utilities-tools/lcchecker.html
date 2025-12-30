@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>🧾 Multi-Repo License Finder</title>
+  <style>
+    body {
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+      font-family: 'Segoe UI', sans-serif;
+      padding: 30px;
+      text-align: center;
+    }
+
+    h1 {
+      color: red;
+    }
+
+    input, textarea {
+      width: 90%;
+      max-width: 600px;
+      padding: 12px;
+      border-radius: 8px;
+      border: none;
+      font-size: 16px;
+      margin-top: 20px;
+    }
+
+    button {
+      padding: 10px 14px;
+      background-color: red;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      color: green;
+      cursor: pointer;
+      margin: 10px;
+    }
+
+    button:hover {
+background: rgba(0, 0, 0, 0.5);
+    }
+
+    .results {
+      margin-top: 30px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 30px;
+    }
+
+    .card {
+      background-color: #1e293b;
+      padding: 20px;
+      border-radius: 10px;
+      max-width: 700px;
+      width: 100%;
+      text-align: left;
+    }
+
+    .card a {
+      color: red;
+      text-decoration: none;
+    }
+
+    .card a:hover {
+      text-decoration: underline;
+background: rgba(0, 0, 0, 0.5);
+    }
+
+    .badge {
+      margin: 10px 0;
+    }
+
+    .chart {
+      margin-top: 50px;
+      overflow-x: auto;
+    }
+
+    table {
+      border-collapse: collapse;
+      margin: auto;
+      width: 90%;
+background: rgba(0, 0, 0, 0.5);
+    }
+
+    th, td {
+      border: 1px solid red;
+      padding: 10px;
+      text-align: left;
+    }
+
+    th {
+      background-color: red;
+      color: green;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🧾 Multi-Repo License Finder</h1>
+  <p>Enter GitHub repos (comma-separated):</p>
+  <textarea id="repoInput" placeholder="e.g. vercel/next.js,facebook/react,axios/axios"></textarea>
+  <br />
+  <button onclick="findLicenses()">🔍 Find Licenses</button>
+
+  <div class="results" id="results"></div>
+  <div class="chart" id="licenseChart"></div>
+
+  <script>
+    async function findLicenses() {
+      const input = document.getElementById("repoInput").value.trim();
+      const repos = input.split(",").map(r => r.trim()).filter(r => r.includes("/"));
+      const resultsDiv = document.getElementById("results");
+      const chartDiv = document.getElementById("licenseChart");
+      resultsDiv.innerHTML = "";
+      chartDiv.innerHTML = "";
+
+      if (repos.length === 0) {
+        alert("Please enter at least one valid repository.");
+        return;
+      }
+
+      const licenseData = [];
+
+      for (const repo of repos) {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `<p>🔍 Fetching ${repo}...</p>`;
+        resultsDiv.appendChild(card);
+
+        try {
+          const res = await fetch(`https://api.github.com/repos/${repo}`);
+          if (!res.ok) throw new Error("Repo not found");
+          const data = await res.json();
+
+          const licenseName = data.license?.name || "Not specified";
+          const spdx = data.license?.spdx_id || "N/A";
+
+          card.innerHTML = `
+            <p><strong>📦 Repository:</strong> <a href="${data.html_url}" target="_blank">${repo}</a></p>
+            <p><strong>📄 Description:</strong> ${data.description || "N/A"}</p>
+            <p><strong>🔖 License:</strong> ${licenseName}</p>
+            <p><strong>🆔 SPDX ID:</strong> ${spdx}</p>
+            <div class="badge"><img src="https://img.shields.io/badge/license-${encodeURIComponent(spdx)}-blue.svg" alt="License Badge" /></div>
+          `;
+
+          licenseData.push({
+            Repository: repo,
+            License: licenseName,
+            SPDX: spdx,
+            URL: data.html_url
+          });
+
+        } catch (err) {
+          card.innerHTML = `<p style="color:red;">❌ Failed to fetch ${repo}: ${err.message}</p>`;
+        }
+      }
+
+      if (licenseData.length > 0) {
+        generateTable(licenseData);
+      }
+    }
+
+    function generateTable(data) {
+      const table = document.createElement("table");
+      const header = `<tr>
+        <th>Repository</th>
+        <th>License</th>
+        <th>SPDX ID</th>
+        <th>Link</th>
+      </tr>`;
+      const rows = data.map(d => `
+        <tr>
+          <td>${d.Repository}</td>
+          <td>${d.License}</td>
+          <td>${d.SPDX}</td>
+          <td><a href="${d.URL}" target="_blank">🔗 View</a></td>
+        </tr>`).join("");
+
+      table.innerHTML = header + rows;
+      document.getElementById("licenseChart").appendChild(table);
+    }
+  </script>
+</body>
+</html>

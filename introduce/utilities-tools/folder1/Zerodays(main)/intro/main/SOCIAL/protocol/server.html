@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>🌐 Network Protocol Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #0d1117;
+      color: #fff;
+      display: flex;
+      height: 100vh;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 260px;
+      background: #1c1c2e;
+      border-right: 1px solid #2c2c3c;
+      padding-top: 20px;
+      position: fixed;
+      height: 100%;
+      transition: transform 0.3s ease;
+      z-index: 10;
+    }
+
+    .sidebar.closed {
+      transform: translateX(-100%);
+    }
+
+    .sidebar h2 {
+      text-align: center;
+      color: #58a6ff;
+      font-size: 20px;
+      margin-bottom: 20px;
+    }
+
+    .sidebar a {
+      display: block;
+      color: #ccc;
+      padding: 14px 20px;
+      text-decoration: none;
+      border-bottom: 1px solid #2c2c3c;
+      transition: background 0.3s;
+    }
+
+    .sidebar a:hover,
+    .sidebar a.active {
+      background: #58a6ff;
+      color: #fff;
+    }
+
+    .toggle-btn {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      background: #58a6ff;
+      color: #fff;
+      border: none;
+      padding: 10px 14px;
+      border-radius: 5px;
+      cursor: pointer;
+      z-index: 11;
+    }
+
+    .main {
+      margin-left: 260px;
+      padding: 20px 30px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .section {
+      margin-bottom: 40px;
+      padding: 20px;
+      background: #161b22;
+      border-radius: 10px;
+      border: 1px solid #30363d;
+    }
+
+    .section h3 {
+      color: #79c0ff;
+    }
+
+    canvas {
+      margin-top: 10px;
+      background: #0d1117;
+    }
+
+    @media (max-width: 768px) {
+      .sidebar {
+        position: absolute;
+        height: 100%;
+        left: 0;
+        top: 0;
+      }
+
+      .main {
+        margin-left: 0;
+        padding-top: 60px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <button class="toggle-btn" onclick="toggleSidebar()">☰ Menu</button>
+
+  <div class="sidebar" id="sidebar">
+    <h2>🌐 Protocol tools</h2>
+<a href="slot/reservip.html">🌐 IP Finder Ultra</a>
+<a href="https://www.windy.com/?1.296,112.061,5,p:cams">🌐 windy websites</a>
+
+<a href="slot/Stl4.html">🌐 Mastered super Tracker</a>
+<a href="slot/Door.html">🔮 Find Your Soulmate with Starla</a>
+
+  </div>
+
+  <div class="main">
+    <div class="section" id="tcp">
+      <h3>🔗 TCP (Transmission Control Protocol)</h3>
+      <p>TCP is a connection-oriented protocol that ensures reliable data transmission between devices over a network. It's used by most applications requiring guaranteed delivery, like websites, emails, and file transfers.</p>
+    </div>
+
+    <div class="section" id="udp">
+      <h3>📡 UDP (User Datagram Protocol)</h3>
+      <p>UDP is a lightweight, connectionless protocol used for fast, non-guaranteed delivery of packets. Commonly used in live video streaming, gaming, and voice calls where speed is more critical than reliability.</p>
+    </div>
+
+    <div class="section" id="icmp">
+      <h3>📢 ICMP (Internet Control Message Protocol)</h3>
+      <p>ICMP is primarily used for sending diagnostic or error messages (e.g., ping or traceroute). It's not for data transport but helps manage network behavior and connectivity.</p>
+    </div>
+
+    <div class="section" id="ip">
+      <h3>🌍 IP Addresses</h3>
+      <p>IP (Internet Protocol) assigns unique numerical addresses to devices on a network. IPv4 uses 32-bit (e.g., 192.168.0.1) while IPv6 uses 128-bit addresses. IP enables devices to send and receive information across the internet.</p>
+    </div>
+
+    <div class="section" id="ports">
+      <h3>🛠️ Ports</h3>
+      <p>Ports identify specific services or applications on a device. For example, port 80 (HTTP), 443 (HTTPS), 22 (SSH). There are 65,535 ports available per IP address, divided into well-known, registered, and dynamic ranges.</p>
+    </div>
+
+    <div class="section" id="chart">
+      <h3>📊 Protocol Usage Chart</h3>
+      <canvas id="protocolChart" height="200"></canvas>
+    </div>
+
+    <div class="section" id="map">
+      <h3>🗺️ Worldwide Protocol Sim</h3>
+      <ul>
+        <li>🇺🇸 US: 192.0.2.1 - TCP 80</li>
+        <li>🇩🇪 DE: 185.88.100.2 - UDP 53</li>
+        <li>🇯🇵 JP: 103.44.66.2 - TCP 443</li>
+        <li>🇧🇷 BR: 177.200.11.22 - UDP 8080</li>
+        <li>🇵🇭 PH: 49.144.22.19 - TCP 22</li>
+        <li>🇬🇧 UK: 51.22.33.44 - ICMP</li>
+        <li>🇮🇳 IN: 122.169.88.22 - TCP 443</li>
+      </ul>
+    </div>
+  </div>
+
+  <script>
+    const sidebar = document.getElementById('sidebar');
+    function toggleSidebar() {
+      sidebar.classList.toggle('closed');
+    }
+
+    const ctx = document.getElementById('protocolChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: ['TCP', 'UDP', 'ICMP', 'Others'],
+        datasets: [{
+          data: [60, 25, 10, 5],
+          backgroundColor: ['#58a6ff', '#facc15', '#34d399', '#ef4444'],
+          borderColor: '#0d1117',
+          borderWidth: 2
+        }]
+      },
+      options: {
+        plugins: {
+          legend: {
+            labels: { color: '#fff' }
+          }
+        }
+      }
+    });
+  </script>
+
+</body>
+</html>

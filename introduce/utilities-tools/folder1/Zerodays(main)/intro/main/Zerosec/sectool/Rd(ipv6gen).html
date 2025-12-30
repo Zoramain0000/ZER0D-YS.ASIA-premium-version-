@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>IPv6 Log Generator Tool</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+      font-family: 'Courier New', Courier, monospace;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      color: red;
+      margin-bottom: 20px;
+    }
+
+    .controls {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    select, button {
+background: rgba(0, 0, 0, 0.5);
+      border: 1px solid red;
+      color: red;
+      padding: 10px 15px;
+      margin: 5px;
+      font-size: 16px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    button {
+background: rgba(0, 0, 0, 0.5);
+    }
+
+    button:hover {
+background: rgba(0, 0, 0, 0.5);
+    }
+
+    #logContainer {
+background: rgba(0, 0, 0, 0.5);
+      border: 1px solid red;
+      border-radius: 10px;
+      padding: 15px;
+      height: 400px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      font-size: 14px;
+    }
+
+    .log-line {
+      color: red;
+    }
+
+    .ip {
+      color: red;
+    }
+
+    .timestamp {
+      color: red;
+    }
+
+    .country {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+
+<h1>🌐 IPv6 Log Generator Tool</h1>
+
+<div class="controls">
+  <select id="countrySelect"></select>
+  <button onclick="generateLog()">➕ Generate One</button>
+  <button onclick="startAuto()">▶ Auto Start</button>
+  <button onclick="stopAuto()">⏹ Stop</button>
+</div>
+
+<div id="logContainer"></div>
+
+<script>
+  let intervalId;
+
+  const countryList = [
+    "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Argentina", "Armenia", "Australia", "Austria", "Azerbaijan",
+    "Bahamas", "Bahrain", "Bangladesh", "Barbados", "Belarus", "Belgium", "Belize", "Benin", "Bhutan", "Bolivia",
+    "Bosnia", "Botswana", "Brazil", "Brunei", "Bulgaria", "Burkina Faso", "Burundi", "Cambodia", "Cameroon", "Canada",
+    "Chad", "Chile", "China", "Colombia", "Comoros", "Costa Rica", "Croatia", "Cuba", "Cyprus", "Czechia",
+    "Denmark", "Djibouti", "Dominica", "DR Congo", "Ecuador", "Egypt", "El Salvador", "Estonia", "Eswatini", "Ethiopia",
+    "Fiji", "Finland", "France", "Gabon", "Gambia", "Georgia", "Germany", "Ghana", "Greece", "Grenada",
+    "Guatemala", "Guinea", "Guyana", "Haiti", "Honduras", "Hungary", "Iceland", "India", "Indonesia", "Iran",
+    "Iraq", "Ireland", "Israel", "Italy", "Jamaica", "Japan", "Jordan", "Kazakhstan", "Kenya", "Kiribati",
+    "Kuwait", "Kyrgyzstan", "Laos", "Latvia", "Lebanon", "Lesotho", "Liberia", "Libya", "Liechtenstein", "Lithuania",
+    "Luxembourg", "Madagascar", "Malawi", "Malaysia", "Maldives", "Mali", "Malta", "Mexico", "Moldova", "Monaco",
+    "Mongolia", "Montenegro", "Morocco", "Mozambique", "Myanmar", "Namibia", "Nauru", "Nepal", "Netherlands", "New Zealand",
+    "Nicaragua", "Niger", "Nigeria", "North Korea", "North Macedonia", "Norway", "Oman", "Pakistan", "Palau", "Panama",
+    "Papua New Guinea", "Paraguay", "Peru", "Philippines", "Poland", "Portugal", "Qatar", "Romania", "Russia", "Rwanda",
+    "Saint Lucia", "Samoa", "San Marino", "Saudi Arabia", "Senegal", "Serbia", "Seychelles", "Singapore", "Slovakia", "Slovenia",
+    "Somalia", "South Africa", "South Korea", "Spain", "Sri Lanka", "Sudan", "Suriname", "Sweden", "Switzerland", "Syria",
+    "Taiwan", "Tajikistan", "Tanzania", "Thailand", "Timor-Leste", "Togo", "Tonga", "Trinidad and Tobago", "Tunisia", "Turkey",
+    "Turkmenistan", "Tuvalu", "Uganda", "Ukraine", "UAE", "UK", "USA", "Uruguay", "Uzbekistan", "Vanuatu",
+    "Vatican City", "Venezuela", "Vietnam", "Yemen", "Zambia", "Zimbabwe"
+  ];
+
+  const ipv6PopularPrefixes = [
+    "2001:4860",     // Google
+    "2404:6800",     // Google APAC
+    "2606:4700",     // Cloudflare
+    "2620:0:2d0",    // Wikipedia
+    "2a00:1450",     // Google EU
+    "2800:3f0",      // Google LATAM
+    "2c0f:f248",     // African networks
+    "2a03:2880",     // Facebook
+    "2a00:1098",     // OVH
+    "2a00:1450",     // Google (another range)
+    "2a02:26f0",     // Akamai
+    "2607:f8b0",     // Google US
+    "2400:cb00",     // Cloudflare APAC
+    "2620:119:35",   // Fastly
+    "2a04:4e42"      // Fastly EU
+  ];
+
+  function populateCountries() {
+    const select = document.getElementById("countrySelect");
+    countryList.forEach(country => {
+      const option = document.createElement("option");
+      option.value = country;
+      option.textContent = country;
+      select.appendChild(option);
+    });
+    select.value = "USA";
+  }
+
+  function getRandomIPv6Popular() {
+    const prefix = ipv6PopularPrefixes[Math.floor(Math.random() * ipv6PopularPrefixes.length)];
+    const blocksNeeded = 8 - prefix.split(":").length;
+    const suffixBlocks = Array.from({ length: blocksNeeded }, () =>
+      Math.floor(Math.random() * 0x10000).toString(16).padStart(4, '0')
+    );
+    return prefix + ":" + suffixBlocks.join(":");
+  }
+
+  function getTimestamp() {
+    return new Date().toISOString();
+  }
+
+  function generateLog() {
+    const logContainer = document.getElementById("logContainer");
+    const ip = getRandomIPv6Popular();
+    const time = getTimestamp();
+    const country = document.getElementById("countrySelect").value;
+    const line = `<span class="log-line"><span class="timestamp">${time}</span> — Access from <span class="ip">${ip}</span> (<span class="country">${country}</span>)</span><br>`;
+    logContainer.innerHTML += line;
+    logContainer.scrollTop = logContainer.scrollHeight;
+  }
+
+  function startAuto() {
+    if (!intervalId) {
+      intervalId = setInterval(generateLog, 500);
+    }
+  }
+
+  function stopAuto() {
+    clearInterval(intervalId);
+    intervalId = null;
+  }
+
+  // Initialize on load
+  populateCountries();
+</script>
+
+</body>
+</html>

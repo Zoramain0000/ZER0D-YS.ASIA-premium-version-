@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>🎞️ YouTube Thumbnail & Info Grabber</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #0f172a;
+      color: #f1f5f9;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      color: #38bdf8;
+    }
+    input, button {
+      padding: 10px;
+      font-size: 1em;
+      border-radius: 5px;
+      margin-right: 10px;
+      border: none;
+    }
+    input {
+      width: 60%;
+    }
+    button {
+      background: #38bdf8;
+      color: #000;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0ea5e9;
+    }
+    .thumb-container img {
+      max-width: 100%;
+      height: auto;
+      margin-bottom: 10px;
+      border-radius: 8px;
+    }
+    .video-info {
+      margin-top: 20px;
+      background: #1e293b;
+      padding: 15px;
+      border-radius: 8px;
+    }
+    .video-info h3 {
+      margin: 0 0 10px;
+      color: #22d3ee;
+    }
+    .thumb-wrapper {
+      margin-top: 20px;
+    }
+    .thumb-wrapper a {
+      display: inline-block;
+      margin-right: 10px;
+      text-decoration: none;
+      color: #facc15;
+    }
+    .thumb-wrapper a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🎞️ YouTube Thumbnail Generator & Info Grabber</h1>
+  <input type="text" id="videoInput" placeholder="Enter YouTube URL or Video ID" />
+  <button onclick="generateThumbnails()">Generate</button>
+
+  <div class="video-info" id="videoInfo" style="display: none;">
+    <h3>📄 Video Info</h3>
+    <p><strong>Title:</strong> <span id="videoTitle"></span></p>
+    <p><strong>Description:</strong></p>
+    <pre id="videoDescription" style="white-space: pre-wrap;"></pre>
+    <button onclick="copyText('videoTitle')">📋 Copy Title</button>
+    <button onclick="copyText('videoDescription')">📋 Copy Description</button>
+  </div>
+
+  <div class="thumb-wrapper" id="thumbWrapper" style="display:none;">
+    <h3>🖼️ Thumbnails</h3>
+    <div class="thumb-container" id="thumbnailContainer"></div>
+  </div>
+
+  <script>
+    function extractVideoID(url) {
+      if (url.includes("youtube.com") || url.includes("youtu.be")) {
+        const regex = /(?:v=|\/)([0-9A-Za-z_-]{11})/;
+        const match = url.match(regex);
+        return match ? match[1] : null;
+      }
+      return url.length === 11 ? url : null;
+    }
+
+    function generateThumbnails() {
+      const input = document.getElementById("videoInput").value.trim();
+      const videoID = extractVideoID(input);
+      if (!videoID) return alert("❌ Invalid YouTube URL or Video ID");
+
+      const sizes = {
+        "Default (120x90)": `https://img.youtube.com/vi/${videoID}/default.jpg`,
+        "Medium (320x180)": `https://img.youtube.com/vi/${videoID}/mqdefault.jpg`,
+        "High (480x360)": `https://img.youtube.com/vi/${videoID}/hqdefault.jpg`,
+        "Standard (640x480)": `https://img.youtube.com/vi/${videoID}/sddefault.jpg`,
+        "Max Resolution (1280x720)": `https://img.youtube.com/vi/${videoID}/maxresdefault.jpg`
+      };
+
+      let html = "";
+      for (const [label, url] of Object.entries(sizes)) {
+        html += `
+          <div>
+            <p>${label}</p>
+            <img src="${url}" alt="${label}" />
+            <a href="${url}" download target="_blank">⬇️ Download</a>
+          </div>
+        `;
+      }
+
+      document.getElementById("thumbnailContainer").innerHTML = html;
+      document.getElementById("thumbWrapper").style.display = "block";
+
+      fetchVideoInfo(videoID);
+    }
+
+    function fetchVideoInfo(videoID) {
+      fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoID}`)
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById("videoTitle").textContent = data.title || "N/A";
+          document.getElementById("videoDescription").textContent = data.description || "N/A";
+          document.getElementById("videoInfo").style.display = "block";
+        })
+        .catch(() => {
+          document.getElementById("videoTitle").textContent = "Unavailable";
+          document.getElementById("videoDescription").textContent = "Unavailable";
+        });
+    }
+
+    function copyText(id) {
+      const text = document.getElementById(id).textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        alert("✅ Copied to clipboard!");
+      });
+    }
+  </script>
+
+</body>
+</html>

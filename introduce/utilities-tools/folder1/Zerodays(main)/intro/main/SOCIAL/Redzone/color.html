@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Color Casino Game</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 0;
+      padding: 0;
+    }
+
+    h1 {
+      margin-top: 20px;
+      font-size: 2rem;
+      text-shadow: 2px 2px red;
+    }
+
+    .balance {
+      margin: 10px;
+      font-size: 1.2rem;
+    }
+
+    .color-options {
+      display: flex;
+      justify-content: center;
+      margin: 20px 0;
+      gap: 15px;
+    }
+
+    .color {
+      width: 100px;
+      height: 100px;
+      border-radius: 15px;
+      cursor: pointer;
+      transition: transform 0.2s;
+      border: 4px solid white;
+    }
+
+    .color:hover {
+      transform: scale(1.1);
+    }
+
+    #red { background-color: red; }
+    #green { background-color: green; }
+    #blue { background-color: blue; }
+
+    .bet-controls {
+      margin: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    input[type="number"] {
+      padding: 8px;
+      border-radius: 5px;
+      border: none;
+      width: 120px;
+      text-align: center;
+    }
+
+    button {
+      margin-top: 10px;
+      padding: 10px 20px;
+      background: red;
+      color: green;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+background: rgba(0, 0, 0, 0.5);
+    }
+
+    .result {
+      margin: 20px;
+      font-size: 1.3rem;
+      height: 40px;
+      text-align: center;
+    }
+
+    .highlight {
+      box-shadow: 0 0 15px 5px yellow;
+      animation: pulse 0.6s infinite alternate;
+    }
+
+    @keyframes pulse {
+      from { transform: scale(1); }
+      to { transform: scale(1.1); }
+    }
+
+    @media (max-width: 500px) {
+      .color {
+        width: 80px;
+        height: 80px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🎰 Color Casino Game</h1>
+  <div class="balance">💰 Balance: $<span id="balance">100</span></div>
+
+  <div class="color-options">
+    <div class="color" id="red" onclick="placeBet('red')"></div>
+    <div class="color" id="green" onclick="placeBet('green')"></div>
+    <div class="color" id="blue" onclick="placeBet('blue')"></div>
+  </div>
+
+  <div class="bet-controls">
+    <input type="number" id="betAmount" min="1" placeholder="Enter bet amount">
+    <button onclick="resetGame()">Reset Game</button>
+  </div>
+
+  <div class="result" id="resultMsg"></div>
+
+  <script>
+    let balance = 100;
+    const balanceEl = document.getElementById("balance");
+    const resultMsg = document.getElementById("resultMsg");
+
+    const colors = ["red", "green", "blue"];
+    const multipliers = {
+      red: 2,
+      green: 3,
+      blue: 5
+    };
+
+    function placeBet(selectedColor) {
+      const bet = parseInt(document.getElementById("betAmount").value);
+      if (isNaN(bet) || bet <= 0) {
+        alert("Enter a valid bet amount.");
+        return;
+      }
+
+      if (bet > balance) {
+        alert("Insufficient balance!");
+        return;
+      }
+
+      const resultColor = colors[Math.floor(Math.random() * colors.length)];
+
+      highlightColor(resultColor);
+
+      if (selectedColor === resultColor) {
+        const winnings = bet * multipliers[resultColor];
+        balance += winnings;
+        resultMsg.textContent = `🎉 You won! Color: ${resultColor.toUpperCase()} +$${winnings}`;
+      } else {
+        balance -= bet;
+        resultMsg.textContent = `❌ You lost. It was ${resultColor.toUpperCase()} -$${bet}`;
+      }
+
+      balanceEl.textContent = balance;
+
+      if (balance <= 0) {
+        resultMsg.textContent += " 💀 You're out of money!";
+      }
+    }
+
+    function highlightColor(colorId) {
+      document.querySelectorAll('.color').forEach(c => c.classList.remove('highlight'));
+      const el = document.getElementById(colorId);
+      el.classList.add('highlight');
+      setTimeout(() => el.classList.remove('highlight'), 1000);
+    }
+
+    function resetGame() {
+      balance = 100;
+      balanceEl.textContent = balance;
+      resultMsg.textContent = "";
+      document.getElementById("betAmount").value = "";
+    }
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>🌐 CCTV Log Generator (We4city API)</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body { background: #0f172a; color: #e2e8f0; font-family: monospace; padding: 20px; }
+    h1, h3 { color: #38bdf8; }
+    button { padding: 10px 16px; margin: 4px; background: #2563eb; border: none; color: #fff; cursor: pointer; }
+    button:hover { background: #1e40af; }
+    .log { margin-top: 20px; padding:10px; background:#1e293b; border:1px dashed #38bdf8; height:300px; overflow:auto; white-space:pre-wrap; }
+  </style>
+</head>
+<body>
+  <h1>🌐 CCTV Log Generator (Live Cameras)</h1>
+  <button onclick="fetchCams(false)">📋 List All Cameras</button>
+  <button onclick="fetchCams(true)">🎥 List Streaming Only</button>
+  <button onclick="clearLog()">🧹 Clear Log</button>
+  <button onclick="downloadLog()">💾 Download Log</button>
+
+  <h3>📝 Logs</h3>
+  <div class="log" id="log"></div>
+
+  <script>
+    const API_URL = 'https://api.we4city.com/api/v1/public/Cameras/Live/all';
+    const logEl = document.getElementById('log');
+
+    function log(msg) {
+      logEl.textContent += msg + '\n';
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function clearLog() {
+      logEl.textContent = '';
+    }
+
+    function downloadLog() {
+      const blob = new Blob([logEl.textContent], { type: 'text/plain' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'cctv_we4city_log.txt';
+      a.click();
+    }
+
+    async function fetchCams(streamingOnly) {
+      clearLog();
+      log('📡 Fetching camera list…');
+      try {
+        const res = await fetch(API_URL);
+        if (!res.ok) throw new Error(res.status + ' ' + res.statusText);
+        const data = await res.json();
+        const cams = data.ret?.cameras || [];
+        log(`✅ Received ${cams.length} cameras`);
+        cams.forEach(c => {
+          if (streamingOnly && c.isStreaming !== 1) return;
+          log(`ID:${c.id} | ${c.descr || 'Unnamed'} | Stream:${c.isStreaming ? 'Yes' : 'No'} | URL: ${c.url}`);
+        });
+      } catch (err) {
+        log(`❌ Error: ${err.message}`);
+      }
+    }
+  </script>
+</body>
+</html>

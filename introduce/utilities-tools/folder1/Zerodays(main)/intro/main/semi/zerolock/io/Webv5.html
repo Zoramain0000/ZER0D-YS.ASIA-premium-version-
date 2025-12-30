@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>📚 Random Book Cover Explorer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+      font-family: 'Courier New', monospace;
+      margin: 0;
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    h1 { color: red; margin-bottom: 20px; }
+    .box {
+background: rgba(0,0,0,0.5);
+      padding: 20px;
+      border-radius: 10px;
+      max-width: 600px;
+      width: 100%;
+      box-shadow: 0 0 10px red;
+      text-align: center;
+    }
+    button {
+      margin: 10px;
+      padding: 10px 16px;
+      border: none;
+      background: red;
+      color: green;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1em;
+    }
+    button:hover {background: rgba(0,0,0,0.5);}
+    img {
+      margin-top: 20px;
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+      box-shadow: 0 0 10px red;
+      display: none;
+    }
+    pre {
+background: rgba(0,0,0,0.5);
+      color: red;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 15px;
+      white-space: pre-wrap;
+    }
+    .history {
+      margin-top: 15px;
+background: rgba(0,0,0,0.5);
+      padding: 10px;
+      border-radius: 8px;
+      max-height: 200px;
+      overflow-y: auto;
+      text-align: left;
+      font-size: 0.9em;
+    }
+    footer {
+      margin-top: 30px;
+      color: red;
+      font-size: 0.9em;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <h1>📚 Random Book Cover Explorer</h1>
+  <div class="box">
+    <button onclick="getBook()">🎲 Fetch Random Book</button>
+    <button onclick="copyBook()">📋 Copy Book Info</button>
+    <button onclick="exportBook()">💾 Export JSON</button>
+
+    <img id="coverImg" alt="Book Cover"/>
+    <pre id="infoOutput">Click to load a random book!</pre>
+
+    <h3>🕒 Visit History</h3>
+    <div class="history" id="historyLog">No history yet.</div>
+  </div>
+  <footer>
+    🔐 Powered by Open Library Covers API & Open Library Data • Auto-refresh every 60s • © 2025 ZeroDayAI
+  </footer>
+  <script>
+    let lastBook = null;
+    const history = [];
+
+    async function getBook() {
+      const info = document.getElementById('infoOutput');
+      const img = document.getElementById('coverImg');
+      const log = document.getElementById('historyLog');
+      img.style.display = 'none';
+      info.textContent = '⏳ Fetching a random book...';
+
+      try {
+        // Pick a random ISBN from a list
+        const isbns = [
+          '0451526538','0140449132','0553296981','0679783261',
+          '0743273567','0061120081','0374533555','0140283293'
+        ];
+        const isbn = isbns[Math.floor(Math.random() * isbns.length)];
+        const url = `https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`;
+        const res = await fetch(url);
+        const data = await res.json();
+        const key = `ISBN:${isbn}`;
+        const book = data[key];
+        if (!book) throw new Error('Book data not found');
+
+        lastBook = { isbn, ...book };
+        history.push({ title: book.title, isbn });
+
+        const title = book.title;
+        const author = book.authors?.[0]?.name || 'Unknown';
+        const year = book.publish_date || 'N/A';
+
+        info.textContent = `Title: ${title}\nAuthor: ${author}\nYear: ${year}\nISBN: ${isbn}`;
+        img.src = `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg`;
+        img.onload = () => img.style.display = 'block';
+
+        log.innerHTML = history.map((b,i) => `${i+1}. ${b.title} (${b.isbn})`).join('\n');
+      } catch (e) {
+        info.textContent = '❌ Error fetching book info.';
+        console.error(e);
+      }
+    }
+
+    function copyBook() {
+      if (!lastBook) return alert('Nothing to copy yet!');
+      const text = `Title: ${lastBook.title}\nAuthor: ${lastBook.authors?.[0]?.name || 'Unknown'}\nYear: ${lastBook.publish_date}\nISBN: ${lastBook.isbn}`;
+      navigator.clipboard.writeText(text)
+        .then(() => alert('✅ Copied!'))
+        .catch(() => alert('❌ Copy failed.'));
+    }
+
+    function exportBook() {
+      if (!lastBook) return alert('Nothing to export!');
+      const blob = new Blob([JSON.stringify(lastBook, null,2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `book_${lastBook.isbn}.json`;
+      a.click();
+    }
+
+    setInterval(getBook, 60000);
+  </script>
+</body>
+</html>

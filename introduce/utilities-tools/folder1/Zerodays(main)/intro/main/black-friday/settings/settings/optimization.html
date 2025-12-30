@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>🚀 Performance Optimizer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Courier New', monospace;
+      background: #000 url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s') ;
+      
+      color: #0fc;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    header, footer {
+      background: rgba(0,0,0,0.6);
+      color: red;
+      padding: 15px;
+      text-align: center;
+      font-weight: bold;
+      border-bottom: 1px solid red;
+    }
+    footer {
+      border-top: 1px solid red;
+      border-bottom: none;
+    }
+    main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      background: rgba(0,0,0,0.6);
+    }
+    .info-box {
+      background: rgba(0,0,0,0.3);
+      border: 1px solid red;
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 15px;
+    }
+    h2 { color: red; }
+    .label { color: #0fc; font-weight: bold; }
+    button {
+      background: red;
+      color: black;
+      border: none;
+      padding: 10px;
+      font-weight: bold;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    canvas {
+      background: rgba(0,0,0,0.3);
+      border-radius: 10px;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <header>🚀 Performance Optimizer</header>
+  <main>
+    <div class="info-box">
+      <h2>System Metrics</h2>
+      <div><span class="label">FPS (Estimated):</span> <span id="fps">Calculating...</span></div>
+      <div><span class="label">Memory:</span> <span id="memory">Detecting...</span></div>
+      <div><span class="label">CPU Cores:</span> <span id="cpu">Detecting...</span></div>
+      <div><span class="label">Device Type:</span> <span id="device">Detecting...</span></div>
+      <div><span class="label">Battery:</span> <span id="battery">Checking...</span></div>
+      <div><span class="label">GPU Renderer:</span> <span id="gpu">Detecting...</span></div>
+      <button onclick="runBenchmark()">🧪 Run Benchmark</button>
+    </div>
+
+    <div class="info-box">
+      <h2>Benchmark Results</h2>
+      <canvas id="benchmarkChart" width="400" height="200"></canvas>
+    </div>
+  </main>
+  <footer>© 2025 ZeroDayAI | Fully Local Benchmark Tool</footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    // Device Type
+    document.getElementById("device").textContent =
+      /Mobi|Android/i.test(navigator.userAgent) ? "Mobile/Tablet" : "Desktop";
+
+    // Memory
+    document.getElementById("memory").textContent =
+      navigator.deviceMemory ? `${navigator.deviceMemory} GB` : "Unavailable";
+
+    // CPU
+    document.getElementById("cpu").textContent =
+      navigator.hardwareConcurrency || "Unavailable";
+
+    // FPS Measurement
+    let lastLoop = performance.now();
+    function measureFPS() {
+      const now = performance.now();
+      const delta = now - lastLoop;
+      lastLoop = now;
+      const fps = Math.round(1000 / delta);
+      document.getElementById("fps").textContent = fps + " FPS";
+      requestAnimationFrame(measureFPS);
+    }
+    requestAnimationFrame(measureFPS);
+
+    // GPU Info via WebGL
+    function getGPUInfo() {
+      try {
+        const canvas = document.createElement("canvas");
+        const gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+        const debugInfo = gl.getExtension("WEBGL_debug_renderer_info");
+        const renderer = debugInfo
+          ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL)
+          : "Unavailable";
+        document.getElementById("gpu").textContent = renderer;
+      } catch {
+        document.getElementById("gpu").textContent = "Unavailable";
+      }
+    }
+    getGPUInfo();
+
+    // Battery Info
+    navigator.getBattery?.().then(battery => {
+      function updateBattery() {
+        document.getElementById("battery").textContent =
+          `${Math.round(battery.level * 100)}% ${battery.charging ? "(Charging)" : ""}`;
+      }
+      updateBattery();
+      battery.addEventListener("levelchange", updateBattery);
+      battery.addEventListener("chargingchange", updateBattery);
+    }).catch(() => {
+      document.getElementById("battery").textContent = "Unavailable";
+    });
+
+    // Benchmark & Chart
+    const ctx = document.getElementById('benchmarkChart').getContext('2d');
+    const benchmarkChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [{
+          label: 'Benchmark Duration (ms)',
+          data: [],
+          backgroundColor: 'rgba(255,0,0,0.3)',
+          borderColor: 'red',
+          fill: true
+        }]
+      },
+      options: {
+        scales: {
+          y: { beginAtZero: true, ticks: { color: '#0fc' } },
+          x: { ticks: { color: '#0fc' } }
+        },
+        responsive: true
+      }
+    });
+
+    function runBenchmark() {
+      const times = [];
+      for (let i = 0; i < 10; i++) {
+        const start = performance.now();
+        for (let j = 0; j < 1e6; j++) Math.sqrt(j); // CPU stress
+        const end = performance.now();
+        times.push(Math.round(end - start));
+      }
+      benchmarkChart.data.labels = times.map((_, i) => `Run ${i + 1}`);
+      benchmarkChart.data.datasets[0].data = times;
+      benchmarkChart.update();
+    }
+  </script>
+</body>
+</html>

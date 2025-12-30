@@ -1,0 +1,246 @@
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>YouTube Channel Tracker</title>
+  <style>
+    body {
+      background-color: #0d0d0d;
+      color: #f0f0f0;
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    h1 {
+      color: #FF0000;
+    }
+    input, button {
+      padding: 10px;
+      font-size: 16px;
+      margin: 5px 0;
+      border: none;
+      border-radius: 5px;
+    }
+    input {
+      width: 300px;
+    }
+    button {
+      background-color: #FF0000;
+      color: #fff;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #cc0000;
+    }
+    .result {
+      margin-top: 20px;
+      background: #1e1e1e;
+      padding: 15px;
+      border-radius: 10px;
+    }
+    .result img {
+      width: 100px;
+      border-radius: 50%;
+    }
+    pre {
+      background: #2e2e2e;
+      padding: 10px;
+      overflow-x: auto;
+    }
+    table {
+      margin-top: 20px;
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      padding: 10px;
+      border: 1px solid #444;
+      text-align: left;
+    }
+    th {
+      background-color: #333;
+    }
+    .videos {
+      margin-top: 30px;
+    }
+    .videos iframe {
+      width: 300px;
+      height: 170px;
+      margin: 10px;
+      border-radius: 10px;
+      border: none;
+    }
+    #loadMoreBtn {
+      margin: 20px 0;
+      background-color: #444;
+    }
+  </style>
+</head>
+<body>
+  <h1>YouTube Channel Tracker</h1>
+  <input type="text" id="channelId" placeholder="Enter YouTube Channel ID or @handle" />
+  <button onclick="fetchYouTubeData()">Search</button>
+
+  <div class="result" id="results" style="display: none;">
+    <h2 id="title"></h2>
+    <img id="avatar" />
+    <p><strong>Channel ID:</strong> <span id="id"></span></p>
+    <p><strong>Subscribers:</strong> <span id="subs"></span></p>
+    <p><strong>Country:</strong> <span id="country"></span></p>
+    <p><strong>Description:</strong> <span id="desc"></span></p>
+
+    <button onclick="exportJSON()">Export as JSON</button>
+    <button onclick="clearHistory()">Clear History</button>
+    <pre id="jsonOutput" style="display:none;"></pre>
+
+    <div class="videos">
+      <h3>All Videos</h3>
+      <div id="videoList"></div>
+      <button id="loadMoreBtn" style="display:none;" onclick="loadMoreVideos()">Load More</button>
+    </div>
+
+    <div class="history-section">
+      <h3>Subscriber History</h3>
+      <table id="historyTable" style="display:none;">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Subscriber Count</th>
+          </tr>
+        </thead>
+        <tbody id="historyBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const youtubeApiKey = "AIzaSyCzXJd2kEa_Pc10XL4zAKtM4Kl6ibNRcE8"; // Replace with your YouTube Data API key
+    let nextPageToken = null;
+    let currentPlaylistId = "";
+
+    async function fetchYouTubeData() {
+      const input = document.getElementById("channelId").value.trim();
+      if (!input) return alert("Please enter a Channel ID or @handle");
+
+      let channelId = input;
+      if (input.startsWith("@")) {
+        try {
+          const res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(input)}&type=channel&key=${youtubeApiKey}`);
+          const data = await res.json();
+          if (!data.items || !data.items.length) throw new Error("No channel found.");
+          channelId = data.items[0].snippet.channelId;
+        } catch (e) {
+          return alert("Failed to resolve handle.");
+        }
+      }
+
+      try {
+        const res = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics,contentDetails&id=${channelId}&key=${youtubeApiKey}`);
+        const data = await res.json();
+        if (!data.items || data.items.length === 0) return alert("Channel not found.");
+
+        const info = data.items[0];
+        const snippet = info.snippet;
+        const stats = info.statistics;
+        const subs = stats.subscriberCount || "Hidden";
+
+        document.getElementById("title").innerText = snippet.title;
+        document.getElementById("avatar").src = snippet.thumbnails.default.url;
+        document.getElementById("id").innerText = info.id;
+        document.getElementById("subs").innerText = subs;
+        document.getElementById("desc").innerText = snippet.description || "N/A";
+        document.getElementById("country").innerText = snippet.country || "Unknown";
+
+        document.getElementById("results").style.display = "block";
+        document.getElementById("jsonOutput").style.display = "none";
+
+        saveToHistory(info.id, subs);
+        loadHistory(info.id);
+
+        currentPlaylistId = info.contentDetails.relatedPlaylists.uploads;
+        nextPageToken = null;
+        document.getElementById("videoList").innerHTML = "";
+        await loadMoreVideos();
+
+      } catch (err) {
+        console.error(err);
+        alert("Failed to fetch data. See console for details.");
+      }
+    }
+
+    async function loadMoreVideos() {
+      if (!currentPlaylistId) return;
+      const videoList = document.getElementById("videoList");
+      const loadMoreBtn = document.getElementById("loadMoreBtn");
+      try {
+        const url = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=10&playlistId=${currentPlaylistId}&key=${youtubeApiKey}${nextPageToken ? `&pageToken=${nextPageToken}` : ""}`;
+        const res = await fetch(url);
+        const data = await res.json();
+
+        data.items.forEach(item => {
+          const videoId = item.snippet.resourceId.videoId;
+          const iframe = document.createElement("iframe");
+          iframe.src = `https://www.youtube.com/embed/${videoId}`;
+          videoList.appendChild(iframe);
+        });
+
+        nextPageToken = data.nextPageToken;
+        loadMoreBtn.style.display = nextPageToken ? "inline-block" : "none";
+      } catch (err) {
+        console.error("Error loading videos:", err);
+        videoList.innerText = "Could not load videos.";
+      }
+    }
+
+    function exportJSON() {
+      const data = {
+        title: document.getElementById("title").innerText,
+        channelId: document.getElementById("id").innerText,
+        subscribers: document.getElementById("subs").innerText,
+        country: document.getElementById("country").innerText,
+        description: document.getElementById("desc").innerText,
+        avatar: document.getElementById("avatar").src
+      };
+      document.getElementById("jsonOutput").style.display = "block";
+      document.getElementById("jsonOutput").textContent = JSON.stringify(data, null, 2);
+    }
+
+    function saveToHistory(channelId, subscribers) {
+      if (subscribers === "Hidden") return;
+      const key = `history_${channelId}`;
+      const now = new Date().toLocaleString();
+      let history = JSON.parse(localStorage.getItem(key)) || [];
+      history.push({ date: now, subs: subscribers });
+      localStorage.setItem(key, JSON.stringify(history));
+    }
+
+    function loadHistory(channelId) {
+      const key = `history_${channelId}`;
+      const history = JSON.parse(localStorage.getItem(key)) || [];
+      const table = document.getElementById("historyTable");
+      const body = document.getElementById("historyBody");
+      body.innerHTML = "";
+      if (history.length === 0) {
+        table.style.display = "none";
+        return;
+      }
+      history.forEach(entry => {
+        const row = document.createElement("tr");
+        row.innerHTML = `<td>${entry.date}</td><td>${entry.subs}</td>`;
+        body.appendChild(row);
+      });
+      table.style.display = "table";
+    }
+
+    function clearHistory() {
+      const channelId = document.getElementById("id").innerText;
+      if (!channelId) return;
+      const key = `history_${channelId}`;
+      localStorage.removeItem(key);
+      loadHistory(channelId);
+    }
+  </script>
+</body>
+</html>
